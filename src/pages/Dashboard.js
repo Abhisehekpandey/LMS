@@ -299,33 +299,6 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
       setSnackbarOpen(true);
     }
   };
-
-  // const handleBulkDownload = () => {
-  //   let dataToDownload = [];
-
-  //   if (selected.length > 0) {
-  //     // Download only selected users
-  //     dataToDownload = rows
-  //       .filter((row) => selected.includes(row.name))
-  //       .map((row) => ({
-  //         ...row,
-  //         edit: "No", // Add edit column with default 'No'
-  //       }));
-  //   } else {
-  //     // Download all users
-  //     dataToDownload = rows.map((row) => ({
-  //       ...row,
-  //       edit: "No", // Add edit column with default 'No'
-  //     }));
-  //   }
-
-  //   const worksheet = XLSX.utils.json_to_sheet(dataToDownload);
-  //   const workbook = XLSX.utils.book_new();
-  //   XLSX.utils.book_append_sheet(workbook, worksheet, "Users");
-  //   XLSX.writeFile(workbook, "users_data.xlsx");
-  // };
-
-  // 3. Update handleBulkDownload function
 const handleBulkDownload = () => {
   let dataToDownload = [];
 
@@ -875,51 +848,17 @@ const handleBulkDownload = () => {
     transition: "background-color 0.1s ease",
   }));
 
-  // const handleTemplateDownload = () => {
-  //   const template = [
-  //     {
-  //       username: "example_user",
-  //       name: "Example User",
-  //       department: "Department Name",
-  //       role: "Role Name",
-  //       email: "user@example.com",
-  //       storageUsed: "10GB",
-  //       status: "pending", // Add status column
-  //       // activeLicense: "FALSE",
-  //       edit: "No", // Added edit column
-  //     },
-  //   ];
-
-  //   const workbook = XLSX.utils.book_new();
-  //   const worksheet = XLSX.utils.json_to_sheet(template);
-
-  //   const wscols = [
-  //     { wch: 15 }, // username
-  //     { wch: 20 }, // name
-  //     { wch: 20 }, // department
-  //     { wch: 15 }, // role
-  //     { wch: 25 }, // email
-  //     { wch: 15 }, // storageUsed
-  //     { wch: 15 }, // status
-  //     { wch: 10 }, // edit
-  //   ];
-  //   worksheet["!cols"] = wscols;
-
-  //   XLSX.utils.book_append_sheet(workbook, worksheet, "Template");
-  //   XLSX.writeFile(workbook, "user_upload_template.xlsx");
-  // };
-
   const handleTemplateDownload = () => {
     const template = [
       {
-        username: "example_user",
-        name: "Example User",
-        department: "Department Name",
-        role: "Role Name",
-        email: "user@example.com",
-        storageUsed: "10GB",
-        status: "pending", // Add status column
-        edit: "No",
+        Username: "K_Sawhney15",
+        Name: "Kapil Sahwhey",
+        Department: "Department Name",
+        Role: "Role Name/Designaton",
+        Email: "Kapil@Example.Com",
+        StorageUsed: "10GB",
+        Status: "Inactive", // Add status column
+        Edit: "No",
       },
     ];
   
@@ -1119,51 +1058,56 @@ const handleBulkDownload = () => {
                     </Typography>
                   </TableCell>
                   <TableCell sx={{ width: "150px", padding: "2px" }}>
-                    <Box sx={{ display: "flex", alignItems: "center" }}>
-                      <Typography variant="body1" fontWeight="bold">
-                        Manage Storage
-                      </Typography>
-                      <IconButton onClick={handleFilterClick}>
-                        <FilterListIcon />
-                      </IconButton>
-                      <Menu
-                        anchorEl={anchorEl}
-                        open={Boolean(anchorEl)}
-                        onClose={handleFilterClose}
-                      >
-                        <MenuItem onClick={() => handleFilterChange("All")}>
-                          All
-                        </MenuItem>
-                        <MenuItem onClick={() => handleFilterChange("Active")}>
-                          Active
-                        </MenuItem>
-                        <MenuItem
-                          onClick={() => handleFilterChange("Inactive")}
-                        >
-                          Inactive
-                        </MenuItem>
-                        <MenuItem onClick={() => handleFilterChange("Pending")}>
-                          Pending
-                        </MenuItem>
-                      </Menu>
-                    </Box>
-                  </TableCell>
+  <Typography variant="body1" fontWeight="bold">
+    Manage Storage
+  </Typography>
+</TableCell>
                   <TableCell sx={{ width: "140px", padding: "2px" }}>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        // justifyContent: "center",
-                        justifyContent: 'flex-start',
-                        gap: 0.5,
-                        // width: "100%",
-                      }}
-                    >
-                      <Typography variant="body1" fontWeight="bold">
-                        Tools
-                      </Typography>
-                    </Box>
-                  </TableCell>
+  <Box
+    sx={{
+      display: "flex",
+      alignItems: "center",
+      // justifyContent: 'flex-start',
+      // gap: 0.5,
+      justifyContent: 'space-between', // Change from flex-start to space-between
+      width: '100%', // Ensure the box takes full width
+    }}
+  >
+    <Typography variant="body1" fontWeight="bold">
+      Tools
+    </Typography>
+    <Box sx={{ ml: 2 }}> {/* Add margin to create separation */}
+    <IconButton 
+      onClick={handleFilterClick}
+      size="small"
+      sx={{ 
+        padding: '2px',
+        marginLeft: '4px'
+      }}
+    >
+      <FilterListIcon fontSize="small" />
+    </IconButton>
+    <Menu
+      anchorEl={anchorEl}
+      open={Boolean(anchorEl)}
+      onClose={handleFilterClose}
+    >
+      <MenuItem onClick={() => handleFilterChange("All")}>
+        All
+      </MenuItem>
+      <MenuItem onClick={() => handleFilterChange("Active")}>
+        Active
+      </MenuItem>
+      <MenuItem onClick={() => handleFilterChange("Inactive")}>
+        Inactive
+      </MenuItem>
+      <MenuItem onClick={() => handleFilterChange("Pending")}>
+        Pending
+      </MenuItem>
+    </Menu>
+    </Box>
+  </Box>
+</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -2267,22 +2211,6 @@ const handleBulkDownload = () => {
               onChange={handleInputChange}
             />
           </Box>
-
-          {/* Fourth row */}
-          {/* <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 1 }}>
-            <Switch
-              checked={editedUserData.activeLicense || false}
-              onChange={(e) =>
-                setEditedUserData({
-                  ...editedUserData,
-                  activeLicense: e.target.checked,
-                })
-              }
-              color="primary"
-              size="small"
-            />
-            <Typography variant="body2">Active License</Typography>
-          </Box> */}
         </DialogContent>
 
         <DialogActions sx={{ p: 1, pt: 0 }}>

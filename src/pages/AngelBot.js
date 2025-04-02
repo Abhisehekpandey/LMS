@@ -34,8 +34,11 @@ const commonPaperStyles = {
 };
 
 const AngelBot = ({ onThemeToggle }) => {
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [userPage, setUserPage] = useState(0);
+  const [deptPage, setDeptPage] = useState(0);
+  const [userRowsPerPage, setUserRowsPerPage] = useState(5);
+  const [deptRowsPerPage, setDeptRowsPerPage] = useState(5);
+
   const [userStats, setUserStats] = useState({
     totalUsers: 0,
     activeUsers: 0,
@@ -53,13 +56,22 @@ const AngelBot = ({ onThemeToggle }) => {
     licenses: [5, 8, 12, 3, 7, 2],
   };
 
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
+  const handleUserPageChange = (event, newPage) => {
+    setUserPage(newPage);
   };
 
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
+  const handleUserRowsPerPageChange = (event) => {
+    setUserRowsPerPage(parseInt(event.target.value, 10));
+    setUserPage(0);
+  };
+
+  const handleDeptPageChange = (event, newPage) => {
+    setDeptPage(newPage);
+  };
+
+  const handleDeptRowsPerPageChange = (event) => {
+    setDeptRowsPerPage(parseInt(event.target.value, 10));
+    setDeptPage(0);
   };
 
   useEffect(() => {
@@ -320,7 +332,7 @@ const AngelBot = ({ onThemeToggle }) => {
                 </Box>
 
                 <Box sx={{ mt: 3 }}>
-                   <StatCard
+                  <StatCard
                     icon={PersonIcon}
                     title="Active Users"
                     value={userStats.activeUsers}
@@ -334,7 +346,7 @@ const AngelBot = ({ onThemeToggle }) => {
                     color={chartColors.grey}
                     bgColor={alpha(chartColors.grey, 0.04)}
                   />
-                   <StatCard
+                  <StatCard
                     icon={PersonIcon}
                     title="Inactive Users"
                     value={userStats.inactiveUsers}
@@ -592,8 +604,10 @@ const AngelBot = ({ onThemeToggle }) => {
                   <Box>
                     {getSortedStorageUsers()
                       .slice(
-                        page * rowsPerPage,
-                        page * rowsPerPage + rowsPerPage
+                        // page * rowsPerPage,
+                        // page * rowsPerPage + rowsPerPage
+                        userPage * userRowsPerPage,
+                        userPage * userRowsPerPage + userRowsPerPage
                       )
                       .map((user, index) => (
                         <Box
@@ -654,10 +668,14 @@ const AngelBot = ({ onThemeToggle }) => {
                     <TablePagination
                       component="div"
                       count={getSortedStorageUsers().length}
-                      page={page}
-                      onPageChange={handleChangePage}
-                      rowsPerPage={rowsPerPage}
-                      onRowsPerPageChange={handleChangeRowsPerPage}
+                      // page={page}
+                      page={userPage}
+                      // onPageChange={handleChangePage}
+                      onPageChange={handleUserPageChange}
+                      // rowsPerPage={rowsPerPage}
+                      rowsPerPage={userRowsPerPage}
+                      // onRowsPerPageChange={handleChangeRowsPerPage}
+                      onRowsPerPageChange={handleUserRowsPerPageChange}
                       rowsPerPageOptions={[5, 10, 15]}
                       sx={{
                         mt: 2,
@@ -689,8 +707,8 @@ const AngelBot = ({ onThemeToggle }) => {
                   <Box>
                     {getSortedDepartments()
                       .slice(
-                        page * rowsPerPage,
-                        page * rowsPerPage + rowsPerPage
+                        deptPage * deptRowsPerPage,
+                        deptPage * deptRowsPerPage + deptRowsPerPage
                       )
                       .map((dept, index) => (
                         <Box
@@ -746,13 +764,14 @@ const AngelBot = ({ onThemeToggle }) => {
                           </Typography>
                         </Box>
                       ))}
+
                     <TablePagination
                       component="div"
                       count={getSortedDepartments().length}
-                      page={page}
-                      onPageChange={handleChangePage}
-                      rowsPerPage={rowsPerPage}
-                      onRowsPerPageChange={handleChangeRowsPerPage}
+                      page={deptPage}
+                      onPageChange={handleDeptPageChange}
+                      rowsPerPage={deptRowsPerPage}
+                      onRowsPerPageChange={handleDeptRowsPerPageChange}
                       rowsPerPageOptions={[5, 10, 15]}
                       sx={{
                         mt: 2,

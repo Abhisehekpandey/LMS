@@ -347,21 +347,28 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     });
   }, [departments, order, orderBy]);
 
+
   const StyledTableRow = styled(TableRow)(({ theme }) => ({
+    "&:nth-of-type(odd)": {
+      backgroundColor: "transparent",
+    },
+    "&:nth-of-type(even)": {
+      backgroundColor: "rgba(0, 0, 0, 0.02)",
+    },
     "&:hover": {
       backgroundColor: "rgba(0, 0, 0, 0.04) !important",
-      cursor: "pointer",
     },
     "& .MuiTableCell-root": {
-      padding: "1px 8px",
-      height: "20px", // Consistent height
+      padding: "2px 8px",
+      height: "32px",
       fontSize: "0.875rem",
+      color: "#333",
+      borderBottom: "1px solid #e0e0e0",
       whiteSpace: "nowrap",
-      borderBottom: "1px solid #eee",
     },
-    "&.Mui-selected": {
-      backgroundColor: "rgba(25, 118, 210, 0.08) !important",
-    },
+    // Remove any margin or padding between rows
+    margin: 0,
+    borderSpacing: 0,
     transition: "background-color 0.1s ease",
   }));
 
@@ -495,31 +502,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     setDepartmentToDelete(null);
   };
 
-  // const handleTemplateDownload = () => {
-  //   // Create template data structure
-  //   const template = [
-  //     {
-  //       Department: "Example Department",
-  //       "Display Name": "EXD",
-  //       Roles: "Role1, Role2, Role3",
-  //     },
-  //   ];
-
-  //   // Create workbook
-  //   const workbook = XLSX.utils.book_new();
-  //   const worksheet = XLSX.utils.json_to_sheet(template);
-
-  //   // Add column widths
-  //   const wscols = [
-  //     { wch: 25 }, // Department
-  //     { wch: 15 }, // Display Name
-  //     { wch: 40 }, // Roles
-  //   ];
-  //   worksheet["!cols"] = wscols;
-
-  //   XLSX.utils.book_append_sheet(workbook, worksheet, "Template");
-  //   XLSX.writeFile(workbook, "department_upload_template.xlsx");
-  // };
+ 
 
   const handleTemplateDownload = () => {
     const template = [
@@ -567,20 +550,22 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         <Navbar onThemeToggle={onThemeToggle} />
         {/* <Box sx={{ p: 3, marginLeft: "50px", overflow: "hidden" }}> */}
         <Box
+         
           sx={{
             p: 0,
-            marginLeft: "48px",
+            marginLeft: "64px", // Keep the sidebar margin
+            marginTop: "24px", // Add top margin for Navbar separation
+            marginRight: "24px", // Add right margin
             overflow: "hidden",
-            height: "calc(100vh - 48px)",
+            height: "calc(100vh - 64px)", // Adjust height to account for top margin
           }}
         >
-          {/* <Typography variant="h5" gutterBottom>
-                        Departments Overview
-                    </Typography> */}
+          
           <TableContainer
             component={Paper}
+            
             sx={{
-              height: "calc(100vh - 84px)", // Adjusted height to account for pagination
+              height: "calc(100vh - 96px)", // Adjust for the new top margin
               "& .MuiTableHead-root": {
                 position: "sticky",
                 top: 0,
@@ -595,30 +580,22 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 borderBottom: "2px solid #ddd",
               },
               boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-              borderRadius: 0,
-              overflowY: "scroll", // Changed from 'auto' to 'scroll'
+              borderRadius: "4px", // Add slight border radius
+              overflow: "auto",
               position: "relative",
-              "&::-webkit-scrollbar": {
-                width: "8px",
-                height: "8px",
-                display: "block", // Always show scrollbar
-              },
-              "&::-webkit-scrollbar-track": {
-                backgroundColor: "#f5f5f5",
-              },
-              "&::-webkit-scrollbar-thumb": {
-                backgroundColor: "#888",
-                borderRadius: "4px",
-                "&:hover": {
-                  backgroundColor: "#666",
-                },
-              },
             }}
           >
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell sx={{ width: "200px", padding: "1px 8px" }}>
+                  {/* <TableCell sx={{ width: "200px", padding: "1px 8px" }}> */}
+                  <TableCell sx={{ 
+  width: "200px", 
+  padding: "2px 8px",
+  height: "32px",
+  fontWeight: "bold",
+  color: "#444",
+}}>
                     <TableSortLabel
                       active={orderBy === "name"}
                       direction={orderBy === "name" ? order : "asc"}
@@ -629,7 +606,14 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                       </Typography>
                     </TableSortLabel>
                   </TableCell>
-                  <TableCell sx={{ width: "150px", padding: "1px 8px" }}>
+                  {/* <TableCell sx={{ width: "150px", padding: "1px 8px" }}> */}
+                  <TableCell sx={{ 
+  width: "200px", 
+  padding: "2px 8px",
+  height: "32px",
+  fontWeight: "bold",
+  color: "#444",
+}}>
                     <TableSortLabel
                       active={orderBy === "displayName"}
                       direction={orderBy === "displayName" ? order : "asc"}
@@ -640,12 +624,26 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                       </Typography>
                     </TableSortLabel>
                   </TableCell>
-                  <TableCell sx={{ width: "150px", padding: "1px 8px" }}>
+                  {/* <TableCell sx={{ width: "150px", padding: "1px 8px" }}> */}
+                  <TableCell sx={{ 
+  width: "200px", 
+  padding: "2px 8px",
+  height: "32px",
+  fontWeight: "bold",
+  color: "#444",
+}}>
                     <Typography variant="body1" fontWeight="bold">
                       Storage Allocated
                     </Typography>
                   </TableCell>
-                  <TableCell sx={{ width: "150px", padding: "1px 8px" }}>
+                  {/* <TableCell sx={{ width: "150px", padding: "1px 8px" }}> */}
+                  <TableCell sx={{ 
+  width: "200px", 
+  padding: "2px 8px",
+  height: "32px",
+  fontWeight: "bold",
+  color: "#444",
+}}>
                     <TableSortLabel
                       active={orderBy === "roles"}
                       direction={orderBy === "roles" ? order : "asc"}
@@ -656,7 +654,14 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                       </Typography>
                     </TableSortLabel>
                   </TableCell>
-                  <TableCell sx={{ width: "150px", padding: "1px 8px" }}>
+                  {/* <TableCell sx={{ width: "150px", padding: "1px 8px" }}> */}
+                  <TableCell sx={{ 
+  width: "200px", 
+  padding: "2px 8px",
+  height: "32px",
+  fontWeight: "bold",
+  color: "#444",
+}}>
                     <Typography variant="body1" fontWeight="bold">
                       Actions
                     </Typography>
@@ -767,24 +772,55 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                         </TableCell>
                       </StyledTableRow>
                       <StyledTableRow key={index}>
-                        <TableCell
+                        {/* <TableCell
                           style={{ paddingBottom: 0, paddingTop: 0 }}
                           colSpan={1}
-                        >
+                        > */}
+                        <TableCell 
+  style={{ 
+    paddingBottom: 0, 
+    paddingTop: 0, 
+    borderBottom: "none" ,
+    height: "auto",
+  }} 
+  colSpan={5}
+>
                           <Collapse
                             in={openRows[index]}
                             timeout="auto"
                             unmountOnExit
                           >
-                            <Box sx={{ margin: 1 }}>
-                              <List dense>
+                            {/* <Box sx={{ margin: 1 }}> */}
+                            <Box sx={{ 
+      margin: 0,
+      backgroundColor: "rgba(0, 0, 0, 0.01)",
+      borderRadius: 0,
+      padding: 0
+    }}>
+                              {/* <List dense> */}
+                              {/* <List dense sx={{ padding: 0 }}> */}
+                              <List dense sx={{ 
+        padding: 0,
+        margin: 0,
+        "& .MuiListItem-root": {
+          padding: "2px 8px",
+          minHeight: "32px",
+          borderBottom: "1px solid #f0f0f0"
+        }
+      }}>
                                 {dept.roles.map((role, roleIndex) => (
                                   <ListItem
                                     key={roleIndex}
+                                    sx={{
+                                      height: "32px",
+                                      "&:hover": {
+                                        backgroundColor: "rgba(0, 0, 0, 0.02)",
+                                      },
+                                    }}
                                     secondaryAction={
                                       <Box sx={{ display: "flex", gap: 1 }}>
                                         <IconButton
-                                          edge="end"
+                                          // edge="end"
                                           size="small"
                                           onClick={() =>
                                             handleEditRole(
@@ -793,9 +829,15 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                               role
                                             )
                                           }
+                                          // sx={{
+                                          //   "&:hover": {
+                                          //     color: "primary.main",
+                                          //   },
+                                          // }}
                                           sx={{
-                                            "&:hover": {
-                                              color: "primary.main",
+                                            padding: "4px",
+                                            "& .MuiSvgIcon-root": {
+                                              fontSize: "1.1rem",
                                             },
                                           }}
                                           title="Edit Role"
@@ -803,14 +845,20 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                           <EditIcon fontSize="small" />
                                         </IconButton>
                                         <IconButton
-                                          edge="end"
+                                          // edge="end"
                                           size="small"
                                           onClick={() =>
                                             handleDeleteRole(index, roleIndex)
                                           }
+                                          // sx={{
+                                          //   "&:hover": {
+                                          //     color: "error.main",
+                                          //   },
+                                          // }}
                                           sx={{
-                                            "&:hover": {
-                                              color: "error.main",
+                                            padding: "4px",
+                                            "& .MuiSvgIcon-root": {
+                                              fontSize: "1.1rem",
                                             },
                                           }}
                                           title="Delete Role"
