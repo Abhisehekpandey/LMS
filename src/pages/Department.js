@@ -22,7 +22,7 @@ import {
   FormControl,
   InputLabel,
   Select,
-  MenuItem
+  MenuItem,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
@@ -58,7 +58,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
   // const [rowsPerPage] = useState(9);
   const [rowsPerPage, setRowsPerPage] = useState(25); // Default to 25 rows
 
-
   const [openRows, setOpenRows] = useState({});
 
   // Add sorting state
@@ -78,7 +77,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     name: "",
     displayName: "",
     initialRole: "",
-    storage: '50GB', // Default storage value
+    storage: "50GB", // Default storage value
     submitted: false,
   });
 
@@ -100,12 +99,12 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     roleIndex: null,
     value: "",
   });
-  
+
   // Add this handler function
-const handleChangeRowsPerPage = (event) => {
-  setRowsPerPage(parseInt(event.target.value, 10));
-  setPage(0); // Reset to first page when changing rows per page
-};
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0); // Reset to first page when changing rows per page
+  };
   // Add these new handler functions
   const handleEditRole = (deptIndex, roleIndex, currentRole) => {
     setEditingRole({
@@ -180,17 +179,28 @@ const handleChangeRowsPerPage = (event) => {
     setSnackbar((prev) => ({ ...prev, open: false }));
   };
 
-  // Add bulk download handler
   const handleBulkDownload = () => {
     try {
       const exportData = departments.map((dept) => ({
         Department: dept.name,
         "Display Name": dept.displayName,
+        "Storage Allocated": dept.storage || "50GB", // Add storage field
         "Number of Roles": dept.roles.length,
         Roles: dept.roles.join(", "),
       }));
 
       const ws = XLSX.utils.json_to_sheet(exportData);
+
+      // Add column widths
+      const wscols = [
+        { wch: 25 }, // Department
+        { wch: 15 }, // Display Name
+        { wch: 20 }, // Storage Allocated
+        { wch: 15 }, // Number of Roles
+        { wch: 40 }, // Roles
+      ];
+      ws["!cols"] = wscols;
+
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Departments");
       XLSX.writeFile(wb, "departments.xlsx");
@@ -214,12 +224,6 @@ const handleChangeRowsPerPage = (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
-    if (typeof setDepartments !== "function") {
-      console.error("setDepartments is not a function");
-      alert("Configuration error. Please contact support.");
-      return;
-    }
-
     try {
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -230,9 +234,13 @@ const handleChangeRowsPerPage = (event) => {
           const worksheet = workbook.Sheets[sheetName];
           const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-          // Validate data
+          // Update validation to include Storage Allocated
           const isValidData = jsonData.every(
-            (row) => row.Department && row["Display Name"] && row.Roles
+            (row) =>
+              row.Department &&
+              row["Display Name"] &&
+              row["Storage Allocated"] &&
+              row.Roles
           );
 
           if (!isValidData) {
@@ -244,10 +252,11 @@ const handleChangeRowsPerPage = (event) => {
             return;
           }
 
-          // Update departments with new data
+          // Update department mapping to include storage
           const updatedDepartments = jsonData.map((row) => ({
             name: row.Department,
             displayName: row["Display Name"],
+            storage: row["Storage Allocated"] || "50GB", // Include storage with default
             roles: row.Roles.split(",").map((role) => role.trim()),
           }));
 
@@ -260,12 +269,16 @@ const handleChangeRowsPerPage = (event) => {
             if (existingDeptIndex === -1) {
               mergedDepartments.push(newDept);
             } else {
+              // Update existing department with new data
               const existingRoles = new Set(
                 mergedDepartments[existingDeptIndex].roles
               );
               newDept.roles.forEach((role) => existingRoles.add(role));
-              mergedDepartments[existingDeptIndex].roles =
-                Array.from(existingRoles);
+              mergedDepartments[existingDeptIndex] = {
+                ...mergedDepartments[existingDeptIndex],
+                storage: newDept.storage, // Update storage
+                roles: Array.from(existingRoles),
+              };
             }
           });
 
@@ -275,13 +288,11 @@ const handleChangeRowsPerPage = (event) => {
             message: `Successfully uploaded ${updatedDepartments.length} departments`,
             severity: "success",
           });
-          // alert('Departments updated successfully');
         } catch (error) {
-          // console.error('Error processing file:', error);
-          // alert('Error processing file. Please ensure it matches the template format.');
           setSnackbar({
             open: true,
-            message: "Error processing file",
+            message:
+              "Error processing file. Please ensure it matches the template format.",
             severity: "error",
           });
         }
@@ -335,7 +346,7 @@ const handleChangeRowsPerPage = (event) => {
         : b[orderBy].localeCompare(a[orderBy]);
     });
   }, [departments, order, orderBy]);
-  
+
   const StyledTableRow = styled(TableRow)(({ theme }) => ({
     "&:hover": {
       backgroundColor: "rgba(0, 0, 0, 0.04) !important",
@@ -385,14 +396,14 @@ const handleChangeRowsPerPage = (event) => {
       name: newDepartment.name,
       displayName: newDepartment.displayName,
       roles: [newDepartment.initialRole],
-      storage: newDepartment.storage
+      storage: newDepartment.storage,
     };
 
     const updatedDepartments = [...departments, newDeptWithRole];
-  setDepartments(updatedDepartments);
-  
-  // Store in localStorage
-  localStorage.setItem('departments', JSON.stringify(updatedDepartments));
+    setDepartments(updatedDepartments);
+
+    // Store in localStorage
+    localStorage.setItem("departments", JSON.stringify(updatedDepartments));
 
     // setDepartments((prev) => [...prev, newDeptWithRole]);
     setShowAddDepartment(false);
@@ -400,7 +411,7 @@ const handleChangeRowsPerPage = (event) => {
       name: "",
       displayName: "",
       initialRole: "",
-      storage: '50GB',
+      storage: "50GB",
       submitted: false,
     });
     setSnackbar({
@@ -484,17 +495,42 @@ const handleChangeRowsPerPage = (event) => {
     setDepartmentToDelete(null);
   };
 
+  // const handleTemplateDownload = () => {
+  //   // Create template data structure
+  //   const template = [
+  //     {
+  //       Department: "Example Department",
+  //       "Display Name": "EXD",
+  //       Roles: "Role1, Role2, Role3",
+  //     },
+  //   ];
+
+  //   // Create workbook
+  //   const workbook = XLSX.utils.book_new();
+  //   const worksheet = XLSX.utils.json_to_sheet(template);
+
+  //   // Add column widths
+  //   const wscols = [
+  //     { wch: 25 }, // Department
+  //     { wch: 15 }, // Display Name
+  //     { wch: 40 }, // Roles
+  //   ];
+  //   worksheet["!cols"] = wscols;
+
+  //   XLSX.utils.book_append_sheet(workbook, worksheet, "Template");
+  //   XLSX.writeFile(workbook, "department_upload_template.xlsx");
+  // };
+
   const handleTemplateDownload = () => {
-    // Create template data structure
     const template = [
       {
         Department: "Example Department",
         "Display Name": "EXD",
+        "Storage Allocated": "50GB", // Add storage field
         Roles: "Role1, Role2, Role3",
       },
     ];
 
-    // Create workbook
     const workbook = XLSX.utils.book_new();
     const worksheet = XLSX.utils.json_to_sheet(template);
 
@@ -502,6 +538,7 @@ const handleChangeRowsPerPage = (event) => {
     const wscols = [
       { wch: 25 }, // Department
       { wch: 15 }, // Display Name
+      { wch: 20 }, // Storage Allocated
       { wch: 40 }, // Roles
     ];
     worksheet["!cols"] = wscols;
@@ -529,96 +566,101 @@ const handleChangeRowsPerPage = (event) => {
       >
         <Navbar onThemeToggle={onThemeToggle} />
         {/* <Box sx={{ p: 3, marginLeft: "50px", overflow: "hidden" }}> */}
-        <Box sx={{ p: 0, marginLeft: "48px", overflow: "hidden", height: "calc(100vh - 48px)" }}>
+        <Box
+          sx={{
+            p: 0,
+            marginLeft: "48px",
+            overflow: "hidden",
+            height: "calc(100vh - 48px)",
+          }}
+        >
           {/* <Typography variant="h5" gutterBottom>
                         Departments Overview
                     </Typography> */}
           <TableContainer
             component={Paper}
-
-      sx={{
-        height: "calc(100vh - 84px)", // Adjusted height to account for pagination
-        "& .MuiTableHead-root": {
-          position: "sticky",
-          top: 0,
-          zIndex: 1,
-          backgroundColor: "#f5f5f5",
-        },
-        "& .MuiTableHead-root .MuiTableCell-root": {
-          padding: "1px 8px",
-          height: "20px",
-          backgroundColor: "#f5f5f5",
-          fontWeight: "bold",
-          borderBottom: "2px solid #ddd",
-        },
-        boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-        borderRadius: 0,
-        overflowY: "scroll", // Changed from 'auto' to 'scroll'
-        position: "relative",
-        "&::-webkit-scrollbar": {
-          width: "8px",
-          height: "8px",
-          display: "block", // Always show scrollbar
-        },
-        "&::-webkit-scrollbar-track": {
-          backgroundColor: "#f5f5f5",
-        },
-        "&::-webkit-scrollbar-thumb": {
-          backgroundColor: "#888",
-          borderRadius: "4px",
-          "&:hover": {
-            backgroundColor: "#666",
-          },
-        },
-      }}
+            sx={{
+              height: "calc(100vh - 84px)", // Adjusted height to account for pagination
+              "& .MuiTableHead-root": {
+                position: "sticky",
+                top: 0,
+                zIndex: 1,
+                backgroundColor: "#f5f5f5",
+              },
+              "& .MuiTableHead-root .MuiTableCell-root": {
+                padding: "1px 8px",
+                height: "20px",
+                backgroundColor: "#f5f5f5",
+                fontWeight: "bold",
+                borderBottom: "2px solid #ddd",
+              },
+              boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+              borderRadius: 0,
+              overflowY: "scroll", // Changed from 'auto' to 'scroll'
+              position: "relative",
+              "&::-webkit-scrollbar": {
+                width: "8px",
+                height: "8px",
+                display: "block", // Always show scrollbar
+              },
+              "&::-webkit-scrollbar-track": {
+                backgroundColor: "#f5f5f5",
+              },
+              "&::-webkit-scrollbar-thumb": {
+                backgroundColor: "#888",
+                borderRadius: "4px",
+                "&:hover": {
+                  backgroundColor: "#666",
+                },
+              },
+            }}
           >
             <Table>
               <TableHead>
                 <TableRow>
-
-<TableCell sx={{ width: "200px", padding: "1px 8px" }}>
-      <TableSortLabel
-        active={orderBy === "name"}
-        direction={orderBy === "name" ? order : "asc"}
-        onClick={() => handleRequestSort("name")}
-      >
-        <Typography variant="body1" fontWeight="bold">
-          Department
-        </Typography>
-      </TableSortLabel>
-    </TableCell>
-    <TableCell sx={{ width: "150px", padding: "1px 8px" }}>
-      <TableSortLabel
-        active={orderBy === "displayName"}
-        direction={orderBy === "displayName" ? order : "asc"}
-        onClick={() => handleRequestSort("displayName")}
-      >
-        <Typography variant="body1" fontWeight="bold">
-          Short Name
-        </Typography>
-      </TableSortLabel>
-    </TableCell>
-    <TableCell sx={{ width: "150px", padding: "1px 8px" }}>
-    <Typography variant="body1" fontWeight="bold">
-          Storage Allocated
-        </Typography>
-      </TableCell>
-    <TableCell sx={{ width: "150px", padding: "1px 8px" }}>
-      <TableSortLabel
-        active={orderBy === "roles"}
-        direction={orderBy === "roles" ? order : "asc"}
-        onClick={() => handleRequestSort("roles")}
-      >
-        <Typography variant="body1" fontWeight="bold">
-          Number of Roles
-        </Typography>
-      </TableSortLabel>
-    </TableCell>
-    <TableCell sx={{ width: "150px", padding: "1px 8px" }}>
-      <Typography variant="body1" fontWeight="bold">
-        Actions
-      </Typography>
-    </TableCell>
+                  <TableCell sx={{ width: "200px", padding: "1px 8px" }}>
+                    <TableSortLabel
+                      active={orderBy === "name"}
+                      direction={orderBy === "name" ? order : "asc"}
+                      onClick={() => handleRequestSort("name")}
+                    >
+                      <Typography variant="body1" fontWeight="bold">
+                        Department
+                      </Typography>
+                    </TableSortLabel>
+                  </TableCell>
+                  <TableCell sx={{ width: "150px", padding: "1px 8px" }}>
+                    <TableSortLabel
+                      active={orderBy === "displayName"}
+                      direction={orderBy === "displayName" ? order : "asc"}
+                      onClick={() => handleRequestSort("displayName")}
+                    >
+                      <Typography variant="body1" fontWeight="bold">
+                        Short Name
+                      </Typography>
+                    </TableSortLabel>
+                  </TableCell>
+                  <TableCell sx={{ width: "150px", padding: "1px 8px" }}>
+                    <Typography variant="body1" fontWeight="bold">
+                      Storage Allocated
+                    </Typography>
+                  </TableCell>
+                  <TableCell sx={{ width: "150px", padding: "1px 8px" }}>
+                    <TableSortLabel
+                      active={orderBy === "roles"}
+                      direction={orderBy === "roles" ? order : "asc"}
+                      onClick={() => handleRequestSort("roles")}
+                    >
+                      <Typography variant="body1" fontWeight="bold">
+                        Number of Roles
+                      </Typography>
+                    </TableSortLabel>
+                  </TableCell>
+                  <TableCell sx={{ width: "150px", padding: "1px 8px" }}>
+                    <Typography variant="body1" fontWeight="bold">
+                      Actions
+                    </Typography>
+                  </TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -797,31 +839,31 @@ const handleChangeRowsPerPage = (event) => {
               </TableBody>
             </Table>
           </TableContainer>
-<TablePagination
-  component="div"
-  count={departments?.length || 0}
-  page={page}
-  onPageChange={handleChangePage}
-  rowsPerPage={rowsPerPage}
-  onRowsPerPageChange={handleChangeRowsPerPage}  // Add this line
-  rowsPerPageOptions={[25, 50]}
-  sx={{
-    position: "sticky",
-    bottom: 0,
-    bgcolor: "white",
-    borderTop: "1px solid #ddd",
-    "& .MuiToolbar-root": {
-      height: "36px",
-      minHeight: "36px",
-      paddingLeft: "16px",
-      paddingRight: "16px",
-    },
-    "& .MuiTablePagination-select": {
-      paddingTop: 0,
-      paddingBottom: 0,
-    },
-  }}
-/>
+          <TablePagination
+            component="div"
+            count={departments?.length || 0}
+            page={page}
+            onPageChange={handleChangePage}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={handleChangeRowsPerPage} // Add this line
+            rowsPerPageOptions={[25, 50]}
+            sx={{
+              position: "sticky",
+              bottom: 0,
+              bgcolor: "white",
+              borderTop: "1px solid #ddd",
+              "& .MuiToolbar-root": {
+                height: "36px",
+                minHeight: "36px",
+                paddingLeft: "16px",
+                paddingRight: "16px",
+              },
+              "& .MuiTablePagination-select": {
+                paddingTop: 0,
+                paddingBottom: 0,
+              },
+            }}
+          />
         </Box>
       </Box>
 
@@ -972,27 +1014,27 @@ const handleChangeRowsPerPage = (event) => {
               }
             />
             <FormControl fullWidth size="small">
-        <InputLabel id="storage-label">Storage Allocation</InputLabel>
-        <Select
-          labelId="storage-label"
-          value={newDepartment.storage || '50GB'}
-          label="Storage Allocation"
-          onChange={(e) =>
-            setNewDepartment((prev) => ({
-              ...prev,
-              storage: e.target.value,
-            }))
-          }
-          required
-          error={!newDepartment.storage && newDepartment.submitted}
-        >
-          {[25, 50, 75, 100, 150, 200].map((size) => (
-            <MenuItem key={size} value={`${size}GB`}>
-              {size} GB
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
+              <InputLabel id="storage-label">Storage Allocation</InputLabel>
+              <Select
+                labelId="storage-label"
+                value={newDepartment.storage || "50GB"}
+                label="Storage Allocation"
+                onChange={(e) =>
+                  setNewDepartment((prev) => ({
+                    ...prev,
+                    storage: e.target.value,
+                  }))
+                }
+                required
+                error={!newDepartment.storage && newDepartment.submitted}
+              >
+                {[25, 50, 75, 100, 150, 200].map((size) => (
+                  <MenuItem key={size} value={`${size}GB`}>
+                    {size} GB
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
             <TextField
               size="small"
               label="Display Name"
@@ -1039,7 +1081,7 @@ const handleChangeRowsPerPage = (event) => {
                 name: "",
                 displayName: "",
                 initialRole: "",
-                storage: '50GB',
+                storage: "50GB",
                 submitted: false,
               });
             }}
