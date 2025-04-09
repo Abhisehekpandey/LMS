@@ -16,6 +16,7 @@ import {
   Work as DepartmentRolesIcon,
   Timeline as TimelineIcon,
   ManageAccounts as LDAPIcon,
+  Dashboard as DashboardIcon
 } from "@mui/icons-material";
 import { Link, useLocation } from "react-router-dom";
 
@@ -61,6 +62,7 @@ const Sidebar = () => {
     { path: '/department', icon: <DepartmentRolesIcon />, text: 'Department' },
     { path: '/angelbot', icon: <TimelineIcon />, text: 'AngelBot' },
     { path: '/ldap-config', icon: <LDAPIcon />, text: 'LDAP Settings' },
+    { path: '/company-dashboard', icon: <DashboardIcon />, text: 'Dashboard' },
   ];
 
   return (
