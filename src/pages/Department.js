@@ -23,6 +23,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Tooltip
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
@@ -51,6 +52,7 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
+import { Checkbox } from '@mui/material';
 
 function Department({ departments, setDepartments, onThemeToggle }) {
   // Add pagination state
@@ -99,6 +101,42 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     roleIndex: null,
     value: "",
   });
+
+  // Add these at the top of your component with other state declarations
+const [selected, setSelected] = useState([]);
+
+// Add these handler functions
+const handleSelectAllClick = (event) => {
+  if (event.target.checked) {
+    const newSelected = sortedDepartments.map((dept) => dept.name);
+    setSelected(newSelected);
+    return;
+  }
+  setSelected([]);
+};
+
+const handleClick = (event, name) => {
+  const selectedIndex = selected.indexOf(name);
+  let newSelected = [];
+
+  if (selectedIndex === -1) {
+    newSelected = newSelected.concat(selected, name);
+  } else if (selectedIndex === 0) {
+    newSelected = newSelected.concat(selected.slice(1));
+  } else if (selectedIndex === selected.length - 1) {
+    newSelected = newSelected.concat(selected.slice(0, -1));
+  } else if (selectedIndex > 0) {
+    newSelected = newSelected.concat(
+      selected.slice(0, selectedIndex),
+      selected.slice(selectedIndex + 1)
+    );
+  }
+
+  setSelected(newSelected);
+};
+
+const isSelected = (name) => selected.indexOf(name) !== -1;
+
 
   // Add this handler function
   const handleChangeRowsPerPage = (event) => {
@@ -184,20 +222,22 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       const exportData = departments.map((dept) => ({
         Department: dept.name,
         "Display Name": dept.displayName,
-        "Storage Allocated": dept.storage || "50GB", // Add storage field
-        "Number of Roles": dept.roles.length,
-        Roles: dept.roles.join(", "),
+        "Storage Allocated": dept.storage || "50GB",
+        Roles: `${dept.roles.length} (${dept.roles.join(", ")})`,
+        Status: dept.isActive ? "Active" : "Inactive", // Add Status column
+        Edit: "No",
       }));
 
       const ws = XLSX.utils.json_to_sheet(exportData);
 
-      // Add column widths
+      // Updated column widths to include Status
       const wscols = [
         { wch: 25 }, // Department
         { wch: 15 }, // Display Name
         { wch: 20 }, // Storage Allocated
-        { wch: 15 }, // Number of Roles
-        { wch: 40 }, // Roles
+        { wch: 50 }, // Combined Roles column
+        { wch: 15 }, // Status column
+        { wch: 10 }, // Edit column
       ];
       ws["!cols"] = wscols;
 
@@ -220,10 +260,275 @@ function Department({ departments, setDepartments, onThemeToggle }) {
   };
 
   const fileInputRef = useRef(null);
+
+  // const handleBulkUpload = async (event) => {
+  //   const file = event.target.files[0];
+  //   if (!file) return;
+
+  //   try {
+  //     const reader = new FileReader();
+  //     reader.onload = (e) => {
+  //       try {
+  //         const data = new Uint8Array(e.target.result);
+  //         const workbook = XLSX.read(data, { type: "array" });
+  //         const sheetName = workbook.SheetNames[0];
+  //         const worksheet = workbook.Sheets[sheetName];
+  //         const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+  //         // Validation check
+  //         const isValidData = jsonData.every(
+  //           (row) =>
+  //             row.Department &&
+  //             row["Display Name"] &&
+  //             row["Storage Allocated"] &&
+  //             row.Roles &&
+  //             row.Edit
+  //         );
+
+  //         if (!isValidData) {
+  //           setSnackbar({
+  //             open: true,
+  //             message: "Invalid file format. Please use the correct template.",
+  //             severity: "error",
+  //           });
+  //           return;
+  //         }
+
+  //         const skippedDepartments = [];
+  //         const addedDepartments = [];
+  //         const updatedDepartments = [];
+  //         let updatedDepartmentsList = [...departments];
+
+  //         jsonData.forEach((row) => {
+  //           const existingDeptIndex = updatedDepartmentsList.findIndex(
+  //             (d) => d.name === row.Department
+  //           );
+
+  //           const roles = row.Roles.includes("(")
+  //             ? row.Roles.split("(")[1]
+  //                 .split(")")[0]
+  //                 .split(",")
+  //                 .map((role) => role.trim())
+  //             : row.Roles.split(",").map((role) => role.trim());
+
+  //           // First check for existing departments
+  //           if (existingDeptIndex !== -1) {
+  //             // Department exists, check Edit value
+  //             if (row.Edit.toString().toLowerCase() === "yes") {
+  //               // Update the existing department
+  //               updatedDepartmentsList[existingDeptIndex] = {
+  //                 ...updatedDepartmentsList[existingDeptIndex],
+  //                 displayName: row["Display Name"],
+  //                 storage: row["Storage Allocated"],
+  //                 roles: roles,
+  //                 isActive: false,
+  //               };
+  //               updatedDepartments.push(row.Department);
+  //             } else {
+  //               // Skip if Edit is "No"
+  //               skippedDepartments.push(row.Department);
+  //             }
+  //           } else {
+  //             // New department, add it
+  //             updatedDepartmentsList.push({
+  //               name: row.Department,
+  //               displayName: row["Display Name"],
+  //               storage: row["Storage Allocated"] || "50GB",
+  //               roles: roles,
+  //               isActive: false,
+  //             });
+  //             addedDepartments.push(row.Department);
+  //           }
+  //         });
+
+  //         // Update state and localStorage
+  //         setDepartments(updatedDepartmentsList);
+  //         localStorage.setItem(
+  //           "departments",
+  //           JSON.stringify(updatedDepartmentsList)
+  //         );
+
+  //         // Prepare message
+  //         let message = [];
+  //         if (addedDepartments.length > 0) {
+  //           message.push(`Added ${addedDepartments.length} new departments`);
+  //         }
+  //         if (updatedDepartments.length > 0) {
+  //           message.push(
+  //             `Updated ${updatedDepartments.length} existing departments`
+  //           );
+  //         }
+  //         if (skippedDepartments.length > 0) {
+  //           message.push(
+  //             `Skipped ${skippedDepartments.length} existing departments`
+  //           );
+  //         }
+
+  //         setSnackbar({
+  //           open: true,
+  //           message: message.join(". ") || "No changes made",
+  //           severity:
+  //             addedDepartments.length > 0 || updatedDepartments.length > 0
+  //               ? "success"
+  //               : "info",
+  //         });
+  //       } catch (error) {
+  //         console.error("Error processing file:", error);
+  //         setSnackbar({
+  //           open: true,
+  //           message:
+  //             "Error processing file. Please ensure it matches the template format.",
+  //           severity: "error",
+  //         });
+  //       }
+  //     };
+
+  //     reader.readAsArrayBuffer(file);
+  //   } catch (error) {
+  //     console.error("Error uploading file:", error);
+  //     setSnackbar({
+  //       open: true,
+  //       message: "Error uploading file",
+  //       severity: "error",
+  //     });
+  //   }
+
+  //   event.target.value = "";
+  // };
+
+  // const handleBulkUpload = async (event) => {
+  //   const file = event.target.files[0];
+  //   if (!file) return;
+  
+  //   try {
+  //     const reader = new FileReader();
+  //     reader.onload = (e) => {
+  //       try {
+  //         const data = new Uint8Array(e.target.result);
+  //         const workbook = XLSX.read(data, { type: "array" });
+  //         const sheetName = workbook.SheetNames[0];
+  //         const worksheet = workbook.Sheets[sheetName];
+  //         const jsonData = XLSX.utils.sheet_to_json(worksheet);
+  
+  //         // Validation check for required fields
+  //         const isValidData = jsonData.every(
+  //           (row) =>
+  //             row.Department &&
+  //             row["Display Name"] &&
+  //             row["Storage Allocated"] &&
+  //             row.Role !== undefined && // Changed from Roles to Role
+  //             row.Status &&
+  //             row.Edit !== undefined // Check if Edit exists but allow any value
+  //         );
+  
+  //         if (!isValidData) {
+  //           setSnackbar({
+  //             open: true,
+  //             message: "Invalid file format. Please use the correct template.",
+  //             severity: "error",
+  //           });
+  //           return;
+  //         }
+  
+  //         const skippedDepartments = [];
+  //         const addedDepartments = [];
+  //         const updatedDepartments = [];
+  //         let updatedDepartmentsList = [...departments];
+  
+  //         // Group rows by department
+  //         const departmentGroups = {};
+  //         jsonData.forEach((row) => {
+  //           if (!departmentGroups[row.Department]) {
+  //             departmentGroups[row.Department] = [];
+  //           }
+  //           departmentGroups[row.Department].push(row);
+  //         });
+  
+  //         // Process each department
+  //         Object.entries(departmentGroups).forEach(([deptName, rows]) => {
+  //           const existingDeptIndex = updatedDepartmentsList.findIndex(
+  //             (d) => d.name === deptName
+  //           );
+  
+  //           // Get all roles for this department
+  //           const roles = rows.map(row => row.Role).filter(role => role); // Filter out empty roles
+  
+  //           if (existingDeptIndex !== -1) {
+  //             // Department exists, check Edit value
+  //             if (rows.some(row => row.Edit.toString().toLowerCase() === "yes")) {
+  //               // Update the existing department
+  //               updatedDepartmentsList[existingDeptIndex] = {
+  //                 ...updatedDepartmentsList[existingDeptIndex],
+  //                 displayName: rows[0]["Display Name"],
+  //                 storage: rows[0]["Storage Allocated"],
+  //                 roles: roles,
+  //                 isActive: rows[0].Status.toLowerCase() === "active"
+  //               };
+  //               updatedDepartments.push(deptName);
+  //             } else {
+  //               skippedDepartments.push(deptName);
+  //             }
+  //           } else {
+  //             // New department
+  //             updatedDepartmentsList.push({
+  //               name: deptName,
+  //               displayName: rows[0]["Display Name"],
+  //               storage: rows[0]["Storage Allocated"],
+  //               roles: roles,
+  //               isActive: rows[0].Status.toLowerCase() === "active"
+  //             });
+  //             addedDepartments.push(deptName);
+  //           }
+  //         });
+  
+  //         // Update state and localStorage
+  //         setDepartments(updatedDepartmentsList);
+  //         localStorage.setItem("departments", JSON.stringify(updatedDepartmentsList));
+  
+  //         // Prepare message
+  //         let message = [];
+  //         if (addedDepartments.length > 0) {
+  //           message.push(`Added ${addedDepartments.length} new departments`);
+  //         }
+  //         if (updatedDepartments.length > 0) {
+  //           message.push(`Updated ${updatedDepartments.length} existing departments`);
+  //         }
+  //         if (skippedDepartments.length > 0) {
+  //           message.push(`Skipped ${skippedDepartments.length} existing departments`);
+  //         }
+  
+  //         setSnackbar({
+  //           open: true,
+  //           message: message.join(". ") || "No changes made",
+  //           severity: addedDepartments.length > 0 || updatedDepartments.length > 0 ? "success" : "info"
+  //         });
+  //       } catch (error) {
+  //         console.error("Error processing file:", error);
+  //         setSnackbar({
+  //           open: true,
+  //           message: "Error processing file. Please ensure it matches the template format.",
+  //           severity: "error"
+  //         });
+  //       }
+  //     };
+  
+  //     reader.readAsArrayBuffer(file);
+  //   } catch (error) {
+  //     console.error("Error uploading file:", error);
+  //     setSnackbar({
+  //       open: true,
+  //       message: "Error uploading file",
+  //       severity: "error"
+  //     });
+  //   }
+  
+  //   event.target.value = "";
+  // };
+
   const handleBulkUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
-
+  
     try {
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -233,16 +538,18 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           const sheetName = workbook.SheetNames[0];
           const worksheet = workbook.Sheets[sheetName];
           const jsonData = XLSX.utils.sheet_to_json(worksheet);
-
-          // Update validation to include Storage Allocated
+  
+          // Validation check for required fields
           const isValidData = jsonData.every(
             (row) =>
               row.Department &&
               row["Display Name"] &&
               row["Storage Allocated"] &&
-              row.Roles
+              row.Role !== undefined && // Changed from Roles to Role
+              row.Status &&
+              row.Edit !== undefined // Check if Edit exists but allow any value
           );
-
+  
           if (!isValidData) {
             setSnackbar({
               open: true,
@@ -251,63 +558,99 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             });
             return;
           }
-
-          // Update department mapping to include storage
-          const updatedDepartments = jsonData.map((row) => ({
-            name: row.Department,
-            displayName: row["Display Name"],
-            storage: row["Storage Allocated"] || "50GB", // Include storage with default
-            roles: row.Roles.split(",").map((role) => role.trim()),
-          }));
-
-          // Merge with existing departments
-          const mergedDepartments = [...(departments || [])];
-          updatedDepartments.forEach((newDept) => {
-            const existingDeptIndex = mergedDepartments.findIndex(
-              (d) => d.name === newDept.name
+  
+          const skippedDepartments = [];
+          const addedDepartments = [];
+          const updatedDepartments = [];
+          let updatedDepartmentsList = [...departments];
+  
+          // Group rows by department
+          const departmentGroups = {};
+          jsonData.forEach((row) => {
+            if (!departmentGroups[row.Department]) {
+              departmentGroups[row.Department] = [];
+            }
+            departmentGroups[row.Department].push(row);
+          });
+  
+          // Process each department
+          Object.entries(departmentGroups).forEach(([deptName, rows]) => {
+            const existingDeptIndex = updatedDepartmentsList.findIndex(
+              (d) => d.name === deptName
             );
-            if (existingDeptIndex === -1) {
-              mergedDepartments.push(newDept);
+  
+            // Get all roles for this department
+            const roles = rows.map(row => row.Role).filter(role => role); // Filter out empty roles
+  
+            if (existingDeptIndex !== -1) {
+              // Department exists, check Edit value
+              if (rows.some(row => row.Edit.toString().toLowerCase() === "yes")) {
+                // Update the existing department
+                updatedDepartmentsList[existingDeptIndex] = {
+                  ...updatedDepartmentsList[existingDeptIndex],
+                  displayName: rows[0]["Display Name"],
+                  storage: rows[0]["Storage Allocated"],
+                  roles: roles,
+                  isActive: rows[0].Status.toLowerCase() === "active"
+                };
+                updatedDepartments.push(deptName);
+              } else {
+                skippedDepartments.push(deptName);
+              }
             } else {
-              // Update existing department with new data
-              const existingRoles = new Set(
-                mergedDepartments[existingDeptIndex].roles
-              );
-              newDept.roles.forEach((role) => existingRoles.add(role));
-              mergedDepartments[existingDeptIndex] = {
-                ...mergedDepartments[existingDeptIndex],
-                storage: newDept.storage, // Update storage
-                roles: Array.from(existingRoles),
-              };
+              // New department
+              updatedDepartmentsList.push({
+                name: deptName,
+                displayName: rows[0]["Display Name"],
+                storage: rows[0]["Storage Allocated"],
+                roles: roles,
+                isActive: rows[0].Status.toLowerCase() === "active"
+              });
+              addedDepartments.push(deptName);
             }
           });
-
-          setDepartments(mergedDepartments);
+  
+          // Update state and localStorage
+          setDepartments(updatedDepartmentsList);
+          localStorage.setItem("departments", JSON.stringify(updatedDepartmentsList));
+  
+          // Prepare message
+          let message = [];
+          if (addedDepartments.length > 0) {
+            message.push(`Added ${addedDepartments.length} new departments`);
+          }
+          if (updatedDepartments.length > 0) {
+            message.push(`Updated ${updatedDepartments.length} existing departments`);
+          }
+          if (skippedDepartments.length > 0) {
+            message.push(`Skipped ${skippedDepartments.length} existing departments`);
+          }
+  
           setSnackbar({
             open: true,
-            message: `Successfully uploaded ${updatedDepartments.length} departments`,
-            severity: "success",
+            message: message.join(". ") || "No changes made",
+            severity: addedDepartments.length > 0 || updatedDepartments.length > 0 ? "success" : "info"
           });
         } catch (error) {
+          console.error("Error processing file:", error);
           setSnackbar({
             open: true,
-            message:
-              "Error processing file. Please ensure it matches the template format.",
-            severity: "error",
+            message: "Error processing file. Please ensure it matches the template format.",
+            severity: "error"
           });
         }
       };
-
+  
       reader.readAsArrayBuffer(file);
     } catch (error) {
+      console.error("Error uploading file:", error);
       setSnackbar({
         open: true,
         message: "Error uploading file",
-        severity: "error",
+        severity: "error"
       });
     }
-
-    // Clear the file input
+  
     event.target.value = "";
   };
 
@@ -347,7 +690,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     });
   }, [departments, order, orderBy]);
 
-
+ 
   const StyledTableRow = styled(TableRow)(({ theme }) => ({
     "&:nth-of-type(odd)": {
       backgroundColor: "transparent",
@@ -358,6 +701,12 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     "&:hover": {
       backgroundColor: "rgba(0, 0, 0, 0.04) !important",
     },
+    "&.Mui-selected": {
+      backgroundColor: "rgba(25, 118, 210, 0.08) !important",
+    },
+    "&.Mui-selected:hover": {
+      backgroundColor: "rgba(25, 118, 210, 0.12) !important",
+    },
     "& .MuiTableCell-root": {
       padding: "2px 8px",
       height: "32px",
@@ -366,7 +715,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       borderBottom: "1px solid #e0e0e0",
       whiteSpace: "nowrap",
     },
-    // Remove any margin or padding between rows
     margin: 0,
     borderSpacing: 0,
     transition: "background-color 0.1s ease",
@@ -502,33 +850,188 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     setDepartmentToDelete(null);
   };
 
- 
+  // const handleTemplateDownload = () => {
+  //   const template = [
+  //     {
+  //       Department: "Example Department",
+  //       "Display Name": "EXD",
+  //       "Storage Allocated": "50GB",
+  //       Roles: "3 (Role1, Role2, Role3)",
+  //       Status: "Active", // Add Status column in template
+  //       Edit: "No",
+  //     },
+  //   ];
+
+  //   const workbook = XLSX.utils.book_new();
+  //   const worksheet = XLSX.utils.json_to_sheet(template);
+
+  //   const wscols = [
+  //     { wch: 25 }, // Department
+  //     { wch: 15 }, // Display Name
+  //     { wch: 20 }, // Storage Allocated
+  //     { wch: 50 }, // Combined Roles column
+  //     { wch: 15 }, // Status column
+  //     { wch: 10 }, // Edit column
+  //   ];
+  //   worksheet["!cols"] = wscols;
+
+  //   XLSX.utils.book_append_sheet(workbook, worksheet, "Template");
+  //   XLSX.writeFile(workbook, "department_upload_template.xlsx");
+  // };
 
   const handleTemplateDownload = () => {
     const template = [
       {
         Department: "Example Department",
         "Display Name": "EXD",
-        "Storage Allocated": "50GB", // Add storage field
-        Roles: "Role1, Role2, Role3",
+        "Storage Allocated": "50GB",
+        Role: "Role1",
+        Status: "Active",
+        Edit: "No",
       },
+      {
+        Department: "Example Department",
+        "Display Name": "EXD",
+        "Storage Allocated": "50GB",
+        Role: "Role2",
+        Status: "Active",
+        Edit: "No",
+      },
+      {
+        Department: "Example Department",
+        "Display Name": "EXD",
+        "Storage Allocated": "50GB",
+        Role: "Role3",
+        Status: "Active",
+        Edit: "No",
+      }
     ];
-
+  
     const workbook = XLSX.utils.book_new();
     const worksheet = XLSX.utils.json_to_sheet(template);
-
-    // Add column widths
+  
     const wscols = [
       { wch: 25 }, // Department
       { wch: 15 }, // Display Name
       { wch: 20 }, // Storage Allocated
-      { wch: 40 }, // Roles
+      { wch: 30 }, // Role
+      { wch: 15 }, // Status
+      { wch: 10 }, // Edit
     ];
     worksheet["!cols"] = wscols;
-
+  
     XLSX.utils.book_append_sheet(workbook, worksheet, "Template");
     XLSX.writeFile(workbook, "department_upload_template.xlsx");
   };
+
+  // const handleBulkDownloadSelected = (selectedItems) => {
+  //   try {
+  //     const selectedDepartments = departments.filter(dept => 
+  //       selectedItems.includes(dept.name)
+  //     );
+  
+  //     const exportData = selectedDepartments.map((dept) => ({
+  //       Department: dept.name,
+  //       "Display Name": dept.displayName,
+  //       "Storage Allocated": dept.storage || "50GB",
+  //       Roles: `${dept.roles.length} (${dept.roles.join(", ")})`,
+  //       Status: dept.isActive ? "Active" : "Inactive",
+  //       Edit: "No",
+  //     }));
+  
+  //     const ws = XLSX.utils.json_to_sheet(exportData);
+  
+  //     const wscols = [
+  //       { wch: 25 }, // Department
+  //       { wch: 15 }, // Display Name
+  //       { wch: 20 }, // Storage Allocated
+  //       { wch: 50 }, // Combined Roles column
+  //       { wch: 15 }, // Status column
+  //       { wch: 10 }, // Edit column
+  //     ];
+  //     ws["!cols"] = wscols;
+  
+  //     const wb = XLSX.utils.book_new();
+  //     XLSX.utils.book_append_sheet(wb, ws, "Selected Departments");
+  //     XLSX.writeFile(wb, "selected_departments.xlsx");
+  
+  //     setSnackbar({
+  //       open: true,
+  //       message: `Successfully exported ${selectedItems.length} departments`,
+  //       severity: "success",
+  //     });
+  //   } catch (error) {
+  //     setSnackbar({
+  //       open: true,
+  //       message: "Error exporting selected departments",
+  //       severity: "error",
+  //     });
+  //   }
+  // };
+
+  const handleBulkDownloadSelected = (selectedItems) => {
+    try {
+      const selectedDepartments = departments.filter(dept => 
+        selectedItems.includes(dept.name)
+      );
+  
+      // Create expanded data with separate rows for each role
+      const exportData = selectedDepartments.flatMap((dept) => {
+        // If department has no roles, create one row with empty role
+        if (!dept.roles || dept.roles.length === 0) {
+          return [{
+            Department: dept.name,
+            "Display Name": dept.displayName,
+            "Storage Allocated": dept.storage || "50GB",
+            Role: "",
+            Status: dept.isActive ? "Active" : "Inactive",
+            Edit: "No",
+          }];
+        }
+  
+        // Create a row for each role
+        return dept.roles.map(role => ({
+          Department: dept.name,
+          "Display Name": dept.displayName,
+          "Storage Allocated": dept.storage || "50GB",
+          Role: role,
+          Status: dept.isActive ? "Active" : "Inactive",
+          Edit: "No",
+        }));
+      });
+  
+      const ws = XLSX.utils.json_to_sheet(exportData);
+  
+      const wscols = [
+        { wch: 25 }, // Department
+        { wch: 15 }, // Display Name
+        { wch: 20 }, // Storage Allocated
+        { wch: 30 }, // Role
+        { wch: 15 }, // Status
+        { wch: 10 }, // Edit
+      ];
+      ws["!cols"] = wscols;
+  
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Selected Departments");
+      XLSX.writeFile(wb, "selected_departments.xlsx");
+  
+      setSnackbar({
+        open: true,
+        message: `Successfully exported ${selectedItems.length} departments`,
+        severity: "success",
+      });
+    } catch (error) {
+      console.error("Export error:", error);
+      setSnackbar({
+        open: true,
+        message: "Error exporting selected departments",
+        severity: "error",
+      });
+    }
+  };
+
+  
   return (
     <Box
       sx={{
@@ -550,7 +1053,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         <Navbar onThemeToggle={onThemeToggle} />
         {/* <Box sx={{ p: 3, marginLeft: "50px", overflow: "hidden" }}> */}
         <Box
-         
           sx={{
             p: 0,
             marginLeft: "64px", // Keep the sidebar margin
@@ -560,12 +1062,11 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             height: "calc(100vh - 64px)", // Adjust height to account for top margin
           }}
         >
-          
           <TableContainer
             component={Paper}
-            
+          
             sx={{
-              height: "calc(100vh - 96px)", // Adjust for the new top margin
+              height: "calc(100vh - 96px)",
               "& .MuiTableHead-root": {
                 position: "sticky",
                 top: 0,
@@ -573,14 +1074,16 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 backgroundColor: "#f5f5f5",
               },
               "& .MuiTableHead-root .MuiTableCell-root": {
-                padding: "1px 8px",
-                height: "20px",
                 backgroundColor: "#f5f5f5",
                 fontWeight: "bold",
                 borderBottom: "2px solid #ddd",
               },
+              "& .MuiTableCell-root": {
+                padding: "2px 8px",
+                height: "32px",
+              },
               boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-              borderRadius: "4px", // Add slight border radius
+              borderRadius: "4px",
               overflow: "auto",
               position: "relative",
             }}
@@ -588,14 +1091,33 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             <Table>
               <TableHead>
                 <TableRow>
+                <TableCell padding="checkbox"  sx={{ 
+        width: "48px",
+        padding: "2px 8px",
+        height: "32px"
+      }}>
+      <Checkbox
+        color="primary"
+        indeterminate={selected.length > 0 && selected.length < sortedDepartments.length}
+        checked={sortedDepartments.length > 0 && selected.length === sortedDepartments.length}
+        onChange={handleSelectAllClick}
+        inputProps={{
+          'aria-label': 'select all departments',
+        }}
+        size="small"
+      />
+    </TableCell>
+                  
                   {/* <TableCell sx={{ width: "200px", padding: "1px 8px" }}> */}
-                  <TableCell sx={{ 
-  width: "200px", 
-  padding: "2px 8px",
-  height: "32px",
-  fontWeight: "bold",
-  color: "#444",
-}}>
+                  <TableCell
+                    sx={{
+                      width: "200px",
+                      padding: "2px 8px",
+                      height: "32px",
+                      fontWeight: "bold",
+                      color: "#444",
+                    }}
+                  >
                     <TableSortLabel
                       active={orderBy === "name"}
                       direction={orderBy === "name" ? order : "asc"}
@@ -607,13 +1129,16 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     </TableSortLabel>
                   </TableCell>
                   {/* <TableCell sx={{ width: "150px", padding: "1px 8px" }}> */}
-                  <TableCell sx={{ 
-  width: "200px", 
-  padding: "2px 8px",
-  height: "32px",
-  fontWeight: "bold",
-  color: "#444",
-}}>
+                  <TableCell
+                    sx={{
+                      width: "150px",
+                      padding: "2px 8px",
+                      height: "32px",
+                      fontWeight: "bold",
+                      color: "#444",
+                      textAlign: 'center'
+                    }}
+                  >
                     <TableSortLabel
                       active={orderBy === "displayName"}
                       direction={orderBy === "displayName" ? order : "asc"}
@@ -625,25 +1150,32 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     </TableSortLabel>
                   </TableCell>
                   {/* <TableCell sx={{ width: "150px", padding: "1px 8px" }}> */}
-                  <TableCell sx={{ 
-  width: "200px", 
-  padding: "2px 8px",
-  height: "32px",
-  fontWeight: "bold",
-  color: "#444",
-}}>
+                  <TableCell
+                    sx={{
+                      width: "150px",
+                      padding: "2px 8px",
+                      height: "32px",
+                      fontWeight: "bold",
+                      color: "#444",
+                      textAlign: 'center'
+                    }}
+                  >
                     <Typography variant="body1" fontWeight="bold">
                       Storage Allocated
                     </Typography>
                   </TableCell>
                   {/* <TableCell sx={{ width: "150px", padding: "1px 8px" }}> */}
-                  <TableCell sx={{ 
-  width: "200px", 
-  padding: "2px 8px",
-  height: "32px",
-  fontWeight: "bold",
-  color: "#444",
-}}>
+                  <TableCell
+                    sx={{
+                      width: "150px",
+                      padding: "2px 8px",
+                      height: "32px",
+                      fontWeight: "bold",
+                      color: "#444",
+                      textAlign:'center'
+                      
+                    }}
+                  >
                     <TableSortLabel
                       active={orderBy === "roles"}
                       direction={orderBy === "roles" ? order : "asc"}
@@ -655,13 +1187,18 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     </TableSortLabel>
                   </TableCell>
                   {/* <TableCell sx={{ width: "150px", padding: "1px 8px" }}> */}
-                  <TableCell sx={{ 
-  width: "200px", 
-  padding: "2px 8px",
-  height: "32px",
-  fontWeight: "bold",
-  color: "#444",
-}}>
+                  <TableCell
+                    sx={{
+                      width: "150px",
+                      padding: "2px 8px",
+                      height: "32px",
+                      fontWeight: "bold",
+                      color: "#444",
+                      textAlign: 'center'
+                      
+
+                    }}
+                  >
                     <Typography variant="body1" fontWeight="bold">
                       Actions
                     </Typography>
@@ -671,18 +1208,43 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               <TableBody>
                 {sortedDepartments
                   ?.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                  .map((dept, index) => (
+                  .map((dept, index) => {
+                    const isItemSelected = isSelected(dept.name); 
+                    return (
                     <React.Fragment key={index}>
-                      <StyledTableRow key={index}>
-                        <TableCell>{dept.name}</TableCell>
-                        <TableCell>{dept.displayName}</TableCell>
-                        <TableCell>{dept.storage}</TableCell>
-                        <TableCell>
+                      {/* <StyledTableRow key={index}> */}
+                      <StyledTableRow 
+          hover
+          onClick={(event) => handleClick(event, dept.name)}
+          role="checkbox"
+          aria-checked={isItemSelected}
+          tabIndex={-1}
+          selected={isItemSelected}
+        >
+          <TableCell padding="checkbox"  sx={{ 
+                width: "48px",
+                padding: "2px 8px",
+                height: "32px"
+              }}>
+            <Checkbox
+              color="primary"
+              checked={isItemSelected}
+              size="small"
+              onClick={(event) => event.stopPropagation()}
+              onChange={(event) => handleClick(event, dept.name)}
+            />
+          </TableCell>
+                      
+                        <TableCell  sx={{ padding: "2px 8px" }}>{dept.name}</TableCell>
+                        <TableCell sx={{ textAlign: 'center', padding: "2px 8px" }}>{dept.displayName}</TableCell>
+                        <TableCell sx={{ textAlign: 'center', padding: "2px 8px" }}>{dept.storage}</TableCell>
+                        <TableCell sx={{ padding: "2px 8px" }}>
                           <Box
                             sx={{
                               display: "flex",
                               alignItems: "center",
                               gap: 1,
+                              justifyContent: 'center'
                             }}
                           >
                             {dept.roles.length}
@@ -714,11 +1276,12 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                           </Box>
                         </TableCell>
 
-                        <TableCell>
+                        <TableCell sx={{ padding: "2px 8px" }}>
                           <Box
                             sx={{
                               display: "flex",
                               alignItems: "center",
+                              justifyContent: "center",
                               gap: 1,
                             }}
                           >
@@ -776,38 +1339,43 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                           style={{ paddingBottom: 0, paddingTop: 0 }}
                           colSpan={1}
                         > */}
-                        <TableCell 
-  style={{ 
-    paddingBottom: 0, 
-    paddingTop: 0, 
-    borderBottom: "none" ,
-    height: "auto",
-  }} 
-  colSpan={5}
->
+                        <TableCell
+                          style={{
+                            paddingBottom: 0,
+                            paddingTop: 0,
+                            borderBottom: "none",
+                            height: "auto",
+                          }}
+                          colSpan={6}
+                        >
                           <Collapse
                             in={openRows[index]}
                             timeout="auto"
                             unmountOnExit
                           >
                             {/* <Box sx={{ margin: 1 }}> */}
-                            <Box sx={{ 
-      margin: 0,
-      backgroundColor: "rgba(0, 0, 0, 0.01)",
-      borderRadius: 0,
-      padding: 0
-    }}>
+                            <Box
+                              sx={{
+                                margin: 0,
+                                backgroundColor: "rgba(0, 0, 0, 0.01)",
+                                borderRadius: 0,
+                                padding: 0,
+                              }}
+                            >
                               {/* <List dense> */}
                               {/* <List dense sx={{ padding: 0 }}> */}
-                              <List dense sx={{ 
-        padding: 0,
-        margin: 0,
-        "& .MuiListItem-root": {
-          padding: "2px 8px",
-          minHeight: "32px",
-          borderBottom: "1px solid #f0f0f0"
-        }
-      }}>
+                              <List
+                                dense
+                                sx={{
+                                  padding: 0,
+                                  margin: 0,
+                                  "& .MuiListItem-root": {
+                                    padding: "2px 8px",
+                                    minHeight: "32px",
+                                    borderBottom: "1px solid #f0f0f0",
+                                  },
+                                }}
+                              >
                                 {dept.roles.map((role, roleIndex) => (
                                   <ListItem
                                     key={roleIndex}
@@ -883,7 +1451,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                         </TableCell>
                       </StyledTableRow>
                     </React.Fragment>
-                  ))}
+                  )})}
               </TableBody>
             </Table>
           </TableContainer>
@@ -915,108 +1483,69 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         </Box>
       </Box>
 
-      <Box sx={{ position: "fixed", bottom: 48, right: 16, zIndex: 1000 }}>
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleBulkUpload}
-          accept=".xlsx,.xls"
-          style={{ display: "none" }}
-        />
-        <SpeedDial
-          ariaLabel="Department actions"
-          icon={<FolderIcon />}
-          direction="left"
-          FabProps={{
-            sx: {
-              bgcolor: "blue",
-              "&:hover": {
-                bgcolor: "blue",
-              },
-              width: 25,
-              height: 25,
-              "& .MuiSpeedDialIcon-root": {
-                fontSize: "1.2rem",
-                color: "white",
-              },
-            },
-          }}
-        >
-          <SpeedDialAction
-            icon={<UploadFileIcon sx={{ fontSize: "1.2rem" }} />}
-            tooltipTitle="Bulk Upload"
-            onClick={() => fileInputRef.current?.click()}
-            FabProps={{
-              sx: {
-                bgcolor: "yellow",
-                "&:hover": {
-                  bgcolor: "yellow",
-                },
-                width: 20,
-                height: 20,
-                "& .MuiIcon-root": {
-                  fontSize: "1.2rem",
-                },
-              },
-            }}
-          />
-          <SpeedDialAction
-            icon={<DownloadIcon />}
-            tooltipTitle="Bulk Download"
-            onClick={handleBulkDownload}
-            FabProps={{
-              sx: {
-                bgcolor: "yellow",
-                "&:hover": {
-                  bgcolor: "yellow",
-                },
-                width: 20,
-                height: 20,
-                "& .MuiIcon-root": {
-                  fontSize: "1.2rem",
-                },
-              },
-            }}
-          />
-          <SpeedDialAction
-            icon={<AddBusinessIcon sx={{ fontSize: "1.2rem" }} />}
-            tooltipTitle="Add Department"
-            onClick={() => setShowAddDepartment(true)}
-            FabProps={{
-              sx: {
-                bgcolor: "yellow",
-                "&:hover": {
-                  bgcolor: "yellow",
-                },
-                width: 20,
-                height: 20,
-                "& .MuiIcon-root": {
-                  fontSize: "1.2rem",
-                },
-              },
-            }}
-          />
+      
+      <Box sx={{ position: "fixed", bottom: 48, right: 36, zIndex: 1000 }}>
+  <input
+    type="file"
+    ref={fileInputRef}
+    onChange={handleBulkUpload}
+    accept=".xlsx,.xls"
+    style={{ display: "none" }}
+  />
+  
+  {/* Add conditional Bulk Download SpeedDial */}
+  {selected.length > 0 && (
+    <SpeedDial
+      ariaLabel="Bulk Download"
+      icon={<DownloadIcon />}
+      direction="left"
+      // sx={{ position: 'absolute', bottom: 60 }}
+      sx={{ 
+        position: 'absolute', 
+        bottom: 45, // Adjust this value to position it above the main SpeedDial
+        right: 0,
+      }}
+      FabProps={{
+        sx: {
+          bgcolor: "blue",
+          "&:hover": {
+            bgcolor: "blue",
+          },
+          width: 25,
+          height: 25,
+          "& .MuiSpeedDialIcon-root": {
+            fontSize: "1.2rem",
+            color: "white",
+          },
+        },
+      }}
+      onClick={() => handleBulkDownloadSelected(selected)}
+    />
+  )}
 
-          <SpeedDialAction
-            icon={<DownloadIcon />}
-            tooltipTitle="Download Template"
-            onClick={handleTemplateDownload}
-            FabProps={{
-              sx: {
-                bgcolor: "yellow",
-                "&:hover": {
-                  bgcolor: "yellow",
-                },
-                width: 20,
-                height: 20,
-                "& .MuiIcon-root": {
-                  fontSize: "1.2rem",
-                },
-              },
-            }}
-          />
-        </SpeedDial>
-      </Box>
+  <SpeedDial
+  ariaLabel="Department actions"
+  icon={<FolderIcon />}
+  onClick={() => setShowAddDepartment(true)}  // Add onClick here
+  direction="left"
+  FabProps={{
+    sx: {
+      bgcolor: "blue",
+      "&:hover": {
+        bgcolor: "blue",
+      },
+      width: 25,
+      height: 25,
+      "& .MuiSpeedDialIcon-root": {
+        fontSize: "1.2rem",
+        color: "white",
+      },
+    },
+  }}
+>
+  {/* Remove SpeedDialAction as we don't need it anymore */}
+</SpeedDial>
+</Box>
 
       <Snackbar
         open={snackbar.open}
@@ -1076,7 +1605,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 required
                 error={!newDepartment.storage && newDepartment.submitted}
               >
-                {[25, 50, 75, 100, 150, 200].map((size) => (
+                {[0,25, 50, 75, 100, 150, 200].map((size) => (
                   <MenuItem key={size} value={`${size}GB`}>
                     {size} GB
                   </MenuItem>
@@ -1120,26 +1649,70 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               }
             />
           </Box>
+
+    <Box sx={{ 
+  display: "flex", 
+  justifyContent: "space-between", // Change from center to space-between
+  alignItems: "center",
+  gap: 2, 
+  mt: 3,
+  pt: 2,
+  borderTop: "1px solid #eee",
+  width: "100%" // Add width
+}}>
+  <Box sx={{ display: "flex", gap: 1 }}> {/* Left side container */}
+    <Tooltip title="Bulk Upload">
+      <IconButton
+        onClick={() => fileInputRef.current?.click()}
+        sx={{
+          color: "primary.main",
+          "&:hover": {
+            backgroundColor: "rgba(25, 118, 210, 0.04)",
+          },
+        }}
+      >
+        <UploadFileIcon />
+      </IconButton>
+    </Tooltip>
+    <Tooltip title="Download Template">
+      <IconButton
+        onClick={handleTemplateDownload}
+        sx={{
+          color: "primary.main",
+          "&:hover": {
+            backgroundColor: "rgba(25, 118, 210, 0.04)",
+          },
+        }}
+      >
+        <DownloadIcon />
+      </IconButton>
+    </Tooltip>
+  </Box>
+  <Box sx={{ display: "flex", gap: 1 }}> {/* Right side - buttons */}
+    <Button
+      onClick={() => {
+        setShowAddDepartment(false);
+        setNewDepartment({
+          name: "",
+          displayName: "",
+          initialRole: "",
+          storage: "50GB",
+          submitted: false,
+        });
+      }}
+    >
+      Cancel
+    </Button>
+    <Button onClick={handleAddDepartment} color="primary" variant="contained">
+      Add
+    </Button>
+  </Box>
+  <Box sx={{ display: "flex", gap: 1 }}> {/* Right side container - for future use if needed */}
+    {/* Add any additional buttons/actions here */}
+  </Box>
+</Box>
         </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() => {
-              setShowAddDepartment(false);
-              setNewDepartment({
-                name: "",
-                displayName: "",
-                initialRole: "",
-                storage: "50GB",
-                submitted: false,
-              });
-            }}
-          >
-            Cancel
-          </Button>
-          <Button onClick={handleAddDepartment} color="primary">
-            Add
-          </Button>
-        </DialogActions>
+       
       </Dialog>
 
       <Dialog

@@ -53,6 +53,7 @@ import UploadFileIcon from "@mui/icons-material/UploadFile";
 import { visuallyHidden } from "@mui/utils";
 import DeleteSweepIcon from "@mui/icons-material/DeleteSweep";
 import { styled } from "@mui/material/styles";
+import { alpha } from "@mui/material/styles";
 
 const createData = (
   username,
@@ -61,7 +62,8 @@ const createData = (
   role,
   email,
   storageUsed,
-  status // Add status parameter
+  status ,// Add status parameter
+  phone // Add phone parameter
 ) => {
   return {
     username,
@@ -72,6 +74,8 @@ const createData = (
     storageUsed,
     manageStorage: "1GB",
     status: status || "pending", // Set default status as pending
+    phone: phone || "", // Add phone field with default empty string
+
   };
 };
 
@@ -188,6 +192,11 @@ const defaultRoles = [
   "Executive",
   "Director",
 ];
+const statusColors = {
+  active: "#4caf50", // Green
+  inactive: "#f44336", // Red
+  pending: "#ff9800", // Orange
+};
 
 const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
   const [rows, setRows] = useState(() => {
@@ -299,30 +308,32 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
       setSnackbarOpen(true);
     }
   };
-const handleBulkDownload = () => {
-  let dataToDownload = [];
+  const handleBulkDownload = () => {
+    let dataToDownload = [];
 
-  if (selected.length > 0) {
-    // Download only selected users
-    dataToDownload = rows
-      .filter((row) => selected.includes(row.name))
-      .map(({ activeLicense, ...row }) => ({ // Remove activeLicense from download
+    if (selected.length > 0) {
+      // Download only selected users
+      dataToDownload = rows
+        .filter((row) => selected.includes(row.name))
+        .map(({ activeLicense, ...row }) => ({
+          // Remove activeLicense from download
+          ...row,
+          edit: "No",
+        }));
+    } else {
+      // Download all users
+      dataToDownload = rows.map(({ activeLicense, ...row }) => ({
+        // Remove activeLicense from download
         ...row,
         edit: "No",
       }));
-  } else {
-    // Download all users
-    dataToDownload = rows.map(({ activeLicense, ...row }) => ({ // Remove activeLicense from download
-      ...row,
-      edit: "No",
-    }));
-  }
+    }
 
-  const worksheet = XLSX.utils.json_to_sheet(dataToDownload);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Users");
-  XLSX.writeFile(workbook, "users_data.xlsx");
-};
+    const worksheet = XLSX.utils.json_to_sheet(dataToDownload);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Users");
+    XLSX.writeFile(workbook, "users_data.xlsx");
+  };
   // Show snackbar
   const showSnackbar = (message) => {
     setSnackbarMessage(message);
@@ -679,139 +690,125 @@ const handleBulkDownload = () => {
     setHoveredRow(null);
   };
 
-  // Modify handleBulkUpload function
-  const handleBulkUpload = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
+  // Modify the handleBulkUpload function:
 
-    try {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: "array" });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+const handleBulkUpload = async (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
 
-        // Validate the data structure
-        const isValidData = jsonData.every(
-          (row) =>
-            row.username &&
-            row.name &&
-            row.department &&
-            row.role &&
-            row.email &&
-            row.storageUsed &&
-            row.status && // Add status validation
-            row.edit // Make sure edit column exists
-        );
+  try {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: "array" });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-        if (!isValidData) {
-          setSnackbarMessage(
-            "Invalid file format. Please use the correct template."
-          );
-          setSnackbarOpen(true);
-          return;
-        }
+      // Validate the data structure
+      const isValidData = jsonData.every(
+        (row) =>
+          row.username &&
+          row.name &&
+          row.department &&
+          row.role &&
+          row.email &&
+          row.storageUsed &&
+          row.edit
+      );
 
-        const existingEmails = new Set(
-          rows.map((row) => row.email.toLowerCase())
-        );
-        const existingNames = new Set(
-          rows.map((row) => row.name.toLowerCase())
-        );
-        const duplicateEmails = [];
-        const duplicateNames = [];
-        const newUsers = [];
-        const updatedUsers = [];
-        const ignoredRows = [];
-
-        jsonData.forEach((user) => {
-          // Check if this is an edit request
-          if (user.edit?.toLowerCase() === "yes") {
-            // Find existing user by email
-            const existingUserIndex = rows.findIndex(
-              (row) => row.email.toLowerCase() === user.email.toLowerCase()
-            );
-
-            if (existingUserIndex >= 0) {
-              // Create updated user object, preserving email
-              const existingEmail = rows[existingUserIndex].email;
-              updatedUsers.push({
-                ...user,
-                email: existingEmail, // Preserve original email
-              });
-            } else {
-              ignoredRows.push({
-                ...user,
-                reason: "User not found for editing",
-              });
-            }
-          }
-          // Handle new users (empty or missing edit column)
-          else if (!user.edit || user.edit.toLowerCase() === "no") {
-            const isDuplicateEmail = existingEmails.has(
-              user.email.toLowerCase()
-            );
-            const isDuplicateName = existingNames.has(user.name.toLowerCase());
-
-            if (isDuplicateEmail) {
-              duplicateEmails.push(user.email);
-              ignoredRows.push({ ...user, reason: "Duplicate email" });
-            } else if (isDuplicateName) {
-              duplicateNames.push(user.name);
-              ignoredRows.push({ ...user, reason: "Duplicate name" });
-            } else {
-              newUsers.push(user);
-              existingEmails.add(user.email.toLowerCase());
-              existingNames.add(user.name.toLowerCase());
-            }
-          }
-        });
-
-        // Update existing users
-        let updatedRows = [...rows];
-        updatedUsers.forEach((userToUpdate) => {
-          updatedRows = updatedRows.map((row) =>
-            row.email.toLowerCase() === userToUpdate.email.toLowerCase()
-              ? { ...userToUpdate, email: row.email } // Preserve original email
-              : row
-          );
-        });
-
-        // Add new users
-        const usersToAdd = newUsers.map((row) => ({
-          ...row,
-          activeLicense: false,
-          manageStorage: "1GB",
-        }));
-
-        updatedRows = [...updatedRows, ...usersToAdd];
-        setRows(updatedRows);
-        localStorage.setItem("dashboardRows", JSON.stringify(updatedRows));
-        setChangesMade(true);
-
-        // Prepare detailed message
-        const message = [
-          `Successfully processed ${jsonData.length} rows:`,
-          `- ${newUsers.length} new users added`,
-          `- ${updatedUsers.length} users updated`,
-          `- ${ignoredRows.length} rows ignored`,
-        ].join("\n");
-
-        setSnackbarMessage(message);
+      if (!isValidData) {
+        setSnackbarMessage("Invalid file format. Please use the correct template.");
         setSnackbarOpen(true);
-      };
+        return;
+      }
 
-      reader.readAsArrayBuffer(file);
-    } catch (error) {
-      console.error("Upload error:", error);
-      setSnackbarMessage("Error processing file. Please try again.");
+      const existingEmails = new Set(rows.map((row) => row.email.toLowerCase()));
+      const existingNames = new Set(rows.map((row) => row.name.toLowerCase()));
+      const duplicateEmails = [];
+      const duplicateNames = [];
+      const newUsers = [];
+      const updatedUsers = [];
+      const ignoredRows = [];
+
+      jsonData.forEach((user) => {
+        if (user.edit?.toLowerCase() === "yes") {
+          const existingUserIndex = rows.findIndex(
+            (row) => row.email.toLowerCase() === user.email.toLowerCase()
+          );
+
+          if (existingUserIndex >= 0) {
+            const existingEmail = rows[existingUserIndex].email;
+            updatedUsers.push({
+              ...user,
+              email: existingEmail,
+              status: rows[existingUserIndex].status // Preserve existing status
+            });
+          } else {
+            ignoredRows.push({
+              ...user,
+              reason: "User not found for editing"
+            });
+          }
+        } else {
+          const isDuplicateEmail = existingEmails.has(user.email.toLowerCase());
+          const isDuplicateName = existingNames.has(user.name.toLowerCase());
+
+          if (isDuplicateEmail) {
+            duplicateEmails.push(user.email);
+            ignoredRows.push({ ...user, reason: "Duplicate email" });
+          } else if (isDuplicateName) {
+            duplicateNames.push(user.name);
+            ignoredRows.push({ ...user, reason: "Duplicate name" });
+          } else {
+            newUsers.push({
+              ...user,
+              status: "pending", // Set status as pending for new users
+              manageStorage: "1GB",
+              phone: user.phone || ""
+            });
+            existingEmails.add(user.email.toLowerCase());
+            existingNames.add(user.name.toLowerCase());
+          }
+        }
+      });
+
+      // Update existing users
+      let updatedRows = [...rows];
+      updatedUsers.forEach((userToUpdate) => {
+        updatedRows = updatedRows.map((row) =>
+          row.email.toLowerCase() === userToUpdate.email.toLowerCase()
+            ? { ...userToUpdate, email: row.email }
+            : row
+        );
+      });
+
+      // Add new users with pending status
+      updatedRows = [...updatedRows, ...newUsers];
+      setRows(updatedRows);
+      localStorage.setItem("dashboardRows", JSON.stringify(updatedRows));
+      setChangesMade(true);
+
+      const message = [
+        `Successfully processed ${jsonData.length} rows:`,
+        `- ${newUsers.length} new users added (with pending status)`,
+        `- ${updatedUsers.length} users updated`,
+        `- ${ignoredRows.length} rows ignored`,
+      ].join("\n");
+
+      setSnackbarMessage(message);
       setSnackbarOpen(true);
-    }
+    };
 
-    event.target.value = "";
-  };
+    reader.readAsArrayBuffer(file);
+  } catch (error) {
+    console.error("Upload error:", error);
+    setSnackbarMessage("Error processing file. Please try again.");
+    setSnackbarOpen(true);
+  }
+
+  event.target.value = "";
+};
   // Add this handler function inside the Dashboard component
   const handleDeleteAll = () => {
     if (selected.length > 0) {
@@ -858,10 +855,11 @@ const handleBulkDownload = () => {
         Email: "Kapil@Example.Com",
         StorageUsed: "10GB",
         Status: "Inactive", // Add status column
+        Phone: "1234567890",
         Edit: "No",
       },
     ];
-  
+
     // Add column width specifications
     const wscols = [
       { wch: 15 }, // username
@@ -871,13 +869,14 @@ const handleBulkDownload = () => {
       { wch: 25 }, // email
       { wch: 15 }, // storageUsed
       { wch: 15 }, // status
+      { wch: 15 }, // phone
       { wch: 10 }, // edit
     ];
-  
+
     const workbook = XLSX.utils.book_new();
     const worksheet = XLSX.utils.json_to_sheet(template);
     worksheet["!cols"] = wscols;
-  
+
     XLSX.utils.book_append_sheet(workbook, worksheet, "Template");
     XLSX.writeFile(workbook, "user_upload_template.xlsx");
   };
@@ -904,7 +903,7 @@ const handleBulkDownload = () => {
           : row
       )
     );
-
+    setChangesMade(true);
     // Update localStorage immediately
     const updatedRows = rows.map((row) =>
       row.name === name ? { ...row, status: newStatus } : row
@@ -1058,56 +1057,64 @@ const handleBulkDownload = () => {
                     </Typography>
                   </TableCell>
                   <TableCell sx={{ width: "150px", padding: "2px" }}>
-  <Typography variant="body1" fontWeight="bold">
-    Manage Storage
-  </Typography>
-</TableCell>
+                    <Typography variant="body1" fontWeight="bold">
+                      Manage Storage
+                    </Typography>
+                  </TableCell>
                   <TableCell sx={{ width: "140px", padding: "2px" }}>
-  <Box
-    sx={{
-      display: "flex",
-      alignItems: "center",
-      // justifyContent: 'flex-start',
-      // gap: 0.5,
-      justifyContent: 'space-between', // Change from flex-start to space-between
-      width: '100%', // Ensure the box takes full width
-    }}
-  >
-    <Typography variant="body1" fontWeight="bold">
-      Tools
-    </Typography>
-    <Box sx={{ ml: 2 }}> {/* Add margin to create separation */}
-    <IconButton 
-      onClick={handleFilterClick}
-      size="small"
-      sx={{ 
-        padding: '2px',
-        marginLeft: '4px'
-      }}
-    >
-      <FilterListIcon fontSize="small" />
-    </IconButton>
-    <Menu
-      anchorEl={anchorEl}
-      open={Boolean(anchorEl)}
-      onClose={handleFilterClose}
-    >
-      <MenuItem onClick={() => handleFilterChange("All")}>
-        All
-      </MenuItem>
-      <MenuItem onClick={() => handleFilterChange("Active")}>
-        Active
-      </MenuItem>
-      <MenuItem onClick={() => handleFilterChange("Inactive")}>
-        Inactive
-      </MenuItem>
-      <MenuItem onClick={() => handleFilterChange("Pending")}>
-        Pending
-      </MenuItem>
-    </Menu>
-    </Box>
-  </Box>
-</TableCell>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        // justifyContent: 'flex-start',
+                        // gap: 0.5,
+                        justifyContent: "space-between", // Change from flex-start to space-between
+                        width: "100%", // Ensure the box takes full width
+                      }}
+                    >
+                      <Typography variant="body1" fontWeight="bold">
+                        Tools
+                      </Typography>
+                      <Box sx={{ ml: 2 }}>
+                        {" "}
+                        {/* Add margin to create separation */}
+                        <IconButton
+                          onClick={handleFilterClick}
+                          size="small"
+                          sx={{
+                            padding: "2px",
+                            marginLeft: "4px",
+                          }}
+                        >
+                          <FilterListIcon fontSize="small" />
+                        </IconButton>
+                        <Menu
+                          anchorEl={anchorEl}
+                          open={Boolean(anchorEl)}
+                          onClose={handleFilterClose}
+                        >
+                          <MenuItem onClick={() => handleFilterChange("All")}>
+                            All
+                          </MenuItem>
+                          <MenuItem
+                            onClick={() => handleFilterChange("Active")}
+                          >
+                            Active
+                          </MenuItem>
+                          <MenuItem
+                            onClick={() => handleFilterChange("Inactive")}
+                          >
+                            Inactive
+                          </MenuItem>
+                          <MenuItem
+                            onClick={() => handleFilterChange("Pending")}
+                          >
+                            Pending
+                          </MenuItem>
+                        </Menu>
+                      </Box>
+                    </Box>
+                  </TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -1295,48 +1302,70 @@ const handleBulkDownload = () => {
                                   display: "flex",
                                   alignItems: "center",
                                   gap: 0.5,
+                                  position: "relative",
+                                  zIndex: 1000,
                                 }}
                               >
-                                <FormControl
-                                  size="small"
-                                  sx={{ minWidth: 85 }}
+                                <Tooltip
+                                  title={
+                                    (row.status || "pending")
+                                      .charAt(0)
+                                      .toUpperCase() +
+                                    (row.status || "pending").slice(1)
+                                  }
+                                  placement="top"
                                 >
-                                  <Select
-                                    value={row.status || "pending"}
-                                    onChange={(e) =>
-                                      handleStatusChange(
-                                        row.name,
-                                        e.target.value
-                                      )
-                                    }
-                                    size="small"
-                                    sx={{
-                                      height: "24px",
-                                      fontSize: "0.75rem",
-                                      backgroundColor:
-                                        row.status === "active"
-                                          ? "rgba(76, 175, 80, 0.1)"
-                                          : row.status === "inactive"
-                                          ? "rgba(244, 67, 54, 0.1)"
-                                          : "rgba(158, 158, 158, 0.1)",
-                                      color:
-                                        row.status === "active"
-                                          ? "#2e7d32"
-                                          : row.status === "inactive"
-                                          ? "#d32f2f"
-                                          : "#757575",
-                                          '& .MuiSelect-select': {
-        padding: '2px 24px 2px 8px' // Adjust padding to make dropdown more compact
-      }
-                                    }}
-                                  >
-                                    <MenuItem value="active">Active</MenuItem>
-                                    <MenuItem value="pending">Pending</MenuItem>
-                                    <MenuItem value="inactive">
-                                      Inactive
-                                    </MenuItem>
-                                  </Select>
-                                </FormControl>
+                                  <Box>
+                                    <Switch
+                                      checked={row.status === "active"}
+                                      onChange={(e) => {
+                                        let newStatus;
+                                        // Allow changing status from any state
+                                        newStatus = e.target.checked
+                                          ? "active"
+                                          : "inactive";
+                                        handleStatusChange(row.name, newStatus);
+                                      }}
+                                      sx={{
+                                        "& .MuiSwitch-switchBase": {
+                                          "&.Mui-checked": {
+                                            color: statusColors.active,
+                                            "& + .MuiSwitch-track": {
+                                              backgroundColor: alpha(
+                                                statusColors.active,
+                                                0.5
+                                              ),
+                                            },
+                                          },
+                                        },
+                                        "& .MuiSwitch-thumb": {
+                                          backgroundColor:
+                                            (row.status || "pending") ===
+                                            "active"
+                                              ? statusColors.active
+                                              : (row.status || "pending") ===
+                                                "pending"
+                                              ? statusColors.pending
+                                              : statusColors.inactive,
+                                        },
+                                        "& .MuiSwitch-track": {
+                                          backgroundColor:
+                                            (row.status || "pending") ===
+                                            "active"
+                                              ? alpha(statusColors.active, 0.5)
+                                              : (row.status || "pending") ===
+                                                "pending"
+                                              ? alpha(statusColors.pending, 0.5)
+                                              : alpha(
+                                                  statusColors.inactive,
+                                                  0.5
+                                                ),
+                                        },
+                                      }}
+                                      size="small"
+                                    />
+                                  </Box>
+                                </Tooltip>
                                 <IconButton
                                   onClick={() => handleEdit(row.name)}
                                   disabled={selected.length > 1}
@@ -1480,6 +1509,16 @@ const handleBulkDownload = () => {
                 onMouseLeave={() => setHoveredRow(null)}
                 sx={{
                   pointerEvents: "auto", // Re-enable pointer events for the SpeedDial itself
+                  "& .MuiFab-root": {
+                    width: 30,
+                    height: 30,
+                    zIndex: 500,
+                  },
+                  "& .MuiSpeedDial-actions": {
+                    pointerEvents: "auto", // Enable pointer events for actions
+                    visibility: "visible",
+                    zIndex: 500,
+                  },
                 }}
                 FabProps={{
                   size: "small",
@@ -1802,6 +1841,21 @@ const handleBulkDownload = () => {
               helperText={formErrors.storageUsed}
               sx={{ width: "40%" }}
             />
+             <TextField
+      margin="dense"
+      name="phone"
+      label="Phone Number"
+      type="tel"
+      variant="outlined"
+      value={newUserData.phone || ""}
+      onChange={(e) => {
+        setNewUserData({ ...newUserData, phone: e.target.value });
+        setFormErrors({ ...formErrors, phone: "" });
+      }}
+      error={Boolean(formErrors.phone)}
+      helperText={formErrors.phone}
+      sx={{ width: "40%" }}
+    />
           </Box>
 
           {/* Add Department and Role section moved to bottom */}
@@ -2200,6 +2254,16 @@ const handleBulkDownload = () => {
                 }}
               />
             </Tooltip>
+            <TextField
+    size="small"
+    name="phone"
+    label="Phone Number"
+    type="tel"
+    variant="outlined"
+    value={editedUserData.phone || ""}
+    onChange={handleInputChange}
+    sx={{ width: "40%" }}
+  />
             <TextField
               size="small"
               name="storageUsed"
