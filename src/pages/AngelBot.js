@@ -33,6 +33,7 @@ import UpgradeIcon from "@mui/icons-material/Upgrade";
 import WarningIcon from "@mui/icons-material/Warning";
 import Tooltip from "@mui/material/Tooltip";
 import Fab from "@mui/material/Fab";
+import AssessmentIcon from "@mui/icons-material/Assessment";
 
 const chartColors = {
   primary: "#1976d2", // Main blue color
@@ -45,20 +46,20 @@ const chartColors = {
 
 const chartColorSchemes = {
   userDistribution: {
-    active: "#00FF00", // Green for active
+    active: "#4CAF50", // Green for active
     inactive: "#FF0000", // Red for inactive
     pending: "#FFA500", // Orange for pending
-    available: "#FFFF00", // Yellow for available
+    available: "#13529d", // Yellow for available
   },
 
   storageDistribution: {
     used: "#8338ec", // Indigo for used storage
-    available: "#ff006e", // Light indigo for available storage
+    available: "#ff8a00cc", // Light indigo for available storage
   },
 
   licenseData: {
-    user: "#C68EFD", // Teal for user storage
-    department: "#8F87F1", // Light Teal for department storage
+    user: "#1976d25c", // Teal for user storage
+    department: "#1900ff", // Light Teal for department storage
   },
 };
 
@@ -524,27 +525,6 @@ const AngelBot = ({ onThemeToggle }) => {
         },
       },
 
-      // legend: {
-      //   orient: "horizontal",
-      //   bottom: "0%",
-      //   left: "center",
-      //   itemWidth: 12,
-      //   itemHeight: 12,
-      //   textStyle: {
-      //     fontSize: 12,
-      //   },
-      // },
-      // legend: {
-      //   orient: "horizontal",
-      //   left: '5%',
-      //   top: '0%',
-      //   itemGap: 10,
-      //   itemWidth: 15,
-      //   itemHeight: 15,
-      //   textStyle: {
-      //     fontSize: 12,
-      //   }
-      // },
       legend: {
         orient: "horizontal",
         top: "0%", // Position just below title
@@ -630,27 +610,6 @@ const AngelBot = ({ onThemeToggle }) => {
         },
       },
 
-      // legend: {
-      //   orient: "horizontal",
-      //   bottom: "0%",
-      //   left: "center",
-      //   itemWidth: 12,
-      //   itemHeight: 12,
-      //   textStyle: {
-      //     fontSize: 12,
-      //   },
-      // },
-      // legend: {
-      //   orient: "horizontal",
-      //   left: '5%',
-      //   top: '0%',
-      //   itemGap: 10,
-      //   itemWidth: 15,
-      //   itemHeight: 15,
-      //   textStyle: {
-      //     fontSize: 12,
-      //   }
-      // },
       legend: {
         orient: "horizontal",
         top: "0%", // Position just below title
@@ -745,7 +704,7 @@ const AngelBot = ({ onThemeToggle }) => {
                 elevation={0}
                 sx={{
                   ...commonPaperStyles,
-                  height: "88%", // Add this to make all boxes the same height
+                  height: "90%", // Add this to make all boxes the same height
                   display: "flex",
                   flexDirection: "column",
                   position: "relative",
@@ -831,7 +790,7 @@ const AngelBot = ({ onThemeToggle }) => {
                 elevation={0}
                 sx={{
                   ...commonPaperStyles,
-                  height: "88%", // Add this to make all boxes the same height
+                  height: "90%", // Add this to make all boxes the same height
                   display: "flex",
                   flexDirection: "column",
                   position: "relative",
@@ -852,32 +811,6 @@ const AngelBot = ({ onThemeToggle }) => {
                       Storage Status
                     </Typography>
                   </Box>
-
-                  {/* Upgrade Plan Button */}
-                  {/* <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 1,
-                      backgroundColor: alpha(chartColors.primary, 0.1),
-                      padding: "4px 10px",
-                      borderRadius: 2,
-                      cursor: "pointer",
-                      "&:hover": {
-                        backgroundColor: alpha(chartColors.primary, 0.2),
-                      },
-                    }}
-                  >
-                    <UpgradeIcon
-                      sx={{ color: chartColors.primary, fontSize: "1rem" }}
-                    />
-                    <Typography
-                      variant="body2"
-                      sx={{ color: chartColors.primary, fontWeight: 500 }}
-                    >
-                      Add Storage
-                    </Typography>
-                  </Box> */}
                 </Box>
 
                 <Box sx={{ height: 250, width: "100%" }}>
@@ -930,7 +863,7 @@ const AngelBot = ({ onThemeToggle }) => {
                 elevation={0}
                 sx={{
                   ...commonPaperStyles,
-                  height: "88%", // Add this to make all boxes the same height
+                  height: "90%", // Add this to make all boxes the same height
                   display: "flex",
                   flexDirection: "column",
                   position: "relative",
@@ -946,7 +879,9 @@ const AngelBot = ({ onThemeToggle }) => {
                   }}
                 >
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <AccessTimeIcon color="primary" />
+                    {/* <AccessTimeIcon color="primary" /> */}
+                    <AssessmentIcon color="primary" />{" "}
+                    {/* Changed from AccessTimeIcon */}
                     <Typography variant="h6" color="primary">
                       Storage Distribution
                     </Typography>
@@ -955,70 +890,6 @@ const AngelBot = ({ onThemeToggle }) => {
                   <Box
                     sx={{ display: "flex", flexDirection: "column", gap: 2 }}
                   >
-                    {/* <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 1,
-                        backgroundColor: alpha(chartColors.error, 0.1),
-                        padding: "6px 12px",
-                        borderRadius: 2,
-                        position: "relative",
-                        animation: `${pulseAnimation["@keyframes pulse"]} ${
-                          getRemainingDays() <= 30 ? "1.5s" : "2s"
-                        } infinite ease-in-out`,
-                        cursor: "pointer",
-                        transition: "all 0.3s ease",
-                        border: `1px solid ${alpha(chartColors.error, 0.2)}`,
-                        boxShadow: `0 0 8px ${alpha(chartColors.error, 0.2)}`,
-                        "&:hover": {
-                          backgroundColor: alpha(chartColors.error, 0.15),
-                          transform: "translateY(-1px)",
-                          boxShadow: `0 0 12px ${alpha(
-                            chartColors.error,
-                            0.3
-                          )}`,
-                        },
-                      }}
-                    >
-                      <AccessTimeIcon
-                        sx={{
-                          color: chartColors.error,
-                          fontSize: "1.2rem",
-                          animation:
-                            getRemainingDays() <= 30
-                              ? "spin 6s linear infinite"
-                              : "spin 8s linear infinite",
-                        }}
-                      />
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          color: chartColors.error,
-                          fontWeight: 500,
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 0.5,
-                        }}
-                      >
-                        {getRemainingDays() <= 30 ? "Renewal By" : "Validity"}
-                        <Box
-                          component="span"
-                          sx={{
-                            fontWeight: 700,
-                            fontSize: "1.1rem",
-                            color: chartColors.error,
-                            ml: 0.5,
-                            display: "inline-flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            minWidth: "30px",
-                          }}
-                        >
-                          {getRemainingDays()}
-                        </Box>
-                      </Typography>
-                    </Box> */}
                     <Box
                       sx={{
                         position: "absolute",
@@ -1045,17 +916,6 @@ const AngelBot = ({ onThemeToggle }) => {
                         },
                       }}
                     >
-                      {/* <Typography
-    variant="h4"
-    sx={{
-      color: chartColors.error,
-      fontWeight: 700,
-      lineHeight: 1,
-      fontSize: "2rem",
-    }}
-  >
-    {getRemainingDays()}
-  </Typography> */}
                       <Typography
                         variant="body2"
                         sx={{
