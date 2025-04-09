@@ -10,6 +10,7 @@ import Department from './pages/Department'
 import Role from './pages/Role';
 import AngelBot from './pages/AngelBot';
 import LDAPConfig from './pages/LDAPConfig';
+import CompanyDashboard from './pages/CompanyDashboard';
 
 
 function App() {
@@ -39,7 +40,7 @@ function App() {
     });
 
     const toggleTheme = () => {
-      console.log(">>>>abhi>>>>")
+        console.log(">>>>abhi>>>>")
         setDarkMode((prevMode) => !prevMode); // Toggle the darkMode state
     };
 
@@ -49,33 +50,41 @@ function App() {
                 <Routes>
                     <Route path="/login" element={<Login />} />
                     <Route path="/signup" element={<Signup />} />
-                    <Route 
-                        path="/user" 
+                    <Route
+                        path="/user"
                         element={
                             <ProtectedRoute>
                                 <Dashboard onThemeToggle={toggleTheme} departments={departments} setDepartments={setDepartments} /> {/* Pass the toggleTheme function */}
                             </ProtectedRoute>
-                        } 
+                        }
                     />
-                     <Route 
-                        path="/department" 
+                    <Route
+                        path="/department"
                         element={
                             <ProtectedRoute>
                                 <Department onThemeToggle={toggleTheme} departments={departments} setDepartments={setDepartments} /> {/* Pass the toggleTheme function */}
                             </ProtectedRoute>
-                        } 
+                        }
                     />
-                     <Route 
-                        path="/role" 
+                    <Route
+                        path="/role"
                         element={
                             <ProtectedRoute>
                                 <Role onThemeToggle={toggleTheme} departments={departments} /> {/* Pass the toggleTheme function */}
                             </ProtectedRoute>
-                        } 
+                        }
                     />
                     <Route path="/" element={<Navigate to="/signup" />} />
                     <Route path="/angelbot" element={<AngelBot onThemeToggle={toggleTheme} />} />
-                    <Route path="/ldap-config" element={<LDAPConfig />} />
+                    <Route path="/ldap-config" element={<LDAPConfig />}
+
+                    />
+                    <Route
+                        path="/company-dashboard"
+                        element={
+                            <CompanyDashboard onThemeToggle={toggleTheme} />
+                        }
+                    />
                 </Routes>
             </Router>
         </ThemeProvider>
