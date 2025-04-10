@@ -1,7 +1,6 @@
 import React from "react";
 import { Box, Paper, Typography, Grid } from "@mui/material";
 import { Bar } from "react-chartjs-2";
-// import ChartDataLabels from 'chartjs-plugin-datalabels';
 import {
   CategoryScale,
   LinearScale,
@@ -13,7 +12,6 @@ import {
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 import { Chart as ChartJS } from "chart.js/auto";
-import { Chart } from "react-chartjs-2";
 import ChartDataLabels from "chartjs-plugin-datalabels";
 
 ChartJS.register(
@@ -194,9 +192,6 @@ const CompanyDashboard = ({ onThemeToggle }) => {
       ],
     },
     // Update the licenseExpiration config in chartConfigs
-    // Update the licenseExpiration config in chartConfigs
-    // Update the licenseExpiration config in chartConfigs
-    // Update the licenseExpiration config in chartConfigs
     // This is already in your code but ensure it's correctly set up
     licenseExpiration: {
       labels: companyData.licenseExpiration.map((item) => item.shortName),
@@ -310,9 +305,7 @@ const CompanyDashboard = ({ onThemeToggle }) => {
 
             if (datasetLabel === "Actually Allocated") {
               const allocatedTB = Math.round(dataPoint.actual / 1024);
-              const percentage = Math.round(
-                (dataPoint.actual / dataPoint.sold) * 100
-              );
+      
               return `Allocated: ${allocatedTB} TB `;
             }
 
@@ -396,17 +389,12 @@ const CompanyDashboard = ({ onThemeToggle }) => {
             const dataPoint = companyData.licenseAllocation[dataIndex];
 
             if (datasetLabel === "Allocated (Total)") {
-              const percentage = (
-                (dataPoint.consumed / dataPoint.allocated) *
-                100
-              ).toFixed(1);
+          
               const consumedPercentage = (
                 (dataPoint.consumed / dataPoint.allocated) *
                 100
               ).toFixed(1);
               const remainingPercentage = (100 - consumedPercentage).toFixed(1);
-              const remainingLicenses =
-                dataPoint.allocated - dataPoint.consumed;
               return `Allocated: ${dataPoint.allocated} / ${remainingPercentage}%`;
             }
 
@@ -740,23 +728,12 @@ const CompanyDashboard = ({ onThemeToggle }) => {
             }
 
             if (datasetLabel === "Available Capacity") {
-              const availablePercentage = Math.round(
-                ((serverData.capacity - serverData.allocated) /
-                  serverData.capacity) *
-                  100
-              );
               const availableTB = Math.round(
                 (serverData.capacity - serverData.allocated) / 1024
               );
               // Show both companies and the available capacity
-              const company1 = companies[0];
-              const company2 = companies[1];
-              const company1Info = companyData.dataUsage.find(
-                (c) => c.shortName === company1
-              );
-              const company2Info = companyData.dataUsage.find(
-                (c) => c.shortName === company2
-              );
+          
+     
 
               // Create multiline tooltip with all information
               return [`Available: ${availableTB}TB`];
