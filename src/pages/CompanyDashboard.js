@@ -13,6 +13,25 @@ import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 import { Chart as ChartJS } from "chart.js/auto";
 import ChartDataLabels from "chartjs-plugin-datalabels";
+// Add these imports for table functionality
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableContainer, 
+  TableHead, 
+  TableRow, 
+  Button,
+  Checkbox
+} from '@mui/material';
+import TableSortLabel from '@mui/material/TableSortLabel';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import RenewIcon from '@mui/icons-material/Autorenew';
+import ExtendIcon from '@mui/icons-material/CalendarMonth';
+import ChangeIcon from '@mui/icons-material/SwapHoriz';
+import AddLicenseIcon from '@mui/icons-material/AddCircle';
+import StorageIcon from '@mui/icons-material/Storage';
+import { useState, useEffect } from "react";
 
 ChartJS.register(
   CategoryScale,
@@ -25,6 +44,10 @@ ChartJS.register(
 );
 
 const CompanyDashboard = ({ onThemeToggle }) => {
+  const [selectedCompany, setSelectedCompany] = useState(null);
+  const [order, setOrder] = useState('asc');
+  const [orderBy, setOrderBy] = useState('daysLeft');
+  const [sortedData, setSortedData] = useState(null);
   const companyData = {
     dataUsage: [
       {
@@ -116,6 +139,98 @@ const CompanyDashboard = ({ onThemeToggle }) => {
       },
     },
   };
+  const [selectedCompanies, setSelectedCompanies] = useState([]);
+  const handleRequestSort = (event, property) => {
+    const isAsc = orderBy === property && order === 'asc';
+    const newOrder = isAsc ? 'desc' : 'asc';
+    
+    setOrder(newOrder);
+    setOrderBy(property);
+    
+    const companies = [...companyData.dataUsage].sort((a, b) => {
+      // For string properties like company name
+      if (property === 'company') {
+        return newOrder === 'asc'
+          ? a.company.localeCompare(b.company)
+          : b.company.localeCompare(a.company);
+      }
+      
+      // For numeric properties
+      if (property === 'sold') {
+        return newOrder === 'asc'
+          ? a.sold - b.sold
+          : b.sold - a.sold;
+      }
+      
+      if (property === 'actual') {
+        return newOrder === 'asc'
+          ? a.actual - b.actual
+          : b.actual - a.actual;
+      }
+      
+      if (property === 'consumed') {
+        return newOrder === 'asc'
+          ? a.consumed - b.consumed
+          : b.consumed - a.consumed;
+      }
+      
+      if (property === 'consumed_percent') {
+        const percentA = (a.consumed / a.actual) * 100;
+        const percentB = (b.consumed / b.actual) * 100;
+        return newOrder === 'asc'
+          ? percentA - percentB
+          : percentB - percentA;
+      }
+      
+      if (property === 'daysLeft') {
+        const expiryA = companyData.licenseExpiration.find(item => item.shortName === a.shortName);
+        const expiryB = companyData.licenseExpiration.find(item => item.shortName === b.shortName);
+        if (expiryA && expiryB) {
+          return newOrder === 'asc'
+            ? expiryA.daysLeft - expiryB.daysLeft
+            : expiryB.daysLeft - expiryA.daysLeft;
+        }
+        return 0;
+      }
+      
+      return 0;
+    });
+    
+    setSortedData({
+      companies: companies,
+      indices: companies.map(c =>
+        companyData.dataUsage.findIndex(orig => orig.shortName === c.shortName)
+      )
+    });
+  };
+  
+  // Default sorting on initial load
+  useEffect(() => {
+    handleRequestSort(null, 'daysLeft');
+  }, []);
+  
+  // Handle selecting all companies
+  const handleSelectAll = (event) => {
+    if (event.target.checked) {
+      setSelectedCompanies(companyData.dataUsage.map(c => c.shortName));
+    } else {
+      setSelectedCompanies([]);
+    }
+  };
+  
+  // Handle selecting individual company
+  const handleSelectCompany = (event, shortName) => {
+    if (event.target.checked) {
+      setSelectedCompanies(prev => [...prev, shortName]);
+    } else {
+      setSelectedCompanies(prev => prev.filter(c => c !== shortName));
+    }
+  };
+  
+  const isAllSelected = companyData.dataUsage.length > 0 &&
+    selectedCompanies.length === companyData.dataUsage.length;
+ 
+
 
   const chartConfigs = {
     dataUsage: {
@@ -1064,6 +1179,528 @@ const CompanyDashboard = ({ onThemeToggle }) => {
               </Paper>
             </Grid>
           </Grid>
+          // Add this after the Grid container with the charts
+<Box sx={{ mt: 4 }}>
+  <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+    <Typography
+      variant="h5"
+      sx={{
+        fontWeight: "bold",
+        color: "#2c3e50",
+        borderBottom: "2px solid #e0e0e0",
+        paddingBottom: 1,
+      }}
+    >
+      Company Storage & License Summary
+    </Typography>
+  </Box>
+  
+  <TableContainer component={Paper} elevation={3} sx={{
+    overflow: "auto",
+    borderRadius: 2,
+    transition: "all 0.3s ease",
+    "&:hover": {
+      boxShadow: "0 8px 16px rgba(0,0,0,0.1)",
+    }
+  }}>
+    <Table sx={{ minWidth: 650 }} size="medium">
+      <TableHead>
+        {/* First row - main headers and Storage group header */}
+        <TableRow sx={{ backgroundColor: "#f5f7fa", height: 40 }}>
+          {/* Organization Column with checkbox */}
+          <TableCell
+            rowSpan={2}
+            sx={{
+              fontWeight: "bold",
+              fontSize: "0.875rem",
+              color: "#2c3e50",
+              borderBottom: "2px solid #e0e0e0",
+              padding: "16px"
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Checkbox
+                checked={isAllSelected}
+                onChange={handleSelectAll}
+                indeterminate={selectedCompanies.length > 0 && selectedCompanies.length < companyData.dataUsage.length}
+                sx={{ p: 0, mr: 1 }}
+              />
+              <TableSortLabel
+                active={orderBy === 'company'}
+                direction={order}
+                onClick={() => handleRequestSort(null, 'company')}
+                sx={{
+                  fontWeight: "bold",
+                  width: "100%",
+                  '& .MuiTableSortLabel-icon': {
+                    opacity: 1,
+                    color: 'rgba(0, 0, 0, 0.54)'
+                  }
+                }}
+              >
+                Organization
+              </TableSortLabel>
+            </Box>
+          </TableCell>
+
+          {/* Storage group header */}
+          <TableCell
+            colSpan={4}
+            align="center"
+            sx={{
+              fontWeight: "bold",
+              fontSize: "0.875rem",
+              color: "#2c3e50",
+              borderBottom: "1px solid #e0e0e0",
+              padding: "6px",
+            }}
+          >
+            Storage (TB)
+          </TableCell>
+
+          {/* Renew By Column */}
+          <TableCell
+            rowSpan={2}
+            align="center"
+            sx={{
+              fontWeight: "bold",
+              fontSize: "0.875rem",
+              color: "#2c3e50",
+              borderBottom: "2px solid #e0e0e0",
+              padding: "16px"
+            }}
+          >
+            <TableSortLabel
+              active={orderBy === 'daysLeft'}
+              direction={order}
+              onClick={() => handleRequestSort(null, 'daysLeft')}
+              sx={{
+                fontWeight: "bold",
+                '& .MuiTableSortLabel-icon': {
+                  opacity: 1,
+                  color: 'rgba(0, 0, 0, 0.54)'
+                }
+              }}
+            >
+              Renew By
+            </TableSortLabel>
+          </TableCell>
+
+          {/* % License Used Column */}
+          <TableCell
+            rowSpan={2}
+            align="center"
+            sx={{
+              fontWeight: "bold",
+              fontSize: "0.875rem",
+              color: "#2c3e50",
+              borderBottom: "2px solid #e0e0e0",
+              padding: "16px"
+            }}
+          >
+            % License Used
+          </TableCell>
+
+          {/* Actions Column */}
+          <TableCell
+            rowSpan={2}
+            align="center"
+            sx={{
+              fontWeight: "bold",
+              fontSize: "0.875rem",
+              color: "#2c3e50",
+              borderBottom: "2px solid #e0e0e0",
+              padding: "16px"
+            }}
+          >
+            Actions
+          </TableCell>
+        </TableRow>
+
+        <TableRow sx={{ backgroundColor: "#f5f7fa", height: 40 }}>
+          {/* Sold column */}
+          <TableCell
+            align="center"
+            sx={{
+              fontWeight: "bold",
+              fontSize: "0.8rem",
+              color: "#2c3e50",
+              borderBottom: "2px solid #e0e0e0",
+              padding: "8px 16px"
+            }}
+          >
+            <TableSortLabel
+              active={orderBy === 'sold'}
+              direction={order}
+              onClick={() => handleRequestSort(null, 'sold')}
+              sx={{
+                fontWeight: "bold",
+                '& .MuiTableSortLabel-icon': {
+                  opacity: 1,
+                  color: 'rgba(0, 0, 0, 0.54)'
+                }
+              }}
+            >
+              Sold
+            </TableSortLabel>
+          </TableCell>
+
+          {/* Allocated column */}
+          <TableCell
+            align="center"
+            sx={{
+              fontWeight: "bold",
+              fontSize: "0.8rem",
+              color: "#2c3e50",
+              borderBottom: "2px solid #e0e0e0",
+              padding: "8px 16px"
+            }}
+          >
+            <TableSortLabel
+              active={orderBy === 'actual'}
+              direction={order}
+              onClick={() => handleRequestSort(null, 'actual')}
+              sx={{
+                fontWeight: "bold",
+                '& .MuiTableSortLabel-icon': {
+                  opacity: 1,
+                  color: 'rgba(0, 0, 0, 0.54)'
+                }
+              }}
+            >
+              Allocated
+            </TableSortLabel>
+          </TableCell>
+
+          {/* Consumed column */}
+          <TableCell
+            align="center"
+            sx={{
+              fontWeight: "bold",
+              fontSize: "0.8rem",
+              color: "#2c3e50",
+              borderBottom: "2px solid #e0e0e0",
+              padding: "8px 16px"
+            }}
+          >
+            <TableSortLabel
+              active={orderBy === 'consumed'}
+              direction={order}
+              onClick={() => handleRequestSort(null, 'consumed')}
+              sx={{
+                fontWeight: "bold",
+                '& .MuiTableSortLabel-icon': {
+                  opacity: 1,
+                  color: 'rgba(0, 0, 0, 0.54)'
+                }
+              }}
+            >
+              Consumed
+            </TableSortLabel>
+          </TableCell>
+
+          {/* % Consumed column */}
+          <TableCell
+            align="center"
+            sx={{
+              fontWeight: "bold",
+              fontSize: "0.8rem",
+              color: "#2c3e50",
+              borderBottom: "2px solid #e0e0e0",
+              padding: "8px 16px"
+            }}
+          >
+            <TableSortLabel
+              active={orderBy === 'consumed_percent'}
+              direction={order}
+              onClick={() => handleRequestSort(null, 'consumed_percent')}
+              sx={{
+                fontWeight: "bold",
+                '& .MuiTableSortLabel-icon': {
+                  opacity: 1,
+                  color: 'rgba(0, 0, 0, 0.54)'
+                }
+              }}
+            >
+              % Consumed
+            </TableSortLabel>
+          </TableCell>
+        </TableRow>
+      </TableHead>
+      
+      <TableBody>
+        {(() => {
+          // Get the data to display (either sorted or original)
+          const displayData = sortedData?.companies || companyData.dataUsage;
+          
+          // Split into expired and non-expired groups
+          const expiredCompanies = [];
+          const activeCompanies = [];
+          
+          // Separate companies based on expiration status
+          displayData.forEach((company, index) => {
+            const dataIndex = sortedData ? sortedData.indices[index] : index;
+            const expiryData = companyData.licenseExpiration[dataIndex];
+            
+            if (expiryData.daysLeft < 0) {
+              expiredCompanies.push({ company, index });
+            } else {
+              activeCompanies.push({ company, index });
+            }
+          });
+          
+          // Combine arrays with expired first
+          const sortedCompanies = [...expiredCompanies, ...activeCompanies];
+          
+          // Render each row
+          return sortedCompanies.map(({ company, index }) => {
+            const dataIndex = sortedData ? sortedData.indices[index] : index;
+            const licenseData = companyData.licenseAllocation[dataIndex];
+            const expiryData = companyData.licenseExpiration[dataIndex];
+            
+            // Calculate percentages
+            const storageUsedPercent = Math.round((company.consumed / company.actual) * 100);
+            const licenseUsedPercent = Math.round((licenseData.consumed / licenseData.allocated) * 100);
+            
+            // Format days text for Renew By
+            let daysText = `${expiryData.daysLeft} days`;
+            let daysColor = "#4CAF50"; // Green by default
+            if (expiryData.daysLeft < 0) {
+              daysText = `Expired`;
+              daysColor = "#FF0000"; // Red
+            } else if (expiryData.daysLeft < 30) {
+              daysColor = "#FF6B00"; // Orange
+            } else if (expiryData.daysLeft < 45) {
+              daysColor = "#FFD700"; // Yellow
+            }
+            
+            // Track if this company's options are expanded
+            const isExpanded = selectedCompany?.shortName === company.shortName;
+            
+            return (
+              <React.Fragment key={company.shortName}>
+                <TableRow
+                  sx={{
+                    height: 52,
+                    backgroundColor: expiryData.daysLeft < 0 ? 'rgba(255, 0, 0, 0.05)' : // Light red for expired
+                      (index % 2 === 0) ? 'rgba(0, 0, 0, 0.02)' : 'transparent',
+                    '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.04)' },
+                    transition: 'background-color 0.3s'
+                  }}
+                >
+                  <TableCell
+                    component="th"
+                    scope="row"
+                    sx={{
+                      fontSize: "0.875rem",
+                      borderBottom: "1px solid #e0e0e0",
+                      padding: "8px 16px"
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <Checkbox
+                        checked={selectedCompanies.includes(company.shortName)}
+                        onChange={(e) => handleSelectCompany(e, company.shortName)}
+                        sx={{ p: 0, mr: 1 }}
+                      />
+                      <Box
+                        sx={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: '50%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          backgroundColor: dataIndex % 2 === 1 ? "rgb(84,112,198)" : "rgb(250,200,88)",
+                          color: '#fff',
+                          fontWeight: 'bold',
+                          marginRight: 1.5,
+                          fontSize: '0.75rem'
+                        }}
+                      >
+                        {company.shortName}
+                      </Box>
+                      {company.company}
+                    </Box>
+                  </TableCell>
+                  
+                  <TableCell align="center" sx={{ fontSize: "0.875rem", borderBottom: "1px solid #e0e0e0", padding: "8px 16px" }}>
+                    {Math.round(company.sold / 1024)}
+                  </TableCell>
+                  
+                  <TableCell align="center" sx={{ fontSize: "0.875rem", borderBottom: "1px solid #e0e0e0", padding: "8px 16px" }}>
+                    {Math.round(company.actual / 1024)}
+                  </TableCell>
+                  
+                  <TableCell align="center" sx={{ fontSize: "0.875rem", borderBottom: "1px solid #e0e0e0", padding: "8px 16px" }}>
+                    {Math.round(company.consumed / 1024)}
+                  </TableCell>
+                  
+                  <TableCell align="center" sx={{
+                    fontSize: "0.875rem",
+                    borderBottom: "1px solid #e0e0e0",
+                    padding: "8px 16px",
+                    color: storageUsedPercent > 90 ? '#FF0000' :
+                      storageUsedPercent > 75 ? '#FF6B00' : '#2c3e50'
+                  }}>
+                    {storageUsedPercent}%
+                  </TableCell>
+                  
+                  <TableCell align="center" sx={{
+                    fontSize: "0.875rem",
+                    borderBottom: "1px solid #e0e0e0",
+                    padding: "8px 16px",
+                    color: daysColor,
+                    fontWeight: expiryData.daysLeft < 30 ? 'bold' : 'normal'
+                  }}>
+                    {daysText}
+                  </TableCell>
+                  
+                  <TableCell align="center" sx={{
+                    fontSize: "0.875rem",
+                    borderBottom: "1px solid #e0e0e0",
+                    padding: "8px 16px",
+                    color: licenseUsedPercent > 90 ? '#FF0000' :
+                      licenseUsedPercent > 75 ? '#FF6B00' : '#2c3e50'
+                  }}>
+                    {licenseUsedPercent}%
+                  </TableCell>
+                  
+                  <TableCell align="center" sx={{ borderBottom: "1px solid #e0e0e0", padding: "8px 16px" }}>
+                    <Button
+                      variant="text"
+                      size="small"
+                      onClick={() => {
+                        if (isExpanded) {
+                          setSelectedCompany(null);
+                        } else {
+                          setSelectedCompany(company);
+                        }
+                      }}
+                      sx={{
+                        color: '#3498db',
+                        fontWeight: 'medium',
+                        '&:hover': {
+                          backgroundColor: 'rgba(52, 152, 219, 0.1)'
+                        }
+                      }}
+                    >
+                      Options {isExpanded && <ExpandMoreIcon fontSize="small" sx={{ ml: 0.5 }} />}
+                    </Button>
+                  </TableCell>
+                </TableRow>
+                
+                {/* Options row */}
+                {isExpanded && (
+                  <TableRow sx={{ backgroundColor: 'rgba(236, 240, 241, 0.5)' }}>
+                    <TableCell colSpan={8} sx={{ py: 2.5, px: 4, borderBottom: "1px solid #e0e0e0" }}>
+                      <Grid container spacing={2} justifyContent="center">
+                        <Grid item>
+                          <Button
+                            variant="outlined"
+                            startIcon={<RenewIcon />}
+                            sx={{
+                              borderRadius: 1,
+                              minWidth: '160px',
+                              color: '#27ae60',
+                              borderColor: '#27ae60',
+                              '&:hover': {
+                                backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                                borderColor: '#27ae60'
+                              }
+                            }}
+                          >
+                            Renew Reminder
+                          </Button>
+                        </Grid>
+                        
+                        <Grid item>
+                          <Button
+                            variant="outlined"
+                            startIcon={<ExtendIcon />}
+                            sx={{
+                              borderRadius: 1,
+                              minWidth: '140px',
+                              color: '#2980b9',
+                              borderColor: '#2980b9',
+                              '&:hover': {
+                                backgroundColor: 'rgba(41, 128, 185, 0.1)',
+                                borderColor: '#2980b9'
+                              }
+                            }}
+                          >
+                            Extend Plan
+                          </Button>
+                        </Grid>
+                        
+                        <Grid item>
+                          <Button
+                            variant="outlined"
+                            startIcon={<ChangeIcon />}
+                            sx={{
+                              borderRadius: 1,
+                              minWidth: '140px',
+                              color: '#f39c12',
+                              borderColor: '#f39c12',
+                              '&:hover': {
+                                backgroundColor: 'rgba(243, 156, 18, 0.1)',
+                                borderColor: '#f39c12'
+                              }
+                            }}
+                          >
+                            Change Plan
+                          </Button>
+                        </Grid>
+                        
+                        <Grid item>
+                          <Button
+                            variant="outlined"
+                            startIcon={<AddLicenseIcon />}
+                            sx={{
+                              borderRadius: 1,
+                              minWidth: '140px',
+                              color: '#9b59b6',
+                              borderColor: '#9b59b6',
+                              '&:hover': {
+                                backgroundColor: 'rgba(155, 89, 182, 0.1)',
+                                borderColor: '#9b59b6'
+                              }
+                            }}
+                          >
+                            Add License
+                          </Button>
+                        </Grid>
+                        
+                        <Grid item>
+                          <Button
+                            variant="outlined"
+                            startIcon={<StorageIcon />}
+                            sx={{
+                              borderRadius: 1,
+                              minWidth: '160px',
+                              color: '#16a085',
+                              borderColor: '#16a085',
+                              '&:hover': {
+                                backgroundColor: 'rgba(22, 160, 133, 0.1)',
+                                borderColor: '#16a085'
+                              }
+                            }}
+                          >
+                            Increase Storage
+                          </Button>
+                        </Grid>
+                      </Grid>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </React.Fragment>
+            );
+          });
+        })()}
+      </TableBody>
+    </Table>
+  </TableContainer>
+</Box>
         </Box>
       </Box>
     </Box>
