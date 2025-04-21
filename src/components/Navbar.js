@@ -109,26 +109,7 @@ const Navbar = ({ onThemeToggle, onSearch, currentPage }) => {
   }, []);
 
 
-   // Client-side search function
-  //  const searchData = (query) => {
-  //   if (!query) {
-  //     setSearchResults([]);
-  //     onSearch?.([]); // Pass empty array to show all rows
-  //     return;
-  //   }
-
-  //   const lowercaseQuery = query.toLowerCase();
-  //   const results = userData.filter(item => 
-  //     item.username?.toLowerCase().includes(lowercaseQuery) ||
-  //     item.name?.toLowerCase().includes(lowercaseQuery) ||
-  //     item.email?.toLowerCase().includes(lowercaseQuery) ||
-  //     item.department?.toLowerCase().includes(lowercaseQuery) ||
-  //     item.role?.toLowerCase().includes(lowercaseQuery)
-  //   );
-
-  //   setSearchResults(results.slice(0, 5)); // Limit to 5 results
-  //   onSearch?.(results); // Pass all matching results to parent
-  // };
+  
 
   const searchData = (query) => {
     if (!query) {
@@ -272,16 +253,7 @@ const Navbar = ({ onThemeToggle, onSearch, currentPage }) => {
           <SearchIconWrapper>
             <SearchIcon sx={{ fontSize: "1.2rem", color: "text.secondary" }} />
           </SearchIconWrapper>
-          {/* <StyledInputBase
-            placeholder="Search…"
-            inputProps={{ "aria-label": "search" }}
-          /> */}
-          {/* <StyledInputBase
-            placeholder="Search users, departments, roles..."
-            value={searchTerm}
-            onChange={handleSearchChange}
-            inputProps={{ "aria-label": "search" }}
-          /> */}
+         
            <StyledInputBase
             placeholder={currentPage === 'departments' 
               ? "Search departments, roles..." 
@@ -290,53 +262,7 @@ const Navbar = ({ onThemeToggle, onSearch, currentPage }) => {
             onChange={handleSearchChange}
             inputProps={{ "aria-label": "search" }}
           />
-           {/* <ClickAwayListener onClickAway={handleClickAway}>
-            <div>
-              {searchResults.length > 0 && searchAnchorEl && (
-                <Popper
-                  open={true}
-                  anchorEl={searchAnchorEl}
-                  placement="bottom-start"
-                  style={{ zIndex: 1301, width: searchAnchorEl.offsetWidth }}
-                >
-                  <SearchResultWrapper elevation={3}>
-                    <List dense>
-                      {searchResults.map((result, index) => (
-                        <ListItem
-                          key={index}
-                          onClick={() => handleSearchResultClick(result)}
-                          button
-                        >
-                          <ListItemText
-                            primary={result.name}
-                            secondary={
-                              <React.Fragment>
-                                <Typography
-                                  component="span"
-                                  variant="body2"
-                                  color="text.primary"
-                                >
-                                  {result.department} - {result.role}
-                                </Typography>
-                                <br />
-                                <Typography
-                                  component="span"
-                                  variant="caption"
-                                  color="text.secondary"
-                                >
-                                  {result.email}
-                                </Typography>
-                              </React.Fragment>
-                            }
-                          />
-                        </ListItem>
-                      ))}
-                    </List>
-                  </SearchResultWrapper>
-                </Popper>
-              )}
-            </div>
-          </ClickAwayListener> */}
+          
            <ClickAwayListener onClickAway={handleClickAway}>
             <div>
               {searchResults.length > 0 && searchAnchorEl && (
