@@ -765,7 +765,7 @@ const AngelBot = ({ onThemeToggle }) => {
                     sx={{ display: "flex", alignItems: "center", gap: 1 }}
                   ></Box>
                 </Box>
-                <Tooltip title="Add License" placement="left">
+                <Tooltip title="Upload License" placement="left">
                   <Fab
                     size="small"
                     sx={{

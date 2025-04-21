@@ -80,6 +80,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     displayName: "",
     initialRole: "",
     storage: "50GB", // Default storage value
+    reportingManager: "", // Add this field
     submitted: false,
   });
 
@@ -104,6 +105,28 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
   // Add these at the top of your component with other state declarations
 const [selected, setSelected] = useState([]);
+const [searchQuery, setSearchQuery] = useState('');
+const [filteredDepartments, setFilteredDepartments] = useState([]);
+// Add this handler function
+const handleSearch = (results) => {
+  if (!results || results.length === 0) {
+    setFilteredDepartments([]); 
+    setSearchQuery('');
+    return;
+  }
+
+  const filtered = departments.filter(dept => 
+    results.some(result => 
+      result.name === dept.name || 
+      result.displayName === dept.displayName ||
+      result.roles.some(role => dept.roles.includes(role))
+    )
+  );
+
+  setFilteredDepartments(filtered);
+  setSearchQuery(results.query || '');
+};
+
 
 // Add these handler functions
 const handleSelectAllClick = (event) => {
@@ -261,270 +284,6 @@ const isSelected = (name) => selected.indexOf(name) !== -1;
 
   const fileInputRef = useRef(null);
 
-  // const handleBulkUpload = async (event) => {
-  //   const file = event.target.files[0];
-  //   if (!file) return;
-
-  //   try {
-  //     const reader = new FileReader();
-  //     reader.onload = (e) => {
-  //       try {
-  //         const data = new Uint8Array(e.target.result);
-  //         const workbook = XLSX.read(data, { type: "array" });
-  //         const sheetName = workbook.SheetNames[0];
-  //         const worksheet = workbook.Sheets[sheetName];
-  //         const jsonData = XLSX.utils.sheet_to_json(worksheet);
-
-  //         // Validation check
-  //         const isValidData = jsonData.every(
-  //           (row) =>
-  //             row.Department &&
-  //             row["Display Name"] &&
-  //             row["Storage Allocated"] &&
-  //             row.Roles &&
-  //             row.Edit
-  //         );
-
-  //         if (!isValidData) {
-  //           setSnackbar({
-  //             open: true,
-  //             message: "Invalid file format. Please use the correct template.",
-  //             severity: "error",
-  //           });
-  //           return;
-  //         }
-
-  //         const skippedDepartments = [];
-  //         const addedDepartments = [];
-  //         const updatedDepartments = [];
-  //         let updatedDepartmentsList = [...departments];
-
-  //         jsonData.forEach((row) => {
-  //           const existingDeptIndex = updatedDepartmentsList.findIndex(
-  //             (d) => d.name === row.Department
-  //           );
-
-  //           const roles = row.Roles.includes("(")
-  //             ? row.Roles.split("(")[1]
-  //                 .split(")")[0]
-  //                 .split(",")
-  //                 .map((role) => role.trim())
-  //             : row.Roles.split(",").map((role) => role.trim());
-
-  //           // First check for existing departments
-  //           if (existingDeptIndex !== -1) {
-  //             // Department exists, check Edit value
-  //             if (row.Edit.toString().toLowerCase() === "yes") {
-  //               // Update the existing department
-  //               updatedDepartmentsList[existingDeptIndex] = {
-  //                 ...updatedDepartmentsList[existingDeptIndex],
-  //                 displayName: row["Display Name"],
-  //                 storage: row["Storage Allocated"],
-  //                 roles: roles,
-  //                 isActive: false,
-  //               };
-  //               updatedDepartments.push(row.Department);
-  //             } else {
-  //               // Skip if Edit is "No"
-  //               skippedDepartments.push(row.Department);
-  //             }
-  //           } else {
-  //             // New department, add it
-  //             updatedDepartmentsList.push({
-  //               name: row.Department,
-  //               displayName: row["Display Name"],
-  //               storage: row["Storage Allocated"] || "50GB",
-  //               roles: roles,
-  //               isActive: false,
-  //             });
-  //             addedDepartments.push(row.Department);
-  //           }
-  //         });
-
-  //         // Update state and localStorage
-  //         setDepartments(updatedDepartmentsList);
-  //         localStorage.setItem(
-  //           "departments",
-  //           JSON.stringify(updatedDepartmentsList)
-  //         );
-
-  //         // Prepare message
-  //         let message = [];
-  //         if (addedDepartments.length > 0) {
-  //           message.push(`Added ${addedDepartments.length} new departments`);
-  //         }
-  //         if (updatedDepartments.length > 0) {
-  //           message.push(
-  //             `Updated ${updatedDepartments.length} existing departments`
-  //           );
-  //         }
-  //         if (skippedDepartments.length > 0) {
-  //           message.push(
-  //             `Skipped ${skippedDepartments.length} existing departments`
-  //           );
-  //         }
-
-  //         setSnackbar({
-  //           open: true,
-  //           message: message.join(". ") || "No changes made",
-  //           severity:
-  //             addedDepartments.length > 0 || updatedDepartments.length > 0
-  //               ? "success"
-  //               : "info",
-  //         });
-  //       } catch (error) {
-  //         console.error("Error processing file:", error);
-  //         setSnackbar({
-  //           open: true,
-  //           message:
-  //             "Error processing file. Please ensure it matches the template format.",
-  //           severity: "error",
-  //         });
-  //       }
-  //     };
-
-  //     reader.readAsArrayBuffer(file);
-  //   } catch (error) {
-  //     console.error("Error uploading file:", error);
-  //     setSnackbar({
-  //       open: true,
-  //       message: "Error uploading file",
-  //       severity: "error",
-  //     });
-  //   }
-
-  //   event.target.value = "";
-  // };
-
-  // const handleBulkUpload = async (event) => {
-  //   const file = event.target.files[0];
-  //   if (!file) return;
-  
-  //   try {
-  //     const reader = new FileReader();
-  //     reader.onload = (e) => {
-  //       try {
-  //         const data = new Uint8Array(e.target.result);
-  //         const workbook = XLSX.read(data, { type: "array" });
-  //         const sheetName = workbook.SheetNames[0];
-  //         const worksheet = workbook.Sheets[sheetName];
-  //         const jsonData = XLSX.utils.sheet_to_json(worksheet);
-  
-  //         // Validation check for required fields
-  //         const isValidData = jsonData.every(
-  //           (row) =>
-  //             row.Department &&
-  //             row["Display Name"] &&
-  //             row["Storage Allocated"] &&
-  //             row.Role !== undefined && // Changed from Roles to Role
-  //             row.Status &&
-  //             row.Edit !== undefined // Check if Edit exists but allow any value
-  //         );
-  
-  //         if (!isValidData) {
-  //           setSnackbar({
-  //             open: true,
-  //             message: "Invalid file format. Please use the correct template.",
-  //             severity: "error",
-  //           });
-  //           return;
-  //         }
-  
-  //         const skippedDepartments = [];
-  //         const addedDepartments = [];
-  //         const updatedDepartments = [];
-  //         let updatedDepartmentsList = [...departments];
-  
-  //         // Group rows by department
-  //         const departmentGroups = {};
-  //         jsonData.forEach((row) => {
-  //           if (!departmentGroups[row.Department]) {
-  //             departmentGroups[row.Department] = [];
-  //           }
-  //           departmentGroups[row.Department].push(row);
-  //         });
-  
-  //         // Process each department
-  //         Object.entries(departmentGroups).forEach(([deptName, rows]) => {
-  //           const existingDeptIndex = updatedDepartmentsList.findIndex(
-  //             (d) => d.name === deptName
-  //           );
-  
-  //           // Get all roles for this department
-  //           const roles = rows.map(row => row.Role).filter(role => role); // Filter out empty roles
-  
-  //           if (existingDeptIndex !== -1) {
-  //             // Department exists, check Edit value
-  //             if (rows.some(row => row.Edit.toString().toLowerCase() === "yes")) {
-  //               // Update the existing department
-  //               updatedDepartmentsList[existingDeptIndex] = {
-  //                 ...updatedDepartmentsList[existingDeptIndex],
-  //                 displayName: rows[0]["Display Name"],
-  //                 storage: rows[0]["Storage Allocated"],
-  //                 roles: roles,
-  //                 isActive: rows[0].Status.toLowerCase() === "active"
-  //               };
-  //               updatedDepartments.push(deptName);
-  //             } else {
-  //               skippedDepartments.push(deptName);
-  //             }
-  //           } else {
-  //             // New department
-  //             updatedDepartmentsList.push({
-  //               name: deptName,
-  //               displayName: rows[0]["Display Name"],
-  //               storage: rows[0]["Storage Allocated"],
-  //               roles: roles,
-  //               isActive: rows[0].Status.toLowerCase() === "active"
-  //             });
-  //             addedDepartments.push(deptName);
-  //           }
-  //         });
-  
-  //         // Update state and localStorage
-  //         setDepartments(updatedDepartmentsList);
-  //         localStorage.setItem("departments", JSON.stringify(updatedDepartmentsList));
-  
-  //         // Prepare message
-  //         let message = [];
-  //         if (addedDepartments.length > 0) {
-  //           message.push(`Added ${addedDepartments.length} new departments`);
-  //         }
-  //         if (updatedDepartments.length > 0) {
-  //           message.push(`Updated ${updatedDepartments.length} existing departments`);
-  //         }
-  //         if (skippedDepartments.length > 0) {
-  //           message.push(`Skipped ${skippedDepartments.length} existing departments`);
-  //         }
-  
-  //         setSnackbar({
-  //           open: true,
-  //           message: message.join(". ") || "No changes made",
-  //           severity: addedDepartments.length > 0 || updatedDepartments.length > 0 ? "success" : "info"
-  //         });
-  //       } catch (error) {
-  //         console.error("Error processing file:", error);
-  //         setSnackbar({
-  //           open: true,
-  //           message: "Error processing file. Please ensure it matches the template format.",
-  //           severity: "error"
-  //         });
-  //       }
-  //     };
-  
-  //     reader.readAsArrayBuffer(file);
-  //   } catch (error) {
-  //     console.error("Error uploading file:", error);
-  //     setSnackbar({
-  //       open: true,
-  //       message: "Error uploading file",
-  //       severity: "error"
-  //     });
-  //   }
-  
-  //   event.target.value = "";
-  // };
-
   const handleBulkUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -538,16 +297,82 @@ const isSelected = (name) => selected.indexOf(name) !== -1;
           const sheetName = workbook.SheetNames[0];
           const worksheet = workbook.Sheets[sheetName];
           const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+
+          
+        // Required columns
+        const requiredColumns = {
+          'Department': false,
+          'Display Name': false,
+          'Storage Allocated': false,
+          'Role': false,
+          'Status': false,
+          'Edit': false,
+          'Delete': false
+        };
+
+        // Check which columns are present in the first row
+        if (jsonData.length > 0) {
+          const firstRow = jsonData[0];
+          Object.keys(firstRow).forEach(column => {
+            if (requiredColumns.hasOwnProperty(column)) {
+              requiredColumns[column] = true;
+            }
+          });
+        }
+
+        // Find missing columns
+        const missingColumns = Object.entries(requiredColumns)
+          .filter(([_, present]) => !present)
+          .map(([column]) => column);
+
+        if (missingColumns.length > 0) {
+          setSnackbar({
+            open: true,
+            message: `Invalid file format. Missing required columns: ${missingColumns.join(", ")}`,
+            severity: "error",
+          });
+          return;
+        }
+
+        // Validate data in each row
+        const invalidRows = [];
+        jsonData.forEach((row, index) => {
+          const rowNumber = index + 2; // Add 2 because Excel rows start at 1 and we skip header
+          const errors = [];
+
+          if (!row.Department) errors.push("Department");
+          if (!row["Display Name"]) errors.push("Display Name");
+          if (!row["Storage Allocated"]) errors.push("Storage Allocated");
+          if (row.Role === undefined) errors.push("Role");
+          if (!row.Status) errors.push("Status");
+          if (row.Edit === undefined) errors.push("Edit");
+          if (row.Delete === undefined) errors.push("Delete");
+
+          if (errors.length > 0) {
+            invalidRows.push(`Row ${rowNumber} missing values for: ${errors.join(", ")}`);
+          }
+        });
+
+        if (invalidRows.length > 0) {
+          setSnackbar({
+            open: true,
+            message: `Data validation failed:\n${invalidRows.join("\n")}`,
+            severity: "error",
+          });
+          return;
+        }
   
-          // Validation check for required fields
+          // Validation check
           const isValidData = jsonData.every(
             (row) =>
               row.Department &&
               row["Display Name"] &&
               row["Storage Allocated"] &&
-              row.Role !== undefined && // Changed from Roles to Role
+              row.Role !== undefined &&
               row.Status &&
-              row.Edit !== undefined // Check if Edit exists but allow any value
+              row.Edit !== undefined &&
+              row.Delete !== undefined
           );
   
           if (!isValidData) {
@@ -559,11 +384,6 @@ const isSelected = (name) => selected.indexOf(name) !== -1;
             return;
           }
   
-          const skippedDepartments = [];
-          const addedDepartments = [];
-          const updatedDepartments = [];
-          let updatedDepartmentsList = [...departments];
-  
           // Group rows by department
           const departmentGroups = {};
           jsonData.forEach((row) => {
@@ -573,40 +393,68 @@ const isSelected = (name) => selected.indexOf(name) !== -1;
             departmentGroups[row.Department].push(row);
           });
   
+          let updatedDepartmentsList = [...departments];
+  
           // Process each department
           Object.entries(departmentGroups).forEach(([deptName, rows]) => {
             const existingDeptIndex = updatedDepartmentsList.findIndex(
               (d) => d.name === deptName
             );
   
-            // Get all roles for this department
-            const roles = rows.map(row => row.Role).filter(role => role); // Filter out empty roles
-  
             if (existingDeptIndex !== -1) {
-              // Department exists, check Edit value
-              if (rows.some(row => row.Edit.toString().toLowerCase() === "yes")) {
-                // Update the existing department
+              // Department exists
+              if (rows[0].Edit?.toString().toLowerCase() === "yes") {
                 updatedDepartmentsList[existingDeptIndex] = {
                   ...updatedDepartmentsList[existingDeptIndex],
                   displayName: rows[0]["Display Name"],
                   storage: rows[0]["Storage Allocated"],
-                  roles: roles,
                   isActive: rows[0].Status.toLowerCase() === "active"
                 };
-                updatedDepartments.push(deptName);
-              } else {
-                skippedDepartments.push(deptName);
               }
+  
+              // Process role deletions
+              const updatedRoles = updatedDepartmentsList[existingDeptIndex].roles.filter(
+                role => !rows.some(
+                  row => row.Role === role && row.Delete?.toString().toLowerCase() === "yes"
+                )
+              );
+  
+              // Add new roles
+              rows.forEach(row => {
+                if (
+                  row.Delete?.toString().toLowerCase() !== "yes" &&
+                  !updatedRoles.includes(row.Role) &&
+                  row.Role
+                ) {
+                  updatedRoles.push(row.Role);
+                }
+              });
+  
+              if (updatedRoles.length === 0) {
+                // Remove department if no roles remain
+                updatedDepartmentsList = updatedDepartmentsList.filter(
+                  (_, index) => index !== existingDeptIndex
+                );
+              } else {
+                updatedDepartmentsList[existingDeptIndex].roles = updatedRoles;
+              }
+  
             } else {
               // New department
-              updatedDepartmentsList.push({
-                name: deptName,
-                displayName: rows[0]["Display Name"],
-                storage: rows[0]["Storage Allocated"],
-                roles: roles,
-                isActive: rows[0].Status.toLowerCase() === "active"
-              });
-              addedDepartments.push(deptName);
+              const newDeptRoles = rows
+                .filter(row => row.Delete?.toString().toLowerCase() !== "yes")
+                .map(row => row.Role)
+                .filter(role => role);
+  
+              if (newDeptRoles.length > 0) {
+                updatedDepartmentsList.push({
+                  name: deptName,
+                  displayName: rows[0]["Display Name"],
+                  storage: rows[0]["Storage Allocated"],
+                  roles: newDeptRoles,
+                  isActive: rows[0].Status.toLowerCase() === "active"
+                });
+              }
             }
           });
   
@@ -614,23 +462,12 @@ const isSelected = (name) => selected.indexOf(name) !== -1;
           setDepartments(updatedDepartmentsList);
           localStorage.setItem("departments", JSON.stringify(updatedDepartmentsList));
   
-          // Prepare message
-          let message = [];
-          if (addedDepartments.length > 0) {
-            message.push(`Added ${addedDepartments.length} new departments`);
-          }
-          if (updatedDepartments.length > 0) {
-            message.push(`Updated ${updatedDepartments.length} existing departments`);
-          }
-          if (skippedDepartments.length > 0) {
-            message.push(`Skipped ${skippedDepartments.length} existing departments`);
-          }
-  
           setSnackbar({
             open: true,
-            message: message.join(". ") || "No changes made",
-            severity: addedDepartments.length > 0 || updatedDepartments.length > 0 ? "success" : "info"
+            message: "Departments and roles updated successfully",
+            severity: "success"
           });
+  
         } catch (error) {
           console.error("Error processing file:", error);
           setSnackbar({
@@ -673,22 +510,24 @@ const isSelected = (name) => selected.indexOf(name) !== -1;
     setOrderBy(property);
   };
 
-  // Add sorting function
-  const sortedDepartments = React.useMemo(() => {
-    if (!departments) return [];
+  
+const sortedDepartments = React.useMemo(() => {
+  const deptToSort = filteredDepartments.length > 0 ? filteredDepartments : departments;
+  
+  if (!deptToSort) return [];
 
-    return [...departments].sort((a, b) => {
-      if (orderBy === "roles") {
-        return order === "asc"
-          ? a.roles.length - b.roles.length
-          : b.roles.length - a.roles.length;
-      }
-
+  return [...deptToSort].sort((a, b) => {
+    if (orderBy === "roles") {
       return order === "asc"
-        ? a[orderBy].localeCompare(b[orderBy])
-        : b[orderBy].localeCompare(a[orderBy]);
-    });
-  }, [departments, order, orderBy]);
+        ? a.roles.length - b.roles.length
+        : b.roles.length - a.roles.length;
+    }
+
+    return order === "asc"
+      ? a[orderBy].localeCompare(b[orderBy])
+      : b[orderBy].localeCompare(a[orderBy]);
+  });
+}, [departments, filteredDepartments, order, orderBy]);
 
  
   const StyledTableRow = styled(TableRow)(({ theme }) => ({
@@ -728,7 +567,8 @@ const isSelected = (name) => selected.indexOf(name) !== -1;
       !newDepartment.name ||
       !newDepartment.displayName ||
       !newDepartment.initialRole ||
-      !newDepartment.storage
+      !newDepartment.storage ||
+      !newDepartment.reportingManager  // Add this validation
     ) {
       setSnackbar({
         open: true,
@@ -752,6 +592,7 @@ const isSelected = (name) => selected.indexOf(name) !== -1;
       displayName: newDepartment.displayName,
       roles: [newDepartment.initialRole],
       storage: newDepartment.storage,
+      reportingManager: newDepartment.reportingManager, // Add this field
     };
 
     const updatedDepartments = [...departments, newDeptWithRole];
@@ -767,6 +608,7 @@ const isSelected = (name) => selected.indexOf(name) !== -1;
       displayName: "",
       initialRole: "",
       storage: "50GB",
+      reportingManager: "", // Reset this field
       submitted: false,
     });
     setSnackbar({
@@ -796,13 +638,19 @@ const isSelected = (name) => selected.indexOf(name) !== -1;
       return;
     }
 
-    setDepartments((prev) =>
-      prev.map((dept) =>
-        dept.name === selectedDepartment.name
-          ? { ...dept, roles: [...dept.roles, newRole.trim()] }
-          : dept
-      )
-    );
+   
+
+     // Update departments state with new role
+  const updatedDepartments = departments.map((dept) =>
+    dept.name === selectedDepartment.name
+      ? { ...dept, roles: [...dept.roles, newRole.trim()] }
+      : dept
+  );
+
+  // Update state and localStorage
+  setDepartments(updatedDepartments);
+  localStorage.setItem('departments', JSON.stringify(updatedDepartments));
+
 
     setSnackbar({
       open: true,
@@ -850,35 +698,6 @@ const isSelected = (name) => selected.indexOf(name) !== -1;
     setDepartmentToDelete(null);
   };
 
-  // const handleTemplateDownload = () => {
-  //   const template = [
-  //     {
-  //       Department: "Example Department",
-  //       "Display Name": "EXD",
-  //       "Storage Allocated": "50GB",
-  //       Roles: "3 (Role1, Role2, Role3)",
-  //       Status: "Active", // Add Status column in template
-  //       Edit: "No",
-  //     },
-  //   ];
-
-  //   const workbook = XLSX.utils.book_new();
-  //   const worksheet = XLSX.utils.json_to_sheet(template);
-
-  //   const wscols = [
-  //     { wch: 25 }, // Department
-  //     { wch: 15 }, // Display Name
-  //     { wch: 20 }, // Storage Allocated
-  //     { wch: 50 }, // Combined Roles column
-  //     { wch: 15 }, // Status column
-  //     { wch: 10 }, // Edit column
-  //   ];
-  //   worksheet["!cols"] = wscols;
-
-  //   XLSX.utils.book_append_sheet(workbook, worksheet, "Template");
-  //   XLSX.writeFile(workbook, "department_upload_template.xlsx");
-  // };
-
   const handleTemplateDownload = () => {
     const template = [
       {
@@ -888,6 +707,7 @@ const isSelected = (name) => selected.indexOf(name) !== -1;
         Role: "Role1",
         Status: "Active",
         Edit: "No",
+        Delete: "No"  // Added Delete column
       },
       {
         Department: "Example Department",
@@ -896,14 +716,7 @@ const isSelected = (name) => selected.indexOf(name) !== -1;
         Role: "Role2",
         Status: "Active",
         Edit: "No",
-      },
-      {
-        Department: "Example Department",
-        "Display Name": "EXD",
-        "Storage Allocated": "50GB",
-        Role: "Role3",
-        Status: "Active",
-        Edit: "No",
+        Delete: "No"  // Added Delete column
       }
     ];
   
@@ -917,6 +730,7 @@ const isSelected = (name) => selected.indexOf(name) !== -1;
       { wch: 30 }, // Role
       { wch: 15 }, // Status
       { wch: 10 }, // Edit
+      { wch: 10 }  // Delete
     ];
     worksheet["!cols"] = wscols;
   
@@ -924,50 +738,8 @@ const isSelected = (name) => selected.indexOf(name) !== -1;
     XLSX.writeFile(workbook, "department_upload_template.xlsx");
   };
 
-  // const handleBulkDownloadSelected = (selectedItems) => {
-  //   try {
-  //     const selectedDepartments = departments.filter(dept => 
-  //       selectedItems.includes(dept.name)
-  //     );
   
-  //     const exportData = selectedDepartments.map((dept) => ({
-  //       Department: dept.name,
-  //       "Display Name": dept.displayName,
-  //       "Storage Allocated": dept.storage || "50GB",
-  //       Roles: `${dept.roles.length} (${dept.roles.join(", ")})`,
-  //       Status: dept.isActive ? "Active" : "Inactive",
-  //       Edit: "No",
-  //     }));
   
-  //     const ws = XLSX.utils.json_to_sheet(exportData);
-  
-  //     const wscols = [
-  //       { wch: 25 }, // Department
-  //       { wch: 15 }, // Display Name
-  //       { wch: 20 }, // Storage Allocated
-  //       { wch: 50 }, // Combined Roles column
-  //       { wch: 15 }, // Status column
-  //       { wch: 10 }, // Edit column
-  //     ];
-  //     ws["!cols"] = wscols;
-  
-  //     const wb = XLSX.utils.book_new();
-  //     XLSX.utils.book_append_sheet(wb, ws, "Selected Departments");
-  //     XLSX.writeFile(wb, "selected_departments.xlsx");
-  
-  //     setSnackbar({
-  //       open: true,
-  //       message: `Successfully exported ${selectedItems.length} departments`,
-  //       severity: "success",
-  //     });
-  //   } catch (error) {
-  //     setSnackbar({
-  //       open: true,
-  //       message: "Error exporting selected departments",
-  //       severity: "error",
-  //     });
-  //   }
-  // };
 
   const handleBulkDownloadSelected = (selectedItems) => {
     try {
@@ -975,9 +747,7 @@ const isSelected = (name) => selected.indexOf(name) !== -1;
         selectedItems.includes(dept.name)
       );
   
-      // Create expanded data with separate rows for each role
       const exportData = selectedDepartments.flatMap((dept) => {
-        // If department has no roles, create one row with empty role
         if (!dept.roles || dept.roles.length === 0) {
           return [{
             Department: dept.name,
@@ -986,10 +756,10 @@ const isSelected = (name) => selected.indexOf(name) !== -1;
             Role: "",
             Status: dept.isActive ? "Active" : "Inactive",
             Edit: "No",
+            Delete: "No"  // Added Delete column
           }];
         }
   
-        // Create a row for each role
         return dept.roles.map(role => ({
           Department: dept.name,
           "Display Name": dept.displayName,
@@ -997,6 +767,7 @@ const isSelected = (name) => selected.indexOf(name) !== -1;
           Role: role,
           Status: dept.isActive ? "Active" : "Inactive",
           Edit: "No",
+          Delete: "No"  // Added Delete column
         }));
       });
   
@@ -1009,6 +780,7 @@ const isSelected = (name) => selected.indexOf(name) !== -1;
         { wch: 30 }, // Role
         { wch: 15 }, // Status
         { wch: 10 }, // Edit
+        { wch: 10 }  // Delete
       ];
       ws["!cols"] = wscols;
   
@@ -1032,6 +804,8 @@ const isSelected = (name) => selected.indexOf(name) !== -1;
   };
 
   
+
+  
   return (
     <Box
       sx={{
@@ -1050,7 +824,8 @@ const isSelected = (name) => selected.indexOf(name) !== -1;
           overflow: "hidden",
         }}
       >
-        <Navbar onThemeToggle={onThemeToggle} />
+        <Navbar onThemeToggle={onThemeToggle} onSearch={handleSearch}
+  currentPage="departments" />
         {/* <Box sx={{ p: 3, marginLeft: "50px", overflow: "hidden" }}> */}
         <Box
           sx={{
@@ -1212,7 +987,7 @@ const isSelected = (name) => selected.indexOf(name) !== -1;
                     const isItemSelected = isSelected(dept.name); 
                     return (
                     <React.Fragment key={index}>
-                      {/* <StyledTableRow key={index}> */}
+                     
                       <StyledTableRow 
           hover
           onClick={(event) => handleClick(event, dept.name)}
@@ -1335,10 +1110,7 @@ const isSelected = (name) => selected.indexOf(name) !== -1;
                         </TableCell>
                       </StyledTableRow>
                       <StyledTableRow key={index}>
-                        {/* <TableCell
-                          style={{ paddingBottom: 0, paddingTop: 0 }}
-                          colSpan={1}
-                        > */}
+                       
                         <TableCell
                           style={{
                             paddingBottom: 0,
@@ -1353,7 +1125,7 @@ const isSelected = (name) => selected.indexOf(name) !== -1;
                             timeout="auto"
                             unmountOnExit
                           >
-                            {/* <Box sx={{ margin: 1 }}> */}
+                           
                             <Box
                               sx={{
                                 margin: 0,
@@ -1362,8 +1134,7 @@ const isSelected = (name) => selected.indexOf(name) !== -1;
                                 padding: 0,
                               }}
                             >
-                              {/* <List dense> */}
-                              {/* <List dense sx={{ padding: 0 }}> */}
+
                               <List
                                 dense
                                 sx={{
@@ -1397,11 +1168,7 @@ const isSelected = (name) => selected.indexOf(name) !== -1;
                                               role
                                             )
                                           }
-                                          // sx={{
-                                          //   "&:hover": {
-                                          //     color: "primary.main",
-                                          //   },
-                                          // }}
+                                         
                                           sx={{
                                             padding: "4px",
                                             "& .MuiSvgIcon-root": {
@@ -1418,11 +1185,7 @@ const isSelected = (name) => selected.indexOf(name) !== -1;
                                           onClick={() =>
                                             handleDeleteRole(index, roleIndex)
                                           }
-                                          // sx={{
-                                          //   "&:hover": {
-                                          //     color: "error.main",
-                                          //   },
-                                          // }}
+                                         
                                           sx={{
                                             padding: "4px",
                                             "& .MuiSvgIcon-root": {
@@ -1648,6 +1411,26 @@ const isSelected = (name) => selected.indexOf(name) !== -1;
                   : ""
               }
             />
+            <TextField
+  size="small"
+  label="Reporting Manager"
+  value={newDepartment.reportingManager}
+  onChange={(e) =>
+    setNewDepartment((prev) => ({
+      ...prev,
+      reportingManager: e.target.value,
+    }))
+  }
+  required
+  error={!newDepartment.reportingManager && newDepartment.submitted}
+  helperText={
+    !newDepartment.reportingManager && newDepartment.submitted
+      ? "Reporting Manager is required"
+      : ""
+  }
+  fullWidth
+  sx={{ mt: 2 }}
+/>
           </Box>
 
     <Box sx={{ 

@@ -11,6 +11,7 @@ import Role from './pages/Role';
 import AngelBot from './pages/AngelBot';
 import LDAPConfig from './pages/LDAPConfig';
 import CompanyDashboard from './pages/CompanyDashboard';
+import ActivateAccount from './components/ActivateAccount';
 
 
 function App() {
@@ -85,6 +86,7 @@ function App() {
                             <CompanyDashboard onThemeToggle={toggleTheme} />
                         }
                     />
+                     <Route path="/activate/:token" element={<ActivateAccount />} />
                 </Routes>
             </Router>
         </ThemeProvider>

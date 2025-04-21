@@ -32,6 +32,15 @@ import {
   TablePagination,
   InputLabel,
 } from "@mui/material";
+import MoveToInboxIcon from "@mui/icons-material/MoveToInbox"; // Add this import
+import WifiProtectedSetupIcon from '@mui/icons-material/WifiProtectedSetup';
+
+import { Grid } from "@mui/material";
+import { FormControlLabel } from "@mui/material";
+
+import AccountCircleIcon from "@mui/icons-material/AccountCircle";
+
+import { InputAdornment } from "@mui/material";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import CheckIcon from "@mui/icons-material/Check";
 import EditIcon from "@mui/icons-material/Edit";
@@ -44,7 +53,7 @@ import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 import * as XLSX from "xlsx"; // Import xlsx library
 import { Autocomplete } from "@mui/material";
-import AccountCircleIcon from "@mui/icons-material/AccountCircle";
+// import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import SpeedDial from "@mui/material/SpeedDial";
 import SpeedDialIcon from "@mui/material/SpeedDialIcon";
 import SpeedDialAction from "@mui/material/SpeedDialAction";
@@ -55,6 +64,20 @@ import DeleteSweepIcon from "@mui/icons-material/DeleteSweep";
 import { styled } from "@mui/material/styles";
 import { alpha } from "@mui/material/styles";
 
+import FileDownloadIcon from "@mui/icons-material/FileDownload"; // For download
+import DeleteForeverIcon from "@mui/icons-material/DeleteForever"; // For delete
+import PowerSettingsNewIcon from "@mui/icons-material/PowerSettingsNew"; // For activate
+import BlockIcon from "@mui/icons-material/Block"; // For deactivate
+import SaveOutlinedIcon from "@mui/icons-material/SaveOutlined"; // For save changes
+
+import emailjs from "@emailjs/browser";
+import { v4 as uuidv4 } from "uuid";
+
+const EMAIL_SERVICE_ID = "service_4h54d19";
+const EMAIL_TEMPLATE_ID = "template_so0uw3n";
+const EMAIL_USER_ID = "oL2IlUt62rbTK2_vD";
+const INVITE_EXPIRY_HOURS = 24;
+
 const createData = (
   username,
   name,
@@ -62,8 +85,9 @@ const createData = (
   role,
   email,
   storageUsed,
-  status ,// Add status parameter
-  phone // Add phone parameter
+  status, // Add status parameter
+  phone, // Add phone parameter
+  reportingManager // Add this parameter
 ) => {
   return {
     username,
@@ -75,7 +99,7 @@ const createData = (
     manageStorage: "1GB",
     status: status || "pending", // Set default status as pending
     phone: phone || "", // Add phone field with default empty string
-
+    reportingManager: reportingManager || "", // Add this field
   };
 };
 
@@ -88,7 +112,8 @@ const initialRows = [
     "Developer",
     "john.doe@example.com",
     "50GB",
-    "active"
+    "active",
+    "aaa"
   ),
   createData(
     "j.smith",
@@ -97,7 +122,8 @@ const initialRows = [
     "Manager",
     "jane.smith@example.com",
     "30GB",
-    "inactive"
+    "inactive",
+    "bbbb"
   ),
   createData(
     "ajohn.son",
@@ -106,7 +132,8 @@ const initialRows = [
     "Sales Rep",
     "alice.johnson@example.com",
     "20GB",
-    "pending"
+    "pending",
+    "ccc"
   ),
   createData(
     "bbrown.ssn",
@@ -115,7 +142,8 @@ const initialRows = [
     "HR Manager",
     "bob.brown@example.com",
     "10GB",
-    "active"
+    "active",
+    "ddd"
   ),
   createData(
     "bbrown.bns",
@@ -124,7 +152,8 @@ const initialRows = [
     "HR Manager",
     "bob111.brown@example.com",
     "10GB",
-    "active"
+    "active",
+    "eeee"
   ),
   createData(
     "cblack.snsns",
@@ -133,7 +162,8 @@ const initialRows = [
     "Analyst",
     "charlie.black@example.com",
     "15GB",
-    "active"
+    "active",
+    "fff"
   ),
   createData(
     "dprince.sss",
@@ -142,7 +172,8 @@ const initialRows = [
     "Support",
     "diana.prince@example.com",
     "25GB",
-    "pending"
+    "pending",
+    "gggg"
   ),
   createData(
     "ehunt.ns",
@@ -151,7 +182,8 @@ const initialRows = [
     "Manager",
     "ethan.hunt@example.com",
     "40GB",
-    "pending"
+    "pending",
+    "hhhh"
   ),
   createData(
     "fglen.snsn",
@@ -160,7 +192,8 @@ const initialRows = [
     "Executive",
     "fiona.glenanne@example.com",
     "35GB",
-    "pending"
+    "pending",
+    "iii"
   ),
   createData(
     "gclooney.sss",
@@ -169,7 +202,8 @@ const initialRows = [
     "Director",
     "george.clooney@example.com",
     "45GB",
-    "pending"
+    "pending",
+    "jjjj"
   ),
   createData(
     "hmontana.sbsj",
@@ -178,7 +212,8 @@ const initialRows = [
     "Recruiter",
     "hannah.montana@example.com",
     "5GB",
-    "pending"
+    "pending",
+    "kkkk"
   ),
 ];
 
@@ -197,6 +232,8 @@ const statusColors = {
   inactive: "#f44336", // Red
   pending: "#ff9800", // Orange
 };
+
+emailjs.init(EMAIL_USER_ID);
 
 const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
   const [rows, setRows] = useState(() => {
@@ -246,6 +283,227 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
   const [newRole, setNewRole] = useState("");
   const [selectedDepartmentForRole, setSelectedDepartmentForRole] =
     useState("");
+
+  const [searchResults, setSearchResults] = useState([]);
+
+  // Add these state variables
+  const [selectAllDialogOpen, setSelectAllDialogOpen] = useState(false);
+  const [selectAllPending, setSelectAllPending] = useState(false);
+  // Add this state for tracking checkbox selections
+  const [migrationOptions, setMigrationOptions] = useState({});
+
+  // Add this state after other useState declarations
+  const [selectUserOpen, setSelectUserOpen] = useState(false);
+  const [selectedUserAnchor, setSelectedUserAnchor] = useState(null);
+
+  // Add these state variables
+  const [targetUser, setTargetUser] = useState(null);
+  const [migrationError, setMigrationError] = useState("");
+
+  // Add this function to calculate total data
+  const calculateTotalData = (selectedUsers) => {
+    return selectedUsers.reduce(
+      (total, user) => total + parseInt(user.storageUsed),
+      0
+    );
+  };
+
+  // Add this function to calculate total storage
+  const calculateTotalStorage = (selectedUsers, options) => {
+    return selectedUsers.reduce((total, user) => {
+      return (
+        total +
+        (options[user.id]?.storage ? parseInt(user.storageAllocated) : 0)
+      );
+    }, 0);
+  };
+
+  // Add this function to calculate totals
+  const calculateTotals = (selectedUsers, options) => {
+    return selectedUsers.reduce(
+      (acc, user) => {
+        if (options[user.id]?.data) {
+          acc.totalData += parseInt(user.storageUsed);
+        }
+        if (options[user.id]?.storage) {
+          acc.totalStorage += parseInt(user.storageAllocated);
+        }
+        return acc;
+      },
+      { totalData: 0, totalStorage: 0 }
+    );
+  };
+
+  // Add this handler function
+  const handleSelectUserClick = (event) => {
+    setSelectedUserAnchor(event.currentTarget);
+    setSelectUserOpen(true);
+  };
+
+  // Add this handler function
+  const handleSelectUserClose = () => {
+    setSelectedUserAnchor(null);
+    setSelectUserOpen(false);
+  };
+  // Add this handler
+  const handleSearch = (results) => {
+    if (results.length === 0) {
+      // If search is cleared, show all rows
+      setSearchResults([]);
+    } else {
+      // Update filtered results
+      setSearchResults(results);
+    }
+  };
+
+  // Add these state variables inside your Dashboard component
+  const [migrationDialogOpen, setMigrationDialogOpen] = useState(false);
+  const [selectedUsersData, setSelectedUsersData] = useState([]);
+
+  const handleMigrationClick = () => {
+    const selectedUsersInfo = rows
+      .filter((row) => selected.includes(row.name))
+      .map((user) => ({
+        id: user.name,
+        name: user.name,
+        // Remove 'GB' and convert to number for calculations
+        storageUsed: parseInt(user.manageStorage.replace("GB", "")),
+        storageAllocated: parseInt(user.storageUsed.replace("GB", "")),
+        status: user.status,
+      }));
+
+    // Initialize migration options with data always true and storage false
+    const initialOptions = {};
+    selectedUsersInfo.forEach((user) => {
+      initialOptions[user.id] = {
+        data: true, // Data migration is always required
+        storage: false, // Storage migration is optional
+      };
+    });
+
+    // Calculate total data to be migrated
+    const totalData = selectedUsersInfo.reduce(
+      (sum, user) => sum + user.storageUsed,
+      0
+    );
+    console.log("Total data to be migrated:", totalData + "GB");
+
+    // Set states for the migration dialog
+    setMigrationOptions(initialOptions);
+    setSelectedUsersData(selectedUsersInfo);
+    setMigrationDialogOpen(true);
+
+    // Optional: Log initial state for debugging
+    console.log("Selected users for migration:", selectedUsersInfo);
+    console.log("Initial migration options:", initialOptions);
+  };
+
+  const handleMigrate = (targetUser) => {
+    // Parse target user's storage values
+    const targetStorageAllocated = parseInt(
+      targetUser.storageUsed.replace("GB", "")
+    );
+    const targetStorageUsed = parseInt(
+      targetUser.manageStorage.replace("GB", "")
+    );
+    const targetAvailableStorage = targetStorageAllocated - targetStorageUsed;
+
+    // Calculate total data and storage to migrate
+    const totalDataToMigrate = selectedUsersData.reduce(
+      (total, user) => total + parseInt(user.storageUsed),
+      0
+    );
+
+    const totalStorageToMigrate = selectedUsersData.reduce(
+      (total, user) =>
+        total +
+        (migrationOptions[user.id]?.storage
+          ? parseInt(user.storageAllocated)
+          : 0),
+      0
+    );
+
+    // Check if only data is being migrated
+    const isOnlyDataMigration = totalStorageToMigrate === 0;
+
+    if (isOnlyDataMigration) {
+      // Check if target has enough available storage for data
+      if (totalDataToMigrate > targetAvailableStorage) {
+        setMigrationError(
+          `Target user doesn't have enough available storage. Available: ${targetAvailableStorage}GB, Required: ${totalDataToMigrate}GB`
+        );
+        return false;
+      }
+
+      // Update rows with data migration only - now includes equal case
+      if (totalDataToMigrate <= targetAvailableStorage) {
+        setRows((prevRows) =>
+          prevRows.map((row) => {
+            if (row.name === targetUser.name) {
+              const newManageStorage = targetStorageUsed + totalDataToMigrate;
+              return {
+                ...row,
+                manageStorage: `${newManageStorage}GB`,
+              };
+            }
+            if (selected.includes(row.name)) {
+              return {
+                ...row,
+                manageStorage: "0GB",
+                status: "inactive",
+              };
+            }
+            return row;
+          })
+        );
+      }
+    } else {
+      // Handle both data and storage migration
+      const newTargetStorageNeeded =
+        totalStorageToMigrate + targetStorageAllocated;
+      const newTargetManageStorage = targetStorageUsed + totalDataToMigrate;
+
+      // Update rows with both data and storage migration
+      setRows((prevRows) =>
+        prevRows.map((row) => {
+          if (row.name === targetUser.name) {
+            return {
+              ...row,
+              storageUsed: `${newTargetStorageNeeded}GB`,
+              manageStorage: `${newTargetManageStorage}GB`,
+            };
+          }
+          if (selected.includes(row.name)) {
+            return {
+              ...row,
+              storageUsed: "0GB",
+              manageStorage: "0GB",
+              status: "inactive",
+            };
+          }
+          return row;
+        })
+      );
+    }
+
+    // Save changes to localStorage
+    localStorage.setItem("dashboardRows", JSON.stringify(rows));
+    setChangesMade(true);
+
+    // Clear selections and close dialog
+    setSelected([]);
+    setMigrationDialogOpen(false);
+    setSnackbarMessage("Migration completed successfully");
+    setSnackbarOpen(true);
+
+    return true;
+  };
+  // Add this validation function at the top level of your component
+  const validateStorageInput = (value) => {
+    // Remove any non-numeric characters
+    const numericValue = value.replace(/[^0-9]/g, "");
+    return numericValue;
+  };
 
   // Add these functions to handle new departments and roles
   const handleAddDepartment = () => {
@@ -340,10 +598,13 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
     setSnackbarOpen(true);
   };
 
-  const handleAddUser = () => {
+  const handleAddUser = async () => {
     const errors = {};
     // Validate all required fields
     if (!newUserData.name?.trim()) errors.name = "Name is required";
+    if (!newUserData.reportingManager) {
+      errors.reportingManager = "Reporting Manager is required";
+    }
     if (!newUserData.department) errors.department = "Department is required";
     if (!newUserData.role) errors.role = "Role is required";
     if (!newUserData.email?.trim()) errors.email = "Email is required";
@@ -381,6 +642,16 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
 
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
+      return;
+    }
+
+    const inviteLink = generateInviteLink(newUserData.email);
+    console.log("Generated invite link:", inviteLink); // Debug log
+    const emailSent = await sendInviteEmail(newUserData.email, inviteLink);
+    console.log("Email send result:", emailSent); // Debug log
+    if (!emailSent) {
+      setSnackbarMessage("Error sending invite email. Please try again.");
+      setSnackbarOpen(true);
       return;
     }
 
@@ -435,11 +706,33 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
-      const newSelecteds = rows.map((row) => row.name);
-      setSelected(newSelecteds);
-      return;
+      setSelectAllPending(true);
+      setSelectAllDialogOpen(true);
+    } else {
+      setSelected([]);
     }
-    setSelected([]);
+  };
+
+  // Add the selection dialog handler functions
+  const handleSelectAllDialogClose = () => {
+    setSelectAllDialogOpen(false);
+    setSelectAllPending(false);
+  };
+
+  const handleSelectAllConfirm = (selectAll) => {
+    if (selectAll) {
+      // Select all users across all pages
+      const allNames = rows.map((row) => row.name);
+      setSelected(allNames);
+    } else {
+      // Select only current page users
+      const currentPageNames = filteredRows
+        .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+        .map((row) => row.name);
+      setSelected(currentPageNames);
+    }
+    setSelectAllDialogOpen(false);
+    setSelectAllPending(false);
   };
 
   const handleSelectOne = (name) => {
@@ -476,16 +769,31 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
     setOrderBy(property);
   };
 
-  // Sort rows based on selected order
   const sortedRows = [...rows].sort((a, b) => {
     if (order === "asc") {
-      return a[orderBy] < b[orderBy] ? -1 : 1;
+      // Convert strings to lowercase for case-insensitive comparison
+      return String(a[orderBy] || "").toLowerCase() <
+        String(b[orderBy] || "").toLowerCase()
+        ? -1
+        : 1;
     } else {
-      return a[orderBy] > b[orderBy] ? -1 : 1;
+      return String(a[orderBy] || "").toLowerCase() >
+        String(b[orderBy] || "").toLowerCase()
+        ? -1
+        : 1;
     }
   });
 
   const filteredRows = sortedRows.filter((row) => {
+    // First apply search filter if search results exist
+    if (searchResults.length > 0) {
+      const isInSearchResults = searchResults.some(
+        (searchRow) => searchRow.name === row.name
+      );
+      if (!isInSearchResults) return false;
+    }
+
+    // Then apply status filter
     if (filter === "Active") return row.status === "active";
     if (filter === "Inactive") return row.status === "inactive";
     if (filter === "Pending") return row.status === "pending";
@@ -615,23 +923,31 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
     setUserToDelete(null); // Clear the user to delete
   };
 
-  // Save edited user data
+  // Update the saveEditedUser function
   const saveEditedUser = () => {
     setRows((prevRows) =>
       prevRows.map((row) =>
         row.name === userToEdit.name ? { ...row, ...editedUserData } : row
       )
     );
-    setEditDialogOpen(false); // Close the edit dialog
-    setUserToEdit(null); // Clear the user to edit
-    setChangesMade(true);
+
+    // Save to localStorage immediately
+    const updatedRows = rows.map((row) =>
+      row.name === userToEdit.name ? { ...row, ...editedUserData } : row
+    );
+    localStorage.setItem("dashboardRows", JSON.stringify(updatedRows));
+
+    setEditDialogOpen(false);
+    setUserToEdit(null);
+    setSnackbarMessage("User details updated successfully");
+    setSnackbarOpen(true);
   };
 
   // Handle input change in edit dialog
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setEditedUserData((prevData) => ({ ...prevData, [name]: value }));
-    setChangesMade(true);
+    // setChangesMade(true);
   };
 
   // Update the handleStorageChange function
@@ -692,123 +1008,132 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
 
   // Modify the handleBulkUpload function:
 
-const handleBulkUpload = async (event) => {
-  const file = event.target.files[0];
-  if (!file) return;
+  const handleBulkUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
 
-  try {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const data = new Uint8Array(e.target.result);
-      const workbook = XLSX.read(data, { type: "array" });
-      const sheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[sheetName];
-      const jsonData = XLSX.utils.sheet_to_json(worksheet);
+    try {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: "array" });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-      // Validate the data structure
-      const isValidData = jsonData.every(
-        (row) =>
-          row.username &&
-          row.name &&
-          row.department &&
-          row.role &&
-          row.email &&
-          row.storageUsed &&
-          row.edit
-      );
-
-      if (!isValidData) {
-        setSnackbarMessage("Invalid file format. Please use the correct template.");
-        setSnackbarOpen(true);
-        return;
-      }
-
-      const existingEmails = new Set(rows.map((row) => row.email.toLowerCase()));
-      const existingNames = new Set(rows.map((row) => row.name.toLowerCase()));
-      const duplicateEmails = [];
-      const duplicateNames = [];
-      const newUsers = [];
-      const updatedUsers = [];
-      const ignoredRows = [];
-
-      jsonData.forEach((user) => {
-        if (user.edit?.toLowerCase() === "yes") {
-          const existingUserIndex = rows.findIndex(
-            (row) => row.email.toLowerCase() === user.email.toLowerCase()
-          );
-
-          if (existingUserIndex >= 0) {
-            const existingEmail = rows[existingUserIndex].email;
-            updatedUsers.push({
-              ...user,
-              email: existingEmail,
-              status: rows[existingUserIndex].status // Preserve existing status
-            });
-          } else {
-            ignoredRows.push({
-              ...user,
-              reason: "User not found for editing"
-            });
-          }
-        } else {
-          const isDuplicateEmail = existingEmails.has(user.email.toLowerCase());
-          const isDuplicateName = existingNames.has(user.name.toLowerCase());
-
-          if (isDuplicateEmail) {
-            duplicateEmails.push(user.email);
-            ignoredRows.push({ ...user, reason: "Duplicate email" });
-          } else if (isDuplicateName) {
-            duplicateNames.push(user.name);
-            ignoredRows.push({ ...user, reason: "Duplicate name" });
-          } else {
-            newUsers.push({
-              ...user,
-              status: "pending", // Set status as pending for new users
-              manageStorage: "1GB",
-              phone: user.phone || ""
-            });
-            existingEmails.add(user.email.toLowerCase());
-            existingNames.add(user.name.toLowerCase());
-          }
-        }
-      });
-
-      // Update existing users
-      let updatedRows = [...rows];
-      updatedUsers.forEach((userToUpdate) => {
-        updatedRows = updatedRows.map((row) =>
-          row.email.toLowerCase() === userToUpdate.email.toLowerCase()
-            ? { ...userToUpdate, email: row.email }
-            : row
+        // Validate the data structure
+        const isValidData = jsonData.every(
+          (row) =>
+            row.username &&
+            row.name &&
+            row.department &&
+            row.role &&
+            row.email &&
+            row.storageUsed &&
+            row.edit
         );
-      });
 
-      // Add new users with pending status
-      updatedRows = [...updatedRows, ...newUsers];
-      setRows(updatedRows);
-      localStorage.setItem("dashboardRows", JSON.stringify(updatedRows));
-      setChangesMade(true);
+        if (!isValidData) {
+          setSnackbarMessage(
+            "Invalid file format. Please use the correct template."
+          );
+          setSnackbarOpen(true);
+          return;
+        }
 
-      const message = [
-        `Successfully processed ${jsonData.length} rows:`,
-        `- ${newUsers.length} new users added (with pending status)`,
-        `- ${updatedUsers.length} users updated`,
-        `- ${ignoredRows.length} rows ignored`,
-      ].join("\n");
+        const existingEmails = new Set(
+          rows.map((row) => row.email.toLowerCase())
+        );
+        const existingNames = new Set(
+          rows.map((row) => row.name.toLowerCase())
+        );
+        const duplicateEmails = [];
+        const duplicateNames = [];
+        const newUsers = [];
+        const updatedUsers = [];
+        const ignoredRows = [];
+        const emailEditAttempts = []; // New array to track email edit attemptsl
 
-      setSnackbarMessage(message);
+        jsonData.forEach((user) => {
+          if (user.edit?.toLowerCase() === "yes") {
+            const existingUserIndex = rows.findIndex(
+              (row) => row.email.toLowerCase() === user.email.toLowerCase()
+            );
+
+            if (existingUserIndex >= 0) {
+              const existingEmail = rows[existingUserIndex].email;
+              updatedUsers.push({
+                ...user,
+                email: existingEmail,
+                status: rows[existingUserIndex].status, // Preserve existing status
+              });
+            } else {
+              ignoredRows.push({
+                ...user,
+                reason: "User not found for editing",
+              });
+            }
+          } else {
+            const isDuplicateEmail = existingEmails.has(
+              user.email.toLowerCase()
+            );
+            const isDuplicateName = existingNames.has(user.name.toLowerCase());
+
+            if (isDuplicateEmail) {
+              duplicateEmails.push(user.email);
+              ignoredRows.push({ ...user, reason: "Duplicate email" });
+            } else if (isDuplicateName) {
+              duplicateNames.push(user.name);
+              ignoredRows.push({ ...user, reason: "Duplicate name" });
+            } else {
+              newUsers.push({
+                ...user,
+                status: "pending", // Set status as pending for new users
+                manageStorage: "1GB",
+                phone: user.phone || "",
+              });
+              existingEmails.add(user.email.toLowerCase());
+              existingNames.add(user.name.toLowerCase());
+            }
+          }
+        });
+
+        // Update existing users
+        let updatedRows = [...rows];
+        updatedUsers.forEach((userToUpdate) => {
+          updatedRows = updatedRows.map((row) =>
+            row.email.toLowerCase() === userToUpdate.email.toLowerCase()
+              ? { ...userToUpdate, email: row.email }
+              : row
+          );
+        });
+
+        // Add new users with pending status
+        updatedRows = [...updatedRows, ...newUsers];
+        setRows(updatedRows);
+        localStorage.setItem("dashboardRows", JSON.stringify(updatedRows));
+        setChangesMade(true);
+
+        const message = [
+          `Successfully processed ${jsonData.length} rows:`,
+          `- ${newUsers.length} new users added (with pending status)`,
+          `- ${updatedUsers.length} users updated`,
+          `- ${ignoredRows.length} rows ignored`,
+        ].join("\n");
+
+        setSnackbarMessage(message);
+        setSnackbarOpen(true);
+      };
+
+      reader.readAsArrayBuffer(file);
+    } catch (error) {
+      console.error("Upload error:", error);
+      setSnackbarMessage("Error processing file. Please try again.");
       setSnackbarOpen(true);
-    };
+    }
 
-    reader.readAsArrayBuffer(file);
-  } catch (error) {
-    console.error("Upload error:", error);
-    setSnackbarMessage("Error processing file. Please try again.");
-    setSnackbarOpen(true);
-  }
-
-  event.target.value = "";
-};
+    event.target.value = "";
+  };
   // Add this handler function inside the Dashboard component
   const handleDeleteAll = () => {
     if (selected.length > 0) {
@@ -854,8 +1179,9 @@ const handleBulkUpload = async (event) => {
         Role: "Role Name/Designaton",
         Email: "Kapil@Example.Com",
         StorageUsed: "10GB",
-        Status: "Inactive", // Add status column
+        Status: "Inactive",
         Phone: "1234567890",
+        "Reporting Manager": "Manager Name",
         Edit: "No",
       },
     ];
@@ -870,15 +1196,56 @@ const handleBulkUpload = async (event) => {
       { wch: 15 }, // storageUsed
       { wch: 15 }, // status
       { wch: 15 }, // phone
+      { wch: 25 }, // reporting manager
       { wch: 10 }, // edit
     ];
 
     const workbook = XLSX.utils.book_new();
     const worksheet = XLSX.utils.json_to_sheet(template);
+
+    // Define header style
+    const headerStyle = {
+      font: {
+        bold: true,
+        sz: 12,
+        color: { rgb: "000000" },
+      },
+      fill: {
+        fgColor: { rgb: "FFFFFF" },
+      },
+      alignment: {
+        horizontal: "center",
+        vertical: "center",
+      },
+    };
+
+    // Get the range of the worksheet
+    const range = XLSX.utils.decode_range(worksheet["!ref"]);
+
+    // Apply style to header row
+    for (let C = range.s.c; C <= range.e.c; ++C) {
+      const address = XLSX.utils.encode_cell({ r: 0, c: C });
+      if (!worksheet[address]) continue;
+
+      worksheet[address].s = headerStyle;
+
+      // Ensure cell properties are set
+      if (!worksheet[address].v) worksheet[address].v = "";
+      worksheet[address].t = "s"; // Set type as string
+    }
+
+    // Set column widths
     worksheet["!cols"] = wscols;
 
     XLSX.utils.book_append_sheet(workbook, worksheet, "Template");
-    XLSX.writeFile(workbook, "user_upload_template.xlsx");
+
+    // Write file with specific options to ensure styles are preserved
+    XLSX.writeFile(workbook, "user_upload_template.xlsx", {
+      bookSST: false,
+      type: "binary",
+      cellStyles: true,
+      compression: true,
+    });
   };
 
   useEffect(() => {
@@ -893,6 +1260,9 @@ const handleBulkUpload = async (event) => {
 
   // Update handleStatusChange
   const handleStatusChange = (name, newStatus) => {
+    if (newStatus === "pending") {
+      return;
+    }
     setRows((prevRows) =>
       prevRows.map((row) =>
         row.name === name
@@ -910,6 +1280,76 @@ const handleBulkUpload = async (event) => {
     );
     localStorage.setItem("dashboardRows", JSON.stringify(updatedRows));
   };
+
+  // Add these functions inside Dashboard component
+  const generateInviteLink = (email) => {
+    const token = uuidv4();
+    const inviteLink = `${window.location.origin}/activate/${token}`;
+
+    // Store the token and email mapping
+    const invites = JSON.parse(localStorage.getItem("pendingInvites") || "{}");
+    // invites[token] = email;
+    invites[token] = {
+      email,
+      expiry: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours expiry
+    };
+    localStorage.setItem("pendingInvites", JSON.stringify(invites));
+
+    return inviteLink;
+  };
+
+  // Update the sendInviteEmail function
+  const sendInviteEmail = async (email, inviteLink) => {
+    try {
+      const response = await emailjs.send(
+        EMAIL_SERVICE_ID,
+        EMAIL_TEMPLATE_ID,
+        {
+          to_email: email,
+          invite_link: inviteLink,
+          message: `Click the following link to activate your account: ${inviteLink}`,
+        },
+        EMAIL_USER_ID
+      );
+
+      if (response.status === 200) {
+        console.log("Email sent successfully");
+        return true;
+      } else {
+        console.error("Failed to send email:", response);
+        return false;
+      }
+    } catch (error) {
+      console.error("Error sending invite:", error);
+      return false;
+    }
+  };
+
+  useEffect(() => {
+    const cleanupExpiredInvites = () => {
+      const invites = JSON.parse(
+        localStorage.getItem("pendingInvites") || "{}"
+      );
+      const now = new Date();
+
+      const validInvites = Object.entries(invites).reduce(
+        (acc, [token, data]) => {
+          if (new Date(data.expiry) > now) {
+            acc[token] = data;
+          }
+          return acc;
+        },
+        {}
+      );
+
+      localStorage.setItem("pendingInvites", JSON.stringify(validInvites));
+    };
+
+    // Clean up on mount and every hour
+    cleanupExpiredInvites();
+    const interval = setInterval(cleanupExpiredInvites, 3600000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <Box
@@ -929,7 +1369,7 @@ const handleBulkUpload = async (event) => {
           overflow: "hidden",
         }}
       >
-        <Navbar onThemeToggle={onThemeToggle} />
+        <Navbar onThemeToggle={onThemeToggle} onSearch={handleSearch} />
         <Box
           sx={{
             p: 0,
@@ -969,7 +1409,6 @@ const handleBulkUpload = async (event) => {
                   {/* Set header row height */}
                   <TableCell padding="checkbox" sx={{ width: "40px" }}>
                     <Checkbox
-                      size="small"
                       color="primary"
                       indeterminate={
                         selected.length > 0 &&
@@ -980,6 +1419,10 @@ const handleBulkUpload = async (event) => {
                         selected.length === filteredRows.length
                       }
                       onChange={handleSelectAll}
+                      inputProps={{
+                        "aria-label": "select all users",
+                      }}
+                      size="small"
                     />
                   </TableCell>
                   {/* <TableCell sx={{ width: "150px", padding: "2px" }}> */}
@@ -991,7 +1434,7 @@ const handleBulkUpload = async (event) => {
                       color: "#444",
                     }}
                   >
-                    <Typography variant="body1" fontWeight="bold">
+                    <Typography variant="body1" fontWeight="bold" fontFamily={"sans-serif"}>
                       <TableSortLabel
                         active={orderBy === "username"}
                         direction={orderBy === "username" ? order : "asc"}
@@ -1002,7 +1445,7 @@ const handleBulkUpload = async (event) => {
                     </Typography>
                   </TableCell>
                   <TableCell sx={{ width: "150px", padding: "2px" }}>
-                    <Typography variant="body1" fontWeight="bold">
+                    <Typography variant="body1" fontWeight="bold" fontFamily={"sans-serif"}>
                       <TableSortLabel
                         active={orderBy === "name"}
                         direction={orderBy === "name" ? order : "asc"}
@@ -1013,7 +1456,7 @@ const handleBulkUpload = async (event) => {
                     </Typography>
                   </TableCell>
                   <TableCell sx={{ width: "150px", padding: "2px" }}>
-                    <Typography variant="body1" fontWeight="bold">
+                    <Typography variant="body1" fontWeight="bold" fontFamily={"sans-serif"}>
                       <TableSortLabel
                         active={orderBy === "department"}
                         direction={orderBy === "department" ? order : "asc"}
@@ -1024,7 +1467,7 @@ const handleBulkUpload = async (event) => {
                     </Typography>
                   </TableCell>
                   <TableCell sx={{ width: "150px", padding: "2px" }}>
-                    <Typography variant="body1" fontWeight="bold">
+                    <Typography variant="body1" fontWeight="bold" fontFamily={"sans-serif"}>
                       <TableSortLabel
                         active={orderBy === "role"}
                         direction={orderBy === "role" ? order : "asc"}
@@ -1035,7 +1478,7 @@ const handleBulkUpload = async (event) => {
                     </Typography>
                   </TableCell>
                   <TableCell sx={{ width: "200px", padding: "2px" }}>
-                    <Typography variant="body1" fontWeight="bold">
+                    <Typography variant="body1" fontWeight="bold" fontFamily={"sans-serif"}>
                       <TableSortLabel
                         active={orderBy === "email"}
                         direction={orderBy === "email" ? order : "asc"}
@@ -1046,7 +1489,7 @@ const handleBulkUpload = async (event) => {
                     </Typography>
                   </TableCell>
                   <TableCell sx={{ width: "150px", padding: "2px" }}>
-                    <Typography variant="body1" fontWeight="bold">
+                    <Typography variant="body1" fontWeight="bold" fontFamily={"sans-serif"}>
                       <TableSortLabel
                         active={orderBy === "storageUsed"}
                         direction={orderBy === "storageUsed" ? order : "asc"}
@@ -1057,7 +1500,7 @@ const handleBulkUpload = async (event) => {
                     </Typography>
                   </TableCell>
                   <TableCell sx={{ width: "150px", padding: "2px" }}>
-                    <Typography variant="body1" fontWeight="bold">
+                    <Typography variant="body1" fontWeight="bold" fontFamily={"sans-serif"}>
                       Manage Storage
                     </Typography>
                   </TableCell>
@@ -1072,7 +1515,7 @@ const handleBulkUpload = async (event) => {
                         width: "100%", // Ensure the box takes full width
                       }}
                     >
-                      <Typography variant="body1" fontWeight="bold">
+                      <Typography variant="body1" fontWeight="bold" fontFamily={"sans-serif"}>
                         Tools
                       </Typography>
                       <Box sx={{ ml: 2 }}>
@@ -1151,6 +1594,7 @@ const handleBulkUpload = async (event) => {
                               padding: "2px 8px",
                               color: "#333",
                               fontSize: "0.875rem",
+                              
                             }}
                           >
                             {row.username}
@@ -1216,6 +1660,7 @@ const handleBulkUpload = async (event) => {
                           >
                             {row.storageUsed}
                           </TableCell>
+
                           <TableCell
                             sx={{
                               width: "150px",
@@ -1226,12 +1671,16 @@ const handleBulkUpload = async (event) => {
                             <FormControl
                               fullWidth
                               size="small"
+                              disabled={row.storageUsed === "0GB"} // Disable if storage is 0GB
                               sx={{
                                 minWidth: 80,
                                 "& .MuiOutlinedInput-root": {
                                   height: "24px",
                                   fontSize: "0.875rem",
-                                  backgroundColor: "white",
+                                  backgroundColor:
+                                    row.storageUsed === "0GB"
+                                      ? "#f5f5f5"
+                                      : "white",
                                   "& fieldset": {
                                     borderColor: "#e0e0e0",
                                   },
@@ -1240,6 +1689,10 @@ const handleBulkUpload = async (event) => {
                                   },
                                   "&.Mui-focused fieldset": {
                                     borderColor: "#1976d2",
+                                  },
+                                  "&.Mui-disabled": {
+                                    backgroundColor: "#f5f5f5",
+                                    cursor: "not-allowed",
                                   },
                                 },
                                 "& .MuiSelect-select": {
@@ -1253,6 +1706,7 @@ const handleBulkUpload = async (event) => {
                                 onChange={(e) =>
                                   handleStorageChange(row.name, e.target.value)
                                 }
+                                disabled={row.storageUsed === "0GB"} // Disable if storage is 0GB
                                 MenuProps={{
                                   PaperProps: {
                                     sx: {
@@ -1267,6 +1721,24 @@ const handleBulkUpload = async (event) => {
                                   },
                                 }}
                               >
+                                {![1, 2, 3, 5, 10, 15, 20, 25, 50]
+                                  .map((size) => `${size}GB`)
+                                  .includes(row.manageStorage) && (
+                                  <MenuItem
+                                    value={row.manageStorage}
+                                    sx={{
+                                      "&.Mui-selected": {
+                                        backgroundColor: "#e3f2fd",
+                                      },
+                                      "&.Mui-selected:hover": {
+                                        backgroundColor: "#bbdefb",
+                                      },
+                                    }}
+                                  >
+                                    {row.manageStorage}
+                                  </MenuItem>
+                                )}
+
                                 {[1, 2, 3, 5, 10, 15, 20, 25, 50].map(
                                   (size) => (
                                     <MenuItem
@@ -1289,99 +1761,103 @@ const handleBulkUpload = async (event) => {
                             </FormControl>
                           </TableCell>
 
+                         
                           <TableCell
-                            sx={{
-                              width: "150px",
-                              padding: "2px",
-                              height: "20px",
-                            }}
-                          >
-                            {hoveredRow === row.name && (
-                              <Box
-                                sx={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 0.5,
-                                  position: "relative",
-                                  zIndex: 1000,
-                                }}
-                              >
-                                <Tooltip
-                                  title={
-                                    (row.status || "pending")
-                                      .charAt(0)
-                                      .toUpperCase() +
-                                    (row.status || "pending").slice(1)
-                                  }
-                                  placement="top"
-                                >
-                                  <Box>
-                                    <Switch
-                                      checked={row.status === "active"}
-                                      onChange={(e) => {
-                                        let newStatus;
-                                        // Allow changing status from any state
-                                        newStatus = e.target.checked
-                                          ? "active"
-                                          : "inactive";
-                                        handleStatusChange(row.name, newStatus);
-                                      }}
-                                      sx={{
-                                        "& .MuiSwitch-switchBase": {
-                                          "&.Mui-checked": {
-                                            color: statusColors.active,
-                                            "& + .MuiSwitch-track": {
-                                              backgroundColor: alpha(
-                                                statusColors.active,
-                                                0.5
-                                              ),
-                                            },
-                                          },
-                                        },
-                                        "& .MuiSwitch-thumb": {
-                                          backgroundColor:
-                                            (row.status || "pending") ===
-                                            "active"
-                                              ? statusColors.active
-                                              : (row.status || "pending") ===
-                                                "pending"
-                                              ? statusColors.pending
-                                              : statusColors.inactive,
-                                        },
-                                        "& .MuiSwitch-track": {
-                                          backgroundColor:
-                                            (row.status || "pending") ===
-                                            "active"
-                                              ? alpha(statusColors.active, 0.5)
-                                              : (row.status || "pending") ===
-                                                "pending"
-                                              ? alpha(statusColors.pending, 0.5)
-                                              : alpha(
-                                                  statusColors.inactive,
-                                                  0.5
-                                                ),
-                                        },
-                                      }}
-                                      size="small"
-                                    />
-                                  </Box>
-                                </Tooltip>
-                                <IconButton
-                                  onClick={() => handleEdit(row.name)}
-                                  disabled={selected.length > 1}
-                                  sx={{ padding: "4px" }}
-                                >
-                                  <EditIcon fontSize="small" />
-                                </IconButton>
-                                <IconButton
-                                  onClick={() => handleDelete(row.name)}
-                                  sx={{ padding: "4px" }}
-                                >
-                                  <DeleteIcon fontSize="small" color="error" />
-                                </IconButton>
-                              </Box>
-                            )}
-                          </TableCell>
+  sx={{
+    width: "150px",
+    padding: "2px",
+    height: "20px",
+  }}
+>
+  {hoveredRow === row.name && !isSelected(row.name) && ( // Only show if row is hovered AND not selected
+    <Box
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        gap: 0.5,
+        position: "relative",
+        zIndex: 1000,
+      }}
+    >
+      <Tooltip
+        title={
+          (row.status || "pending")
+            .charAt(0)
+            .toUpperCase() +
+          (row.status || "pending").slice(1)
+        }
+        placement="top"
+      >
+        <Box>
+          <Switch
+            checked={row.status === "active"}
+            onChange={(e) => {
+              let newStatus;
+              newStatus = e.target.checked ? "active" : "inactive";
+              handleStatusChange(row.name, newStatus);
+            }}
+            sx={{
+              "& .MuiSwitch-switchBase": {
+                "&.Mui-checked": {
+                  color: statusColors.active,
+                  "& + .MuiSwitch-track": {
+                    backgroundColor: alpha(statusColors.active, 0.5),
+                  },
+                },
+              },
+              "& .MuiSwitch-thumb": {
+                backgroundColor:
+                  (row.status || "pending") === "active"
+                    ? statusColors.active
+                    : (row.status || "pending") === "pending"
+                    ? statusColors.pending
+                    : statusColors.inactive,
+              },
+              "& .MuiSwitch-track": {
+                backgroundColor:
+                  (row.status || "pending") === "active"
+                    ? alpha(statusColors.active, 0.5)
+                    : (row.status || "pending") === "pending"
+                    ? alpha(statusColors.pending, 0.5)
+                    : alpha(statusColors.inactive, 0.5),
+              },
+            }}
+            size="small"
+          />
+        </Box>
+      </Tooltip>
+      <IconButton
+        onClick={() => handleEdit(row.name)}
+        disabled={selected.length > 1}
+        sx={{ padding: "4px" }}
+      >
+        <EditIcon fontSize="small" />
+      </IconButton>
+      <IconButton
+        onClick={() => handleDelete(row.name)}
+        sx={{ padding: "4px" }}
+      >
+        <DeleteIcon fontSize="small" color="error" />
+      </IconButton>
+    </Box>
+  )}
+  {hoveredRow === row.name && isSelected(row.name) && ( // Only show delete icon when selected
+    <Box
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <IconButton
+        onClick={() => handleDelete(row.name)}
+        sx={{ padding: "4px" }}
+      >
+        <DeleteIcon fontSize="small" color="error" />
+      </IconButton>
+    </Box>
+  )}
+</TableCell>
                         </StyledTableRow>
                       );
                     })
@@ -1445,49 +1921,161 @@ const handleBulkUpload = async (event) => {
                 accept=".xlsx,.xls"
                 style={{ display: "none" }}
               />
-
-              <SpeedDial
-                ariaLabel="User actions"
-                icon={<AccountCircleIcon />}
-                direction="left"
-                onClick={() => setOpenAddUserDialog(true)} // Add direct click handler
-                FabProps={{
-                  size: "small",
-                  sx: {
-                    bgcolor: "blue",
-                    "&:hover": {
-                      bgcolor: "blue",
-                    },
-                    width: 30,
-                    height: 30,
-                  },
-                }}
-              />
-
-              {selected.length > 0 && (
-                <SpeedDial
-                  ariaLabel="Download actions"
-                  icon={<DownloadIcon />}
-                  direction="left"
-                  FabProps={{
-                    size: "small",
-                    sx: {
-                      bgcolor: "blue",
-                      "&:hover": {
-                        bgcolor: "blue",
+              {selected.length === 0 && (
+                <Tooltip title="Add New User" placement="left">
+                  <SpeedDial
+                    ariaLabel="Add new user"
+                    icon={<PersonAddIcon />}
+                    direction="left"
+                    onClick={() => setOpenAddUserDialog(true)}
+                    FabProps={{
+                      size: "small",
+                      sx: {
+                        bgcolor: "#1976d2",
+                        "&:hover": {
+                          bgcolor: "#1565c0",
+                        },
+                        width: 30,
+                        height: 30,
                       },
-                      width: 30,
-                      height: 30,
-                      // position: "absolute",
-                      // right: 45, // Position it next to the User Actions SpeedDial
-                      marginBottom: 0,
-                    },
-                  }}
-                  onClick={() => {
-                    handleBulkDownload();
-                    setSelected([]); // Clear selection after download
-                  }}
-                />
+                    }}
+                  />
+                </Tooltip>
+              )}
+
+              {selected.length === 1 && (
+                <Tooltip title="Download Selected User" placement="left">
+                  <SpeedDial
+                    ariaLabel="Download selected"
+                    icon={<FileDownloadIcon />}
+                    direction="left"
+                    FabProps={{
+                      size: "small",
+                      sx: {
+                        bgcolor: "#2e7d32",
+                        "&:hover": {
+                          bgcolor: "#1b5e20",
+                        },
+                        width: 30,
+                        height: 30,
+                      },
+                    }}
+                    onClick={() => {
+                      handleBulkDownload();
+                      setSelected([]);
+                    }}
+                  />
+                </Tooltip>
+              )}
+
+              {selected.length > 1 && (
+                <>
+                  <Tooltip title="Download Selected Users" placement="left">
+                    <SpeedDial
+                      ariaLabel="Download selected"
+                      icon={<FileDownloadIcon />}
+                      direction="left"
+                      FabProps={{
+                        size: "small",
+                        sx: {
+                          bgcolor: "#2e7d32",
+                          "&:hover": {
+                            bgcolor: "#1b5e20",
+                          },
+                          width: 30,
+                          height: 30,
+                        },
+                      }}
+                      onClick={() => {
+                        handleBulkDownload();
+                        setSelected([]);
+                      }}
+                    />
+                  </Tooltip>
+
+                  <Tooltip title="Delete Selected Users" placement="left">
+                    <SpeedDial
+                      ariaLabel="Delete selected"
+                      icon={<DeleteForeverIcon />}
+                      direction="left"
+                      FabProps={{
+                        size: "small",
+                        sx: {
+                          bgcolor: "#d32f2f",
+                          "&:hover": {
+                            bgcolor: "#c62828",
+                          },
+                          width: 30,
+                          height: 30,
+                        },
+                      }}
+                      onClick={handleDeleteAll}
+                    />
+                  </Tooltip>
+
+                  <Tooltip title="Activate Selected Users" placement="left">
+                    <SpeedDial
+                      ariaLabel="Activate selected"
+                      icon={<PowerSettingsNewIcon />}
+                      direction="left"
+                      FabProps={{
+                        size: "small",
+                        sx: {
+                          bgcolor: "#388e3c",
+                          "&:hover": {
+                            bgcolor: "#2e7d32",
+                          },
+                          width: 30,
+                          height: 30,
+                        },
+                      }}
+                      onClick={activateAll}
+                    />
+                  </Tooltip>
+
+                  <Tooltip title="Deactivate Selected Users" placement="left">
+                    <SpeedDial
+                      ariaLabel="Deactivate selected"
+                      icon={<BlockIcon />}
+                      direction="left"
+                      FabProps={{
+                        size: "small",
+                        sx: {
+                          bgcolor: "#f44336",
+                          "&:hover": {
+                            bgcolor: "#d32f2f",
+                          },
+                          width: 30,
+                          height: 30,
+                        },
+                      }}
+                      onClick={deactivateAll}
+                    />
+                  </Tooltip>
+                </>
+              )}
+
+              {/* // Add this after your existing SpeedDial components, inside the same Box component */}
+              {selected.length >= 1 && (
+                <Tooltip title="Migrate Selected Users" placement="left">
+                  <SpeedDial
+                    ariaLabel="Migrate selected"
+                    icon={< WifiProtectedSetupIcon />}
+                    direction="left"
+                    FabProps={{
+                      size: "small",
+                      sx: {
+                        bgcolor: "#9c27b0",
+                        "&:hover": {
+                          bgcolor: "#7b1fa2",
+                        },
+                        width: 30,
+                        height: 30,
+                      },
+                    }}
+                    onClick={handleMigrationClick}
+                  />
+                </Tooltip>
               )}
             </Box>
 
@@ -1500,117 +2088,40 @@ const handleBulkUpload = async (event) => {
                 pointerEvents: "none",
               }}
             >
-              <SpeedDial
-                ariaLabel="Settings actions"
-                icon={<SettingsIcon />}
-                direction="left"
-                disabled={!changesMade && selected.length === 0}
-                onMouseEnter={() => setHoveredRow(null)}
-                onMouseLeave={() => setHoveredRow(null)}
+              <Box
                 sx={{
-                  pointerEvents: "auto", // Re-enable pointer events for the SpeedDial itself
-                  "& .MuiFab-root": {
-                    width: 30,
-                    height: 30,
-                    zIndex: 500,
-                  },
-                  "& .MuiSpeedDial-actions": {
-                    pointerEvents: "auto", // Enable pointer events for actions
-                    visibility: "visible",
-                    zIndex: 500,
-                  },
-                }}
-                FabProps={{
-                  size: "small",
-                  sx: {
-                    bgcolor:
-                      changesMade || selected.length > 0 ? "blue" : "grey",
-                    "&:hover": {
-                      bgcolor:
-                        changesMade || selected.length > 0 ? "blue" : "grey",
-                    },
-                    width: 30,
-                    height: 30,
-                  },
+                  position: "fixed",
+                  bottom: 100,
+                  right: 16,
+                  zIndex: 500,
                 }}
               >
-                <SpeedDialAction
-                  icon={<DeleteSweepIcon />}
-                  tooltipTitle="Delete All Selected"
-                  onClick={handleDeleteAll}
-                  disabled={selected.length === 0}
-                  FabProps={{
-                    sx: {
-                      bgcolor: selected.length > 0 ? "yellow" : "grey",
-                      "&:hover": {
-                        bgcolor: selected.length > 0 ? "yellow" : "grey",
-                      },
-                      width: 25,
-                      height: 25,
-                      "& .MuiIcon-root": {
-                        color: "white",
-                      },
-                    },
-                  }}
-                />
-                <SpeedDialAction
-                  icon={<SaveIcon />}
-                  tooltipTitle="Save Changes"
-                  onClick={handleSaveChanges}
-                  disabled={!changesMade}
-                  FabProps={{
-                    sx: {
-                      bgcolor: changesMade ? "yellow" : "grey",
-                      "&:hover": {
-                        bgcolor: changesMade ? "yellow" : "grey",
-                      },
-                      width: 25,
-                      height: 25,
-                      "& .MuiIcon-root": {
-                        color: "white",
-                      },
-                    },
-                  }}
-                />
-                <SpeedDialAction
-                  icon={<CheckIcon />}
-                  tooltipTitle="Activate All"
-                  onClick={activateAll}
-                  disabled={selected.length === 0}
-                  FabProps={{
-                    sx: {
-                      bgcolor: selected.length > 0 ? "yellow" : "grey",
-                      "&:hover": {
-                        bgcolor: selected.length > 0 ? "yellow" : "grey",
-                      },
-                      width: 25,
-                      height: 25,
-                      "& .MuiIcon-root": {
-                        color: "white",
-                      },
-                    },
-                  }}
-                />
-                <SpeedDialAction
-                  icon={<CloseIcon />}
-                  tooltipTitle="Deactivate All"
-                  onClick={deactivateAll}
-                  disabled={selected.length === 0}
-                  FabProps={{
-                    sx: {
-                      bgcolor: selected.length > 0 ? "yellow" : "grey",
-                      "&:hover": {
-                        bgcolor: selected.length > 0 ? "yellow" : "grey",
-                      },
-                      width: 25,
-                      height: 25,
-                      "& .MuiIcon-root": {
-                        color: "white",
-                      },
-                    },
-                  }}
-                />
-              </SpeedDial>
+                {changesMade && (
+                  <Tooltip title="Save All Changes" placement="left">
+                    <SpeedDial
+                      ariaLabel="Save changes"
+                      icon={<SaveOutlinedIcon />}
+                      direction="left"
+                      onClick={handleSaveChanges}
+                      FabProps={{
+                        size: "small",
+                        sx: {
+                          bgcolor: "#ffc107",
+                          "&:hover": {
+                            bgcolor: "#ffb300",
+                          },
+                          width: 30,
+                          height: 30,
+                          "& .MuiSpeedDialIcon-root": {
+                            fontSize: "1.5rem",
+                            color: "rgba(0, 0, 0, 0.87)",
+                          },
+                        },
+                      }}
+                    />
+                  </Tooltip>
+                )}
+              </Box>
             </Box>
           </Box>
         </Box>
@@ -1806,6 +2317,49 @@ const handleBulkUpload = async (event) => {
                 <FormHelperText>{formErrors.role}</FormHelperText>
               )}
             </FormControl>
+            <FormControl
+              fullWidth
+              error={Boolean(formErrors.reportingManager)}
+              disabled={!newUserData.department}
+            >
+              <InputLabel>Reporting Manager</InputLabel>
+              <Select
+                value={newUserData.reportingManager || ""}
+                onChange={(e) => {
+                  setNewUserData({
+                    ...newUserData,
+                    reportingManager: e.target.value,
+                  });
+                  setFormErrors({ ...formErrors, reportingManager: "" });
+                }}
+                label="Reporting Manager"
+              >
+                <MenuItem value="" disabled>
+                  Select Reporting Manager
+                </MenuItem>
+                {newUserData.department &&
+                  departments.find(
+                    (dept) => dept.name === newUserData.department
+                  )?.reportingManager && (
+                    <MenuItem
+                      value={
+                        departments.find(
+                          (dept) => dept.name === newUserData.department
+                        ).reportingManager
+                      }
+                    >
+                      {
+                        departments.find(
+                          (dept) => dept.name === newUserData.department
+                        ).reportingManager
+                      }
+                    </MenuItem>
+                  )}
+              </Select>
+              {formErrors.reportingManager && (
+                <FormHelperText>{formErrors.reportingManager}</FormHelperText>
+              )}
+            </FormControl>
           </Box>
           <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
             <TextField
@@ -1824,38 +2378,52 @@ const handleBulkUpload = async (event) => {
               error={Boolean(formErrors.email)}
               helperText={formErrors.email}
             />
+
             <TextField
               required
               margin="dense"
               name="storageUsed"
-              label="Storage Allocated"
+              label="Storage"
               type="text"
               fullWidth
               variant="outlined"
-              value={newUserData.storageUsed || ""}
+              value={
+                newUserData.storageUsed
+                  ? newUserData.storageUsed.replace("GB", "")
+                  : ""
+              }
               onChange={(e) => {
-                setNewUserData({ ...newUserData, storageUsed: e.target.value });
+                const numericValue = validateStorageInput(e.target.value);
+                setNewUserData({
+                  ...newUserData,
+                  storageUsed: numericValue ? `${numericValue}GB` : "",
+                });
                 setFormErrors({ ...formErrors, storageUsed: "" });
               }}
               error={Boolean(formErrors.storageUsed)}
-              helperText={formErrors.storageUsed}
+              helperText={formErrors.storageUsed || ""}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">GB</InputAdornment>
+                ),
+              }}
               sx={{ width: "40%" }}
             />
-             <TextField
-      margin="dense"
-      name="phone"
-      label="Phone Number"
-      type="tel"
-      variant="outlined"
-      value={newUserData.phone || ""}
-      onChange={(e) => {
-        setNewUserData({ ...newUserData, phone: e.target.value });
-        setFormErrors({ ...formErrors, phone: "" });
-      }}
-      error={Boolean(formErrors.phone)}
-      helperText={formErrors.phone}
-      sx={{ width: "40%" }}
-    />
+            <TextField
+              margin="dense"
+              name="phone"
+              label="Phone Number"
+              type="tel"
+              variant="outlined"
+              value={newUserData.phone || ""}
+              onChange={(e) => {
+                setNewUserData({ ...newUserData, phone: e.target.value });
+                setFormErrors({ ...formErrors, phone: "" });
+              }}
+              error={Boolean(formErrors.phone)}
+              helperText={formErrors.phone}
+              sx={{ width: "40%" }}
+            />
           </Box>
 
           {/* Add Department and Role section moved to bottom */}
@@ -1911,6 +2479,30 @@ const handleBulkUpload = async (event) => {
                       // helperText="Short form"
                     />
 
+                    <TextField
+                      size="small"
+                      label="Reporting Manager"
+                      value={newDepartment.reportingManager}
+                      onChange={(e) =>
+                        setNewDepartment((prev) => ({
+                          ...prev,
+                          reportingManager: e.target.value,
+                        }))
+                      }
+                      required
+                      error={
+                        !newDepartment.reportingManager &&
+                        newDepartment.submitted
+                      }
+                      helperText={
+                        !newDepartment.reportingManager &&
+                        newDepartment.submitted
+                          ? "Reporting Manager is required"
+                          : ""
+                      }
+                      fullWidth
+                    />
+
                     <FormControl fullWidth size="small">
                       <InputLabel id="storage-label">
                         Storage Allocation
@@ -1964,12 +2556,7 @@ const handleBulkUpload = async (event) => {
                   <Button
                     onClick={() => {
                       setShowAddDepartment(false);
-                      // setNewDepartment({
-                      //   name: "",
-                      //   displayName: "",
-                      //   roles: [],
-                      //   initialRole: "",
-                      // });
+
                       setNewDepartment({
                         name: "",
                         displayName: "",
@@ -1992,7 +2579,8 @@ const handleBulkUpload = async (event) => {
                         !newDepartment.name ||
                         !newDepartment.displayName ||
                         !newDepartment.initialRole ||
-                        !newDepartment.storage
+                        !newDepartment.storage ||
+                        !newDepartment.reportingManager
                       ) {
                         setSnackbarMessage("Please fill all required fields");
                         setSnackbarOpen(true);
@@ -2014,6 +2602,7 @@ const handleBulkUpload = async (event) => {
                         displayName: newDepartment.displayName,
                         roles: [newDepartment.initialRole],
                         storage: newDepartment.storage,
+                        reportingManager: newDepartment.reportingManager,
                       };
 
                       const updatedDepartments = [
@@ -2035,6 +2624,7 @@ const handleBulkUpload = async (event) => {
                         displayName: "",
                         initialRole: "",
                         storage: "50GB",
+                        reportingManager: "",
                         submitted: false,
                       });
                       setSnackbarMessage(
@@ -2255,15 +2845,15 @@ const handleBulkUpload = async (event) => {
               />
             </Tooltip>
             <TextField
-    size="small"
-    name="phone"
-    label="Phone Number"
-    type="tel"
-    variant="outlined"
-    value={editedUserData.phone || ""}
-    onChange={handleInputChange}
-    sx={{ width: "40%" }}
-  />
+              size="small"
+              name="phone"
+              label="Phone Number"
+              type="tel"
+              variant="outlined"
+              value={editedUserData.phone || ""}
+              onChange={handleInputChange}
+              sx={{ width: "40%" }}
+            />
             <TextField
               size="small"
               name="storageUsed"
@@ -2294,6 +2884,309 @@ const handleBulkUpload = async (event) => {
           >
             Save Changes
           </Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog
+        open={selectAllDialogOpen}
+        onClose={handleSelectAllDialogClose}
+        maxWidth="xs"
+        PaperProps={{
+          sx: {
+            borderRadius: "8px",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            pb: 1,
+            fontSize: "1.1rem",
+            borderBottom: "1px solid #eee",
+          }}
+        >
+          Select Users
+        </DialogTitle>
+        <DialogContent sx={{ pt: 2, pb: 1 }}>
+          <DialogContentText
+            sx={{
+              fontSize: "0.9rem",
+              color: "text.secondary",
+              mb: 1,
+            }}
+          >
+            Do you want to select all users or just the current page?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions
+          sx={{
+            p: 2,
+            pt: 1,
+            borderTop: "1px solid #eee",
+            gap: 1,
+          }}
+        >
+          <Button
+            onClick={handleSelectAllDialogClose}
+            size="small"
+            sx={{
+              color: "text.secondary",
+              "&:hover": {
+                backgroundColor: "rgba(0,0,0,0.04)",
+              },
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={() => handleSelectAllConfirm(false)}
+            variant="outlined"
+            size="small"
+            sx={{
+              px: 2,
+              "&:hover": {
+                backgroundColor: "primary.50",
+              },
+            }}
+          >
+            Current Page ({rowsPerPage})
+          </Button>
+          <Button
+            onClick={() => handleSelectAllConfirm(true)}
+            variant="contained"
+            size="small"
+            sx={{
+              px: 2,
+              boxShadow: "none",
+              "&:hover": {
+                boxShadow: "none",
+                backgroundColor: "primary.dark",
+              },
+            }}
+          >
+            All Users ({rows.length})
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog
+        open={migrationDialogOpen}
+        onClose={() => setMigrationDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        {/* <DialogTitle
+          sx={{
+            borderBottom: "1px solid #eee",
+            pb: 1,
+            fontSize: "1.1rem",
+          }}
+        >
+          Migrate Users Storage
+        </DialogTitle> */}
+
+        <DialogContent sx={{ pt: 2 }}>
+          <Box
+            sx={{ mb: 2, p: 1, backgroundColor: "#f5f5f5", borderRadius: 1 }}
+          >
+            <Box
+              sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}
+            >
+              <Typography variant="subtitle2" color="text.secondary">
+                Total Data to Migrate:{" "}
+                {selectedUsersData.reduce((total, user) => {
+                  return total + parseInt(user.storageUsed);
+                }, 0)}
+                GB
+              </Typography>
+              <Typography variant="subtitle2" color="text.secondary">
+                Total Storage to Migrate:{" "}
+                {selectedUsersData.reduce((total, user) => {
+                  return (
+                    total +
+                    (migrationOptions[user.id]?.storage
+                      ? parseInt(user.storageAllocated)
+                      : 0)
+                  );
+                }, 0)}
+                GB
+              </Typography>
+            </Box>
+          </Box>
+
+          {/* List of selected users */}
+          {selectedUsersData.map((user, index) => (
+            <Box
+              key={index}
+              sx={{
+                mb: 1,
+                p: 1,
+                border: "1px solid #e0e0e0",
+                borderRadius: 1,
+                backgroundColor: "#f8f9fa",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <Typography
+                variant="subtitle2"
+                sx={{ color: "#1976d2", minWidth: "200px" }}
+              >
+                {user.name}
+              </Typography>
+
+              <Box sx={{ display: "flex", alignItems: "center", gap: 3 }}>
+                {/* Data checkbox - always checked and disabled */}
+                <FormControlLabel
+                  control={
+                    <Checkbox checked={true} disabled={true} size="small" />
+                  }
+                  label={
+                    <Box sx={{ display: "flex", alignItems: "center" }}>
+                      <Typography
+                        variant="body2"
+                        sx={{ fontSize: "0.813rem", color: "#666", mr: 1 }}
+                      >
+                        Data
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{ color: "#2e7d32", fontWeight: 500 }}
+                      >
+                        {user.storageUsed}GB
+                      </Typography>
+                    </Box>
+                  }
+                  sx={{ m: 0 }}
+                />
+
+                {/* Storage checkbox - optional */}
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={migrationOptions[user.id]?.storage || false}
+                      onChange={(e) => {
+                        setMigrationOptions((prev) => ({
+                          ...prev,
+                          [user.id]: {
+                            ...prev[user.id],
+                            storage: e.target.checked,
+                          },
+                        }));
+                      }}
+                      size="small"
+                    />
+                  }
+                  label={
+                    <Box sx={{ display: "flex", alignItems: "center" }}>
+                      <Typography
+                        variant="body2"
+                        sx={{ fontSize: "0.813rem", color: "#666", mr: 1 }}
+                      >
+                        Storage
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{ color: "#1976d2", fontWeight: 500 }}
+                      >
+                        {user.storageAllocated}GB
+                      </Typography>
+                    </Box>
+                  }
+                  sx={{ m: 0 }}
+                />
+              </Box>
+            </Box>
+          ))}
+        </DialogContent>
+
+        <DialogActions
+          sx={{
+            borderTop: "1px solid #eee",
+            p: 1.5,
+            display: "flex",
+            justifyContent: "space-between",
+          }}
+        >
+          {/* Target user selection */}
+          <FormControl size="small" sx={{ minWidth: 250 }}>
+            <Select
+              value={targetUser?.name || ""}
+              displayEmpty
+              onChange={(e) => {
+                const selected = rows.find(
+                  (user) => user.name === e.target.value
+                );
+                setTargetUser(selected);
+                setMigrationError("");
+              }}
+              error={Boolean(migrationError)}
+            >
+              <MenuItem value="" disabled>
+                <Typography variant="body2" color="text.secondary">
+                  Select Target User
+                </Typography>
+              </MenuItem>
+
+              {rows
+                .filter(
+                  (row) =>
+                    !selectedUsersData.some(
+                      (selected) => selected.name === row.name
+                    )
+                )
+                .map((user) => {
+                  // Calculate available storage
+                  const storageAllocated = parseInt(
+                    user.storageUsed.replace("GB", "")
+                  );
+                  const storageUsed = parseInt(
+                    user.manageStorage.replace("GB", "")
+                  );
+                  const availableStorage = storageAllocated - storageUsed;
+
+                  return (
+                    <MenuItem key={user.name} value={user.name}>
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                      >
+                        <AccountCircleIcon
+                          sx={{ color: "#666", fontSize: 20 }}
+                        />
+                        <Box>
+                          <Typography variant="body2">{user.name}</Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Available Storage: {availableStorage}GB
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </MenuItem>
+                  );
+                })}
+            </Select>
+            {migrationError && (
+              <FormHelperText error>{migrationError}</FormHelperText>
+            )}
+          </FormControl>
+
+          {/* Action buttons */}
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <Button
+              onClick={() => setMigrationDialogOpen(false)}
+              size="small"
+              sx={{ color: "text.secondary" }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              color="primary"
+              size="small"
+              onClick={() => handleMigrate(targetUser)}
+              disabled={!targetUser || Boolean(migrationError)}
+            >
+              Migrate
+            </Button>
+          </Box>
         </DialogActions>
       </Dialog>
       <Snackbar
