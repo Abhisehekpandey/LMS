@@ -1515,7 +1515,7 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
                         width: "100%", // Ensure the box takes full width
                       }}
                     >
-                      <Typography variant="body1" fontWeight="bold" fontFamily={"sans-serif"}>
+                      <Typography variant="body1" fontWeight="bold" >
                         Tools
                       </Typography>
                       <Box sx={{ ml: 2 }}>
@@ -1594,7 +1594,6 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
                               padding: "2px 8px",
                               color: "#333",
                               fontSize: "0.875rem",
-                              
                             }}
                           >
                             {row.username}
