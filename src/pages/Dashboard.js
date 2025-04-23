@@ -1,5 +1,5 @@
 // src/pages/Dashboard.js
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect,  } from "react";
 import {
   FormHelperText,
   Snackbar,
@@ -75,6 +75,7 @@ import { keyframes } from "@emotion/react";
 
 import emailjs from "@emailjs/browser";
 import { v4 as uuidv4 } from "uuid";
+import UserTable from "./UserTable";
 // import { Grid } from '@mui/material';
 import AddIcon from "@mui/icons-material/Add";
 // Add these imports at the top
@@ -1476,9 +1477,10 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
         }}
       >
         <Navbar onThemeToggle={onThemeToggle} onSearch={handleSearch} />
+
         <Box
           sx={{
-            p: 0,
+            p: "10px",
             marginLeft: "48px",
             overflow: "hidden",
             height: "calc(100vh - 48px)",
@@ -2355,7 +2357,7 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
                 mb: 2,
                 color: "black",
                 fontFamily: '"Be Vietnam", sans-serif',
-                fontWeight :"bold"
+                fontWeight: "bold",
               }}
             >
               Basic Information
@@ -2426,7 +2428,7 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
                 mb: 2,
                 color: "black",
                 fontFamily: '"Be Vietnam", sans-serif',
-                fontWeight: "bold"
+                fontWeight: "bold",
               }}
             >
               Department & Role
@@ -2471,12 +2473,12 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
                         error={Boolean(formErrors.department)}
                         helperText={formErrors.department}
                         sx={{
-                          '& .MuiInputBase-root': {
-                            height: '40px',  // Match height with other fields
+                          "& .MuiInputBase-root": {
+                            height: "40px", // Match height with other fields
                           },
-                          '& .MuiOutlinedInput-root': {
-                            padding: '0px 9px'  // Adjust padding to match other fields
-                          }
+                          "& .MuiOutlinedInput-root": {
+                            padding: "0px 9px", // Adjust padding to match other fields
+                          },
                         }}
                       />
                     )}
@@ -2508,9 +2510,9 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
                     }}
                     size="small"
                     sx={{
-                      '& .MuiAutocomplete-input': {
-                        padding: '4.5px 4px !important',  // Adjust input padding
-                      }
+                      "& .MuiAutocomplete-input": {
+                        padding: "4.5px 4px !important", // Adjust input padding
+                      },
                     }}
                     ListboxComponent={({ children, ...props }) => (
                       <ul {...props}>
@@ -3112,7 +3114,7 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
                 mb: 2,
                 color: "black",
                 fontFamily: '"Be Vietnam", sans-serif',
-                fontWeight:'bold'
+                fontWeight: "bold",
               }}
             >
               Contact Information

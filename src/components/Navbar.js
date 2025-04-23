@@ -25,8 +25,8 @@ import { useNavigate } from "react-router-dom";
 import debounce from 'lodash/debounce';
 
 const StyledAppBar = styled(AppBar)(({ theme }) => ({
-  backgroundColor: "#1a237e", // Match sidebar color
-  color: "#ffffff",
+  backgroundColor: "blue", // Match sidebar color
+  color: "inherit",
   boxShadow: "0 1px 2px rgba(0,0,0,0.15)",
   height: "48px",
 }));
@@ -50,7 +50,7 @@ const SearchWrapper = styled("div")({
 });
 
 const StyledInputBase = styled(InputBase)({
-  color: "#ffffff",
+  color: "inherit",
   width: "100%",
   "& .MuiInputBase-input": {
     padding: "6px 12px 6px 40px",
@@ -243,7 +243,7 @@ const Navbar = ({ onThemeToggle, onSearch, currentPage }) => {
             fontSize: "1.1rem",
             fontWeight: 600,
             marginLeft: "50px",
-            color: "#ffffff",
+            color: "inherit",
           }}
         >
           Access Arc
@@ -251,7 +251,7 @@ const Navbar = ({ onThemeToggle, onSearch, currentPage }) => {
 
         <SearchWrapper>
           <SearchIconWrapper>
-            <SearchIcon sx={{ fontSize: "1.2rem", color: "text.secondary" }} />
+            <SearchIcon sx={{ fontSize: "1.2rem", color: "inherit" }} />
           </SearchIconWrapper>
          
            <StyledInputBase
