@@ -39,6 +39,7 @@ import * as XLSX from "xlsx";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import Switch from "@mui/material/Switch";
+import CloseIcon from '@mui/icons-material/Close';
 
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import { PersonAdd as PersonAddIcon } from "@mui/icons-material";
@@ -1326,12 +1327,64 @@ const sortedDepartments = React.useMemo(() => {
       </Snackbar>
 
       {/* Add Department Dialog */}
-      <Dialog
+      {/* <Dialog
         open={showAddDepartment}
         onClose={() => setShowAddDepartment(false)}
         maxWidth="sm"
-      >
-        <DialogTitle>Add New Department</DialogTitle>
+      > */}
+      <Dialog
+  open={showAddDepartment}
+  onClose={() => setShowAddDepartment(false)}
+  maxWidth="sm"
+  PaperProps={{
+    sx: {
+      borderRadius: "8px",
+      boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+    },
+  }}
+>
+        {/* <DialogTitle>Add New Department</DialogTitle> */}
+        <DialogTitle
+    sx={{
+      borderBottom: "1px solid #eee",
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      p: 2,
+    }}
+  >
+    <Typography variant="h6" sx={{ 
+      fontFamily: '"Be Vietnam", sans-serif'
+    }}>New Department</Typography>
+    <IconButton
+      onClick={() => setShowAddDepartment(false)}
+      size="small"
+      sx={{
+        color: "error.main",
+        width: 32,
+        height: 32,
+        border: "1px solid",
+        borderColor: "error.light",
+        bgcolor: "error.lighter",
+        borderRadius: "50%",
+        position: "relative",
+        "&:hover": {
+          color: "error.dark",
+          borderColor: "error.main",
+          bgcolor: "error.lighter",
+          transform: "rotate(180deg)",
+        },
+        transition: "transform 0.3s ease",
+      }}
+    >
+      <CloseIcon
+        sx={{
+          fontSize: "1.1rem",
+          transition: "transform 0.2s ease",
+        }}
+      />
+    </IconButton>
+  </DialogTitle>
         <DialogContent>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 2 }}>
             <TextField
@@ -1352,9 +1405,26 @@ const sortedDepartments = React.useMemo(() => {
                   ? "Department name is required"
                   : ""
               }
+              InputProps={{
+                sx: {
+                  fontFamily: '"Be Vietnam", sans-serif',
+                }
+              }}
+              InputLabelProps={{
+                sx: {
+                  fontFamily: '"Be Vietnam", sans-serif',
+                }
+              }}
+              FormHelperTextProps={{
+                sx: {
+                  fontFamily: '"Be Vietnam", sans-serif',
+                }
+              }}
             />
             <FormControl fullWidth size="small">
-              <InputLabel id="storage-label">Storage Allocation</InputLabel>
+              <InputLabel id="storage-label"  sx={{
+          fontFamily: '"Be Vietnam", sans-serif',
+        }}>Storage Allocation</InputLabel>
               <Select
                 labelId="storage-label"
                 value={newDepartment.storage || "50GB"}
@@ -1367,9 +1437,17 @@ const sortedDepartments = React.useMemo(() => {
                 }
                 required
                 error={!newDepartment.storage && newDepartment.submitted}
+                sx={{
+                  fontFamily: '"Be Vietnam", sans-serif',
+                  "& .MuiSelect-select": {
+                    fontFamily: '"Be Vietnam", sans-serif',
+                  }
+                }}
               >
                 {[0,25, 50, 75, 100, 150, 200].map((size) => (
-                  <MenuItem key={size} value={`${size}GB`}>
+                  <MenuItem key={size} value={`${size}GB`}  sx={{
+                    fontFamily: '"Be Vietnam", sans-serif',
+                  }}>
                     {size} GB
                   </MenuItem>
                 ))}
@@ -1392,6 +1470,21 @@ const sortedDepartments = React.useMemo(() => {
                   ? "Display name is required"
                   : "Short form"
               }
+              InputProps={{
+                sx: {
+                  fontFamily: '"Be Vietnam", sans-serif',
+                }
+              }}
+              InputLabelProps={{
+                sx: {
+                  fontFamily: '"Be Vietnam", sans-serif',
+                }
+              }}
+              FormHelperTextProps={{
+                sx: {
+                  fontFamily: '"Be Vietnam", sans-serif',
+                }
+              }}
             />
             <TextField
               size="small"
@@ -1410,6 +1503,21 @@ const sortedDepartments = React.useMemo(() => {
                   ? "At least one role is required"
                   : ""
               }
+              InputProps={{
+                sx: {
+                  fontFamily: '"Be Vietnam", sans-serif',
+                }
+              }}
+              InputLabelProps={{
+                sx: {
+                  fontFamily: '"Be Vietnam", sans-serif',
+                }
+              }}
+              FormHelperTextProps={{
+                sx: {
+                  fontFamily: '"Be Vietnam", sans-serif',
+                }
+              }}
             />
             <TextField
   size="small"
@@ -1429,11 +1537,26 @@ const sortedDepartments = React.useMemo(() => {
       : ""
   }
   fullWidth
+  InputProps={{
+    sx: {
+      fontFamily: '"Be Vietnam", sans-serif',
+    }
+  }}
+  InputLabelProps={{
+    sx: {
+      fontFamily: '"Be Vietnam", sans-serif',
+    }
+  }}
+  FormHelperTextProps={{
+    sx: {
+      fontFamily: '"Be Vietnam", sans-serif',
+    }
+  }}
   sx={{ mt: 2 }}
 />
           </Box>
 
-    <Box sx={{ 
+    {/* <Box sx={{ 
   display: "flex", 
   justifyContent: "space-between", // Change from center to space-between
   alignItems: "center",
@@ -1443,7 +1566,7 @@ const sortedDepartments = React.useMemo(() => {
   borderTop: "1px solid #eee",
   width: "100%" // Add width
 }}>
-  <Box sx={{ display: "flex", gap: 1 }}> {/* Left side container */}
+  <Box sx={{ display: "flex", gap: 1 }}>
     <Tooltip title="Bulk Upload">
       <IconButton
         onClick={() => fileInputRef.current?.click()}
@@ -1471,28 +1594,94 @@ const sortedDepartments = React.useMemo(() => {
       </IconButton>
     </Tooltip>
   </Box>
-  <Box sx={{ display: "flex", gap: 1 }}> {/* Right side - buttons */}
-    <Button
-      onClick={() => {
-        setShowAddDepartment(false);
-        setNewDepartment({
-          name: "",
-          displayName: "",
-          initialRole: "",
-          storage: "50GB",
-          submitted: false,
-        });
-      }}
-    >
-      Cancel
-    </Button>
+  <Box sx={{ display: "flex", gap: 1 }}> 
+    
     <Button onClick={handleAddDepartment} color="primary" variant="contained">
       Add
     </Button>
   </Box>
-  <Box sx={{ display: "flex", gap: 1 }}> {/* Right side container - for future use if needed */}
-    {/* Add any additional buttons/actions here */}
+ 
+</Box> */}
+<Box sx={{ 
+  display: "flex", 
+  justifyContent: "space-between",
+  alignItems: "center",
+  gap: 2, 
+  mt: 3,
+  pt: 2,
+  borderTop: "1px solid #eee",
+  width: "100%"
+}}>
+  <Box sx={{ display: "flex", gap: 1 }}>
+  <Tooltip title="Download Template">
+      <IconButton
+        onClick={handleTemplateDownload}
+        size="small"
+        sx={{
+          backgroundColor: "success.lighter",
+          border: "1px solid",
+          borderColor: "success.light",
+          color: "success.main",
+          width: 36,
+          height: 36,
+          borderRadius: "8px",
+          "&:hover": {
+            backgroundColor: "success.100",
+            transform: "translateY(-1px)",
+            boxShadow: "0 2px 8px rgba(46, 125, 50, 0.15)",
+          },
+          transition: "all 0.2s ease",
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+          <DownloadIcon sx={{ fontSize: 20 }} />
+        </Box>
+      </IconButton>
+    </Tooltip>
+    <Tooltip title="Bulk Upload">
+      <IconButton
+        onClick={() => fileInputRef.current?.click()}
+        size="small"
+        sx={{
+          backgroundColor: "primary.lighter",
+          border: "1px solid",
+          borderColor: "primary.light",
+          color: "primary.main",
+          width: 36,
+          height: 36,
+          borderRadius: "8px",
+          "&:hover": {
+            backgroundColor: "primary.100",
+            transform: "translateY(-1px)",
+            boxShadow: "0 2px 8px rgba(25, 118, 210, 0.15)",
+          },
+          transition: "all 0.2s ease",
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+          <UploadFileIcon sx={{ fontSize: 20 }} />
+        </Box>
+      </IconButton>
+    </Tooltip>
+    
+    
   </Box>
+
+  <Button 
+    onClick={handleAddDepartment} 
+    variant="contained"
+    sx={{
+      bgcolor: "primary.main",
+      "&:hover": {
+        bgcolor: "primary.dark",
+      },
+      px: 3,
+      py: 0.7,
+      fontFamily: '"Be Vietnam", sans-serif',
+    }}
+  >
+    Add
+  </Button>
 </Box>
         </DialogContent>
        
