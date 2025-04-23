@@ -2006,26 +2006,7 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
           </DialogActions>
         </DialogContent>
       </Dialog>
-      {/* Confirmation Dialog */}
-      <Dialog open={openDialog} onClose={cancelDelete}>
-        <DialogTitle>Confirm Deletion</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            {/* Are you sure you want to delete the user "{userToDelete}"? */}
-            {selected.length > 0
-              ? `Are you sure you want to delete the selected users: ${userToDelete}?`
-              : `Are you sure you want to delete the user "${userToDelete}"?`}
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={cancelDelete} color="primary">
-            Cancel
-          </Button>
-          <Button onClick={confirmDelete} color="secondary">
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
+     
       <Dialog
         open={editDialogOpen}
         onClose={() => setEditDialogOpen(false)}
