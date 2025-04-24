@@ -72,7 +72,7 @@ import SaveOutlinedIcon from "@mui/icons-material/SaveOutlined"; // For save cha
 
 import emailjs from "@emailjs/browser";
 import { v4 as uuidv4 } from "uuid";
-import UserTable from "./UserTable";
+import UserTable from "./user/UserTable";
 
 const EMAIL_SERVICE_ID = "service_4h54d19";
 const EMAIL_TEMPLATE_ID = "template_so0uw3n";
