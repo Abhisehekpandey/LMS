@@ -47,18 +47,20 @@ const StyledDrawer = styled(Drawer)(({ theme, open }) => ({
 const StyledListItem = styled(ListItem)(({ active }) => ({
   minHeight: 44,
   padding: "0 !important",
-  margin: "0 !important",
-  paddingLeft: "2px !important",
+  margin: "0 1px !important",
+   padding: "0 0px !important",
   display: "flex",
   borderRadius: "8px",
   backgroundColor: active ? "rgba(25, 118, 210, 0.08)" : "transparent",
   color: active ? "#1976d2" : "rgba(0, 0, 0, 0.7)",
   transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+   transform: "translateZ(0)",
+   willChange: "transform, box-shadow, background-color",
   "&:hover": {
     backgroundColor: active
       ? "rgba(25, 118, 210, 0.12)"
       : "rgba(0, 0, 0, 0.04)",
-    transform: "translateY(-1px)",
+    transform: "translateY(-1px) translateZ(0)",
     boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
   },
 }));
@@ -69,6 +71,8 @@ const StyledListItemIcon = styled(ListItemIcon)(({ active }) => ({
   color: active ? "#1976d2" : "rgba(0, 0, 0, 0.6)",
   justifyContent: "center",
   transition: "color 0.2s ease",
+  marginLeft: "2px", // Add consistent left margin
+  marginRight: "2px",
 }));
 
 const Sidebar = () => {
@@ -94,7 +98,7 @@ const Sidebar = () => {
     if (!hoverLock) {
       timeoutRef.current = setTimeout(() => {
         setOpen(false);
-      }, 200); // Delay to prevent flickering
+      }, 90); // Delay to prevent flickering
     }
   };
 
@@ -156,6 +160,8 @@ const Sidebar = () => {
           sx={{
             width: { xs: "calc(100% - 62px)", xl: "calc(100% - 72px)" },
             ml: 4,
+            opacity: open ? 1 : 0, // Add fade effect
+            transition: "opacity 0.18s ease", // Match timing with list items
           }}
           className="user-info"
         >
@@ -201,6 +207,9 @@ const Sidebar = () => {
                   <ListItemText
                     primary={item.text}
                     sx={{
+                      opacity: open ? 1 : 0,
+                       transition: "opacity 0.18s ease",
+                       marginRight: "4px",
                       "& .MuiListItemText-primary": {
                         fontSize: "0.875rem",
                         fontWeight: isActive ? 600 : 500,
