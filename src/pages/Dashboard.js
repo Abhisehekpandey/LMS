@@ -31,6 +31,7 @@ import {
   TableSortLabel,
   TablePagination,
   InputLabel,
+  Divider,
 } from "@mui/material";
 import MoveToInboxIcon from "@mui/icons-material/MoveToInbox"; // Add this import
 import WifiProtectedSetupIcon from "@mui/icons-material/WifiProtectedSetup";
@@ -69,10 +70,18 @@ import DeleteForeverIcon from "@mui/icons-material/DeleteForever"; // For delete
 import PowerSettingsNewIcon from "@mui/icons-material/PowerSettingsNew"; // For activate
 import BlockIcon from "@mui/icons-material/Block"; // For deactivate
 import SaveOutlinedIcon from "@mui/icons-material/SaveOutlined"; // For save changes
+// First add this import at the top of your file if not already present
+import { keyframes } from "@emotion/react";
 
 import emailjs from "@emailjs/browser";
 import { v4 as uuidv4 } from "uuid";
 import UserTable from "./user/UserTable";
+// import { Grid } from '@mui/material';
+import AddIcon from "@mui/icons-material/Add";
+// Add these imports at the top
+import { debounce } from "lodash";
+import { useMemo } from "react";
+import { memo, useCallback } from "react";
 
 const EMAIL_SERVICE_ID = "service_4h54d19";
 const EMAIL_TEMPLATE_ID = "template_so0uw3n";
@@ -234,6 +243,56 @@ const statusColors = {
   pending: "#ff9800", // Orange
 };
 
+const MemoizedTextField = memo(
+  ({ label, name, value, onChange, error, helperText, ...props }) => (
+    <TextField
+      size="small"
+      label={label}
+      name={name}
+      value={value || ""}
+      onChange={onChange}
+      error={error}
+      helperText={helperText}
+      inputProps={{
+        autoComplete: "off",
+      }}
+      {...props}
+    />
+  ),
+  (prevProps, nextProps) => {
+    return (
+      prevProps.value === nextProps.value && prevProps.error === nextProps.error
+    );
+  }
+);
+
+const MemoizedDepartmentField = memo(
+  ({
+    label,
+    value,
+    onChange,
+    error,
+    helperText,
+    required = false,
+    ...props
+  }) => (
+    <TextField
+      size="small"
+      label={label}
+      value={value || ""}
+      onChange={onChange}
+      error={error}
+      helperText={helperText}
+      required={required}
+      fullWidth
+      inputProps={{
+        autoComplete: "off",
+      }}
+      {...props}
+    />
+  )
+);
+
 emailjs.init(EMAIL_USER_ID);
 
 const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
@@ -300,6 +359,17 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
   // Add these state variables
   const [targetUser, setTargetUser] = useState(null);
   const [migrationError, setMigrationError] = useState("");
+
+  const debouncedInputChange = useMemo(
+    () =>
+      debounce((name, value) => {
+        setNewUserData((prev) => ({
+          ...prev,
+          [name]: value,
+        }));
+      }, 100),
+    []
+  );
 
   // Add this function to calculate total data
   const calculateTotalData = (selectedUsers) => {
@@ -599,111 +669,135 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
     setSnackbarOpen(true);
   };
 
-  const handleAddUser = async () => {
+  const validateForm = useCallback((data) => {
     const errors = {};
-    // Validate all required fields
-    if (!newUserData.name?.trim()) errors.name = "Name is required";
-    if (!newUserData.reportingManager) {
-      errors.reportingManager = "Reporting Manager is required";
-    }
-    if (!newUserData.department) errors.department = "Department is required";
-    if (!newUserData.role) errors.role = "Role is required";
-    if (!newUserData.email?.trim()) errors.email = "Email is required";
-    if (!newUserData.storageUsed?.trim())
-      errors.storageUsed = "Storage allocation is required";
+    const validate = (field, value, message) => {
+      if (!value?.trim()) {
+        errors[field] = message;
+      }
+    };
 
-    // Email format validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (newUserData.email && !emailRegex.test(newUserData.email)) {
+    validate("name", data.name, "Name is required");
+    validate("email", data.email, "Email is required");
+    validate("username", data.username, "Username is required");
+
+    // Email validation
+    if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
       errors.email = "Invalid email format";
     }
 
-    if (!newUserData.username?.trim()) errors.username = "Username is required";
-    // Add username uniqueness check
-    const isDuplicateUsername = rows.some(
-      (user) =>
-        user.username?.toLowerCase() === newUserData.username?.toLowerCase()
-    );
-    if (isDuplicateUsername) {
-      setSnackbarMessage("This username is already in use");
-      setSnackbarOpen(true);
-      return;
-    }
+    return errors;
+  }, []);
 
-    // Check for duplicate email
-    const isDuplicateEmail = rows.some(
-      (user) => user.email.toLowerCase() === newUserData.email?.toLowerCase()
-    );
+  const handleAddUser = useCallback(async () => {
+    if (formErrors.username || formErrors.email || formErrors.phone) return;
 
-    if (isDuplicateEmail) {
-      setSnackbarMessage("This email address is already in use");
-      setSnackbarOpen(true);
-      return;
-    }
-
+    // Pre-validate before proceeding
+    const errors = validateForm(newUserData);
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
       return;
     }
 
-    const inviteLink = generateInviteLink(newUserData.email);
-    console.log("Generated invite link:", inviteLink); // Debug log
-    const emailSent = await sendInviteEmail(newUserData.email, inviteLink);
-    console.log("Email send result:", emailSent); // Debug log
-    if (!emailSent) {
-      setSnackbarMessage("Error sending invite email. Please try again.");
+    // Check duplicates using Set for better performance
+    const existingUsernames = new Set(
+      rows.map((user) => user.username?.toLowerCase())
+    );
+    const existingEmails = new Set(
+      rows.map((user) => user.email?.toLowerCase())
+    );
+
+    if (existingUsernames.has(newUserData.username?.toLowerCase())) {
+      setSnackbarMessage("Username already exists");
       setSnackbarOpen(true);
       return;
     }
 
-    const updatedRows = [
-      ...rows,
-      {
+    if (existingEmails.has(newUserData.email?.toLowerCase())) {
+      setSnackbarMessage("Email already exists");
+      setSnackbarOpen(true);
+      return;
+    }
+
+    try {
+      // Create user object before async operations
+      const newUser = {
         ...newUserData,
+        department: newUserData.department || "",
+        role: newUserData.role || "",
         status: "pending",
         manageStorage: "1GB",
-      },
-    ];
-    setRows(updatedRows);
-    localStorage.setItem("dashboardRows", JSON.stringify(updatedRows));
-    setNewUserData({});
-    setFormErrors({});
-    setOpenAddUserDialog(false);
-    setChangesMade(true);
-    showSnackbar("User added successfully");
-  };
+      };
 
-  // Handle input change for new user
-  const handleNewUserInputChange = (e) => {
-    const { name, value } = e.target;
-    setNewUserData((prevData) => ({ ...prevData, [name]: value }));
-  };
+      // Update UI immediately
+      setRows((prev) => [...prev, newUser]);
+      setOpenAddUserDialog(false);
+      setChangesMade(true);
+
+      // Generate invite link and send email in parallel
+      const inviteLink = generateInviteLink(newUserData.email);
+      const emailPromise = sendInviteEmail(newUserData.email, inviteLink);
+
+      // Handle async operations
+      const emailSent = await emailPromise;
+      if (!emailSent) {
+        setSnackbarMessage("Email sending failed, but user was created");
+        setSnackbarOpen(true);
+        return;
+      }
+
+      // Update localStorage after successful operations
+      localStorage.setItem("dashboardRows", JSON.stringify([...rows, newUser]));
+
+      // Clear form
+      setNewUserData({});
+      setFormErrors({});
+      showSnackbar("User added successfully");
+    } catch (error) {
+      console.error("Error adding user:", error);
+      setSnackbarMessage("Error adding user. Please try again.");
+      setSnackbarOpen(true);
+    }
+  }, [newUserData, rows, formErrors, validateForm]);
+
+  const AddUserButton = memo(({ onClick, disabled }) => (
+    <Button
+      variant="contained"
+      onClick={onClick}
+      disabled={disabled}
+      sx={{
+        "&:active": {
+          transform: "translateY(1px)",
+        },
+        position: "relative",
+        "&::after": {
+          content: '""',
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: "transparent",
+          transition: "background-color 0.2s",
+        },
+        "&:active::after": {
+          backgroundColor: "rgba(0,0,0,0.1)",
+        },
+      }}
+    >
+      Add User
+    </Button>
+  ));
+
+  // Clean up debounce on unmount
+  useEffect(() => {
+    return () => {
+      debouncedInputChange.cancel();
+    };
+  }, [debouncedInputChange]);
 
   // Open Add User Dialog
   const [openAddUserDialog, setOpenAddUserDialog] = useState(false); // State for Add User dialog
-
-  const handleToggle = (name) => {
-    if (selected.length > 0) {
-      // If there are selected rows, toggle all selected rows
-      setRows((prevRows) =>
-        prevRows.map((row) =>
-          selected.includes(row.name)
-            ? { ...row, activeLicense: !row.activeLicense }
-            : row
-        )
-      );
-    } else {
-      // If no rows are selected, toggle only the clicked row
-      setRows((prevRows) =>
-        prevRows.map((row) =>
-          row.name === name
-            ? { ...row, activeLicense: !row.activeLicense }
-            : row
-        )
-      );
-    }
-    setChangesMade(true);
-  };
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
@@ -944,12 +1038,24 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
     setSnackbarOpen(true);
   };
 
-  // Handle input change in edit dialog
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setEditedUserData((prevData) => ({ ...prevData, [name]: value }));
-    // setChangesMade(true);
-  };
+  const handleInputChange = useCallback(
+    (name) => (event) => {
+      const { value } = event.target;
+
+      requestAnimationFrame(() => {
+        setNewUserData((prev) => ({
+          ...prev,
+          [name]: value,
+        }));
+
+        setFormErrors((prev) => ({
+          ...prev,
+          [name]: "",
+        }));
+      });
+    },
+    []
+  );
 
   // Update the handleStorageChange function
   const handleStorageChange = (name, value) => {
@@ -1356,26 +1462,20 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
     <Box
       sx={{
         display: "flex",
-        position: "relative",
-        height: "100vh",
-        overflow: "hidden",
       }}
     >
       <Sidebar /> {/* Add Sidebar */}
       <Box
         sx={{
-          flexGrow: 2,
-          marginLeft: 0,
-          transition: "margin-left 0.3s",
-          overflow: "hidden",
+          flexGrow: 1,marginLeft:'50px'
         }}
       >
         <Navbar onThemeToggle={onThemeToggle} onSearch={handleSearch} />
 
         <Box
           sx={{
-            p: "10px",
-            marginLeft: "48px",
+            // p: "10px",
+            // marginLeft: "48px",
             overflow: "hidden",
             height: "calc(100vh - 48px)",
           }}
@@ -1399,452 +1499,512 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
       <Dialog
         open={openAddUserDialog}
         onClose={() => setOpenAddUserDialog(false)}
-        maxWidth="sm"
+        maxWidth="md"
+        PaperProps={{
+          sx: {
+            borderRadius: "8px",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+          },
+        }}
       >
-        <DialogContent>
-          <Box sx={{ position: "relative", pb: 2 }}>
-            <IconButton
-              onClick={() => setOpenAddUserDialog(false)}
+        <DialogTitle
+          sx={{
+            borderBottom: "1px solid #eee",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            p: 2,
+          }}
+        >
+          <Typography
+            variant="h6"
+            sx={{
+              fontFamily: '"Be Vietnam", sans-serif',
+            }}
+          >
+            Add New User
+          </Typography>
+
+          <IconButton
+            onClick={() => setOpenAddUserDialog(false)}
+            size="small"
+            sx={{
+              color: "error.main",
+              width: 32,
+              height: 32,
+              border: "1px solid",
+              borderColor: "error.light",
+              bgcolor: "error.lighter",
+              borderRadius: "50%",
+              position: "relative",
+              "&:hover": {
+                color: "error.dark",
+                borderColor: "error.main",
+                bgcolor: "error.lighter",
+                transform: "rotate(180deg)",
+              },
+              transition: "transform 0.3s ease",
+            }}
+          >
+            <CloseIcon
               sx={{
-                position: "absolute",
-                right: -8,
-                top: -8,
+                fontSize: "1.1rem",
+                transition: "transform 0.2s ease",
+              }}
+            />
+          </IconButton>
+        </DialogTitle>
+
+        <DialogContent sx={{ p: 2 }}>
+          {/* Basic Information Section */}
+          <Box sx={{ mb: 3 }}>
+            <Typography
+              variant="subtitle2"
+              sx={{
+                mb: 2,
+                color: "black",
+                fontFamily: '"Be Vietnam", sans-serif',
+                fontWeight: "bold",
               }}
             >
-              <CloseIcon fontSize="small" />
-            </IconButton>
+              Basic Information
+            </Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={6}>
+                <MemoizedTextField
+                  required
+                  fullWidth
+                  label="Username"
+                  name="username"
+                  value={newUserData.username}
+                  onChange={handleInputChange("username")}
+                  error={Boolean(formErrors.username)}
+                  helperText={formErrors.username}
+                  InputProps={{
+                    sx: {
+                      fontFamily: '"Be Vietnam", sans-serif',
+                    },
+                  }}
+                  InputLabelProps={{
+                    sx: {
+                      fontFamily: '"Be Vietnam", sans-serif',
+                    },
+                  }}
+                  FormHelperTextProps={{
+                    sx: {
+                      fontFamily: '"Be Vietnam", sans-serif',
+                    },
+                  }}
+                />
+              </Grid>
+              <Grid item xs={6}>
+                <MemoizedTextField
+                  required
+                  fullWidth
+                  label="Full Name"
+                  name="name"
+                  value={newUserData.name}
+                  onChange={handleInputChange("name")}
+                  error={Boolean(formErrors.name)}
+                  helperText={formErrors.name}
+                  InputProps={{
+                    sx: {
+                      fontFamily: '"Be Vietnam", sans-serif',
+                    },
+                  }}
+                  InputLabelProps={{
+                    sx: {
+                      fontFamily: '"Be Vietnam", sans-serif',
+                    },
+                  }}
+                  FormHelperTextProps={{
+                    sx: {
+                      fontFamily: '"Be Vietnam", sans-serif',
+                    },
+                  }}
+                />
+              </Grid>
+            </Grid>
           </Box>
-          <TextField
-            required
-            margin="dense"
-            name="username"
-            label="Username"
-            type="text"
-            fullWidth
-            variant="outlined"
-            value={newUserData.username || ""}
-            onChange={(e) => {
-              setNewUserData({ ...newUserData, username: e.target.value });
-              setFormErrors({ ...formErrors, username: "" });
-            }}
-            error={Boolean(formErrors.username)}
-            helperText={formErrors.username}
-          />
-          <TextField
-            autoFocus
-            required
-            margin="dense"
-            name="name"
-            label="Full Name"
-            type="text"
-            fullWidth
-            variant="outlined"
-            value={newUserData.name || ""}
-            onChange={(e) => {
-              setNewUserData({ ...newUserData, name: e.target.value });
-              setFormErrors({ ...formErrors, name: "" });
-            }}
-            error={Boolean(formErrors.name)}
-            helperText={formErrors.name}
-          />
-          <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
-            <FormControl fullWidth error={Boolean(formErrors.department)}>
-              <Autocomplete
-                value={
-                  departments.find(
-                    (dept) => dept.name === newUserData.department
-                  ) || null
-                }
-                onChange={(event, newValue) => {
-                  if (newValue) {
-                    setNewUserData((prev) => ({
-                      ...prev,
-                      department: newValue.name,
-                      role: "",
-                    }));
-                  } else {
-                    setNewUserData((prev) => ({
-                      ...prev,
-                      department: "",
-                      role: "",
-                    }));
-                  }
-                }}
-                options={departments}
-                getOptionLabel={(option) =>
-                  `${option.name} / ${option.displayName}`
-                }
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Select Department"
-                    variant="outlined"
-                    required
-                    error={Boolean(formErrors.department)}
-                    helperText={formErrors.department}
-                  />
-                )}
-                noOptionsText={
-                  <Box sx={{ textAlign: "center", py: 1 }}>
-                    <Typography color="text.secondary" sx={{ mb: 1 }}>
-                      No departments found
-                    </Typography>
-                    <Button
-                      onClick={() => setShowAddDepartment(true)}
-                      color="primary"
-                      variant="outlined"
-                      size="small"
-                      fullWidth
-                    >
-                      Add New Department
-                    </Button>
-                  </Box>
-                }
-                ListboxProps={{
-                  style: { maxHeight: 250 },
-                }}
-                ListboxComponent={({ children, ...props }) => (
-                  <ul {...props}>
-                    {children}
-                    <li style={{ padding: "8px" }}>
-                      <Button
-                        onClick={() => setShowAddDepartment(true)}
-                        color="primary"
-                        variant="outlined"
-                        size="small"
-                        fullWidth
-                      >
-                        Add New Department
-                      </Button>
-                    </li>
-                  </ul>
-                )}
-                renderOption={(props, option) => (
-                  <li {...props}>{`${option.name} / ${option.displayName}`}</li>
-                )}
-                isOptionEqualToValue={(option, value) =>
-                  option.name === value.name
-                }
-              />
-            </FormControl>
 
-            <FormControl fullWidth error={Boolean(formErrors.role)}>
-              <Select
-                required
-                value={newUserData.role || ""}
-                onChange={(e) => {
-                  if (e.target.value === "add_new_role") {
-                    setShowAddRole(true);
-                  } else {
-                    setNewUserData({ ...newUserData, role: e.target.value });
-                    setFormErrors({ ...formErrors, role: "" });
-                  }
-                }}
-                displayEmpty
-                disabled={!newUserData.department}
-              >
-                <MenuItem value="" disabled>
-                  Select Role
-                </MenuItem>
-                {departments.find(
-                  (dept) => dept.name === newUserData.department
-                )?.roles.length === 0 ? (
-                  <MenuItem
-                    value=""
-                    disabled
-                    sx={{ color: "text.secondary", fontStyle: "italic" }}
-                  >
-                    No roles available for this department
-                  </MenuItem>
-                ) : (
-                  departments
-                    .find((dept) => dept.name === newUserData.department)
-                    ?.roles.map((role, index) => (
-                      <MenuItem key={index} value={role}>
-                        {role}
-                      </MenuItem>
-                    ))
-                )}
-                <MenuItem
-                  value="add_new_role"
-                  sx={{ borderTop: "1px solid #ccc" }}
+          {/* Department and Role Section */}
+          <Box sx={{ mb: 3 }}>
+            <Typography
+              variant="subtitle2"
+              sx={{
+                mb: 2,
+                color: "black",
+                fontFamily: '"Be Vietnam", sans-serif',
+                fontWeight: "bold",
+              }}
+            >
+              Department & Role
+            </Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={4}>
+                <FormControl
+                  fullWidth
+                  size="small"
+                  error={Boolean(formErrors.department)}
                 >
-                  <Button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowAddRole(true);
+                  <Autocomplete
+                    value={
+                      departments.find(
+                        (dept) => dept.name === newUserData.department
+                      ) || null
+                    }
+                    onChange={(event, newValue) => {
+                      if (newValue) {
+                        setNewUserData((prev) => ({
+                          ...prev,
+                          department: newValue.name,
+                          role: "",
+                        }));
+                      } else {
+                        setNewUserData((prev) => ({
+                          ...prev,
+                          department: "",
+                          role: "",
+                        }));
+                      }
                     }}
-                    color="primary"
-                    variant="outlined"
+                    options={departments}
+                    getOptionLabel={(option) =>
+                      `${option.name} / ${option.displayName}`
+                    }
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Department"
+                        // required
+                        error={Boolean(formErrors.department)}
+                        helperText={formErrors.department}
+                        sx={{
+                          "& .MuiInputBase-root": {
+                            height: "40px", // Match height with other fields
+                          },
+                          "& .MuiOutlinedInput-root": {
+                            padding: "0px 9px", // Adjust padding to match other fields
+                          },
+                        }}
+                      />
+                    )}
+                    noOptionsText={
+                      <Box sx={{ textAlign: "center", py: 1 }}>
+                        <Typography
+                          color="text.secondary"
+                          sx={{ mb: 1, fontFamily: '"Be Vietnam", sans-serif' }}
+                        >
+                          No departments found
+                        </Typography>
+                        <Button
+                          onClick={() => setShowAddDepartment(true)}
+                          color="primary"
+                          variant="outlined"
+                          size="small"
+                          fullWidth
+                          startIcon={<AddIcon />}
+                          sx={{
+                            fontFamily: '"Be Vietnam", sans-serif',
+                          }}
+                        >
+                          Add New Department
+                        </Button>
+                      </Box>
+                    }
+                    ListboxProps={{
+                      style: { maxHeight: 250 },
+                    }}
                     size="small"
-                    fullWidth
-                  >
-                    Add New Role
-                  </Button>
-                </MenuItem>
-              </Select>
-              {formErrors.role && (
-                <FormHelperText>{formErrors.role}</FormHelperText>
-              )}
-            </FormControl>
-            <FormControl
-              fullWidth
-              error={Boolean(formErrors.reportingManager)}
-              disabled={!newUserData.department}
-            >
-              <InputLabel>Reporting Manager</InputLabel>
-              <Select
-                value={newUserData.reportingManager || ""}
-                onChange={(e) => {
-                  setNewUserData({
-                    ...newUserData,
-                    reportingManager: e.target.value,
-                  });
-                  setFormErrors({ ...formErrors, reportingManager: "" });
-                }}
-                label="Reporting Manager"
-              >
-                <MenuItem value="" disabled>
-                  Select Reporting Manager
-                </MenuItem>
-                {newUserData.department &&
-                  departments.find(
-                    (dept) => dept.name === newUserData.department
-                  )?.reportingManager && (
-                    <MenuItem
-                      value={
-                        departments.find(
-                          (dept) => dept.name === newUserData.department
-                        ).reportingManager
-                      }
-                    >
-                      {
-                        departments.find(
-                          (dept) => dept.name === newUserData.department
-                        ).reportingManager
-                      }
-                    </MenuItem>
-                  )}
-              </Select>
-              {formErrors.reportingManager && (
-                <FormHelperText>{formErrors.reportingManager}</FormHelperText>
-              )}
-            </FormControl>
-          </Box>
-          <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
-            <TextField
-              required
-              margin="dense"
-              name="email"
-              label="Email"
-              type="email"
-              fullWidth
-              variant="outlined"
-              value={newUserData.email || ""}
-              onChange={(e) => {
-                setNewUserData({ ...newUserData, email: e.target.value });
-                setFormErrors({ ...formErrors, email: "" });
-              }}
-              error={Boolean(formErrors.email)}
-              helperText={formErrors.email}
-            />
-
-            <TextField
-              required
-              margin="dense"
-              name="storageUsed"
-              label="Storage"
-              type="text"
-              fullWidth
-              variant="outlined"
-              value={
-                newUserData.storageUsed
-                  ? newUserData.storageUsed.replace("GB", "")
-                  : ""
-              }
-              onChange={(e) => {
-                const numericValue = validateStorageInput(e.target.value);
-                setNewUserData({
-                  ...newUserData,
-                  storageUsed: numericValue ? `${numericValue}GB` : "",
-                });
-                setFormErrors({ ...formErrors, storageUsed: "" });
-              }}
-              error={Boolean(formErrors.storageUsed)}
-              helperText={formErrors.storageUsed || ""}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">GB</InputAdornment>
-                ),
-              }}
-              sx={{ width: "40%" }}
-            />
-            <TextField
-              margin="dense"
-              name="phone"
-              label="Phone Number"
-              type="tel"
-              variant="outlined"
-              value={newUserData.phone || ""}
-              onChange={(e) => {
-                setNewUserData({ ...newUserData, phone: e.target.value });
-                setFormErrors({ ...formErrors, phone: "" });
-              }}
-              error={Boolean(formErrors.phone)}
-              helperText={formErrors.phone}
-              sx={{ width: "40%" }}
-            />
-          </Box>
-
-          {/* Add Department and Role section moved to bottom */}
-          <Box sx={{ mt: 4, borderTop: "1px solid #ccc", pt: 2 }}>
-            {showAddDepartment && (
+                    sx={{
+                      "& .MuiAutocomplete-input": {
+                        padding: "4.5px 4px !important", // Adjust input padding
+                      },
+                    }}
+                    ListboxComponent={({ children, ...props }) => (
+                      <ul {...props}>
+                        {children}
+                        <li
+                          style={{
+                            padding: "8px",
+                            borderTop: "1px solid #eee",
+                          }}
+                        >
+                          <Button
+                            onClick={() => setShowAddDepartment(true)}
+                            color="primary"
+                            variant="outlined"
+                            size="small"
+                            fullWidth
+                            startIcon={<AddIcon />}
+                            sx={{
+                              fontFamily: '"Be Vietnam", sans-serif',
+                            }}
+                          >
+                            Add New Department
+                          </Button>
+                        </li>
+                      </ul>
+                    )}
+                  />
+                </FormControl>
+              </Grid>
+              {/* Add Department Dialog */}
               <Dialog
                 open={showAddDepartment}
                 onClose={() => setShowAddDepartment(false)}
                 maxWidth="sm"
+                fullWidth
+                PaperProps={{
+                  sx: {
+                    borderRadius: "8px",
+                    boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+                  },
+                }}
               >
-                <DialogTitle>Add New Department</DialogTitle>
-                <DialogContent>
-                  <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
-                    <TextField
-                      size="small"
-                      label="Department Name"
-                      value={newDepartment.name}
-                      onChange={(e) =>
-                        setNewDepartment((prev) => ({
-                          ...prev,
-                          name: e.target.value,
-                        }))
-                      }
-                      fullWidth
-                      required
-                      error={!newDepartment.name && newDepartment.submitted}
-                      helperText={
-                        !newDepartment.name && newDepartment.submitted
-                          ? "Department name is required"
-                          : ""
-                      }
-                    />
-                    <TextField
-                      size="small"
-                      label="Display Name"
-                      value={newDepartment.displayName}
-                      onChange={(e) =>
-                        setNewDepartment((prev) => ({
-                          ...prev,
-                          displayName: e.target.value.toUpperCase(),
-                        }))
-                      }
-                      required
-                      error={
-                        !newDepartment.displayName && newDepartment.submitted
-                      }
-                      helperText={
-                        !newDepartment.displayName && newDepartment.submitted
-                          ? "Display name is required"
-                          : "Short form"
-                      }
-                      sx={{ width: "30%" }}
-                      // helperText="Short form"
-                    />
-
-                    <TextField
-                      size="small"
-                      label="Reporting Manager"
-                      value={newDepartment.reportingManager}
-                      onChange={(e) =>
-                        setNewDepartment((prev) => ({
-                          ...prev,
-                          reportingManager: e.target.value,
-                        }))
-                      }
-                      required
-                      error={
-                        !newDepartment.reportingManager &&
-                        newDepartment.submitted
-                      }
-                      helperText={
-                        !newDepartment.reportingManager &&
-                        newDepartment.submitted
-                          ? "Reporting Manager is required"
-                          : ""
-                      }
-                      fullWidth
-                    />
-
-                    <FormControl fullWidth size="small">
-                      <InputLabel id="storage-label">
-                        Storage Allocation
-                      </InputLabel>
-                      <Select
-                        labelId="storage-label"
-                        value={newDepartment.storage}
-                        label="Storage Allocation"
-                        onChange={(e) =>
-                          setNewDepartment((prev) => ({
-                            ...prev,
-                            storage: e.target.value,
-                          }))
-                        }
-                        required
-                        error={
-                          !newDepartment.storage && newDepartment.submitted
-                        }
-                      >
-                        {[25, 50, 75, 100, 150, 200].map((size) => (
-                          <MenuItem key={size} value={`${size}GB`}>
-                            {size} GB
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-
-                    <TextField
-                      size="small"
-                      label="Initial Role"
-                      value={newDepartment.initialRole}
-                      onChange={(e) =>
-                        setNewDepartment((prev) => ({
-                          ...prev,
-                          initialRole: e.target.value,
-                        }))
-                      }
-                      required
-                      error={
-                        !newDepartment.initialRole && newDepartment.submitted
-                      }
-                      helperText={
-                        !newDepartment.initialRole && newDepartment.submitted
-                          ? "At least one role is required"
-                          : ""
-                      }
-                    />
-                  </Box>
-                </DialogContent>
-                <DialogActions>
-                  <Button
-                    onClick={() => {
-                      setShowAddDepartment(false);
-
-                      setNewDepartment({
-                        name: "",
-                        displayName: "",
-                        initialRole: "",
-                        storage: "50GB",
-                        submitted: false,
-                      });
+                <DialogTitle
+                  sx={{
+                    pb: 1,
+                    borderBottom: "1px solid #eee",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    p: 2,
+                  }}
+                >
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontFamily: '"Be Vietnam", sans-serif',
                     }}
                   >
-                    Cancel
-                  </Button>
+                    Add New Department
+                  </Typography>
+                  <IconButton
+                    onClick={() => setShowAddDepartment(false)}
+                    size="small"
+                    sx={{
+                      color: "error.main",
+                      width: 32,
+                      height: 32,
+                      border: "1px solid",
+                      borderColor: "error.light",
+                      bgcolor: "error.lighter",
+                      borderRadius: "50%",
+                      position: "relative",
+                      "&:hover": {
+                        color: "error.dark",
+                        borderColor: "error.main",
+                        bgcolor: "error.lighter",
+                        transform: "rotate(180deg)",
+                      },
+                      transition: "transform 0.3s ease",
+                    }}
+                  >
+                    <CloseIcon
+                      sx={{
+                        fontSize: "1.1rem",
+                        transition: "transform 0.2s ease",
+                      }}
+                    />
+                  </IconButton>
+                </DialogTitle>
+
+                <DialogContent sx={{ pt: 2 }}>
+                  <Grid container spacing={2}>
+                    <Grid item xs={6}>
+                      <MemoizedDepartmentField
+                        label="Department Name"
+                        value={newDepartment.name}
+                        onChange={(e) => {
+                          setNewDepartment((prev) => ({
+                            ...prev,
+                            name: e.target.value,
+                          }));
+                        }}
+                        required
+                        error={!newDepartment.name && newDepartment.submitted}
+                        helperText={
+                          !newDepartment.name && newDepartment.submitted
+                            ? "Department name is required"
+                            : ""
+                        }
+                        InputProps={{
+                          sx: {
+                            fontFamily: '"Be Vietnam", sans-serif',
+                          },
+                        }}
+                        InputLabelProps={{
+                          sx: {
+                            fontFamily: '"Be Vietnam", sans-serif',
+                          },
+                        }}
+                        FormHelperTextProps={{
+                          sx: {
+                            fontFamily: '"Be Vietnam", sans-serif',
+                          },
+                        }}
+                      />
+                    </Grid>
+                    <Grid item xs={6}>
+                      <MemoizedDepartmentField
+                        label="Display Name"
+                        value={newDepartment.displayName}
+                        onChange={(e) => {
+                          setNewDepartment((prev) => ({
+                            ...prev,
+                            displayName: e.target.value.toUpperCase(),
+                          }));
+                        }}
+                        required
+                        error={
+                          !newDepartment.displayName && newDepartment.submitted
+                        }
+                        helperText={
+                          !newDepartment.displayName && newDepartment.submitted
+                            ? "Display name is required"
+                            : "Short form"
+                        }
+                        InputProps={{
+                          sx: {
+                            fontFamily: '"Be Vietnam", sans-serif',
+                          },
+                        }}
+                        InputLabelProps={{
+                          sx: {
+                            fontFamily: '"Be Vietnam", sans-serif',
+                          },
+                        }}
+                        FormHelperTextProps={{
+                          sx: {
+                            fontFamily: '"Be Vietnam", sans-serif',
+                          },
+                        }}
+                      />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <MemoizedDepartmentField
+                        label="Reporting Manager"
+                        value={newDepartment.reportingManager}
+                        onChange={(e) => {
+                          setNewDepartment((prev) => ({
+                            ...prev,
+                            reportingManager: e.target.value,
+                          }));
+                        }}
+                        required
+                        error={
+                          !newDepartment.reportingManager &&
+                          newDepartment.submitted
+                        }
+                        helperText={
+                          !newDepartment.reportingManager &&
+                          newDepartment.submitted
+                            ? "Reporting Manager is required"
+                            : ""
+                        }
+                        InputProps={{
+                          sx: {
+                            fontFamily: '"Be Vietnam", sans-serif',
+                          },
+                        }}
+                        InputLabelProps={{
+                          sx: {
+                            fontFamily: '"Be Vietnam", sans-serif',
+                          },
+                        }}
+                        FormHelperTextProps={{
+                          sx: {
+                            fontFamily: '"Be Vietnam", sans-serif',
+                          },
+                        }}
+                      />
+                    </Grid>
+                    <Grid item xs={6}>
+                      <FormControl fullWidth size="small">
+                        <InputLabel required>Storage Allocation</InputLabel>
+                        <Select
+                          value={newDepartment.storage || ""}
+                          sx={{
+                            fontFamily: '"Be Vietnam", sans-serif',
+                            "& .MuiSelect-select": {
+                              fontFamily: '"Be Vietnam", sans-serif',
+                            },
+                          }}
+                          label="Storage Allocation *"
+                          onChange={(e) =>
+                            setNewDepartment((prev) => ({
+                              ...prev,
+                              storage: e.target.value,
+                            }))
+                          }
+                          error={
+                            !newDepartment.storage && newDepartment.submitted
+                          }
+                        >
+                          {[25, 50, 75, 100, 150, 200].map((size) => (
+                            <MenuItem
+                              key={size}
+                              value={`${size}GB`}
+                              sx={{
+                                fontFamily: '"Be Vietnam", sans-serif',
+                              }}
+                            >
+                              {size} GB
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <MemoizedDepartmentField
+                        label="Initial Role"
+                        value={newDepartment.initialRole}
+                        onChange={(e) => {
+                          setNewDepartment((prev) => ({
+                            ...prev,
+                            initialRole: e.target.value,
+                          }));
+                        }}
+                        required
+                        error={
+                          !newDepartment.initialRole && newDepartment.submitted
+                        }
+                        helperText={
+                          !newDepartment.initialRole && newDepartment.submitted
+                            ? "At least one role is required"
+                            : ""
+                        }
+                        InputProps={{
+                          sx: {
+                            fontFamily: '"Be Vietnam", sans-serif',
+                          },
+                        }}
+                        InputLabelProps={{
+                          sx: {
+                            fontFamily: '"Be Vietnam", sans-serif',
+                          },
+                        }}
+                        FormHelperTextProps={{
+                          sx: {
+                            fontFamily: '"Be Vietnam", sans-serif',
+                          },
+                        }}
+                      />
+                    </Grid>
+                  </Grid>
+                </DialogContent>
+
+                <DialogActions
+                  sx={{ p: 2, pt: 1, borderTop: "1px solid #eee" }}
+                >
                   <Button
+                    variant="contained"
                     onClick={() => {
                       setNewDepartment((prev) => ({
                         ...prev,
                         submitted: true,
                       }));
-
                       if (
                         !newDepartment.name ||
                         !newDepartment.displayName ||
@@ -1875,136 +2035,469 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
                         reportingManager: newDepartment.reportingManager,
                       };
 
+                      // Update both state and localStorage
                       const updatedDepartments = [
                         ...departments,
                         newDeptWithRole,
                       ];
                       setDepartments(updatedDepartments);
-
-                      // Store in localStorage
                       localStorage.setItem(
                         "departments",
                         JSON.stringify(updatedDepartments)
                       );
 
-                      // setDepartments((prev) => [...prev, newDeptWithRole]);
                       setShowAddDepartment(false);
                       setNewDepartment({
                         name: "",
                         displayName: "",
                         initialRole: "",
-                        storage: "50GB",
+                        storage: "",
                         reportingManager: "",
                         submitted: false,
                       });
+
                       setSnackbarMessage(
                         `Department "${newDepartment.name}" added successfully with role "${newDepartment.initialRole}"!`
                       );
                       setSnackbarOpen(true);
                     }}
-                    color="primary"
                   >
-                    Add
+                    Add Department
                   </Button>
                 </DialogActions>
               </Dialog>
-            )}
-            {showAddRole && (
+
               <Dialog
                 open={showAddRole}
                 onClose={() => setShowAddRole(false)}
                 maxWidth="sm"
+                PaperProps={{
+                  sx: {
+                    borderRadius: "8px",
+                    boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+                  },
+                }}
               >
-                <DialogTitle>Add New Role</DialogTitle>
-                <DialogContent>
-                  <TextField
-                    autoFocus
-                    size="small"
-                    label="New Role"
-                    value={newRole}
-                    onChange={(e) => setNewRole(e.target.value)}
-                    fullWidth
-                    sx={{ mt: 2 }}
-                  />
-                </DialogContent>
-                <DialogActions>
-                  <Button
-                    onClick={() => {
-                      setShowAddRole(false);
-                      setNewRole("");
+                <DialogTitle
+                  sx={{
+                    borderBottom: "1px solid #eee",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    p: 2,
+                  }}
+                >
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontFamily: '"Be Vietnam", sans-serif',
                     }}
                   >
-                    Cancel
-                  </Button>
-
-                  <Button
-                    onClick={handleAddRole} // Replace the existing onClick with handleAddRole
-                    color="primary"
+                    Add New Role
+                  </Typography>
+                  <IconButton
+                    onClick={() => setShowAddRole(false)}
+                    size="small"
+                    sx={{
+                      color: "error.main",
+                      width: 32,
+                      height: 32,
+                      border: "1px solid",
+                      borderColor: "error.light",
+                      bgcolor: "error.lighter",
+                      borderRadius: "50%",
+                      position: "relative",
+                      "&:hover": {
+                        color: "error.dark",
+                        borderColor: "error.main",
+                        bgcolor: "error.lighter",
+                        transform: "rotate(180deg)",
+                      },
+                      transition: "transform 0.3s ease",
+                    }}
                   >
-                    Add
+                    <CloseIcon
+                      sx={{
+                        fontSize: "1.1rem",
+                        transition: "transform 0.2s ease",
+                      }}
+                    />
+                  </IconButton>
+                </DialogTitle>
+
+                <DialogContent sx={{ p: 2 }}>
+                  <TextField
+                    autoFocus
+                    fullWidth
+                    size="small"
+                    label="Role Name"
+                    value={newRole}
+                    onChange={(e) => setNewRole(e.target.value)}
+                    required
+                    sx={{ mt: 1 }}
+                    InputProps={{
+                      sx: {
+                        fontFamily: '"Be Vietnam", sans-serif',
+                      },
+                    }}
+                    InputLabelProps={{
+                      sx: {
+                        fontFamily: '"Be Vietnam", sans-serif',
+                      },
+                    }}
+                    FormHelperTextProps={{
+                      sx: {
+                        fontFamily: '"Be Vietnam", sans-serif',
+                      },
+                    }}
+                  />
+                </DialogContent>
+
+                <DialogActions sx={{ p: 2, borderTop: "1px solid #eee" }}>
+                  <Button
+                    onClick={handleAddRole}
+                    variant="contained"
+                    sx={{
+                      bgcolor: "primary.main",
+                      "&:hover": {
+                        bgcolor: "primary.dark",
+                      },
+                      fontFamily: '"Be Vietnam", sans-serif',
+                    }}
+                  >
+                    Add Role
                   </Button>
                 </DialogActions>
               </Dialog>
-            )}
+
+              <Grid item xs={4}>
+                <FormControl
+                  fullWidth
+                  size="small"
+                  error={Boolean(formErrors.role)}
+                >
+                  {/* <InputLabel >Role</InputLabel> */}
+                  <InputLabel sx={{ fontFamily: '"Be Vietnam", sans-serif' }}>
+                    Role
+                  </InputLabel>
+                  <Select
+                    value={newUserData.role || ""}
+                    label="Role *"
+                    onChange={(e) => {
+                      if (e.target.value === "add_new_role") {
+                        setShowAddRole(true);
+                      } else {
+                        setNewUserData({
+                          ...newUserData,
+                          role: e.target.value,
+                        });
+                        setFormErrors({ ...formErrors, role: "" });
+                      }
+                    }}
+                    disabled={!newUserData.department}
+                    sx={{
+                      fontFamily: '"Be Vietnam", sans-serif',
+                      "& .MuiSelect-select": {
+                        fontFamily: '"Be Vietnam", sans-serif',
+                      },
+                    }}
+                  >
+                    <MenuItem
+                      value=""
+                      disabled
+                      sx={{ fontFamily: '"Be Vietnam", sans-serif' }}
+                    >
+                      Select Role
+                    </MenuItem>
+                    {departments
+                      .find((dept) => dept.name === newUserData.department)
+                      ?.roles.map((role) => (
+                        <MenuItem
+                          key={role}
+                          value={role}
+                          sx={{ fontFamily: '"Be Vietnam", sans-serif' }}
+                        >
+                          {role}
+                        </MenuItem>
+                      ))}
+                    <Divider />
+                    <MenuItem
+                      value="add_new_role"
+                      sx={{ fontFamily: '"Be Vietnam", sans-serif' }}
+                    >
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                      >
+                        <AddIcon fontSize="small" />
+                        <Typography
+                          sx={{ fontFamily: '"Be Vietnam", sans-serif' }}
+                        >
+                          Add New Role
+                        </Typography>
+                      </Box>
+                    </MenuItem>
+                  </Select>
+                  {formErrors.role && (
+                    <FormHelperText
+                      sx={{ fontFamily: '"Be Vietnam", sans-serif' }}
+                    >
+                      {formErrors.role}
+                    </FormHelperText>
+                  )}
+                </FormControl>
+              </Grid>
+              <Grid item xs={4}>
+                <FormControl
+                  fullWidth
+                  size="small"
+                  error={Boolean(formErrors.reportingManager)}
+                >
+                  {/* <InputLabel>Reporting Manager</InputLabel> */}
+                  <InputLabel sx={{ fontFamily: '"Be Vietnam", sans-serif' }}>
+                    Reporting Manager
+                  </InputLabel>
+                  <Select
+                    value={newUserData.reportingManager || ""}
+                    label="Reporting Manager *"
+                    onChange={(e) => {
+                      setNewUserData({
+                        ...newUserData,
+                        reportingManager: e.target.value,
+                      });
+                      setFormErrors({ ...formErrors, reportingManager: "" });
+                    }}
+                    disabled={!newUserData.department}
+                    sx={{
+                      fontFamily: '"Be Vietnam", sans-serif',
+                      "& .MuiSelect-select": {
+                        fontFamily: '"Be Vietnam", sans-serif',
+                      },
+                    }}
+                  >
+                    <MenuItem
+                      value=""
+                      disabled
+                      sx={{ fontFamily: '"Be Vietnam", sans-serif' }}
+                    >
+                      Select Manager
+                    </MenuItem>
+                    {newUserData.department &&
+                      departments.find(
+                        (dept) => dept.name === newUserData.department
+                      )?.reportingManager && (
+                        <MenuItem
+                          value={
+                            departments.find(
+                              (dept) => dept.name === newUserData.department
+                            ).reportingManager
+                          }
+                          sx={{ fontFamily: '"Be Vietnam", sans-serif' }}
+                        >
+                          {
+                            departments.find(
+                              (dept) => dept.name === newUserData.department
+                            ).reportingManager
+                          }
+                        </MenuItem>
+                      )}
+                  </Select>
+                  {formErrors.reportingManager && (
+                    <FormHelperText
+                      sx={{ fontFamily: '"Be Vietnam", sans-serif' }}
+                    >
+                      {formErrors.reportingManager}
+                    </FormHelperText>
+                  )}
+                </FormControl>
+              </Grid>
+            </Grid>
           </Box>
 
-          <DialogActions
-            sx={{
-              borderTop: "1px solid #eee",
-              padding: "16px 24px",
-            }}
-          >
-            <Box
+          {/* Contact Information Section */}
+          <Box sx={{ mb: 3 }}>
+            <Typography
+              variant="subtitle2"
               sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                width: "100%",
+                mb: 2,
+                color: "black",
+                fontFamily: '"Be Vietnam", sans-serif',
+                fontWeight: "bold",
               }}
             >
-              {/* Left side - Template and Upload icons */}
-              <Box sx={{ display: "flex", gap: 1 }}>
-                <Tooltip title="Download Template" placement="top">
-                  <IconButton
-                    onClick={handleTemplateDownload}
-                    size="small"
-                    sx={{
-                      color: "primary.main",
-                      "&:hover": {
-                        backgroundColor: "rgba(25, 118, 210, 0.04)",
-                      },
-                    }}
-                  >
-                    <DownloadIcon />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="Bulk Upload" placement="top">
-                  <IconButton
-                    onClick={() => fileInputRef.current?.click()}
-                    size="small"
-                    sx={{
-                      color: "primary.main",
-                      "&:hover": {
-                        backgroundColor: "rgba(25, 118, 210, 0.04)",
-                      },
-                    }}
-                  >
-                    <UploadFileIcon />
-                  </IconButton>
-                </Tooltip>
-              </Box>
-
-              {/* Right side - Submit button */}
-              <Button
-                onClick={handleAddUser}
-                color="primary"
-                variant="contained"
-              >
-                Submit
-              </Button>
-            </Box>
-          </DialogActions>
+              Contact Information
+            </Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={6}>
+                <MemoizedTextField
+                  required
+                  fullWidth
+                  label="Email"
+                  name="email"
+                  value={newUserData.email}
+                  onChange={handleInputChange("email")}
+                  error={Boolean(formErrors.email)}
+                  helperText={formErrors.email}
+                  InputProps={{
+                    sx: {
+                      fontFamily: '"Be Vietnam", sans-serif',
+                    },
+                  }}
+                  InputLabelProps={{
+                    sx: {
+                      fontFamily: '"Be Vietnam", sans-serif',
+                    },
+                  }}
+                  FormHelperTextProps={{
+                    sx: {
+                      fontFamily: '"Be Vietnam", sans-serif',
+                    },
+                  }}
+                />
+              </Grid>
+              <Grid item xs={3}>
+                <TextField
+                  required
+                  fullWidth
+                  size="small"
+                  label="Storage"
+                  name="storageUsed"
+                  value={
+                    newUserData.storageUsed
+                      ? newUserData.storageUsed.replace("GB", "")
+                      : ""
+                  }
+                  onChange={(e) => {
+                    const numericValue = validateStorageInput(e.target.value);
+                    setNewUserData({
+                      ...newUserData,
+                      storageUsed: numericValue ? `${numericValue}GB` : "",
+                    });
+                    setFormErrors({ ...formErrors, storageUsed: "" });
+                  }}
+                  error={Boolean(formErrors.storageUsed)}
+                  helperText={formErrors.storageUsed}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">GB</InputAdornment>
+                    ),
+                    sx: {
+                      fontFamily: '"Be Vietnam", sans-serif',
+                    },
+                  }}
+                  InputLabelProps={{
+                    sx: {
+                      fontFamily: '"Be Vietnam", sans-serif',
+                    },
+                  }}
+                  FormHelperTextProps={{
+                    sx: {
+                      fontFamily: '"Be Vietnam", sans-serif',
+                    },
+                  }}
+                />
+              </Grid>
+              <Grid item xs={3}>
+                <MemoizedTextField
+                  required
+                  fullWidth
+                  label="Phone Number"
+                  name="phone"
+                  value={newUserData.phone}
+                  onChange={handleInputChange("phone")}
+                  error={Boolean(formErrors.phone)}
+                  helperText={formErrors.phone}
+                  InputProps={{
+                    sx: {
+                      fontFamily: '"Be Vietnam", sans-serif',
+                    },
+                  }}
+                  InputLabelProps={{
+                    sx: {
+                      fontFamily: '"Be Vietnam", sans-serif',
+                    },
+                  }}
+                  FormHelperTextProps={{
+                    sx: {
+                      fontFamily: '"Be Vietnam", sans-serif',
+                    },
+                  }}
+                />
+              </Grid>
+            </Grid>
+          </Box>
         </DialogContent>
+
+        <DialogActions sx={{ p: 2, borderTop: "1px solid #eee" }}>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              width: "100%",
+            }}
+          >
+            <Box sx={{ display: "flex", gap: 1 }}>
+              <Tooltip title="Download Template" placement="top">
+                <IconButton
+                  size="small"
+                  onClick={handleTemplateDownload}
+                  sx={{
+                    backgroundColor: "primary.lighter",
+                    border: "1px solid",
+                    borderColor: "primary.light",
+                    color: "primary.main",
+                    "&:hover": {
+                      backgroundColor: "primary.100",
+                      transform: "translateY(-1px)",
+                      boxShadow: "0 2px 8px rgba(25, 118, 210, 0.15)",
+                    },
+                    transition: "all 0.2s ease",
+                    width: 36,
+                    height: 36,
+                    borderRadius: "8px",
+                  }}
+                >
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                    <DownloadIcon sx={{ fontSize: 20 }} />
+                  </Box>
+                </IconButton>
+              </Tooltip>
+
+              <Tooltip title="Bulk Upload" placement="top">
+                <IconButton
+                  size="small"
+                  onClick={() => fileInputRef.current?.click()}
+                  sx={{
+                    backgroundColor: "success.lighter",
+                    border: "1px solid",
+                    borderColor: "success.light",
+                    color: "success.main",
+                    "&:hover": {
+                      backgroundColor: "success.100",
+                      transform: "translateY(-1px)",
+                      boxShadow: "0 2px 8px rgba(46, 125, 50, 0.15)",
+                    },
+                    transition: "all 0.2s ease",
+                    width: 36,
+                    height: 36,
+                    borderRadius: "8px",
+                  }}
+                >
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                    <UploadFileIcon sx={{ fontSize: 20 }} />
+                  </Box>
+                </IconButton>
+              </Tooltip>
+            </Box>
+            <Box sx={{ display: "flex", gap: 1 }}>
+              <AddUserButton
+                onClick={handleAddUser}
+                disabled={Boolean(
+                  formErrors.username || formErrors.email || formErrors.phone
+                )}
+              />
+            </Box>
+          </Box>
+        </DialogActions>
       </Dialog>
       {/* Confirmation Dialog */}
       <Dialog open={openDialog} onClose={cancelDelete}>
@@ -2243,16 +2736,6 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
         maxWidth="sm"
         fullWidth
       >
-        {/* <DialogTitle
-          sx={{
-            borderBottom: "1px solid #eee",
-            pb: 1,
-            fontSize: "1.1rem",
-          }}
-        >
-          Migrate Users Storage
-        </DialogTitle> */}
-
         <DialogContent sx={{ pt: 2 }}>
           <Box
             sx={{ mb: 2, p: 1, backgroundColor: "#f5f5f5", borderRadius: 1 }}

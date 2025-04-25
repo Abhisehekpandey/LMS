@@ -6,6 +6,7 @@
     "@emailjs/browser": "^4.4.1",
     "@emotion/react": "^11.11.1",
     "@emotion/styled": "^11.11.0",
+    "@fontsource/be-vietnam": "^4.5.2",
     "@mui/icons-material": "^5.14.19",
     "@mui/material": "^5.14.19",
     "@mui/x-charts": "^6.18.2",
