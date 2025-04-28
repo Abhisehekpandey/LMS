@@ -1,4 +1,6 @@
 import React, { useState, useCallback, useEffect } from "react";
+import '@fontsource/be-vietnam';
+import { useLocation } from "react-router-dom";
 import {
   AppBar,
   Toolbar,
@@ -25,39 +27,54 @@ import { useNavigate } from "react-router-dom";
 import debounce from 'lodash/debounce';
 
 const StyledAppBar = styled(AppBar)(({ theme }) => ({
-  backgroundColor: "blue", // Match sidebar color
-  color: "inherit",
+  backgroundColor: "whitesmoke", // Match sidebar color
+  color: "#424242",
   boxShadow: "0 1px 2px rgba(0,0,0,0.15)",
   height: "48px",
+  backdropFilter: "blur(8px)",
+  boxShadow: "0 1px 2px rgba(0,0,0,0.08)",
+  position: "relative", // Ensure backdrop-filter works properly
+  zIndex: 1100,
+  fontFamily: '"Be Vietnam", sans-serif',
+
 }));
 
 const StyledToolbar = styled(Toolbar)({
   minHeight: "48px !important",
   padding: "0 16px !important",
+  fontFamily: '"Be Vietnam", sans-serif'
 });
 
 const SearchWrapper = styled("div")({
   position: "relative",
   borderRadius: "20px",
-  backgroundColor: "rgba(255, 255, 255, 0.15)", // Lighter background for search
+  backgroundColor: "white", // Darker background for search
   "&:hover": {
-    backgroundColor: "rgba(255, 255, 255, 0.25)",
+    backgroundColor: "white",
   },
   marginRight: "20px",
   marginLeft: "20px",
   width: "100%",
+  minWidth: "400px",
   maxWidth: "400px",
+  display: "flex",
+  alignItems: "center",
+  fontFamily: '"Be Vietnam", sans-serif'
 });
+
 
 const StyledInputBase = styled(InputBase)({
   color: "inherit",
   width: "100%",
   "& .MuiInputBase-input": {
-    padding: "6px 12px 6px 40px",
+    padding: "8px 12px 6px 40px",
     fontSize: "0.875rem",
+    width: "100%", // Ensure the input takes full width
+    height: "1.5rem",
     "&::placeholder": {
-      color: "rgba(255, 255, 255, 0.7)",
+      color: "rgba(0, 0, 0, 0.5)",
       opacity: 1,
+      fontFamily: '"Be Vietnam", sans-serif'
     },
   },
 });
@@ -68,16 +85,19 @@ const SearchIconWrapper = styled("div")({
   position: "absolute",
   display: "flex",
   alignItems: "center",
+  left: 0, // Ensure it's properly positioned
   justifyContent: "center",
+  pointerEvents: "none",
 });
 
 const SearchResultWrapper = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(1),
   maxHeight: '300px',
   overflowY: 'auto',
-  width: '400px',
+  width: '100%',
   '& .MuiListItem-root': {
     borderRadius: 1,
+    fontFamily: '"Be Vietnam", sans-serif',
     '&:hover': {
       backgroundColor: theme.palette.action.hover,
     }
@@ -85,6 +105,7 @@ const SearchResultWrapper = styled(Paper)(({ theme }) => ({
 }));
 
 const Navbar = ({ onThemeToggle, onSearch, currentPage }) => {
+  const location = useLocation();
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState(null);
 
@@ -109,31 +130,35 @@ const Navbar = ({ onThemeToggle, onSearch, currentPage }) => {
   }, []);
 
 
-   // Client-side search function
-  //  const searchData = (query) => {
-  //   if (!query) {
-  //     setSearchResults([]);
-  //     onSearch?.([]); // Pass empty array to show all rows
-  //     return;
-  //   }
+  const getFormattedPath = () => {
+    const path = location.pathname;
 
-  //   const lowercaseQuery = query.toLowerCase();
-  //   const results = userData.filter(item => 
-  //     item.username?.toLowerCase().includes(lowercaseQuery) ||
-  //     item.name?.toLowerCase().includes(lowercaseQuery) ||
-  //     item.email?.toLowerCase().includes(lowercaseQuery) ||
-  //     item.department?.toLowerCase().includes(lowercaseQuery) ||
-  //     item.role?.toLowerCase().includes(lowercaseQuery)
-  //   );
+    // Handle root path
+    if (path === '/') return '';
 
-  //   setSearchResults(results.slice(0, 5)); // Limit to 5 results
-  //   onSearch?.(results); // Pass all matching results to parent
-  // };
+    // Remove leading slash and split by slashes
+    const segments = path.substring(1).split('/');
+
+    // Map path segments to more readable format
+    const pathMap = {
+      'user': 'Users',
+      'department': 'Departments',
+      'angelbot': 'AngelBot',
+      'ldap-config': 'LDAP Settings',
+      'company-dashboard': 'Company Dashboard'
+    };
+
+    // Format each segment and join them
+    return segments.map(segment =>
+      pathMap[segment] || segment.charAt(0).toUpperCase() + segment.slice(1)
+    ).join(' / ');
+  };
+  const formattedPath = getFormattedPath();
 
   const searchData = (query) => {
     if (!query) {
       setSearchResults([]);
-      onSearch?.([]); 
+      onSearch?.([]);
       return;
     }
 
@@ -143,7 +168,7 @@ const Navbar = ({ onThemeToggle, onSearch, currentPage }) => {
     if (currentPage === 'departments') {
       // Search in departments data
       const departmentsData = JSON.parse(localStorage.getItem('departments') || '[]');
-      results = departmentsData.filter(item => 
+      results = departmentsData.filter(item =>
         item.name?.toLowerCase().includes(lowercaseQuery) ||
         item.displayName?.toLowerCase().includes(lowercaseQuery) ||
         item.storage?.toLowerCase().includes(lowercaseQuery) ||
@@ -152,7 +177,7 @@ const Navbar = ({ onThemeToggle, onSearch, currentPage }) => {
     } else {
       // Default user search
       const userData = JSON.parse(localStorage.getItem('dashboardRows') || '[]');
-      results = userData.filter(item => 
+      results = userData.filter(item =>
         item.username?.toLowerCase().includes(lowercaseQuery) ||
         item.name?.toLowerCase().includes(lowercaseQuery) ||
         item.email?.toLowerCase().includes(lowercaseQuery) ||
@@ -165,32 +190,32 @@ const Navbar = ({ onThemeToggle, onSearch, currentPage }) => {
     onSearch?.(results); // Pass all results to parent
   };
 
-    // Debounced search
-    const debouncedSearch = useCallback(
-      debounce((query) => searchData(query), 300),
-      [userData]
-    );
+  // Debounced search
+  const debouncedSearch = useCallback(
+    debounce((query) => searchData(query), 300),
+    [userData]
+  );
 
-    const handleSearchChange = (event) => {
-      const { value } = event.target;
-      setSearchTerm(value);
-      setSearchAnchorEl(event.currentTarget);
-      debouncedSearch(value);
-    };
-  
+  const handleSearchChange = (event) => {
+    const { value } = event.target;
+    setSearchTerm(value);
+    setSearchAnchorEl(event.currentTarget);
+    debouncedSearch(value);
+  };
 
-    const handleSearchResultClick = (result) => {
-      console.log('Selected result:', result);
-      setSearchTerm("");
-      setSearchResults([]);
-      setSearchAnchorEl(null);
-      // Add navigation logic if needed
-    };
 
-    const handleClickAway = () => {
-      setSearchResults([]);
-      setSearchAnchorEl(null);
-    };
+  const handleSearchResultClick = (result) => {
+    console.log('Selected result:', result);
+    setSearchTerm("");
+    setSearchResults([]);
+    setSearchAnchorEl(null);
+    // Add navigation logic if needed
+  };
+
+  const handleClickAway = () => {
+    setSearchResults([]);
+    setSearchAnchorEl(null);
+  };
 
 
 
@@ -219,11 +244,11 @@ const Navbar = ({ onThemeToggle, onSearch, currentPage }) => {
           primary={`${result.name} / ${result.displayName}`}
           secondary={
             <React.Fragment>
-              <Typography component="span" variant="body2" color="text.primary">
+              <Typography component="span" variant="body2" color="text.primary" sx={{ fontFamily: '"Be Vietnam", sans-serif' }} >
                 Storage: {result.storage}
               </Typography>
               <br />
-              <Typography component="span" variant="caption" color="text.secondary">
+              <Typography component="span" variant="caption" color="text.secondary" sx={{ fontFamily: '"Be Vietnam", sans-serif' }}>
                 Roles: {result.roles.join(', ')}
               </Typography>
             </React.Fragment>
@@ -238,11 +263,11 @@ const Navbar = ({ onThemeToggle, onSearch, currentPage }) => {
         primary={result.name}
         secondary={
           <React.Fragment>
-            <Typography component="span" variant="body2" color="text.primary">
+            <Typography component="span" variant="body2" color="text.primary" sx={{ fontFamily: '"Be Vietnam", sans-serif' }}>
               {result.department} - {result.role}
             </Typography>
             <br />
-            <Typography component="span" variant="caption" color="text.secondary">
+            <Typography component="span" variant="caption" color="text.secondary" sx={{ fontFamily: '"Be Vietnam", sans-serif' }}>
               {result.email}
             </Typography>
           </React.Fragment>
@@ -255,160 +280,141 @@ const Navbar = ({ onThemeToggle, onSearch, currentPage }) => {
   return (
     <StyledAppBar position="static">
       <StyledToolbar>
-        <Typography
-          variant="h6"
+        <Box
           sx={{
-            flexGrow: 0,
-            fontSize: "1.1rem",
-            fontWeight: 600,
-            marginLeft: "50px",
-            color: "inherit",
+            display: 'flex',
+            alignItems: 'center',
+            flexGrow: 1, // This will push other elements to the right
           }}
         >
-          Access Arc
-        </Typography>
+          <Typography
+            variant="h6"
+            sx={{
+              fontSize: "1.1rem",
+              fontWeight: 600,
+              color: "inherit",
+              fontFamily: '"Be Vietnam", sans-serif',
+            }}
+          >
+            {/* Access Arc */}
+          </Typography>
 
-        <SearchWrapper>
-          <SearchIconWrapper>
-            <SearchIcon sx={{ fontSize: "1.2rem", color: "inherit" }} />
-          </SearchIconWrapper>
-          {/* <StyledInputBase
-            placeholder="Search…"
-            inputProps={{ "aria-label": "search" }}
-          /> */}
-          {/* <StyledInputBase
-            placeholder="Search users, departments, roles..."
-            value={searchTerm}
-            onChange={handleSearchChange}
-            inputProps={{ "aria-label": "search" }}
-          /> */}
-           <StyledInputBase
-            placeholder={currentPage === 'departments' 
-              ? "Search departments, roles..." 
-              : "Search users, departments, roles..."}
-            value={searchTerm}
-            onChange={handleSearchChange}
-            inputProps={{ "aria-label": "search" }}
-          />
-           {/* <ClickAwayListener onClickAway={handleClickAway}>
-            <div>
-              {searchResults.length > 0 && searchAnchorEl && (
-                <Popper
-                  open={true}
-                  anchorEl={searchAnchorEl}
-                  placement="bottom-start"
-                  style={{ zIndex: 1301, width: searchAnchorEl.offsetWidth }}
-                >
-                  <SearchResultWrapper elevation={3}>
-                    <List dense>
-                      {searchResults.map((result, index) => (
-                        <ListItem
-                          key={index}
-                          onClick={() => handleSearchResultClick(result)}
-                          button
-                        >
-                          <ListItemText
-                            primary={result.name}
-                            secondary={
-                              <React.Fragment>
-                                <Typography
-                                  component="span"
-                                  variant="body2"
-                                  color="text.primary"
-                                >
-                                  {result.department} - {result.role}
-                                </Typography>
-                                <br />
-                                <Typography
-                                  component="span"
-                                  variant="caption"
-                                  color="text.secondary"
-                                >
-                                  {result.email}
-                                </Typography>
-                              </React.Fragment>
-                            }
-                          />
-                        </ListItem>
-                      ))}
-                    </List>
-                  </SearchResultWrapper>
-                </Popper>
-              )}
-            </div>
-          </ClickAwayListener> */}
-           <ClickAwayListener onClickAway={handleClickAway}>
-            <div>
-              {searchResults.length > 0 && searchAnchorEl && (
-                <Popper
-                  open={true}
-                  anchorEl={searchAnchorEl}
-                  placement="bottom-start"
-                  style={{ zIndex: 1301, width: searchAnchorEl.offsetWidth }}
-                >
-                  <SearchResultWrapper elevation={3}>
-                    <List dense>
-                      {searchResults.map((result, index) => (
-                        <ListItem
-                          key={index}
-                          onClick={() => handleSearchResultClick(result)}
-                          button
-                        >
-                          {renderSearchResult(result)}
-                        </ListItem>
-                      ))}
-                    </List>
-                  </SearchResultWrapper>
-                </Popper>
-              )}
-            </div>
-          </ClickAwayListener>
-        </SearchWrapper>
+          {formattedPath && (
+            <>
+              {/* <Typography
+                sx={{
+                  fontSize: "1.1rem",
+                  fontWeight: 400,
+                  color: "rgba(255, 255, 255, 0.7)",
+                  mx: 0.5
+                }}
+              >
+              </Typography> */}
+              <Typography
+                sx={{
+                  fontSize: "1rem",
+                  fontWeight: 400,
+                  color: "rgba(0, 0, 0, 0.7)",
+                  fontFamily: '"Be Vietnam", sans-serif',
+                  marginLeft: '40px'
+                }}
+              >
+                {formattedPath}
+              </Typography>
+            </>
+          )}
+        </Box>
+        <Box sx={{
+          display: "flex", alignItems: "center", gap: 2, justifyContent: "flex-end",
+          maxWidth: "1000px"
+        }}>
+          <SearchWrapper>
+            <SearchIconWrapper>
+              <SearchIcon sx={{ fontSize: "1.2rem", color: "inherit" }} />
+            </SearchIconWrapper>
 
-        <Box sx={{ flexGrow: 1 }} />
+            <StyledInputBase
+              placeholder={currentPage === 'departments'
+                ? "Search departments, roles..."
+                : "Search users, departments, roles..."}
+              value={searchTerm}
+              onChange={handleSearchChange}
+              inputProps={{ "aria-label": "search" }}
+            />
 
-        <Box sx={{ display: "flex", gap: 1 }}>
-          <Tooltip title="Toggle Theme" arrow>
-            <IconButton
-              onClick={onThemeToggle}
-              size="small"
-              // sx={{ color: 'text.secondary' }}
-              sx={{ color: "rgba(255, 255, 255, 0.7)" }}
-            >
-              <Brightness4Icon sx={{ fontSize: "1.2rem" }} />
-            </IconButton>
-          </Tooltip>
+            <ClickAwayListener onClickAway={handleClickAway}>
+              <div>
+                {searchResults.length > 0 && searchAnchorEl && (
+                  <Popper
+                    open={true}
+                    anchorEl={searchAnchorEl}
+                    placement="bottom-start"
+                    style={{ zIndex: 1301, width: searchAnchorEl ? searchAnchorEl.offsetWidth : 800, marginTop: 4 }}
+                  >
+                    <SearchResultWrapper elevation={3}>
+                      <List dense>
+                        {searchResults.map((result, index) => (
+                          <ListItem
+                            key={index}
+                            onClick={() => handleSearchResultClick(result)}
+                            button
+                          >
+                            {renderSearchResult(result)}
+                          </ListItem>
+                        ))}
+                      </List>
+                    </SearchResultWrapper>
+                  </Popper>
+                )}
+              </div>
+            </ClickAwayListener>
+          </SearchWrapper>
 
-          <Tooltip title="Change Language" arrow>
+          <Box sx={{ flexGrow: 1 }} />
+
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <Tooltip title="Toggle Theme" arrow>
+              <IconButton
+                onClick={onThemeToggle}
+                size="small"
+                // sx={{ color: 'text.secondary' }}
+                sx={{ color: "rgba(0, 0, 0, 0.6)" }}
+              >
+                <Brightness4Icon sx={{ fontSize: "1.2rem" }} />
+              </IconButton>
+            </Tooltip>
+
+            {/* <Tooltip title="Change Language" arrow>
             <IconButton
               onClick={handleLanguageClick}
               size="small"
               // sx={{ color: 'text.secondary' }}
-              sx={{ color: "rgba(255, 255, 255, 0.7)" }}
+              sx={{ color: "rgba(0, 0, 0, 0.6)" }}
             >
               <LanguageIcon sx={{ fontSize: "1.2rem" }} />
             </IconButton>
-          </Tooltip>
+          </Tooltip> */}
 
-          <Tooltip title="Logout" arrow>
-            <IconButton
-              onClick={handleLogout}
-              size="small"
-              // sx={{ color: 'text.secondary' }}
-              sx={{ color: "rgba(255, 255, 255, 0.7)" }}
-            >
-              <LogoutIcon sx={{ fontSize: "1.2rem" }} />
-            </IconButton>
-          </Tooltip>
-        </Box>
+            <Tooltip title="Logout" arrow>
+              <IconButton
+                onClick={handleLogout}
+                size="small"
+                // sx={{ color: 'text.secondary' }}
+                sx={{ color: "rgba(0, 0, 0, 0.6)" }}
+              >
+                <LogoutIcon sx={{ fontSize: "1.2rem" }} />
+              </IconButton>
+            </Tooltip>
+          </Box>
 
-        <Menu
+          {/* <Menu
           anchorEl={anchorEl}
           open={Boolean(anchorEl)}
           onClose={handleLanguageClose}
           PaperProps={{
             sx: {
               mt: 1.5,
+              fontFamily: '"Be Vietnam", sans-serif', 
               "& .MuiMenuItem-root": {
                 fontSize: "0.875rem",
                 minHeight: "32px",
@@ -427,7 +433,9 @@ const Navbar = ({ onThemeToggle, onSearch, currentPage }) => {
           <MenuItem dense onClick={() => handleLanguageChange("French")}>
             French
           </MenuItem>
-        </Menu>
+        </Menu> */}
+        </Box>
+
       </StyledToolbar>
     </StyledAppBar>
   );

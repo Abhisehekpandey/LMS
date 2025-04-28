@@ -14,6 +14,9 @@ import {
   DialogContent,
   DialogActions,
   Button,
+  Card,
+  CardContent,
+  CardHeader,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { PieChart } from "@mui/x-charts/PieChart";
@@ -64,8 +67,8 @@ const chartColorSchemes = {
 };
 
 const commonPaperStyles = {
-  p: 3,
-  mb: 2,
+  // p: 3,
+  // mb: 2,
   borderRadius: 2,
   boxShadow: "0 2px 12px 0 rgba(0,0,0,0.05)",
   transition: "transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out",
@@ -417,9 +420,8 @@ const AngelBot = ({ onThemeToggle }) => {
         trigger: "item",
         formatter: (params) => {
           return `<div style="font-weight: 700; font-size: 14px; color: #000;">
-                    ${params.name}: ${params.value}${
-            params.name.includes("Storage") ? "GB" : ""
-          } (${params.percent}%)
+                    ${params.name}: ${params.value}${params.name.includes("Storage") ? "GB" : ""
+            } (${params.percent}%)
                   </div>`;
         },
         backgroundColor: "rgba(255, 255, 255, 0.95)",
@@ -509,9 +511,8 @@ const AngelBot = ({ onThemeToggle }) => {
         trigger: "item",
         formatter: (params) => {
           return `<div style="font-weight: 700; font-size: 14px; color: #000;">
-              ${params.name}: ${params.value}${
-            params.name.includes("Storage") ? "GB" : ""
-          } (${params.percent}%)
+              ${params.name}: ${params.value}${params.name.includes("Storage") ? "GB" : ""
+            } (${params.percent}%)
             </div>`;
         },
         backgroundColor: "rgba(255, 255, 255, 0.95)",
@@ -594,9 +595,8 @@ const AngelBot = ({ onThemeToggle }) => {
         trigger: "item",
         formatter: (params) => {
           return `<div style="font-weight: 700; font-size: 14px; color: #000;">
-                    ${params.name}: ${params.value}${
-            params.name.includes("Storage") ? "GB" : ""
-          } (${params.percent}%)
+                    ${params.name}: ${params.value}${params.name.includes("Storage") ? "GB" : ""
+            } (${params.percent}%)
                   </div>`;
         },
         backgroundColor: "rgba(255, 255, 255, 0.95)",
@@ -668,581 +668,571 @@ const AngelBot = ({ onThemeToggle }) => {
 
   return (
     <Box
-      sx={{
-        display: "flex",
-        position: "relative",
-        height: "100vh",
-        backgroundColor: "#f5f7fa",
-      }}
+      className='child-container'
     >
-      <Sidebar />
-      <Box
-        sx={{
-          flexGrow: 2,
-          marginLeft: 0,
-          transition: "margin-left 0.3s",
-          height: "100vh",
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        <Box sx={{ position: "sticky", top: 0, zIndex: 1100 }}>
-          <Navbar onThemeToggle={onThemeToggle} />
-        </Box>
+      <div className="child">
         <Box
           sx={{
-            p: 3,
-            marginLeft: "50px",
-            paddingBottom: "2rem",
-            overflowY: "auto",
-            height: "calc(100vh - 64px)",
+            display: "grid",
+            position: "relative",
+            // height: "100vh",
+            backgroundColor: "white",
           }}
         >
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={4}>
-              <Paper
-                elevation={0}
-                sx={{
-                  ...commonPaperStyles,
-                  height: "90%", // Add this to make all boxes the same height
-                  display: "flex",
-                  flexDirection: "column",
-                  position: "relative",
-                }}
-              >
-                <Box
+          <Box
+            sx={{
+              display: "flex",
+              position: "relative",
+              // height: "100vh",
+              backgroundColor: "#f5f7fa",
+            }}
+          >
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={4}>
+                <Paper
+                  elevation={0}
                   sx={{
+                    ...commonPaperStyles,
+                    height: "90%", // Add this to make all boxes the same height
                     display: "flex",
-                    alignItems: "center",
-                    mb: 3,
-                    gap: 1,
-                    justifyContent: "space-between",
+                    flexDirection: "column",
+                    position: "relative",
                   }}
                 >
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <GroupIcon color="primary" />
-                    <Typography variant="h6" color="primary">
-                      License Status
-                    </Typography>
-                  </Box>
-                </Box>
-
-                <Box sx={{ height: 250, width: "100%" }}>
-                  <UserDistributionChart data={userStats} />
-                </Box>
-
-                <Box
-                  sx={{
-                    display: "flex",
-                    flexDirection: "row",
-                    gap: 1,
-                    mb: 1,
-                    // alignItems: 'center'
-                    justifyContent: "center",
-                  }}
-                >
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 1,
-                    }}
-                  ></Box>
-
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 1,
-                    }}
-                  ></Box>
-
-                  <Box
-                    sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                  ></Box>
-
-                  <Box
-                    sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                  ></Box>
-                </Box>
-                <Tooltip title="Upload License" placement="left">
-                  <Fab
-                    size="small"
-                    sx={{
-                      position: "absolute",
-                      bottom: 16,
-                      right: 16,
-                      backgroundColor: chartColors.success,
-                      "&:hover": {
-                        backgroundColor: alpha(chartColors.success, 0.85),
-                      },
-                    }}
-                  >
-                    <AddIcon sx={{ color: "#fff" }} />
-                  </Fab>
-                </Tooltip>
-              </Paper>
-            </Grid>
-
-            {/* Storage Distribution Section */}
-            <Grid item xs={12} md={4}>
-              <Paper
-                elevation={0}
-                sx={{
-                  ...commonPaperStyles,
-                  height: "90%", // Add this to make all boxes the same height
-                  display: "flex",
-                  flexDirection: "column",
-                  position: "relative",
-                }}
-              >
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    mb: 3,
-                    gap: 1,
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <StorageIcon color="primary" />
-                    <Typography variant="h6" color="primary">
-                      Storage Status
-                    </Typography>
-                  </Box>
-                </Box>
-
-                <Box sx={{ height: 250, width: "100%" }}>
-                  <StorageDistributionChart data={storageStats} />
-                </Box>
-
-                <Box
-                  sx={{
-                    display: "flex",
-                    flexDirection: "row",
-                    gap: 1,
-                    mb: 1,
-                    // alignItems: 'center'
-                    justifyContent: "center",
-                  }}
-                >
-                  <Box
-                    sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                  ></Box>
-                  <Box
-                    sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                  ></Box>
-
-                  <Box
-                    sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                  ></Box>
-                </Box>
-                <Tooltip title="Increase Storage" placement="left">
-                  <Fab
-                    size="small"
-                    sx={{
-                      position: "absolute",
-                      bottom: 16,
-                      right: 16,
-                      backgroundColor: chartColors.success,
-                      "&:hover": {
-                        backgroundColor: alpha(chartColors.success, 0.85),
-                      },
-                    }}
-                  >
-                    <AddIcon sx={{ color: "#fff" }} />
-                  </Fab>
-                </Tooltip>
-              </Paper>
-            </Grid>
-
-            {/* License Expiry Section */}
-            <Grid item xs={12} md={4}>
-              <Paper
-                elevation={0}
-                sx={{
-                  ...commonPaperStyles,
-                  height: "90%", // Add this to make all boxes the same height
-                  display: "flex",
-                  flexDirection: "column",
-                  position: "relative",
-                }}
-              >
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    mb: 3,
-                    gap: 1,
-                    justifyContent: "space-between", // Add this to create space between title and counter
-                  }}
-                >
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    {/* <AccessTimeIcon color="primary" /> */}
-                    <AssessmentIcon color="primary" />{" "}
-                    {/* Changed from AccessTimeIcon */}
-                    <Typography variant="h6" color="primary">
-                      Storage Distribution
-                    </Typography>
-                  </Box>
-
-                  <Box
-                    sx={{ display: "flex", flexDirection: "column", gap: 2 }}
-                  >
-                    <Box
-                      sx={{
-                        position: "absolute",
-                        bottom: 16,
-                        right: 16,
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "flex-end",
-                        gap: 0.5,
-                        // backgroundColor: alpha(chartColors.error, 0.1),
-                        padding: "8px 16px",
-                        borderRadius: 2,
-                        cursor: "pointer",
-                        transition: "all 0.3s ease",
-                        // border: `1px solid ${alpha(chartColors.error, 0.2)}`,
-                        boxShadow: `0 0 8px ${alpha(chartColors.error, 0.2)}`,
-                        "&:hover": {
-                          backgroundColor: alpha(chartColors.error, 0.15),
-                          transform: "translateY(-1px)",
-                          boxShadow: `0 0 12px ${alpha(
-                            chartColors.error,
-                            0.3
-                          )}`,
-                        },
-                      }}
-                    >
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          color: chartColors.error,
-                          fontWeight: 500,
-                        }}
-                      >
-                        {getRemainingDays() <= 30 ? "Renewal By" : "Validity"}
-                      </Typography>
-                      <Typography
-                        variant="h4"
-                        sx={{
-                          color: chartColors.error,
-                          fontWeight: 700,
-                          lineHeight: 1,
-                          fontSize: "2rem",
-                        }}
-                      >
-                        {getRemainingDays()}
-                      </Typography>
-                    </Box>
-
-                    {getRemainingDays() === 0 && (
-                      <Box
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 1,
-                          backgroundColor: alpha(chartColors.error, 0.15),
-                          padding: "8px 12px",
-                          borderRadius: 2,
-                          border: `1px solid ${alpha(chartColors.error, 0.3)}`,
-                        }}
-                      >
-                        <WarningIcon sx={{ color: chartColors.error }} />
-                        <Box>
-                          <Typography
-                            variant="subtitle2"
-                            sx={{ color: chartColors.error, fontWeight: 600 }}
-                          >
-                            Account Block Warning
-                          </Typography>
-                          <Typography
-                            variant="body2"
-                            sx={{ color: chartColors.error }}
-                          >
-                            {`Grace Period: -${negativeCount} Days (Max: -10 Days)`}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    )}
-
-                    {/* Add the warning dialog */}
-                    <BlockWarningDialog />
-                  </Box>
-                </Box>
-
-                <Box sx={{ height: 250, width: "100%" }}>
-                  <LicenseDataChart
-                    data={{
-                      userStorage: storageStats.totalAllocated,
-                      departmentStorage: getSortedDepartments().reduce(
-                        (sum, dept) => sum + dept.storage,
-                        0
-                      ),
-                    }}
-                  />
-                </Box>
-                <Box
-                  sx={{
-                    display: "flex",
-                    flexDirection: "row",
-                    gap: 1,
-                    mb: 1,
-                    justifyContent: "center",
-                  }}
-                >
-                  <Box
-                    sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                  ></Box>
-                  <Box
-                    sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                  ></Box>
-                </Box>
-              </Paper>
-            </Grid>
-
-            <Grid container spacing={6}>
-              <Grid item xs={12} md={6} sx={{ marginTop: "20px" }}>
-                <Paper elevation={0} sx={commonPaperStyles}>
                   <Box
                     sx={{
                       display: "flex",
                       alignItems: "center",
                       mb: 3,
                       gap: 1,
+                      justifyContent: "space-between",
                     }}
                   >
-                    <DashboardIcon color="primary" />
-                    <Typography variant="h6" color="primary">
-                      Top User Storage Usage
-                    </Typography>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <GroupIcon color="primary" />
+                      <Typography variant="h6" color="primary">
+                        License Status
+                      </Typography>
+                    </Box>
                   </Box>
-                  <Box>
-                    {getSortedStorageUsers()
-                      .slice(
-                        userPage * userRowsPerPage,
-                        userPage * userRowsPerPage + userRowsPerPage
-                      )
-                      .map((user, index) => (
+
+                  <Box sx={{ height: 250, width: "100%" }}>
+                    <UserDistributionChart data={userStats} />
+                  </Box>
+
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexDirection: "row",
+                      gap: 1,
+                      mb: 1,
+                      // alignItems: 'center'
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                      }}
+                    ></Box>
+
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                      }}
+                    ></Box>
+
+                    <Box
+                      sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                    ></Box>
+
+                    <Box
+                      sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                    ></Box>
+                  </Box>
+                  <Tooltip title="Upload License" placement="left">
+                    <Fab
+                      size="small"
+                      sx={{
+                        position: "absolute",
+                        bottom: 16,
+                        right: 16,
+                        backgroundColor: chartColors.success,
+                        "&:hover": {
+                          backgroundColor: alpha(chartColors.success, 0.85),
+                        },
+                      }}
+                    >
+                      <AddIcon sx={{ color: "#fff" }} />
+                    </Fab>
+                  </Tooltip>
+                </Paper>
+              </Grid>
+
+              {/* Storage Distribution Section */}
+              <Grid item xs={12} md={4}>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    ...commonPaperStyles,
+                    height: "90%", // Add this to make all boxes the same height
+                    display: "flex",
+                    flexDirection: "column",
+                    position: "relative",
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      mb: 3,
+                      gap: 1,
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <StorageIcon color="primary" />
+                      <Typography variant="h6" color="primary">
+                        Storage Status
+                      </Typography>
+                    </Box>
+                  </Box>
+
+                  <Box sx={{ height: 250, width: "100%" }}>
+                    <StorageDistributionChart data={storageStats} />
+                  </Box>
+
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexDirection: "row",
+                      gap: 1,
+                      mb: 1,
+                      // alignItems: 'center'
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Box
+                      sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                    ></Box>
+                    <Box
+                      sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                    ></Box>
+
+                    <Box
+                      sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                    ></Box>
+                  </Box>
+                  <Tooltip title="Increase Storage" placement="left">
+                    <Fab
+                      size="small"
+                      sx={{
+                        position: "absolute",
+                        bottom: 16,
+                        right: 16,
+                        backgroundColor: chartColors.success,
+                        "&:hover": {
+                          backgroundColor: alpha(chartColors.success, 0.85),
+                        },
+                      }}
+                    >
+                      <AddIcon sx={{ color: "#fff" }} />
+                    </Fab>
+                  </Tooltip>
+                </Paper>
+              </Grid>
+
+              {/* License Expiry Section */}
+              <Grid item xs={12} md={4}>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    ...commonPaperStyles,
+                    height: "90%", // Add this to make all boxes the same height
+                    display: "flex",
+                    flexDirection: "column",
+                    position: "relative",
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      mb: 3,
+                      gap: 1,
+                      justifyContent: "space-between", // Add this to create space between title and counter
+                    }}
+                  >
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      {/* <AccessTimeIcon color="primary" /> */}
+                      <AssessmentIcon color="primary" />{" "}
+                      {/* Changed from AccessTimeIcon */}
+                      <Typography variant="h6" color="primary">
+                        Storage Distribution
+                      </Typography>
+                    </Box>
+
+                    <Box
+                      sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+                    >
+                      <Box
+                        sx={{
+                          position: "absolute",
+                          bottom: 16,
+                          right: 16,
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "flex-end",
+                          gap: 0.5,
+                          // backgroundColor: alpha(chartColors.error, 0.1),
+                          padding: "8px 16px",
+                          borderRadius: 2,
+                          cursor: "pointer",
+                          transition: "all 0.3s ease",
+                          // border: `1px solid ${alpha(chartColors.error, 0.2)}`,
+                          boxShadow: `0 0 8px ${alpha(chartColors.error, 0.2)}`,
+                          "&:hover": {
+                            backgroundColor: alpha(chartColors.error, 0.15),
+                            transform: "translateY(-1px)",
+                            boxShadow: `0 0 12px ${alpha(
+                              chartColors.error,
+                              0.3
+                            )}`,
+                          },
+                        }}
+                      >
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: chartColors.error,
+                            fontWeight: 500,
+                          }}
+                        >
+                          {getRemainingDays() <= 30 ? "Renewal By" : "Validity"}
+                        </Typography>
+                        <Typography
+                          variant="h4"
+                          sx={{
+                            color: chartColors.error,
+                            fontWeight: 700,
+                            lineHeight: 1,
+                            fontSize: "2rem",
+                          }}
+                        >
+                          {getRemainingDays()}
+                        </Typography>
+                      </Box>
+
+                      {getRemainingDays() === 0 && (
                         <Box
-                          key={index}
                           sx={{
                             display: "flex",
                             alignItems: "center",
-                            p: 1,
-                            mb: 0.5,
-                            borderRadius: 1.5,
-                            backgroundColor:
-                              index % 2 === 0
-                                ? alpha(chartColors.primary, 0.02)
-                                : alpha(chartColors.primary, 0.06),
-                            "&:hover": {
-                              backgroundColor: alpha(chartColors.primary, 0.1),
-                              transform: "translateY(-1px)",
-                              transition: "all 0.2s ease-in-out",
-                            },
+                            gap: 1,
+                            backgroundColor: alpha(chartColors.error, 0.15),
+                            padding: "8px 12px",
+                            borderRadius: 2,
+                            border: `1px solid ${alpha(chartColors.error, 0.3)}`,
                           }}
                         >
-                          <Box sx={{ minWidth: 120 }}>
+                          <WarningIcon sx={{ color: chartColors.error }} />
+                          <Box>
+                            <Typography
+                              variant="subtitle2"
+                              sx={{ color: chartColors.error, fontWeight: 600 }}
+                            >
+                              Account Block Warning
+                            </Typography>
+                            <Typography
+                              variant="body2"
+                              sx={{ color: chartColors.error }}
+                            >
+                              {`Grace Period: -${negativeCount} Days (Max: -10 Days)`}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      )}
+
+                      {/* Add the warning dialog */}
+                      <BlockWarningDialog />
+                    </Box>
+                  </Box>
+
+                  <Box sx={{ height: 250, width: "100%" }}>
+                    <LicenseDataChart
+                      data={{
+                        userStorage: storageStats.totalAllocated,
+                        departmentStorage: getSortedDepartments().reduce(
+                          (sum, dept) => sum + dept.storage,
+                          0
+                        ),
+                      }}
+                    />
+                  </Box>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexDirection: "row",
+                      gap: 1,
+                      mb: 1,
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Box
+                      sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                    ></Box>
+                    <Box
+                      sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                    ></Box>
+                  </Box>
+                </Paper>
+              </Grid>
+
+              <Grid container spacing={6}>
+                <Grid item xs={12} md={6} sx={{ marginTop: "20px" }}>
+                  <Paper elevation={0} sx={commonPaperStyles}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        mb: 3,
+                        gap: 1,
+                      }}
+                    >
+                      <DashboardIcon color="primary" />
+                      <Typography variant="h6" color="primary">
+                        Top User Storage Usage
+                      </Typography>
+                    </Box>
+                    <Box>
+                      {getSortedStorageUsers()
+                        .slice(
+                          userPage * userRowsPerPage,
+                          userPage * userRowsPerPage + userRowsPerPage
+                        )
+                        .map((user, index) => (
+                          <Box
+                            key={index}
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              p: 1,
+                              mb: 0.5,
+                              borderRadius: 1.5,
+                              backgroundColor:
+                                index % 2 === 0
+                                  ? alpha(chartColors.primary, 0.02)
+                                  : alpha(chartColors.primary, 0.06),
+                              "&:hover": {
+                                backgroundColor: alpha(chartColors.primary, 0.1),
+                                transform: "translateY(-1px)",
+                                transition: "all 0.2s ease-in-out",
+                              },
+                            }}
+                          >
+                            <Box sx={{ minWidth: 120 }}>
+                              <Typography
+                                variant="body2"
+                                sx={{
+                                  fontWeight: 600,
+                                  color: chartColors.primary,
+                                  fontSize: "0.875rem",
+                                }}
+                              >
+                                {user.name}
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  color: "text.secondary",
+                                  fontSize: "0.75rem",
+                                }}
+                              >
+                                {`${user.storageUsed}/${user.storageAllocated}GB`}
+                              </Typography>
+                            </Box>
+                            <Box sx={{ flex: 1, mx: 2 }}>
+                              <LinearProgress
+                                variant="determinate"
+                                value={
+                                  (user.storageUsed / user.storageAllocated) * 100
+                                }
+                                sx={{
+                                  height: 4,
+                                  borderRadius: 2,
+                                  [`&.MuiLinearProgress-root`]: {
+                                    backgroundColor: alpha(
+                                      chartColors.primary,
+                                      0.12
+                                    ),
+                                  },
+                                  [`& .MuiLinearProgress-bar`]: {
+                                    borderRadius: 3,
+                                    backgroundColor: chartColors.primary,
+                                  },
+                                }}
+                              />
+                            </Box>
                             <Typography
                               variant="body2"
                               sx={{
+                                minWidth: 40,
+                                textAlign: "right",
                                 fontWeight: 600,
                                 color: chartColors.primary,
                                 fontSize: "0.875rem",
                               }}
                             >
-                              {user.name}
-                            </Typography>
-                            <Typography
-                              variant="caption"
-                              sx={{
-                                color: "text.secondary",
-                                fontSize: "0.75rem",
-                              }}
-                            >
-                              {`${user.storageUsed}/${user.storageAllocated}GB`}
-                            </Typography>
-                          </Box>
-                          <Box sx={{ flex: 1, mx: 2 }}>
-                            <LinearProgress
-                              variant="determinate"
-                              value={
+                              {`${Math.round(
                                 (user.storageUsed / user.storageAllocated) * 100
-                              }
-                              sx={{
-                                height: 4,
-                                borderRadius: 2,
-                                [`&.MuiLinearProgress-root`]: {
-                                  backgroundColor: alpha(
-                                    chartColors.primary,
-                                    0.12
-                                  ),
-                                },
-                                [`& .MuiLinearProgress-bar`]: {
-                                  borderRadius: 3,
-                                  backgroundColor: chartColors.primary,
-                                },
-                              }}
-                            />
+                              )}%`}
+                            </Typography>
                           </Box>
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              minWidth: 40,
-                              textAlign: "right",
-                              fontWeight: 600,
-                              color: chartColors.primary,
-                              fontSize: "0.875rem",
-                            }}
-                          >
-                            {`${Math.round(
-                              (user.storageUsed / user.storageAllocated) * 100
-                            )}%`}
-                          </Typography>
-                        </Box>
-                      ))}
-                    <TablePagination
-                      component="div"
-                      count={getSortedStorageUsers().length}
-                      page={userPage}
-                      onPageChange={handleUserPageChange}
-                      rowsPerPage={userRowsPerPage}
-                      onRowsPerPageChange={handleUserRowsPerPageChange}
-                      rowsPerPageOptions={[5, 10, 15]}
-                      sx={{
-                        mt: 1,
-                        ".MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows":
+                        ))}
+                      <TablePagination
+                        component="div"
+                        count={getSortedStorageUsers().length}
+                        page={userPage}
+                        onPageChange={handleUserPageChange}
+                        rowsPerPage={userRowsPerPage}
+                        onRowsPerPageChange={handleUserRowsPerPageChange}
+                        rowsPerPageOptions={[5, 10, 15]}
+                        sx={{
+                          mt: 1,
+                          ".MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows":
                           {
                             margin: 0,
                           },
+                        }}
+                      />
+                    </Box>
+                  </Paper>
+                </Grid>
+                <Grid item xs={12} md={6} sx={{ marginTop: "20px" }}>
+                  <Paper elevation={0} sx={commonPaperStyles}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        mb: 3,
+                        gap: 1,
                       }}
-                    />
-                  </Box>
-                </Paper>
-              </Grid>
-              <Grid item xs={12} md={6} sx={{ marginTop: "20px" }}>
-                <Paper elevation={0} sx={commonPaperStyles}>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      mb: 3,
-                      gap: 1,
-                    }}
-                  >
-                    <DashboardIcon color="primary" />
-                    <Typography variant="h6" color="primary">
-                      Top Department Storage Usage
-                    </Typography>
-                  </Box>
-                  <Box>
-                    {getSortedDepartments()
-                      .slice(
-                        deptPage * deptRowsPerPage,
-                        deptPage * deptRowsPerPage + deptRowsPerPage
-                      )
-                      .map((dept, index) => (
-                        <Box
-                          key={index}
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            p: 1,
-                            mb: 0.5,
-                            borderRadius: 1.5,
-                            backgroundColor:
-                              index % 2 === 0
-                                ? alpha(chartColors.warning, 0.02)
-                                : alpha(chartColors.warning, 0.06),
-                            "&:hover": {
-                              backgroundColor: alpha(chartColors.warning, 0.1),
-                              transform: "translateY(-1px)",
-                              transition: "all 0.2s ease-in-out",
-                            },
-                          }}
-                        >
-                          <Box sx={{ minWidth: 120 }}>
+                    >
+                      <DashboardIcon color="primary" />
+                      <Typography variant="h6" color="primary">
+                        Top Department Storage Usage
+                      </Typography>
+                    </Box>
+                    <Box>
+                      {getSortedDepartments()
+                        .slice(
+                          deptPage * deptRowsPerPage,
+                          deptPage * deptRowsPerPage + deptRowsPerPage
+                        )
+                        .map((dept, index) => (
+                          <Box
+                            key={index}
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              p: 1,
+                              mb: 0.5,
+                              borderRadius: 1.5,
+                              backgroundColor:
+                                index % 2 === 0
+                                  ? alpha(chartColors.warning, 0.02)
+                                  : alpha(chartColors.warning, 0.06),
+                              "&:hover": {
+                                backgroundColor: alpha(chartColors.warning, 0.1),
+                                transform: "translateY(-1px)",
+                                transition: "all 0.2s ease-in-out",
+                              },
+                            }}
+                          >
+                            <Box sx={{ minWidth: 120 }}>
+                              <Typography
+                                variant="body2"
+                                sx={{
+                                  fontWeight: 600,
+                                  color: chartColors.warning,
+                                  fontSize: "0.875rem",
+                                }}
+                              >
+                                {dept.name}
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  color: "text.secondary",
+                                  fontSize: "0.75rem",
+                                }}
+                              >
+                                {`${dept.storage}GB`}
+                              </Typography>
+                            </Box>
+                            <Box sx={{ flex: 1, mx: 2 }}>
+                              <LinearProgress
+                                variant="determinate"
+                                value={(dept.storage / 200) * 100}
+                                sx={{
+                                  height: 4,
+                                  borderRadius: 2,
+                                  [`&.MuiLinearProgress-root`]: {
+                                    backgroundColor: alpha(
+                                      chartColors.warning,
+                                      0.12
+                                    ),
+                                  },
+                                  [`& .MuiLinearProgress-bar`]: {
+                                    borderRadius: 3,
+                                    backgroundColor: chartColors.warning,
+                                  },
+                                }}
+                              />
+                            </Box>
                             <Typography
                               variant="body2"
                               sx={{
+                                minWidth: 40,
+                                textAlign: "right",
                                 fontWeight: 600,
                                 color: chartColors.warning,
                                 fontSize: "0.875rem",
                               }}
                             >
-                              {dept.name}
-                            </Typography>
-                            <Typography
-                              variant="caption"
-                              sx={{
-                                color: "text.secondary",
-                                fontSize: "0.75rem",
-                              }}
-                            >
-                              {`${dept.storage}GB`}
+                              {`${Math.round((dept.storage / 200) * 100)}%`}
                             </Typography>
                           </Box>
-                          <Box sx={{ flex: 1, mx: 2 }}>
-                            <LinearProgress
-                              variant="determinate"
-                              value={(dept.storage / 200) * 100}
-                              sx={{
-                                height: 4,
-                                borderRadius: 2,
-                                [`&.MuiLinearProgress-root`]: {
-                                  backgroundColor: alpha(
-                                    chartColors.warning,
-                                    0.12
-                                  ),
-                                },
-                                [`& .MuiLinearProgress-bar`]: {
-                                  borderRadius: 3,
-                                  backgroundColor: chartColors.warning,
-                                },
-                              }}
-                            />
-                          </Box>
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              minWidth: 40,
-                              textAlign: "right",
-                              fontWeight: 600,
-                              color: chartColors.warning,
-                              fontSize: "0.875rem",
-                            }}
-                          >
-                            {`${Math.round((dept.storage / 200) * 100)}%`}
-                          </Typography>
-                        </Box>
-                      ))}
-                    <TablePagination
-                      component="div"
-                      count={getSortedDepartments().length}
-                      page={deptPage}
-                      onPageChange={handleDeptPageChange}
-                      rowsPerPage={deptRowsPerPage}
-                      onRowsPerPageChange={handleDeptRowsPerPageChange}
-                      rowsPerPageOptions={[5, 10, 15]}
-                      sx={{
-                        mt: 1,
-                        ".MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows":
+                        ))}
+                      <TablePagination
+                        component="div"
+                        count={getSortedDepartments().length}
+                        page={deptPage}
+                        onPageChange={handleDeptPageChange}
+                        rowsPerPage={deptRowsPerPage}
+                        onRowsPerPageChange={handleDeptRowsPerPageChange}
+                        rowsPerPageOptions={[5, 10, 15]}
+                        sx={{
+                          mt: 1,
+                          ".MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows":
                           {
                             margin: 0,
                           },
-                      }}
-                    />
-                  </Box>
-                </Paper>
+                        }}
+                      />
+                    </Box>
+                  </Paper>
+                </Grid>
               </Grid>
             </Grid>
-          </Grid>
+          </Box>
         </Box>
-      </Box>
-    </Box>
+      </div >
+    </Box >
   );
 };
 
