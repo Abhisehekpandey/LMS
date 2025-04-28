@@ -29,23 +29,21 @@ const Migration = ({ handleClose, rowData }) => {
 
   const label = { inputProps: { "aria-label": "Checkbox demo" } };
 
-  const options = ['The Godfather', 'Pulp Fiction'];
+  const options = ["The Godfather", "Pulp Fiction"];
 
   const userOptions = [
     { id: 1, userName: "Satyam Aggrawal", availableStorage: "9GB" },
     { id: 2, userName: "Abhishek Pandey", availableStorage: "9GB" },
   ];
-  
+
   const requiredStorage = 10; // Example: Required is 10GB
-  
-    const [selectedUser, setSelectedUser] = useState(null);
-  
-    const getAvailable = (user) =>
-      parseFloat(user?.availableStorage?.replace("GB", "")) || 0;
-  
-    const isError =
-      selectedUser && getAvailable(selectedUser) < requiredStorage;
-  
+
+  const [selectedUser, setSelectedUser] = useState(null);
+
+  const getAvailable = (user) =>
+    parseFloat(user?.availableStorage?.replace("GB", "")) || 0;
+
+  const isError = selectedUser && getAvailable(selectedUser) < requiredStorage;
 
   return (
     <Box>
@@ -54,10 +52,10 @@ const Migration = ({ handleClose, rowData }) => {
         <Box sx={{ p: 2, backgroundColor: "#f5f5f5", borderRadius: 2 }}>
           <Box sx={{ display: "flex", justifyContent: "space-between" }}>
             <Typography variant="subtitle2" color="text.secondary">
-              Total Data to Migrate: {totalStorage} GB
+              Total Data to Migrate: {totalManageStorage} GB
             </Typography>
             <Typography variant="subtitle2" color="text.secondary">
-              Total Storage to Migrate: {totalManageStorage} GB
+              Total Storage to Migrate: {totalStorage} GB
             </Typography>
           </Box>
         </Box>
@@ -104,7 +102,7 @@ const Migration = ({ handleClose, rowData }) => {
                     variant="body2"
                     sx={{ color: "#2e7d32", fontWeight: 500 }}
                   >
-                    {totalStorage} GB
+                    {totalManageStorage} GB
                   </Typography>
                 </Box>
                 <Box sx={{ display: "flex", alignItems: "center" }}>
@@ -119,7 +117,7 @@ const Migration = ({ handleClose, rowData }) => {
                     variant="body2"
                     sx={{ color: "#2e7d32", fontWeight: 500 }}
                   >
-                    {totalManageStorage} GB
+                    {totalStorage} GB
                   </Typography>
                 </Box>
               </Box>
@@ -152,47 +150,55 @@ const Migration = ({ handleClose, rowData }) => {
         }}
       >
         <Box>
-        <Autocomplete
-        fullWidth
-        options={userOptions}
-        getOptionLabel={(option) => option.name}
-        value={selectedUser}
-        onChange={(event, newValue) => setSelectedUser(newValue)}
-        renderOption={(props, option) => (
-          <Box component="li" {...props}>
-            <Avatar sx={{ width: 24, height: 24, mr: 1 }}>
-              <Person fontSize="small" />
-            </Avatar>
-            <Box>
-              <Typography variant="body2">{option.userName}</Typography>
-              <Typography variant="caption" color="text.secondary">
-                Available Storage: {option.availableStorage}
-              </Typography>
-            </Box>
-          </Box>
-        )}
-        renderInput={(params) => (
-          <TextField
-            {...params}
+          <Autocomplete
             fullWidth
-            sx={{width:'200 px'}}
-            label="Select Target User"
-            error={isError}
-            helperText={
-              isError
-                ? `Target user doesn't have enough available storage. Available: ${selectedUser.availableStorage}, Required: ${requiredStorage}GB`
-                : ""
-            }
+            options={userOptions}
+            getOptionLabel={(option) => option?.userName || ""} // <-- use userName here
+            value={selectedUser}
+            sx={{ width: "300px" }}
+            onChange={(event, newValue) => setSelectedUser(newValue)}
+            renderOption={(props, option) => (
+              <Box component="li" {...props}>
+                <Avatar sx={{ width: 24, height: 24, mr: 1 }}>
+                  <Person fontSize="small" />
+                </Avatar>
+                <Box>
+                  <Typography variant="body2">{option.userName}</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Available Storage: {option.availableStorage}
+                  </Typography>
+                </Box>
+              </Box>
+            )}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                fullWidth
+                sx={{ width: "300px" }} // also fixed typo: no space in "200px"
+                label="Select Target User"
+                // error={isError}
+              />
+            )}
+            isOptionEqualToValue={(option, value) => option.id === value.id}
           />
-        )}
-        isOptionEqualToValue={(option, value) => option.id === value.id}
-      />
         </Box>
         <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2 }}>
           <Button variant="text" onClick={handleClose}>
             Cancel
           </Button>
-          <Button variant="contained" color="primary" disabled>
+          <Button
+              sx={{
+                backgroundColor: "rgb(251, 68, 36)",
+                color: "white",
+                "&:hover": {
+                  backgroundColor: "rgb(251, 68, 36)",
+                  color: "white",
+                },
+              }}
+            variant="contained"
+            color="primary"
+            disabled={!selectedUser} // disabled when no user selected
+          >
             Migrate
           </Button>
         </Box>

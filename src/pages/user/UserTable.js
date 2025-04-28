@@ -42,10 +42,12 @@ import {
   WifiProtectedSetup,
   PowerSettingsNew,
   Block,
+  Close,
 } from "@mui/icons-material";
 import styles from "./user.module.css";
 import DeleteUser from "./DeleteUser";
 import Migration from "./Migration";
+import CreateUser from "./CreateUser";
 
 const CustomSwitch = styled(Switch)(({ theme, checked }) => ({
   "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
@@ -74,6 +76,7 @@ const rows = [
     manageStorage: "1 GB",
     status: false,
     avaliableStorage: "9 GB",
+    phone: "1234567890",
   },
   {
     userName: "User5",
@@ -86,6 +89,7 @@ const rows = [
     manageStorage: "1 GB",
     status: false,
     avaliableStorage: "9 GB",
+    phone: "9876543201",
   },
   {
     userName: "User6",
@@ -98,6 +102,7 @@ const rows = [
     manageStorage: "1 GB",
     status: false,
     avaliableStorage: "9 GB",
+    phone: "1234567890",
   },
 ];
 
@@ -130,8 +135,15 @@ export default function UserTable() {
   const [selectAllData, setSelectAllData] = useState(false);
   const [hoveredRow, setHoveredRow] = useState(null);
   const [migrationDialog, setMigrationDialog] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editData, setEditData] = useState({});
 
-  console.log(rowData);
+  const handleEdit = (e, row) => {
+    console.log(row);
+    setEditData(row);
+    setEditDialogOpen(true);
+  };
+  // console.log(rowData);
 
   const handleMigration = () => {
     setMigrationDialog(true);
@@ -352,25 +364,66 @@ export default function UserTable() {
                     >
                       <TableCell padding="checkbox">
                         <Checkbox
+                          sx={{ padding: "10px 10px 10px 10px !important" }}
                           checked={isItemSelected}
                           onChange={() => handleClick(row)}
                         />
                       </TableCell>
-                      <TableCell align="center">{row.userName}</TableCell>
-                      <TableCell align="center">{row.name}</TableCell>
-                      <TableCell align="center">{row.department}</TableCell>
-                      <TableCell align="center">{row.role}</TableCell>
-                      <TableCell align="center">{row.email}</TableCell>
-                      <TableCell align="center">{row.storageUsed}</TableCell>
                       <TableCell
                         align="center"
-                        sx={{ display: "flex", justifyContent: "center" }}
+                        sx={{ padding: "10px 10px 10px 10px !important" }}
+                      >
+                        {row.userName}
+                      </TableCell>
+                      <TableCell
+                        align="center"
+                        sx={{ padding: "10px 10px 10px 10px !important" }}
+                      >
+                        {row.name}
+                      </TableCell>
+                      <TableCell
+                        align="center"
+                        sx={{ padding: "10px 10px 10px 10px !important" }}
+                      >
+                        {row.department}
+                      </TableCell>
+                      <TableCell
+                        align="center"
+                        sx={{ padding: "10px 10px 10px 10px !important" }}
+                      >
+                        {row.role}
+                      </TableCell>
+                      <TableCell
+                        align="center"
+                        sx={{ padding: "10px 10px 10px 10px !important" }}
+                      >
+                        {row.email}
+                      </TableCell>
+                      <TableCell
+                        align="center"
+                        sx={{ padding: "10px 10px 10px 10px !important" }}
+                      >
+                        {row.storageUsed}
+                      </TableCell>
+                      <TableCell
+                        align="center"
+                        sx={{
+                          display: "flex",
+                          justifyContent: "center",
+                          padding: "10px 10px 10px 10px !important",
+                        }}
                       >
                         <Autocomplete
                           size="small"
                           options={options}
                           defaultValue="2GB"
-                          sx={{ width: 130 }}
+                          sx={{
+                            width: 120,
+
+                            // ".MuiInputBase-root": {
+                            //   padding: "10px 10px 10px 10px !important",
+                            // },
+                          }}
                           renderInput={(params) => (
                             <TextField
                               {...params}
@@ -380,7 +433,13 @@ export default function UserTable() {
                           )}
                         />
                       </TableCell>
-                      <TableCell align="center" sx={{ width: "200px" }}>
+                      <TableCell
+                        align="center"
+                        sx={{
+                          width: "200px",
+                          padding: "10px 10px 10px 10px !important",
+                        }}
+                      >
                         {hoveredRow === row.id && (
                           <>
                             <Tooltip title={row.status ? "Active" : "Inactive"}>
@@ -422,10 +481,17 @@ export default function UserTable() {
                               />
                             </Tooltip>
 
-                            <IconButton size="small">
+                            <IconButton
+                              size="small"
+                              onClick={(e) => handleEdit(e, row)}
+                            >
                               <Edit />
                             </IconButton>
-                            <IconButton size="small" color="error">
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={handleDelete}
+                            >
                               <Delete />
                             </IconButton>
                           </>
@@ -489,9 +555,9 @@ export default function UserTable() {
               <Tooltip title="Activate Selected Users">
                 <IconButton
                   sx={{
-                    bgcolor: "#9c27b0", // Solid orange background color
+                    bgcolor: "rgba(46,125,50,1)", // Solid orange background color
                     color: "white",
-                    "&:hover": { bgcolor: "#9c27b0" },
+                    "&:hover": { bgcolor: "rgba(46,125,50,1)" },
                   }}
                   onClick={handleActivateAll}
                 >
@@ -503,9 +569,9 @@ export default function UserTable() {
               <Tooltip title="Deactivate Selected Users">
                 <IconButton
                   sx={{
-                    bgcolor: "#9c27b0", // Solid orange background color
+                    bgcolor: "#f5ac26", // Solid orange background color
                     color: "white",
-                    "&:hover": { bgcolor: "#9c27b0" },
+                    "&:hover": { bgcolor: "#f5ac26" },
                   }}
                 >
                   <Block />
@@ -515,10 +581,11 @@ export default function UserTable() {
             {selected.length >= 1 && (
               <Tooltip title="Download Selected">
                 <IconButton
+                  variant="contained"
                   sx={{
-                    bgcolor: "#0034dd", // Solid orange background color
+                    backgroundColor: "rgba(25,118,210,1)",
                     color: "white",
-                    "&:hover": { bgcolor: "#0034dd" },
+                    "&:hover": { backgroundColor: "rgba(25,118,210,0.8)" },
                   }}
                   onClick={handleBulkDownload}
                 >
@@ -646,6 +713,190 @@ export default function UserTable() {
             handleClos={() => setMigrationDialog(false)}
             rowData={rowData}
           />
+        </Dialog>
+
+        {/* create users */}
+        <Dialog
+          open={createUser}
+          onClose={() => setCreateUser(false)}
+          fullWidth
+          maxWidth="md"
+        >
+          <CreateUser handleClose={() => setCreateUser(false)} />
+        </Dialog>
+
+        {/* edit dialog */}
+        <Dialog
+          open={editDialogOpen}
+          onClose={() => setEditDialogOpen(false)}
+          maxWidth="sm"
+        >
+          <DialogTitle
+            sx={{
+              pb: 1,
+              borderBottom: "1px solid #eee",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              p: 1,
+            }}
+          >
+            <Typography
+              variant="h6"
+              sx={{
+                fontFamily: '"Be Vietnam", sans-serif',
+              }}
+            >
+              EDIT USER
+            </Typography>
+            <IconButton
+              onClick={() => setEditDialogOpen(false)}
+              size="small"
+              sx={{
+                color: "error.main",
+                border: "1px solid",
+                borderColor: "error.light",
+                bgcolor: "error.lighter",
+                borderRadius: "50%",
+                position: "relative",
+                "&:hover": {
+                  color: "error.dark",
+                  borderColor: "error.main",
+                  bgcolor: "error.lighter",
+                  transform: "rotate(180deg)",
+                },
+                transition: "transform 0.3s ease",
+              }}
+            >
+              <Close
+                sx={{
+                  fontSize: "1.1rem",
+                  transition: "transform 0.2s ease",
+                }}
+              />
+            </IconButton>
+          </DialogTitle>
+          <DialogContent dividers>
+            {/* First row */}
+            <Grid container spacing={2}>
+              <Grid item xs={4}>
+                <TextField
+                  size="small"
+                  name="userName"
+                  label="Username"
+                  type="text"
+                  fullWidth
+                  variant="outlined"
+                  value={editData.userName || ""}
+                  // onChange={handleInputChange}
+                />
+              </Grid>
+              <Grid item xs={4}>
+                <TextField
+                  size="small"
+                  name="name"
+                  label="Full Name"
+                  type="text"
+                  fullWidth
+                  variant="outlined"
+                  value={editData.name || ""}
+                  // onChange={handleInputChange}
+                />
+              </Grid>
+              <Grid item xs={4}>
+                <TextField
+                  size="small"
+                  name="department"
+                  label="Department"
+                  type="text"
+                  fullWidth
+                  variant="outlined"
+                  value={editData.department || ""}
+                  // onChange={handleInputChange}
+                />
+              </Grid>
+              <Grid item xs={6}>
+                <TextField
+                  size="small"
+                  name="role"
+                  label="Role"
+                  type="text"
+                  fullWidth
+                  variant="outlined"
+                  value={editData.role || ""}
+                  // onChange={handleInputChange}
+                />
+              </Grid>
+              <Grid item xs={6}>
+                <Tooltip title="Email cannot be edited" placement="top">
+                  <TextField
+                    size="small"
+                    name="email"
+                    label="Email"
+                    type="email"
+                    fullWidth
+                    variant="outlined"
+                    value={editData.email || ""}
+                    disabled
+                    sx={{
+                      backgroundColor: "#f5f5f5",
+                      "& .MuiInputBase-input.Mui-disabled": {
+                        WebkitTextFillColor: "#666",
+                      },
+                      cursor: "not-allowed",
+                    }}
+                  />
+                </Tooltip>
+              </Grid>
+              <Grid item xs={6}>
+                <TextField
+                  size="small"
+                  name="phone"
+                  fullWidth
+                  label="Phone Number"
+                  type="tel"
+                  variant="outlined"
+                  value={editData.phone || ""}
+                  // onChange={handleInputChange}
+                  // sx={{ width: "40%" }}
+                />
+              </Grid>
+              <Grid item xs={6}>
+                <TextField
+                  size="small"
+                  name="storageUsed"
+                  label="Storage Used"
+                  type="text"
+                  fullWidth
+                  variant="outlined"
+                  value={editData.storageUsed || ""}
+                  // onChange={handleInputChange}
+                />
+              </Grid>
+            </Grid>
+          </DialogContent>
+
+          <DialogActions>
+            {/* <Button onClick={() => setEditDialogOpen(false)} color="inherit">
+              Cancel
+            </Button> */}
+            <Button
+              // onClick={saveEditedUser}
+              variant="contained"
+              color="primary"
+              size="small"
+              sx={{
+                backgroundColor: "rgb(251, 68, 36)",
+                color: "white",
+                "&:hover": {
+                  backgroundColor: "rgb(251, 68, 36)",
+                  color: "white",
+                },
+              }}
+            >
+              Save Changes
+            </Button>
+          </DialogActions>
         </Dialog>
       </Paper>
     </Box>
