@@ -13,6 +13,8 @@ import LDAPConfig from './pages/LDAPConfig';
 import CompanyDashboard from './pages/CompanyDashboard';
 import ActivateAccount from './components/ActivateAccount';
 
+import { UserProvider } from './context/UserContext';
+
 
 function App() {
     const [darkMode, setDarkMode] = useState(false);
@@ -46,6 +48,7 @@ function App() {
     };
 
     return (
+        <UserProvider>
         <ThemeProvider theme={theme}>
             <Router>
                 <Routes>
@@ -90,6 +93,7 @@ function App() {
                 </Routes>
             </Router>
         </ThemeProvider>
+           </UserProvider>
     );
 }
 

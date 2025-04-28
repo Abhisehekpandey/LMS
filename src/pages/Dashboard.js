@@ -1,5 +1,5 @@
 // src/pages/Dashboard.js
-import React, { useState, useRef, useEffect,  } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   FormHelperText,
   Snackbar,
@@ -73,6 +73,7 @@ import SaveOutlinedIcon from "@mui/icons-material/SaveOutlined"; // For save cha
 // First add this import at the top of your file if not already present
 import { keyframes } from "@emotion/react";
 
+
 import emailjs from "@emailjs/browser";
 import { v4 as uuidv4 } from "uuid";
 import UserTable from "./UserTable";
@@ -82,6 +83,49 @@ import AddIcon from "@mui/icons-material/Add";
 import { debounce } from "lodash";
 import { useMemo } from "react";
 import { memo, useCallback } from "react";
+import { Formik, Form, Field } from 'formik';
+import * as Yup from 'yup';
+
+import { useUsers } from '../context/UserContext';
+
+
+
+const AddUserSchema = Yup.object().shape({
+  username: Yup.string()
+    .min(3, 'Username must be at least 3 characters')
+    .max(20, 'Username must be less than 20 characters')
+    .required('Username is required')
+    .matches(/^[a-zA-Z0-9._]+$/, 'Username can only contain letters, numbers, dots and underscores'),
+  
+  name: Yup.string()
+    .min(2, 'Name must be at least 2 characters')
+    .max(50, 'Name must be less than 50 characters')
+    .required('Full Name is required')
+    .matches(/^[a-zA-Z\s]+$/, 'Name can only contain letters and spaces'),
+  
+  email: Yup.string()
+    .email('Invalid email format')
+    .required('Email is required'),
+  
+  // Made these fields optional
+  department: Yup.string()
+    .nullable(),
+  
+  role: Yup.string()
+    .nullable(),
+  
+  reportingManager: Yup.string()
+    .nullable(),
+  
+  // Optional fields with validation if provided
+  phone: Yup.string()
+    .matches(/^\d{10}$/, 'Phone number must be exactly 10 digits')
+    .nullable(),
+  
+  storageUsed: Yup.string()
+    .matches(/^\d+GB$/, 'Invalid storage format')
+    .nullable()
+});
 
 const EMAIL_SERVICE_ID = "service_4h54d19";
 const EMAIL_TEMPLATE_ID = "template_so0uw3n";
@@ -97,7 +141,8 @@ const createData = (
   storageUsed,
   status, // Add status parameter
   phone, // Add phone parameter
-  reportingManager // Add this parameter
+  reportingManager, // Add this parameter
+  countryCode // Add this parameter
 ) => {
   return {
     username,
@@ -109,6 +154,7 @@ const createData = (
     manageStorage: "1GB",
     status: status || "pending", // Set default status as pending
     phone: phone || "", // Add phone field with default empty string
+    countryCode: countryCode || "+91", // Add default country code
     reportingManager: reportingManager || "", // Add this field
   };
 };
@@ -293,6 +339,19 @@ const MemoizedDepartmentField = memo(
   )
 );
 
+const countryCodes = [
+  { code: '+91', country: 'IN' },
+  { code: '+1', country: 'US' },
+  { code: '+44', country: 'GB' },
+  { code: '+86', country: 'CN' },
+  { code: '+81', country: 'JP' },
+  { code: '+49', country: 'DE' },
+  { code: '+33', country: 'FR' },
+  { code: '+61', country: 'AU' },
+  { code: '+7', country: 'RU' },
+  { code: '+39', country: 'IT' },
+];
+
 emailjs.init(EMAIL_USER_ID);
 
 const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
@@ -312,7 +371,7 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
   const [order, setOrder] = useState("asc"); // State for sorting order
   const [orderBy, setOrderBy] = useState("name"); // State for sorting column
   const [changesMade, setChangesMade] = useState(false); // State to track if changes were made
-  const [newUserData, setNewUserData] = useState({}); // State to hold new user data
+  const [newUserData, setNewUserData] = useState({}); 
 
   const [snackbarOpen, setSnackbarOpen] = useState(false); // State for snackbar
   const [snackbarMessage, setSnackbarMessage] = useState(""); // State for snackbar message
@@ -359,6 +418,8 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
   // Add these state variables
   const [targetUser, setTargetUser] = useState(null);
   const [migrationError, setMigrationError] = useState("");
+
+  const { setUsers } = useUsers();
 
   const debouncedInputChange = useMemo(
     () =>
@@ -723,6 +784,7 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
       // Create user object before async operations
       const newUser = {
         ...newUserData,
+        phone: newUserData.phone ? `${newUserData.countryCode || '+91'}${newUserData.phone}` : '',
         department: newUserData.department || "",
         role: newUserData.role || "",
         status: "pending",
@@ -733,6 +795,21 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
       setRows((prev) => [...prev, newUser]);
       setOpenAddUserDialog(false);
       setChangesMade(true);
+
+      // Update department user count
+    if (newUser.department) {
+      const updatedDepartments = departments.map(dept => {
+        if (dept.name === newUser.department) {
+          return {
+            ...dept,
+            userCount: (dept.userCount || 0) + 1
+          };
+        }
+        return dept;
+      });
+      setDepartments(updatedDepartments);
+      localStorage.setItem('departments', JSON.stringify(updatedDepartments));
+    }
 
       // Generate invite link and send email in parallel
       const inviteLink = generateInviteLink(newUserData.email);
@@ -749,6 +826,9 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
       // Update localStorage after successful operations
       localStorage.setItem("dashboardRows", JSON.stringify([...rows, newUser]));
 
+      // Update global user context
+    setUsers(prev => [...prev, newUser]);
+
       // Clear form
       setNewUserData({});
       setFormErrors({});
@@ -758,7 +838,7 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
       setSnackbarMessage("Error adding user. Please try again.");
       setSnackbarOpen(true);
     }
-  }, [newUserData, rows, formErrors, validateForm]);
+  }, [newUserData, rows, formErrors, validateForm,departments, setDepartments, setUsers]);
 
   const AddUserButton = memo(({ onClick, disabled }) => (
     <Button
@@ -954,13 +1034,26 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
     // Update departments by removing roles that are no longer used
     setDepartments((prevDepartments) => {
       const departmentUsage = new Map();
+         const departmentUserCounts = new Map();
 
-      // Count remaining users per department and role
+      // // Count remaining users per department and role
+      // updatedRows.forEach((row) => {
+      //   if (!departmentUsage.has(row.department)) {
+      //     departmentUsage.set(row.department, new Set());
+      //   }
+      //   departmentUsage.get(row.department).add(row.role);
+      // });
+
       updatedRows.forEach((row) => {
         if (!departmentUsage.has(row.department)) {
           departmentUsage.set(row.department, new Set());
+          departmentUserCounts.set(row.department, 0);
         }
         departmentUsage.get(row.department).add(row.role);
+        departmentUserCounts.set(
+          row.department, 
+          departmentUserCounts.get(row.department) + 1
+        );
       });
 
       // Update departments
@@ -974,6 +1067,7 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
           return {
             ...dept,
             roles: dept.roles.filter((role) => usedRoles.has(role)),
+            userCount: departmentUserCounts.get(dept.name) || 0
           };
         })
         .filter(Boolean); // Remove null departments
@@ -2349,7 +2443,7 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
         </DialogTitle>
 
         <DialogContent sx={{ p: 2 }}>
-          {/* Basic Information Section */}
+         
           <Box sx={{ mb: 3 }}>
             <Typography
               variant="subtitle2"
@@ -2420,7 +2514,7 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
             </Grid>
           </Box>
 
-          {/* Department and Role Section */}
+         
           <Box sx={{ mb: 3 }}>
             <Typography
               variant="subtitle2"
@@ -2542,7 +2636,7 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
                   />
                 </FormControl>
               </Grid>
-              {/* Add Department Dialog */}
+              
               <Dialog
                 open={showAddDepartment}
                 onClose={() => setShowAddDepartment(false)}
@@ -2969,7 +3063,7 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
                   size="small"
                   error={Boolean(formErrors.role)}
                 >
-                  {/* <InputLabel >Role</InputLabel> */}
+                 
                   <InputLabel sx={{ fontFamily: '"Be Vietnam", sans-serif' }}>
                     Role
                   </InputLabel>
@@ -3045,7 +3139,7 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
                   size="small"
                   error={Boolean(formErrors.reportingManager)}
                 >
-                  {/* <InputLabel>Reporting Manager</InputLabel> */}
+                 
                   <InputLabel sx={{ fontFamily: '"Be Vietnam", sans-serif' }}>
                     Reporting Manager
                   </InputLabel>
@@ -3106,7 +3200,7 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
             </Grid>
           </Box>
 
-          {/* Contact Information Section */}
+        
           <Box sx={{ mb: 3 }}>
             <Typography
               variant="subtitle2"
@@ -3149,7 +3243,7 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
               </Grid>
               <Grid item xs={3}>
                 <TextField
-                  required
+                 
                   fullWidth
                   size="small"
                   label="Storage"
@@ -3191,7 +3285,7 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
               </Grid>
               <Grid item xs={3}>
                 <MemoizedTextField
-                  required
+                  
                   fullWidth
                   label="Phone Number"
                   name="phone"
@@ -3215,6 +3309,8 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
                     },
                   }}
                 />
+
+
               </Grid>
             </Grid>
           </Box>
@@ -3292,6 +3388,7 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
           </Box>
         </DialogActions>
       </Dialog>
+      
       {/* Confirmation Dialog */}
       <Dialog open={openDialog} onClose={cancelDelete}>
         <DialogTitle>Confirm Deletion</DialogTitle>
