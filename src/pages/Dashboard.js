@@ -1464,14 +1464,11 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
         display: "flex",
       }}
     >
-      <Sidebar /> {/* Add Sidebar */}
       <Box
         sx={{
           flexGrow: 1,marginLeft:'50px'
         }}
       >
-        <Navbar onThemeToggle={onThemeToggle} onSearch={handleSearch} />
-
         <Box
           sx={{
             // p: "10px",

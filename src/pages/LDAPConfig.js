@@ -71,7 +71,6 @@ const LDAPConfig = ({ onThemeToggle }) => {
 
   return (
     <Box sx={{ display: "flex", position: "relative", height: "100vh", overflow: "hidden" }}>
-      <Sidebar />
       <Box
         sx={{
           flexGrow: 2,
@@ -80,7 +79,6 @@ const LDAPConfig = ({ onThemeToggle }) => {
           overflow: "hidden",
         }}
       >
-        <Navbar onThemeToggle={onThemeToggle} />
         <Box sx={{ p: 0, marginLeft: "0px", overflow: "auto", height: "calc(100vh - 48px)" }}>
           <Paper sx={{ m: 2, p: 3 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
