@@ -19,6 +19,7 @@ import SpeedDialAction from '@mui/material/SpeedDialAction';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import DownloadIcon from '@mui/icons-material/Download';
 import EditIcon from '@mui/icons-material/Edit';
+
 // Add this with your other imports
 
 // Add these imports for table functionality
@@ -44,6 +45,7 @@ import { useState, useEffect } from "react";
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { Snackbar, Alert, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import Papa from 'papaparse'; // You'll need to install this: npm install papaparse
+import { useRef } from "react";
 
 ChartJS.register(
   CategoryScale,
@@ -58,11 +60,36 @@ ChartJS.register(
 const CompanyDashboard = ({ onThemeToggle }) => {
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [order, setOrder] = useState('asc');
+
   const [orderBy, setOrderBy] = useState('daysLeft');
   const [sortedData, setSortedData] = useState(null);
-  const [open, setOpen] = useState(false);
-  const handleSpeedDialOpen = () => setOpen(true);
-  const handleSpeedDialClose = () => setOpen(false);
+  // const [open, setOpen] = useState(false);
+  // const handleSpeedDialOpen = () => setOpen(true);
+  // const handleSpeedDialClose = () => setSpeedDialOpen(false);
+  const [speedDialHover, setSpeedDialHover] = useState(false);
+  // Inside CompanyDashboard component, add these states
+  const [speedDialOpen, setSpeedDialOpen] = useState(false);
+
+  const fileInputRef = useRef(null);
+  const actions = [
+    {
+      icon: <CloudUploadIcon />,
+      name: 'Upload CSV',
+      onClick: () => {
+        if (fileInputRef.current) {
+          fileInputRef.current.click();
+        }
+      }
+    },
+    {
+      icon: <DownloadIcon />,
+      name: 'Download Template',
+      onClick: () => {
+        downloadSampleTemplate();
+      }
+    },
+  ];
+
   const [companyData, setCompanyData] = useState({
     dataUsage: [
       {
@@ -1099,6 +1126,7 @@ CloudNet (Basic),C4,4,3,2,180,95,45`;
             size: 12,
             weight: "bold",
           },
+          padding: 20,
         },
       },
     },
@@ -1450,11 +1478,11 @@ CloudNet (Basic),C4,4,3,2,180,95,45`;
   };
   return (
     <div style={{ display: 'flex', backgroundColor: 'whitesmoke' }}>
-  
+
       <div style={{ marginLeft: '50px', flexGrow: 1 }}>
-      
+
         <div style={{
-          height: '92vh'
+          // height: '92vh'
         }}>
           {/* <UserTable /> */}
 
@@ -1462,67 +1490,63 @@ CloudNet (Basic),C4,4,3,2,180,95,45`;
           <Box
             sx={{
               position: 'fixed',
-              right: 24,
-              bottom: 24,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 1,
+              bottom: 10,
+              right: 0,
               zIndex: 1000,
-
             }}
+            onMouseEnter={() => setSpeedDialOpen(true)}
+            onMouseLeave={() => setSpeedDialOpen(false)}
           >
-            <Button
-              variant="contained"
-              component="label"
-              startIcon={<CloudUploadIcon />}
-              disabled={isUploading}
-              sx={{
-                borderRadius: 28,
-                px: 2,
-                py: 1.2,
-                backgroundColor: '#3498db',
-                boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
-                '&:hover': {
-                  backgroundColor: '#2980b9',
-                  boxShadow: '0 6px 12px rgba(0,0,0,0.3)',
+            <SpeedDial
+              ariaLabel="CSV import/export options"
+              icon={<SpeedDialIcon sx={{ fontSize: 18 }} />}
+              open={speedDialOpen}
+              direction="up"
+              FabProps={{
+                sx: {
+                  width: 35, // Chhota width
+                  height: 35,
+
+
+                  borderRadius: '50%',
+                  bgcolor: '#3498db',
+                  '&:hover': {
+                    bgcolor: '#2980b9',
+                  },
                 },
               }}
             >
-              {isUploading ? 'Uploading...' : 'Upload CSV'}
-              <input
-                type="file"
-                accept=".csv"
-                hidden
-                onChange={handleFileUpload}
+              <SpeedDialAction
+                icon={<CloudUploadIcon color="primary" />}
+                // tooltipTitle="Upload CSV"
+                // tooltipOpen
+                onClick={() => fileInputRef.current.click()}
               />
-            </Button>
-            <Button
-              variant="outlined"
-              onClick={downloadSampleTemplate}
-              startIcon={<DownloadIcon />}
-              sx={{
-                borderRadius: 28,
-                px: 2,
-                py: 1.2,
-                borderColor: '#3498db',
-                color: '#3498db',
-                backgroundColor: 'rgba(255,255,255,0.8)',
-                boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
-                '&:hover': {
-                  backgroundColor: 'rgba(255,255,255,0.95)',
-                  borderColor: '#2980b9',
-                  color: '#2980b9',
-                  boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
-                },
-              }}
-            >
-              Template
-            </Button>
+
+              <SpeedDialAction
+                icon={<DownloadIcon color="primary" />}
+                // tooltipTitle="Download Template"
+                // tooltipOpen
+                onClick={downloadSampleTemplate}
+              />
+            </SpeedDial>
+
+            {/* Hidden input for upload */}
+            <input
+              type="file"
+              accept=".csv"
+              ref={fileInputRef}
+              onChange={handleFileUpload}
+              style={{ display: 'none' }}
+            />
           </Box>
+
+
+
           <Grid container spacing={2} padding={1}>
 
             <Grid item xs={6} md={6} lg={6}>
-              <Paper evaluation={24}>
+              <Paper evaluation={24} sx={{ borderRadius: 3 }}>
                 <Typography
                   variant="h6"
                   sx={{
@@ -1567,7 +1591,7 @@ CloudNet (Basic),C4,4,3,2,180,95,45`;
               </Paper>
             </Grid>
             <Grid item xs={6} md={6} lg={6}>
-              <Paper evaluation={24}>
+              <Paper evaluation={24} sx={{ borderRadius: 3 }}>
                 <Typography
                   variant="h6"
                   sx={{
@@ -1590,7 +1614,7 @@ CloudNet (Basic),C4,4,3,2,180,95,45`;
               </Paper>
             </Grid>
             <Grid item xs={6} md={6} lg={6}>
-              <Paper evaluation={24}>
+              <Paper evaluation={24} sx={{ borderRadius: 3 }}>
                 <Typography
                   variant="h6"
                   sx={{
@@ -1619,7 +1643,7 @@ CloudNet (Basic),C4,4,3,2,180,95,45`;
               sx={{
                 p: '8px',
                 background: "linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)",
-                borderRadius: 2,
+                borderRadius: 3,
                 // transition: "all 0.3s ease",
                 // "&:hover": {
                 //   transform: "translateY(-4px)",
@@ -1634,7 +1658,7 @@ CloudNet (Basic),C4,4,3,2,180,95,45`;
                     fontSize: '15px',
                     fontWeight: "bold",
                     color: "#2c3e50",
-                    // borderBottom: "2px solid #e0e0e0",
+
                     // paddingBottom: 1,
                   }}
                 >
