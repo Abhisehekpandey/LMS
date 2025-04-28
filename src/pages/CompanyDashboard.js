@@ -778,7 +778,7 @@ CloudNet (Basic),C4,4,3,2,180,95,45`;
           ),
           backgroundColor: companyData.dataUsage.map((item, index) =>
             // Even numbered companies (index 1, 3) get gold color, odd get blue
-            index % 2 === 1 ? "rgb(84,112,198)" : "rgb(250,200,88)"
+            index % 2 === 1 ? "rgb(84, 112, 198)" : "rgb(84, 112, 198)"
           ),
           barPercentage: 0.9,
           categoryPercentage: 0.9,
@@ -791,7 +791,7 @@ CloudNet (Basic),C4,4,3,2,180,95,45`;
           ),
           backgroundColor: companyData.dataUsage.map((item, index) =>
             // Even numbered companies get lighter gold, odd get lighter blue
-            index % 2 === 1 ? "rgba(84,112,198,0.22)" : "rgba(250,200,88,0.43)"
+            index % 2 === 1 ? "rgba(84 112 198 / 53%)" : "rgba(84 112 198 / 53%)"
           ),
           barPercentage: 0.9,
           categoryPercentage: 0.9,
@@ -822,7 +822,7 @@ CloudNet (Basic),C4,4,3,2,180,95,45`;
           ),
           backgroundColor: companyData.licenseAllocation.map((item, index) =>
             // Even numbered companies (index 1, 3) get gold color, odd get blue
-            index % 2 === 1 ? "#8fc7c1" : "#eb34e5"
+            index % 2 === 1 ? "rgb(250,200, 88)" : "rgb(250,200, 88)"
           ),
           barPercentage: 0.9,
           categoryPercentage: 0.9,
@@ -833,7 +833,7 @@ CloudNet (Basic),C4,4,3,2,180,95,45`;
           data: companyData.licenseAllocation.map((item) => 100), // Always 100%,
           backgroundColor: companyData.licenseAllocation.map((item, index) =>
             // Even numbered companies get lighter gold, odd get lighter blue
-            index % 2 === 1 ? "#c0ede8" : "#e897e5"
+            index % 2 === 1 ? "rgba(250 200 88 / 53%)" : "rgba(250 200 88 / 53%)"
           ),
           barPercentage: 0.9,
           categoryPercentage: 0.9,
@@ -1008,7 +1008,10 @@ CloudNet (Basic),C4,4,3,2,180,95,45`;
             size: 12,
             weight: "bold",
           },
+          padding: 15, // Add padding between axis and labels
+
         },
+
       },
     },
   };
@@ -1072,6 +1075,7 @@ CloudNet (Basic),C4,4,3,2,180,95,45`;
             size: 14,
             weight: "bold",
           },
+          padding: 15,
         },
         ticks: {
           callback: (value) => `${value}%`, // Add percentage symbol to x-axis ticks
@@ -1079,6 +1083,8 @@ CloudNet (Basic),C4,4,3,2,180,95,45`;
             size: 12,
             weight: "bold",
           },
+
+
         },
         min: 0,
         max: 100, // Maximum percentage
@@ -1443,76 +1449,76 @@ CloudNet (Basic),C4,4,3,2,180,95,45`;
     },
   };
   return (
-    <div style={{ display: 'flex' ,backgroundColor:'whitesmoke'}}>
-      <Sidebar />
-      <div style={{ marginLeft: '49px', flexGrow: 1 }}>
-        <Navbar />
+    <div style={{ display: 'flex', backgroundColor: 'whitesmoke' }}>
+  
+      <div style={{ marginLeft: '50px', flexGrow: 1 }}>
+      
         <div style={{
           height: '92vh'
         }}>
           {/* <UserTable /> */}
 
 
-           <Box
-                    sx={{
-                      position: 'fixed',
-                      right: 24,
-                      bottom: 24,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 1,
-                      zIndex: 1000,
-          
-                    }}
-                  >
-                    <Button
-                      variant="contained"
-                      component="label"
-                      startIcon={<CloudUploadIcon />}
-                      disabled={isUploading}
-                      sx={{
-                        borderRadius: 28,
-                        px: 2,
-                        py: 1.2,
-                        backgroundColor: '#3498db',
-                        boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
-                        '&:hover': {
-                          backgroundColor: '#2980b9',
-                          boxShadow: '0 6px 12px rgba(0,0,0,0.3)',
-                        },
-                      }}
-                    >
-                      {isUploading ? 'Uploading...' : 'Upload CSV'}
-                      <input
-                        type="file"
-                        accept=".csv"
-                        hidden
-                        onChange={handleFileUpload}
-                      />
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      onClick={downloadSampleTemplate}
-                      startIcon={<DownloadIcon />}
-                      sx={{
-                        borderRadius: 28,
-                        px: 2,
-                        py: 1.2,
-                        borderColor: '#3498db',
-                        color: '#3498db',
-                        backgroundColor: 'rgba(255,255,255,0.8)',
-                        boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
-                        '&:hover': {
-                          backgroundColor: 'rgba(255,255,255,0.95)',
-                          borderColor: '#2980b9',
-                          color: '#2980b9',
-                          boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
-                        },
-                      }}
-                    >
-                      Template
-                    </Button>
-                  </Box>
+          <Box
+            sx={{
+              position: 'fixed',
+              right: 24,
+              bottom: 24,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 1,
+              zIndex: 1000,
+
+            }}
+          >
+            <Button
+              variant="contained"
+              component="label"
+              startIcon={<CloudUploadIcon />}
+              disabled={isUploading}
+              sx={{
+                borderRadius: 28,
+                px: 2,
+                py: 1.2,
+                backgroundColor: '#3498db',
+                boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
+                '&:hover': {
+                  backgroundColor: '#2980b9',
+                  boxShadow: '0 6px 12px rgba(0,0,0,0.3)',
+                },
+              }}
+            >
+              {isUploading ? 'Uploading...' : 'Upload CSV'}
+              <input
+                type="file"
+                accept=".csv"
+                hidden
+                onChange={handleFileUpload}
+              />
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={downloadSampleTemplate}
+              startIcon={<DownloadIcon />}
+              sx={{
+                borderRadius: 28,
+                px: 2,
+                py: 1.2,
+                borderColor: '#3498db',
+                color: '#3498db',
+                backgroundColor: 'rgba(255,255,255,0.8)',
+                boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
+                '&:hover': {
+                  backgroundColor: 'rgba(255,255,255,0.95)',
+                  borderColor: '#2980b9',
+                  color: '#2980b9',
+                  boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
+                },
+              }}
+            >
+              Template
+            </Button>
+          </Box>
           <Grid container spacing={2} padding={1}>
 
             <Grid item xs={6} md={6} lg={6}>
@@ -1524,7 +1530,8 @@ CloudNet (Basic),C4,4,3,2,180,95,45`;
                     fontWeight: "bold",
                     color: "#2c3e50b3",
                     borderBottom: "2px solid #e0e0e0",
-                    paddingBottom: 1,
+                    // paddingBottom: 1,
+                    textAlign: "center"
                   }}
                 >
                   Storage Usage Analysis
@@ -1545,7 +1552,8 @@ CloudNet (Basic),C4,4,3,2,180,95,45`;
                     fontWeight: "bold",
                     color: "#2c3e50b3",
                     borderBottom: "2px solid #e0e0e0",
-                    paddingBottom: 1,
+                    // paddingBottom: 1,
+                    textAlign: "center"
                   }}
                 >
                   License Allocation and Usage
@@ -1567,7 +1575,8 @@ CloudNet (Basic),C4,4,3,2,180,95,45`;
                     fontWeight: "bold",
                     color: "#2c3e50b3",
                     borderBottom: "2px solid #e0e0e0",
-                    paddingBottom: 1,
+                    // paddingBottom: 1,
+                    textAlign: "center"
                   }}
                 >
                   License Expiration Status
@@ -1589,7 +1598,8 @@ CloudNet (Basic),C4,4,3,2,180,95,45`;
                     fontWeight: "bold",
                     color: "#2c3e50b3",
                     borderBottom: "2px solid #e0e0e0",
-                    paddingBottom: 1,
+                    // paddingBottom: 1,
+                    textAlign: "center"
                   }}
                 >
                   Cost Server Storage Analysis
@@ -1604,712 +1614,713 @@ CloudNet (Basic),C4,4,3,2,180,95,45`;
             </Grid>
           </Grid>
           <Box>
-             <Paper
-                          elevation={3}
+            <Paper
+              elevation={24}
+              sx={{
+                p: '8px',
+                background: "linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)",
+                borderRadius: 2,
+                // transition: "all 0.3s ease",
+                // "&:hover": {
+                //   transform: "translateY(-4px)",
+                //   boxShadow: "0 8px 16px rgba(0,0,0,0.1)",
+                // },
+              }}
+            >
+              <Box sx={{ display: "flex", alignItems: "center" }}>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    fontSize: '15px',
+                    fontWeight: "bold",
+                    color: "#2c3e50",
+                    // borderBottom: "2px solid #e0e0e0",
+                    // paddingBottom: 1,
+                  }}
+                >
+                  Company Storage & License Summary
+                </Typography>
+                {selectedCompanies.length > 0 && (
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    startIcon={<DownloadIcon />}
+                    onClick={handleDownloadCSV}
+                    disabled={isDownloading}
+                    sx={{
+                      borderRadius: 2,
+                      textTransform: 'none',
+                      fontWeight: 'medium',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                      '&:hover': {
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                      },
+                    }}
+                  >
+                    {isDownloading ? 'Preparing Download...' : `Download CSV (${selectedCompanies.length})`}
+                  </Button>
+                )}
+              </Box>
+
+              <TableContainer component={Paper} elevation={1} sx={{
+                overflow: "auto",
+                borderRadius: 2,
+                boxShadow: "none",
+                "&:hover": {
+                  boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
+                }
+              }}>
+                <Table sx={{ minWidth: 650 }} size="medium">
+                  <TableHead>
+                    {/* First row - main headers and Storage group header */}
+                    <TableRow sx={{ backgroundColor: "#f5f7fa" }}>
+                      {/* Organization Column with checkbox */}
+                      <TableCell
+                        rowSpan={2}
+                        sx={{
+                          fontWeight: "bold",
+                          fontSize: "0.875rem",
+                          color: "#2c3e50",
+                          borderBottom: "2px solid #e0e0e0",
+                          padding: "16px"
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <Checkbox
+                            checked={isAllSelected}
+                            onChange={handleSelectAll}
+                            indeterminate={selectedCompanies.length > 0 && selectedCompanies.length < companyData.dataUsage.length}
+                            sx={{ p: 0, mr: 1 }}
+                          />
+                          <TableSortLabel
+                            active={orderBy === 'company'}
+                            direction={order}
+                            onClick={() => handleRequestSort(null, 'company')}
+                            sx={{
+                              fontWeight: "bold",
+                              width: "100%",
+                              '& .MuiTableSortLabel-icon': {
+                                opacity: 1,
+                                color: 'rgba(0, 0, 0, 0.54)'
+                              }
+                            }}
+                          >
+                            Organization
+                          </TableSortLabel>
+                        </Box>
+                      </TableCell>
+
+                      {/* Storage group header */}
+                      <TableCell
+                        colSpan={4}
+                        align="center"
+                        sx={{
+                          fontWeight: "bold",
+                          fontSize: "0.875rem",
+                          color: "#2c3e50",
+                          borderBottom: "1px solid #e0e0e0",
+                          padding: "6px",
+                        }}
+                      >
+                        Storage (TB)
+                      </TableCell>
+
+                      {/* Renew By Column */}
+                      <TableCell
+                        rowSpan={2}
+                        align="center"
+                        sx={{
+                          fontWeight: "bold",
+                          fontSize: "0.875rem",
+                          color: "#2c3e50",
+                          borderBottom: "2px solid #e0e0e0",
+                          padding: "16px"
+                        }}
+                      >
+                        <TableSortLabel
+                          active={orderBy === 'daysLeft'}
+                          direction={order}
+                          onClick={() => handleRequestSort(null, 'daysLeft')}
                           sx={{
-                            p: '8px',
-                            background: "linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)",
-                            borderRadius: 2,
-                            transition: "all 0.3s ease",
-                            "&:hover": {
-                              transform: "translateY(-4px)",
-                              boxShadow: "0 8px 16px rgba(0,0,0,0.1)",
-                            },
+                            fontWeight: "bold",
+                            '& .MuiTableSortLabel-icon': {
+                              opacity: 1,
+                              color: 'rgba(0, 0, 0, 0.54)'
+                            }
                           }}
                         >
-                          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
-                            <Typography
-                              variant="h6"
+                          Renew By
+                        </TableSortLabel>
+                      </TableCell>
+
+                      {/* % License Used Column */}
+                      <TableCell
+                        rowSpan={2}
+                        align="center"
+                        sx={{
+                          fontWeight: "bold",
+                          fontSize: "0.875rem",
+                          color: "#2c3e50",
+                          borderBottom: "2px solid #e0e0e0",
+                          padding: "16px"
+                        }}
+                      >
+                        % License Used
+                      </TableCell>
+
+                      {/* Actions Column */}
+                      <TableCell
+                        rowSpan={2}
+                        align="center"
+                        sx={{
+                          fontWeight: "bold",
+                          fontSize: "0.875rem",
+                          color: "#2c3e50",
+                          borderBottom: "2px solid #e0e0e0",
+                          padding: "16px"
+                        }}
+                      >
+                        Actions
+                      </TableCell>
+                    </TableRow>
+
+                    <TableRow sx={{ backgroundColor: "#f5f7fa", height: 40 }}>
+                      {/* Sold column */}
+                      <TableCell
+                        align="center"
+                        sx={{
+                          fontWeight: "bold",
+                          fontSize: "0.8rem",
+                          color: "#2c3e50",
+                          borderBottom: "2px solid #e0e0e0",
+                          padding: "8px 16px"
+                        }}
+                      >
+                        <TableSortLabel
+                          active={orderBy === 'sold'}
+                          direction={order}
+                          onClick={() => handleRequestSort(null, 'sold')}
+                          sx={{
+                            fontWeight: "bold",
+                            '& .MuiTableSortLabel-icon': {
+                              opacity: 1,
+                              color: 'rgba(0, 0, 0, 0.54)'
+                            }
+                          }}
+                        >
+                          Sold
+                        </TableSortLabel>
+                      </TableCell>
+
+                      {/* Allocated column */}
+                      <TableCell
+                        align="center"
+                        sx={{
+                          fontWeight: "bold",
+                          fontSize: "0.8rem",
+                          color: "#2c3e50",
+                          borderBottom: "2px solid #e0e0e0",
+                          padding: "8px 16px"
+                        }}
+                      >
+                        <TableSortLabel
+                          active={orderBy === 'actual'}
+                          direction={order}
+                          onClick={() => handleRequestSort(null, 'actual')}
+                          sx={{
+                            fontWeight: "bold",
+                            '& .MuiTableSortLabel-icon': {
+                              opacity: 1,
+                              color: 'rgba(0, 0, 0, 0.54)'
+                            }
+                          }}
+                        >
+                          Allocated
+                        </TableSortLabel>
+                      </TableCell>
+
+                      {/* Consumed column */}
+                      <TableCell
+                        align="center"
+                        sx={{
+                          fontWeight: "bold",
+                          fontSize: "0.8rem",
+                          color: "#2c3e50",
+                          borderBottom: "2px solid #e0e0e0",
+                          padding: "8px 16px"
+                        }}
+                      >
+                        <TableSortLabel
+                          active={orderBy === 'consumed'}
+                          direction={order}
+                          onClick={() => handleRequestSort(null, 'consumed')}
+                          sx={{
+                            fontWeight: "bold",
+                            '& .MuiTableSortLabel-icon': {
+                              opacity: 1,
+                              color: 'rgba(0, 0, 0, 0.54)'
+                            }
+                          }}
+                        >
+                          Consumed
+                        </TableSortLabel>
+                      </TableCell>
+
+                      {/* % Consumed column */}
+                      <TableCell
+                        align="center"
+                        sx={{
+                          fontWeight: "bold",
+                          fontSize: "0.8rem",
+                          color: "#2c3e50",
+                          borderBottom: "2px solid #e0e0e0",
+                          padding: "8px 16px"
+                        }}
+                      >
+                        <TableSortLabel
+                          active={orderBy === 'consumed_percent'}
+                          direction={order}
+                          onClick={() => handleRequestSort(null, 'consumed_percent')}
+                          sx={{
+                            fontWeight: "bold",
+                            '& .MuiTableSortLabel-icon': {
+                              opacity: 1,
+                              color: 'rgba(0, 0, 0, 0.54)'
+                            }
+                          }}
+                        >
+                          % Consumed
+                        </TableSortLabel>
+                      </TableCell>
+                    </TableRow>
+                  </TableHead>
+
+                  <TableBody>
+                    {(() => {
+                      // Get the data to display (either sorted or original)
+                      const displayData = sortedData?.companies || companyData.dataUsage;
+
+                      // Split into expired and non-expired groups
+                      const expiredCompanies = [];
+                      const activeCompanies = [];
+
+                      // Separate companies based on expiration status
+                      displayData.forEach((company, index) => {
+                        if (!company) return; // Skip if company data is undefined
+
+                        const expiryData = companyData.licenseExpiration.find(e =>
+                          e && e.shortName === company.shortName
+                        );
+
+                        // Only categorize if we have valid expiry data
+                        if (expiryData && expiryData.daysLeft !== undefined) {
+                          if (expiryData.daysLeft < 0) {
+                            expiredCompanies.push({ company, index });
+                          } else {
+                            activeCompanies.push({ company, index });
+                          }
+                        } else {
+                          // If no expiry data, treat as active
+                          activeCompanies.push({ company, index });
+                        }
+                      });
+
+                      // Combine arrays with expired first
+                      const sortedCompanies = [...expiredCompanies, ...activeCompanies];
+                      // Return empty array if no companies to show
+                      if (sortedCompanies.length === 0) {
+                        return (
+                          <TableRow>
+                            <TableCell colSpan={8} align="center">
+                              No company data available
+                            </TableCell>
+                          </TableRow>
+                        );
+                      }
+
+                      // Render each row
+                      return sortedCompanies.map(({ company, index }) => {
+                        const dataIndex = sortedData ? sortedData.indices[index] : index;
+                        // const licenseData = companyData.licenseAllocation[dataIndex];
+
+                        // Safely find related data with fallbacks
+                        const licenseData = companyData.licenseAllocation.find(l =>
+                          l && l.company === company.company
+                        ) || { allocated: 0, consumed: 0 };
+
+                        // const expiryData = companyData.licenseExpiration[dataIndex];
+
+                        const expiryData = companyData.licenseExpiration.find(e =>
+                          e && e.shortName === company.shortName
+                        ) || { daysLeft: 0, shortName: company.shortName, company: company.company };
+                        // Calculate percentages with safety checks
+                        const actual = company.actual || 1; // Prevent division by zero
+                        const consumed = company.consumed || 0;
+                        const storageUsedPercent = Math.round((consumed / actual) * 100);
+
+                        // Calculate percentages
+                        // const storageUsedPercent = Math.round((company.consumed / company.actual) * 100);
+                        // const licenseUsedPercent = Math.round((licenseData.consumed / licenseData.allocated) * 100);
+                        const licenseAllocated = licenseData.allocated || 1; // Prevent division by zero
+                        const licenseConsumed = licenseData.consumed || 0;
+                        const licenseUsedPercent = Math.round((licenseConsumed / licenseAllocated) * 100);
+
+                        // Format days text for Renew By
+                        const daysLeft = expiryData.daysLeft || 0;
+                        let daysText = `${daysLeft} days`;
+                        let daysColor = "#4CAF50"; // Green by default
+
+                        if (daysLeft < 0) {
+                          daysText = `Expired`;
+                          daysColor = "#FF0000"; // Red
+                        } else if (daysLeft < 30) {
+                          daysColor = "#FF6B00"; // Orange
+                        } else if (daysLeft < 45) {
+                          daysColor = "#FFD700"; // Yellow
+                        }
+
+                        // Track if this company's options are expanded
+                        const isExpanded = selectedCompany?.shortName === company.shortName;
+
+                        return (
+                          <React.Fragment key={company.shortName || index}>
+                            <TableRow
                               sx={{
-                                fontWeight: "bold",
-                                color: "#2c3e50",
-                                borderBottom: "2px solid #e0e0e0",
-                                paddingBottom: 1,
+                                height: 52,
+                                backgroundColor: expiryData.daysLeft < 0 ? 'rgba(255, 0, 0, 0.05)' : // Light red for expired
+                                  (index % 2 === 0) ? 'rgba(0, 0, 0, 0.02)' : 'transparent',
+                                '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.04)' },
+                                transition: 'background-color 0.3s'
                               }}
                             >
-                              Company Storage & License Summary
-                            </Typography>
-                            {selectedCompanies.length > 0 && (
-                              <Button
-                                variant="contained"
-                                color="primary"
-                                startIcon={<DownloadIcon />}
-                                onClick={handleDownloadCSV}
-                                disabled={isDownloading}
+                              <TableCell
+                                component="th"
+                                scope="row"
                                 sx={{
-                                  borderRadius: 2,
-                                  textTransform: 'none',
-                                  fontWeight: 'medium',
-                                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                                  '&:hover': {
-                                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                                  },
+                                  fontSize: "0.875rem",
+                                  borderBottom: "1px solid #e0e0e0",
+                                  padding: "8px 16px"
                                 }}
                               >
-                                {isDownloading ? 'Preparing Download...' : `Download CSV (${selectedCompanies.length})`}
-                              </Button>
-                            )}
-                          </Box>
-            
-                          <TableContainer component={Paper} elevation={1} sx={{
-                            overflow: "auto",
-                            borderRadius: 2,
-                            boxShadow: "none",
-                            "&:hover": {
-                              boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
-                            }
-                          }}>
-                            <Table sx={{ minWidth: 650 }} size="medium">
-                              <TableHead>
-                                {/* First row - main headers and Storage group header */}
-                                <TableRow sx={{ backgroundColor: "#f5f7fa", height: 40 }}>
-                                  {/* Organization Column with checkbox */}
-                                  <TableCell
-                                    rowSpan={2}
+                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                  <Checkbox
+                                    checked={selectedCompanies.includes(company.shortName)}
+                                    onChange={(e) => handleSelectCompany(e, company.shortName)}
+                                    sx={{ p: 0, mr: 1 }}
+                                  />
+                                  <Box
                                     sx={{
-                                      fontWeight: "bold",
-                                      fontSize: "0.875rem",
-                                      color: "#2c3e50",
-                                      borderBottom: "2px solid #e0e0e0",
-                                      padding: "16px"
+                                      width: 28,
+                                      height: 28,
+                                      borderRadius: '50%',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      backgroundColor: dataIndex % 2 === 1 ? "rgb(84,112,198)" : "rgb(250,200,88)",
+                                      color: '#fff',
+                                      fontWeight: 'bold',
+                                      marginRight: 1.5,
+                                      fontSize: '0.75rem'
                                     }}
                                   >
-                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                      <Checkbox
-                                        checked={isAllSelected}
-                                        onChange={handleSelectAll}
-                                        indeterminate={selectedCompanies.length > 0 && selectedCompanies.length < companyData.dataUsage.length}
-                                        sx={{ p: 0, mr: 1 }}
-                                      />
-                                      <TableSortLabel
-                                        active={orderBy === 'company'}
-                                        direction={order}
-                                        onClick={() => handleRequestSort(null, 'company')}
+                                    {company.shortName}
+                                  </Box>
+                                  {company.company}
+                                </Box>
+                              </TableCell>
+
+                              <TableCell align="center" sx={{ fontSize: "0.875rem", borderBottom: "1px solid #e0e0e0", padding: "8px 16px" }}>
+                                {Math.round(company.sold / 1024)}
+                              </TableCell>
+
+                              <TableCell align="center" sx={{ fontSize: "0.875rem", borderBottom: "1px solid #e0e0e0", padding: "8px 16px" }}>
+                                {Math.round(company.actual / 1024)}
+                              </TableCell>
+
+                              <TableCell align="center" sx={{ fontSize: "0.875rem", borderBottom: "1px solid #e0e0e0", padding: "8px 16px" }}>
+                                {Math.round(company.consumed / 1024)}
+                              </TableCell>
+
+                              <TableCell align="center" sx={{
+                                fontSize: "0.875rem",
+                                borderBottom: "1px solid #e0e0e0",
+                                padding: "8px 16px",
+                                color: storageUsedPercent > 90 ? '#FF0000' :
+                                  storageUsedPercent > 75 ? '#FF6B00' : '#2c3e50'
+                              }}>
+                                {storageUsedPercent}%
+                              </TableCell>
+
+                              <TableCell align="center" sx={{
+                                fontSize: "0.875rem",
+                                borderBottom: "1px solid #e0e0e0",
+                                padding: "8px 16px",
+                                color: daysColor,
+                                fontWeight: expiryData.daysLeft < 30 ? 'bold' : 'normal'
+                              }}>
+                                {daysText}
+                              </TableCell>
+
+                              <TableCell align="center" sx={{
+                                fontSize: "0.875rem",
+                                borderBottom: "1px solid #e0e0e0",
+                                padding: "8px 16px",
+                                color: licenseUsedPercent > 90 ? '#FF0000' :
+                                  licenseUsedPercent > 75 ? '#FF6B00' : '#2c3e50'
+                              }}>
+                                {licenseUsedPercent}%
+                              </TableCell>
+
+                              <TableCell align="center" sx={{ borderBottom: "1px solid #e0e0e0", padding: "8px 16px" }}>
+                                <Button
+                                  variant="text"
+                                  size="small"
+                                  onClick={() => {
+                                    if (isExpanded) {
+                                      setSelectedCompany(null);
+                                    } else {
+                                      setSelectedCompany(company);
+                                    }
+                                  }}
+                                  sx={{
+                                    color: '#3498db',
+                                    fontWeight: 'medium',
+                                    '&:hover': {
+                                      backgroundColor: 'rgba(52, 152, 219, 0.1)'
+                                    }
+                                  }}
+                                >
+                                  Options {isExpanded && <ExpandMoreIcon fontSize="small" sx={{ ml: 0.5 }} />}
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+
+                            {/* Options row */}
+                            {isExpanded && (
+                              <TableRow sx={{ backgroundColor: 'rgba(236, 240, 241, 0.5)' }}>
+                                <TableCell colSpan={8} sx={{ py: 2.5, px: 4, borderBottom: "1px solid #e0e0e0" }}>
+                                  <Grid container spacing={2} justifyContent="center">
+                                    <Grid item>
+                                      <Button
+                                        variant="outlined"
+                                        startIcon={<RenewIcon />}
+                                        onClick={() => handleRenewReminder(company)}
                                         sx={{
-                                          fontWeight: "bold",
-                                          width: "100%",
-                                          '& .MuiTableSortLabel-icon': {
-                                            opacity: 1,
-                                            color: 'rgba(0, 0, 0, 0.54)'
+                                          borderRadius: 1,
+                                          minWidth: '160px',
+                                          color: '#27ae60',
+                                          borderColor: '#27ae60',
+                                          '&:hover': {
+                                            backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                                            borderColor: '#27ae60'
                                           }
                                         }}
                                       >
-                                        Organization
-                                      </TableSortLabel>
-                                    </Box>
-                                  </TableCell>
-            
-                                  {/* Storage group header */}
-                                  <TableCell
-                                    colSpan={4}
-                                    align="center"
-                                    sx={{
-                                      fontWeight: "bold",
-                                      fontSize: "0.875rem",
-                                      color: "#2c3e50",
-                                      borderBottom: "1px solid #e0e0e0",
-                                      padding: "6px",
-                                    }}
-                                  >
-                                    Storage (TB)
-                                  </TableCell>
-            
-                                  {/* Renew By Column */}
-                                  <TableCell
-                                    rowSpan={2}
-                                    align="center"
-                                    sx={{
-                                      fontWeight: "bold",
-                                      fontSize: "0.875rem",
-                                      color: "#2c3e50",
-                                      borderBottom: "2px solid #e0e0e0",
-                                      padding: "16px"
-                                    }}
-                                  >
-                                    <TableSortLabel
-                                      active={orderBy === 'daysLeft'}
-                                      direction={order}
-                                      onClick={() => handleRequestSort(null, 'daysLeft')}
-                                      sx={{
-                                        fontWeight: "bold",
-                                        '& .MuiTableSortLabel-icon': {
-                                          opacity: 1,
-                                          color: 'rgba(0, 0, 0, 0.54)'
-                                        }
-                                      }}
-                                    >
-                                      Renew By
-                                    </TableSortLabel>
-                                  </TableCell>
-            
-                                  {/* % License Used Column */}
-                                  <TableCell
-                                    rowSpan={2}
-                                    align="center"
-                                    sx={{
-                                      fontWeight: "bold",
-                                      fontSize: "0.875rem",
-                                      color: "#2c3e50",
-                                      borderBottom: "2px solid #e0e0e0",
-                                      padding: "16px"
-                                    }}
-                                  >
-                                    % License Used
-                                  </TableCell>
-            
-                                  {/* Actions Column */}
-                                  <TableCell
-                                    rowSpan={2}
-                                    align="center"
-                                    sx={{
-                                      fontWeight: "bold",
-                                      fontSize: "0.875rem",
-                                      color: "#2c3e50",
-                                      borderBottom: "2px solid #e0e0e0",
-                                      padding: "16px"
-                                    }}
-                                  >
-                                    Actions
-                                  </TableCell>
-                                </TableRow>
-            
-                                <TableRow sx={{ backgroundColor: "#f5f7fa", height: 40 }}>
-                                  {/* Sold column */}
-                                  <TableCell
-                                    align="center"
-                                    sx={{
-                                      fontWeight: "bold",
-                                      fontSize: "0.8rem",
-                                      color: "#2c3e50",
-                                      borderBottom: "2px solid #e0e0e0",
-                                      padding: "8px 16px"
-                                    }}
-                                  >
-                                    <TableSortLabel
-                                      active={orderBy === 'sold'}
-                                      direction={order}
-                                      onClick={() => handleRequestSort(null, 'sold')}
-                                      sx={{
-                                        fontWeight: "bold",
-                                        '& .MuiTableSortLabel-icon': {
-                                          opacity: 1,
-                                          color: 'rgba(0, 0, 0, 0.54)'
-                                        }
-                                      }}
-                                    >
-                                      Sold
-                                    </TableSortLabel>
-                                  </TableCell>
-            
-                                  {/* Allocated column */}
-                                  <TableCell
-                                    align="center"
-                                    sx={{
-                                      fontWeight: "bold",
-                                      fontSize: "0.8rem",
-                                      color: "#2c3e50",
-                                      borderBottom: "2px solid #e0e0e0",
-                                      padding: "8px 16px"
-                                    }}
-                                  >
-                                    <TableSortLabel
-                                      active={orderBy === 'actual'}
-                                      direction={order}
-                                      onClick={() => handleRequestSort(null, 'actual')}
-                                      sx={{
-                                        fontWeight: "bold",
-                                        '& .MuiTableSortLabel-icon': {
-                                          opacity: 1,
-                                          color: 'rgba(0, 0, 0, 0.54)'
-                                        }
-                                      }}
-                                    >
-                                      Allocated
-                                    </TableSortLabel>
-                                  </TableCell>
-            
-                                  {/* Consumed column */}
-                                  <TableCell
-                                    align="center"
-                                    sx={{
-                                      fontWeight: "bold",
-                                      fontSize: "0.8rem",
-                                      color: "#2c3e50",
-                                      borderBottom: "2px solid #e0e0e0",
-                                      padding: "8px 16px"
-                                    }}
-                                  >
-                                    <TableSortLabel
-                                      active={orderBy === 'consumed'}
-                                      direction={order}
-                                      onClick={() => handleRequestSort(null, 'consumed')}
-                                      sx={{
-                                        fontWeight: "bold",
-                                        '& .MuiTableSortLabel-icon': {
-                                          opacity: 1,
-                                          color: 'rgba(0, 0, 0, 0.54)'
-                                        }
-                                      }}
-                                    >
-                                      Consumed
-                                    </TableSortLabel>
-                                  </TableCell>
-            
-                                  {/* % Consumed column */}
-                                  <TableCell
-                                    align="center"
-                                    sx={{
-                                      fontWeight: "bold",
-                                      fontSize: "0.8rem",
-                                      color: "#2c3e50",
-                                      borderBottom: "2px solid #e0e0e0",
-                                      padding: "8px 16px"
-                                    }}
-                                  >
-                                    <TableSortLabel
-                                      active={orderBy === 'consumed_percent'}
-                                      direction={order}
-                                      onClick={() => handleRequestSort(null, 'consumed_percent')}
-                                      sx={{
-                                        fontWeight: "bold",
-                                        '& .MuiTableSortLabel-icon': {
-                                          opacity: 1,
-                                          color: 'rgba(0, 0, 0, 0.54)'
-                                        }
-                                      }}
-                                    >
-                                      % Consumed
-                                    </TableSortLabel>
-                                  </TableCell>
-                                </TableRow>
-                              </TableHead>
-            
-                              <TableBody>
-                                {(() => {
-                                  // Get the data to display (either sorted or original)
-                                  const displayData = sortedData?.companies || companyData.dataUsage;
-            
-                                  // Split into expired and non-expired groups
-                                  const expiredCompanies = [];
-                                  const activeCompanies = [];
-            
-                                  // Separate companies based on expiration status
-                                  displayData.forEach((company, index) => {
-                                    if (!company) return; // Skip if company data is undefined
-            
-                                    const expiryData = companyData.licenseExpiration.find(e =>
-                                      e && e.shortName === company.shortName
-                                    );
-            
-                                    // Only categorize if we have valid expiry data
-                                    if (expiryData && expiryData.daysLeft !== undefined) {
-                                      if (expiryData.daysLeft < 0) {
-                                        expiredCompanies.push({ company, index });
-                                      } else {
-                                        activeCompanies.push({ company, index });
-                                      }
-                                    } else {
-                                      // If no expiry data, treat as active
-                                      activeCompanies.push({ company, index });
-                                    }
-                                  });
-            
-                                  // Combine arrays with expired first
-                                  const sortedCompanies = [...expiredCompanies, ...activeCompanies];
-                                  // Return empty array if no companies to show
-                                  if (sortedCompanies.length === 0) {
-                                    return (
-                                      <TableRow>
-                                        <TableCell colSpan={8} align="center">
-                                          No company data available
-                                        </TableCell>
-                                      </TableRow>
-                                    );
-                                  }
-            
-                                  // Render each row
-                                  return sortedCompanies.map(({ company, index }) => {
-                                    const dataIndex = sortedData ? sortedData.indices[index] : index;
-                                    // const licenseData = companyData.licenseAllocation[dataIndex];
-            
-                                    // Safely find related data with fallbacks
-                                    const licenseData = companyData.licenseAllocation.find(l =>
-                                      l && l.company === company.company
-                                    ) || { allocated: 0, consumed: 0 };
-            
-                                    // const expiryData = companyData.licenseExpiration[dataIndex];
-            
-                                    const expiryData = companyData.licenseExpiration.find(e =>
-                                      e && e.shortName === company.shortName
-                                    ) || { daysLeft: 0, shortName: company.shortName, company: company.company };
-                                    // Calculate percentages with safety checks
-                                    const actual = company.actual || 1; // Prevent division by zero
-                                    const consumed = company.consumed || 0;
-                                    const storageUsedPercent = Math.round((consumed / actual) * 100);
-            
-                                    // Calculate percentages
-                                    // const storageUsedPercent = Math.round((company.consumed / company.actual) * 100);
-                                    // const licenseUsedPercent = Math.round((licenseData.consumed / licenseData.allocated) * 100);
-                                    const licenseAllocated = licenseData.allocated || 1; // Prevent division by zero
-                                    const licenseConsumed = licenseData.consumed || 0;
-                                    const licenseUsedPercent = Math.round((licenseConsumed / licenseAllocated) * 100);
-            
-                                    // Format days text for Renew By
-                                    const daysLeft = expiryData.daysLeft || 0;
-                                    let daysText = `${daysLeft} days`;
-                                    let daysColor = "#4CAF50"; // Green by default
-            
-                                    if (daysLeft < 0) {
-                                      daysText = `Expired`;
-                                      daysColor = "#FF0000"; // Red
-                                    } else if (daysLeft < 30) {
-                                      daysColor = "#FF6B00"; // Orange
-                                    } else if (daysLeft < 45) {
-                                      daysColor = "#FFD700"; // Yellow
-                                    }
-            
-                                    // Track if this company's options are expanded
-                                    const isExpanded = selectedCompany?.shortName === company.shortName;
-            
-                                    return (
-                                      <React.Fragment key={company.shortName || index}>
-                                        <TableRow
-                                          sx={{
-                                            height: 52,
-                                            backgroundColor: expiryData.daysLeft < 0 ? 'rgba(255, 0, 0, 0.05)' : // Light red for expired
-                                              (index % 2 === 0) ? 'rgba(0, 0, 0, 0.02)' : 'transparent',
-                                            '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.04)' },
-                                            transition: 'background-color 0.3s'
-                                          }}
-                                        >
-                                          <TableCell
-                                            component="th"
-                                            scope="row"
-                                            sx={{
-                                              fontSize: "0.875rem",
-                                              borderBottom: "1px solid #e0e0e0",
-                                              padding: "8px 16px"
-                                            }}
-                                          >
-                                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                              <Checkbox
-                                                checked={selectedCompanies.includes(company.shortName)}
-                                                onChange={(e) => handleSelectCompany(e, company.shortName)}
-                                                sx={{ p: 0, mr: 1 }}
-                                              />
-                                              <Box
-                                                sx={{
-                                                  width: 28,
-                                                  height: 28,
-                                                  borderRadius: '50%',
-                                                  display: 'flex',
-                                                  alignItems: 'center',
-                                                  justifyContent: 'center',
-                                                  backgroundColor: dataIndex % 2 === 1 ? "rgb(84,112,198)" : "rgb(250,200,88)",
-                                                  color: '#fff',
-                                                  fontWeight: 'bold',
-                                                  marginRight: 1.5,
-                                                  fontSize: '0.75rem'
-                                                }}
-                                              >
-                                                {company.shortName}
-                                              </Box>
-                                              {company.company}
-                                            </Box>
-                                          </TableCell>
-            
-                                          <TableCell align="center" sx={{ fontSize: "0.875rem", borderBottom: "1px solid #e0e0e0", padding: "8px 16px" }}>
-                                            {Math.round(company.sold / 1024)}
-                                          </TableCell>
-            
-                                          <TableCell align="center" sx={{ fontSize: "0.875rem", borderBottom: "1px solid #e0e0e0", padding: "8px 16px" }}>
-                                            {Math.round(company.actual / 1024)}
-                                          </TableCell>
-            
-                                          <TableCell align="center" sx={{ fontSize: "0.875rem", borderBottom: "1px solid #e0e0e0", padding: "8px 16px" }}>
-                                            {Math.round(company.consumed / 1024)}
-                                          </TableCell>
-            
-                                          <TableCell align="center" sx={{
-                                            fontSize: "0.875rem",
-                                            borderBottom: "1px solid #e0e0e0",
-                                            padding: "8px 16px",
-                                            color: storageUsedPercent > 90 ? '#FF0000' :
-                                              storageUsedPercent > 75 ? '#FF6B00' : '#2c3e50'
-                                          }}>
-                                            {storageUsedPercent}%
-                                          </TableCell>
-            
-                                          <TableCell align="center" sx={{
-                                            fontSize: "0.875rem",
-                                            borderBottom: "1px solid #e0e0e0",
-                                            padding: "8px 16px",
-                                            color: daysColor,
-                                            fontWeight: expiryData.daysLeft < 30 ? 'bold' : 'normal'
-                                          }}>
-                                            {daysText}
-                                          </TableCell>
-            
-                                          <TableCell align="center" sx={{
-                                            fontSize: "0.875rem",
-                                            borderBottom: "1px solid #e0e0e0",
-                                            padding: "8px 16px",
-                                            color: licenseUsedPercent > 90 ? '#FF0000' :
-                                              licenseUsedPercent > 75 ? '#FF6B00' : '#2c3e50'
-                                          }}>
-                                            {licenseUsedPercent}%
-                                          </TableCell>
-            
-                                          <TableCell align="center" sx={{ borderBottom: "1px solid #e0e0e0", padding: "8px 16px" }}>
-                                            <Button
-                                              variant="text"
-                                              size="small"
-                                              onClick={() => {
-                                                if (isExpanded) {
-                                                  setSelectedCompany(null);
-                                                } else {
-                                                  setSelectedCompany(company);
-                                                }
-                                              }}
-                                              sx={{
-                                                color: '#3498db',
-                                                fontWeight: 'medium',
-                                                '&:hover': {
-                                                  backgroundColor: 'rgba(52, 152, 219, 0.1)'
-                                                }
-                                              }}
-                                            >
-                                              Options {isExpanded && <ExpandMoreIcon fontSize="small" sx={{ ml: 0.5 }} />}
-                                            </Button>
-                                          </TableCell>
-                                        </TableRow>
-            
-                                        {/* Options row */}
-                                        {isExpanded && (
-                                          <TableRow sx={{ backgroundColor: 'rgba(236, 240, 241, 0.5)' }}>
-                                            <TableCell colSpan={8} sx={{ py: 2.5, px: 4, borderBottom: "1px solid #e0e0e0" }}>
-                                              <Grid container spacing={2} justifyContent="center">
-                                                <Grid item>
-                                                  <Button
-                                                    variant="outlined"
-                                                    startIcon={<RenewIcon />}
-                                                    onClick={() => handleRenewReminder(company)}
-                                                    sx={{
-                                                      borderRadius: 1,
-                                                      minWidth: '160px',
-                                                      color: '#27ae60',
-                                                      borderColor: '#27ae60',
-                                                      '&:hover': {
-                                                        backgroundColor: 'rgba(39, 174, 96, 0.1)',
-                                                        borderColor: '#27ae60'
-                                                      }
-                                                    }}
-                                                  >
-                                                    Renew Reminder
-                                                  </Button>
-                                                </Grid>
-            
-                                                <Grid item>
-                                                  <Button
-                                                    variant="outlined"
-                                                    startIcon={<ExtendIcon />}
-                                                    onClick={() => handleExtendPlan(company)}
-                                                    sx={{
-                                                      borderRadius: 1,
-                                                      minWidth: '140px',
-                                                      color: '#2980b9',
-                                                      borderColor: '#2980b9',
-                                                      '&:hover': {
-                                                        backgroundColor: 'rgba(41, 128, 185, 0.1)',
-                                                        borderColor: '#2980b9'
-                                                      }
-                                                    }}
-                                                  >
-                                                    Extend Plan
-                                                  </Button>
-                                                </Grid>
-            
-                                                <Grid item>
-                                                  <Button
-                                                    variant="outlined"
-                                                    startIcon={<ChangeIcon />}
-                                                    onClick={() => handleChangePlan(company)}
-                                                    sx={{
-                                                      borderRadius: 1,
-                                                      minWidth: '140px',
-                                                      color: '#f39c12',
-                                                      borderColor: '#f39c12',
-                                                      '&:hover': {
-                                                        backgroundColor: 'rgba(243, 156, 18, 0.1)',
-                                                        borderColor: '#f39c12'
-                                                      }
-                                                    }}
-                                                  >
-                                                    Change Plan
-                                                  </Button>
-                                                </Grid>
-            
-                                                <Grid item>
-                                                  <Button
-                                                    variant="outlined"
-                                                    startIcon={<AddLicenseIcon />}
-                                                    onClick={() => handleAddLicense(company)}
-                                                    sx={{
-                                                      borderRadius: 1,
-                                                      minWidth: '140px',
-                                                      color: '#9b59b6',
-                                                      borderColor: '#9b59b6',
-                                                      '&:hover': {
-                                                        backgroundColor: 'rgba(155, 89, 182, 0.1)',
-                                                        borderColor: '#9b59b6'
-                                                      }
-                                                    }}
-                                                  >
-                                                    Add License
-                                                  </Button>
-                                                </Grid>
-            
-                                                <Grid item>
-                                                  <Button
-                                                    variant="outlined"
-                                                    startIcon={<StorageIcon />}
-                                                    onClick={() => handleIncreaseStorage(company)}
-                                                    sx={{
-                                                      borderRadius: 1,
-                                                      minWidth: '160px',
-                                                      color: '#16a085',
-                                                      borderColor: '#16a085',
-                                                      '&:hover': {
-                                                        backgroundColor: 'rgba(22, 160, 133, 0.1)',
-                                                        borderColor: '#16a085'
-                                                      }
-                                                    }}
-                                                  >
-                                                    Increase Storage
-                                                  </Button>
-                                                </Grid>
-                                              </Grid>
-                                            </TableCell>
-                                          </TableRow>
-                                        )}
-                                      </React.Fragment>
-                                    );
-                                  });
-                                })()}
-                              </TableBody>
-                            </Table>
-                          </TableContainer>
-                        </Paper>
+                                        Renew Reminder
+                                      </Button>
+                                    </Grid>
+
+                                    <Grid item>
+                                      <Button
+                                        variant="outlined"
+                                        startIcon={<ExtendIcon />}
+                                        onClick={() => handleExtendPlan(company)}
+                                        sx={{
+                                          borderRadius: 1,
+                                          minWidth: '140px',
+                                          color: '#2980b9',
+                                          borderColor: '#2980b9',
+                                          '&:hover': {
+                                            backgroundColor: 'rgba(41, 128, 185, 0.1)',
+                                            borderColor: '#2980b9'
+                                          }
+                                        }}
+                                      >
+                                        Extend Plan
+                                      </Button>
+                                    </Grid>
+
+                                    <Grid item>
+                                      <Button
+                                        variant="outlined"
+                                        startIcon={<ChangeIcon />}
+                                        onClick={() => handleChangePlan(company)}
+                                        sx={{
+                                          borderRadius: 1,
+                                          minWidth: '140px',
+                                          color: '#f39c12',
+                                          borderColor: '#f39c12',
+                                          '&:hover': {
+                                            backgroundColor: 'rgba(243, 156, 18, 0.1)',
+                                            borderColor: '#f39c12'
+                                          }
+                                        }}
+                                      >
+                                        Change Plan
+                                      </Button>
+                                    </Grid>
+
+                                    <Grid item>
+                                      <Button
+                                        variant="outlined"
+                                        startIcon={<AddLicenseIcon />}
+                                        onClick={() => handleAddLicense(company)}
+                                        sx={{
+                                          borderRadius: 1,
+                                          minWidth: '140px',
+                                          color: '#9b59b6',
+                                          borderColor: '#9b59b6',
+                                          '&:hover': {
+                                            backgroundColor: 'rgba(155, 89, 182, 0.1)',
+                                            borderColor: '#9b59b6'
+                                          }
+                                        }}
+                                      >
+                                        Add License
+                                      </Button>
+                                    </Grid>
+
+                                    <Grid item>
+                                      <Button
+                                        variant="outlined"
+                                        startIcon={<StorageIcon />}
+                                        onClick={() => handleIncreaseStorage(company)}
+                                        sx={{
+                                          borderRadius: 1,
+                                          minWidth: '160px',
+                                          color: '#16a085',
+                                          borderColor: '#16a085',
+                                          '&:hover': {
+                                            backgroundColor: 'rgba(22, 160, 133, 0.1)',
+                                            borderColor: '#16a085'
+                                          }
+                                        }}
+                                      >
+                                        Increase Storage
+                                      </Button>
+                                    </Grid>
+                                  </Grid>
+                                </TableCell>
+                              </TableRow>
+                            )}
+                          </React.Fragment>
+                        );
+                      });
+                    })()}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Paper>
 
           </Box>
           <Box>
             <Dialog open={showPreview} onClose={() => setShowPreview(false)} maxWidth="md" fullWidth>
-                    <DialogTitle sx={{ fontWeight: 'bold' }}>
-                      Preview CSV Data
-                    </DialogTitle>
-                    <DialogContent>
-                      {previewData.length > 0 && (
-                        <TableContainer sx={{ maxHeight: 300, mt: 2 }}>
-                          <Table size="small" stickyHeader>
-                            <TableHead>
-                              <TableRow>
-                                {Object.keys(previewData[0]).map((header) => (
-                                  <TableCell key={header} sx={{ fontWeight: 'bold' }}>
-                                    {header}
-                                  </TableCell>
-                                ))}
-                              </TableRow>
-                            </TableHead>
-                            <TableBody>
-                              {previewData.map((row, rowIndex) => (
-                                <TableRow key={rowIndex}>
-                                  {Object.keys(row).map((key) => (
-                                    <TableCell key={`${rowIndex}-${key}`}>
-                                      {row[key]}
-                                    </TableCell>
-                                  ))}
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </TableContainer>
-                      )}
-                      <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-                        This is a preview of the first 5 rows. The data will update the dashboard when you apply it.
-                      </Typography>
-                    </DialogContent>
-                    <DialogActions>
-                      <Button onClick={() => setShowPreview(false)} color="inherit">
-                        Cancel
-                      </Button>
-                      <Button
-                        onClick={applyUploadedData}
-                        variant="contained"
-                        color="primary"
-                        sx={{ borderRadius: 1 }}
-                      >
-                        Apply Data
-                      </Button>
-                    </DialogActions>
-                  </Dialog>
-            
-                  {/* Notification Snackbars */}
-                  <Snackbar
-                    open={uploadSuccess}
-                    autoHideDuration={4000}
-                    onClose={() => setUploadSuccess(false)}
-                    anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                  >
-                    <Alert
-                      onClose={() => setUploadSuccess(false)}
-                      severity="success"
-                      variant="filled"
-                      sx={{ width: '100%' }}
-                    >
-                      CSV data successfully applied to dashboard
-                    </Alert>
-                  </Snackbar>
-            
-                  <Snackbar
-                    open={uploadError}
-                    autoHideDuration={6000} // Longer duration for more complex messages
-                    onClose={() => setUploadError(false)}
-                    anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                  >
-                    <Alert
-                      onClose={() => setUploadError(false)}
-                      severity="error"
-                      variant="filled"
-                      sx={{
-                        width: '100%',
-                        maxWidth: '500px',
-                        whiteSpace: 'pre-line' // This allows newlines in the message
-                      }}
-                    >
-                      {errorMessage || 'Error uploading CSV file'}
-                    </Alert>
-                  </Snackbar>
-            
-                  {/* Add this at the end of your component, near other snackbars */}
-                  <Snackbar
-                    open={actionNotification.open}
-                    autoHideDuration={4000}
-                    onClose={handleCloseNotification}
-                    anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                  >
-                    <Alert
-                      onClose={handleCloseNotification}
-                      severity={actionNotification.type}
-                      variant="filled"
-                      sx={{ width: '100%' }}
-                    >
-                      {actionNotification.message}
-                    </Alert>
-                  </Snackbar>
+              <DialogTitle sx={{ fontWeight: 'bold' }}>
+                Preview CSV Data
+              </DialogTitle>
+              <DialogContent>
+                {previewData.length > 0 && (
+                  <TableContainer sx={{ maxHeight: 300, mt: 2 }}>
+                    <Table size="small" stickyHeader>
+                      <TableHead>
+                        <TableRow>
+                          {Object.keys(previewData[0]).map((header) => (
+                            <TableCell key={header} sx={{ fontWeight: 'bold' }}>
+                              {header}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {previewData.map((row, rowIndex) => (
+                          <TableRow key={rowIndex}>
+                            {Object.keys(row).map((key) => (
+                              <TableCell key={`${rowIndex}-${key}`}>
+                                {row[key]}
+                              </TableCell>
+                            ))}
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                )}
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                  This is a preview of the first 5 rows. The data will update the dashboard when you apply it.
+                </Typography>
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={() => setShowPreview(false)} color="inherit">
+                  Cancel
+                </Button>
+                <Button
+                  onClick={applyUploadedData}
+                  variant="contained"
+                  color="primary"
+                  sx={{ borderRadius: 1 }}
+                >
+                  Apply Data
+                </Button>
+              </DialogActions>
+            </Dialog>
+
+            {/* Notification Snackbars */}
+            <Snackbar
+              open={uploadSuccess}
+              autoHideDuration={4000}
+              onClose={() => setUploadSuccess(false)}
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            >
+              <Alert
+                onClose={() => setUploadSuccess(false)}
+                severity="success"
+                variant="filled"
+                sx={{ width: '100%' }}
+              >
+                CSV data successfully applied to dashboard
+              </Alert>
+            </Snackbar>
+
+            <Snackbar
+              open={uploadError}
+              autoHideDuration={6000} // Longer duration for more complex messages
+              onClose={() => setUploadError(false)}
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            >
+              <Alert
+                onClose={() => setUploadError(false)}
+                severity="error"
+                variant="filled"
+                sx={{
+                  width: '100%',
+                  maxWidth: '500px',
+                  whiteSpace: 'pre-line' // This allows newlines in the message
+                }}
+              >
+                {errorMessage || 'Error uploading CSV file'}
+              </Alert>
+            </Snackbar>
+
+            {/* Add this at the end of your component, near other snackbars */}
+            <Snackbar
+              open={actionNotification.open}
+              autoHideDuration={4000}
+              onClose={handleCloseNotification}
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            >
+              <Alert
+                onClose={handleCloseNotification}
+                severity={actionNotification.type}
+                variant="filled"
+                sx={{ width: '100%' }}
+              >
+                {actionNotification.message}
+              </Alert>
+            </Snackbar>
           </Box>
-          
-          </div>
-          
+
+        </div>
+
       </div>
     </div>
   );

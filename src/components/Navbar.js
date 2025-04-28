@@ -27,7 +27,7 @@ import { useNavigate } from "react-router-dom";
 import debounce from 'lodash/debounce';
 
 const StyledAppBar = styled(AppBar)(({ theme }) => ({
-  backgroundColor: "rgba(255, 255, 255, 0.85)", // Match sidebar color
+  backgroundColor: "whitesmoke", // Match sidebar color
   color: "#424242",
   boxShadow: "0 1px 2px rgba(0,0,0,0.15)",
   height: "48px",
@@ -35,7 +35,8 @@ const StyledAppBar = styled(AppBar)(({ theme }) => ({
   boxShadow: "0 1px 2px rgba(0,0,0,0.08)",
   position: "relative", // Ensure backdrop-filter works properly
   zIndex: 1100,
-  fontFamily: '"Be Vietnam", sans-serif'
+  fontFamily: '"Be Vietnam", sans-serif',
+
 }));
 
 const StyledToolbar = styled(Toolbar)({
@@ -47,9 +48,9 @@ const StyledToolbar = styled(Toolbar)({
 const SearchWrapper = styled("div")({
   position: "relative",
   borderRadius: "20px",
-  backgroundColor: "rgba(0, 0, 0, 0.05)", // Darker background for search
+  backgroundColor: "white", // Darker background for search
   "&:hover": {
-    backgroundColor: "rgba(0, 0, 0, 0.08)",
+    backgroundColor: "white",
   },
   marginRight: "20px",
   marginLeft: "20px",
@@ -314,7 +315,8 @@ const Navbar = ({ onThemeToggle, onSearch, currentPage }) => {
                   fontSize: "1rem",
                   fontWeight: 400,
                   color: "rgba(0, 0, 0, 0.7)",
-                  fontFamily: '"Be Vietnam", sans-serif'
+                  fontFamily: '"Be Vietnam", sans-serif',
+                  marginLeft: '40px'
                 }}
               >
                 {formattedPath}

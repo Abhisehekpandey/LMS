@@ -34,12 +34,15 @@ const StyledDrawer = styled(Drawer)(({ theme, open }) => ({
       easing: theme.transitions.easing.easeInOut,
       duration: theme.transitions.duration.standard,
     }),
-    backgroundColor: "rgba(255, 255, 255, 0.85)",
+    backgroundColor: "whitesmoke",
     backdropFilter: "blur(8px)",
     color: "#424242",
     borderRight: "1px solid rgba(0, 0, 0, 0.08)",
     boxShadow: "0 0 15px rgba(0, 0, 0, 0.05)",
     overflow: "hidden",
+    display: "flex", // Add flex display
+    flexDirection: "column", // Stack children vertically
+    height: "100%", // Ensure full heigh
   },
 }));
 
@@ -48,14 +51,14 @@ const StyledListItem = styled(ListItem)(({ active }) => ({
   minHeight: 44,
   padding: "0 !important",
   margin: "0 1px !important",
-   padding: "0 0px !important",
+  //  padding: "0 0px !important",
   display: "flex",
   borderRadius: "8px",
   backgroundColor: active ? "rgba(25, 118, 210, 0.08)" : "transparent",
   color: active ? "#1976d2" : "rgba(0, 0, 0, 0.7)",
   transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-   transform: "translateZ(0)",
-   willChange: "transform, box-shadow, background-color",
+  transform: "translateZ(0)",
+  willChange: "transform, box-shadow, background-color",
   "&:hover": {
     backgroundColor: active
       ? "rgba(25, 118, 210, 0.12)"
@@ -81,13 +84,13 @@ const Sidebar = () => {
   const timeoutRef = useRef(null);
   const location = useLocation();
 
-  const menuItems = [
+  const menuItems = React.useMemo(() => [
     { path: "/user", icon: <UserIcon />, text: "User" },
     { path: "/department", icon: <DepartmentRolesIcon />, text: "Department" },
     { path: "/angelbot", icon: <TimelineIcon />, text: "AngelBot" },
     { path: "/ldap-config", icon: <LDAPIcon />, text: "LDAP Settings" },
     { path: "/company-dashboard", icon: <DashboardIcon />, text: "Dashboard" },
-  ];
+  ], []); // Empty dependency array means this only runs once
 
   const handleMouseEnter = () => {
     clearTimeout(timeoutRef.current);
@@ -141,6 +144,9 @@ const Sidebar = () => {
           display: "flex",
           alignItems: "center",
           // cursor: 'pointer',
+          height: 60, // Add fixed height to prevent layout shift
+          borderBottom: "1px solid rgba(0,0,0,0.05)",
+          mb: 1, // Add margin bottom
         }}
         className="user-info-view"
       >
@@ -190,7 +196,11 @@ const Sidebar = () => {
         </Box>
       </Box>
 
-      <List sx={{ pt: 0.5, paddingRight: "4px", paddingLeft: "4px" }}>
+      <List sx={{
+        pt: 0.5, paddingRight: "4px", paddingLeft: "4px", display: "flex",
+        flexDirection: "column",
+        gap: "4px",
+      }}>
         {menuItems.map((item) => {
           const isActive = location.pathname === item.path;
           return (
@@ -199,7 +209,10 @@ const Sidebar = () => {
               to={item.path}
               style={{ textDecoration: "none", color: "inherit" }}
             >
-              <StyledListItem button active={isActive}>
+              <StyledListItem button active={isActive} sx={{
+                height: 44, // Fixed height instead of minHeight
+                overflow: "hidden" // Prevent content overflow
+              }}>
                 <StyledListItemIcon active={isActive}>
                   {item.icon}
                 </StyledListItemIcon>
@@ -208,13 +221,14 @@ const Sidebar = () => {
                     primary={item.text}
                     sx={{
                       opacity: open ? 1 : 0,
-                       transition: "opacity 0.18s ease",
-                       marginRight: "4px",
+                      transition: "opacity 0.18s ease",
+                      marginRight: "4px",
                       "& .MuiListItemText-primary": {
                         fontSize: "0.875rem",
                         fontWeight: isActive ? 600 : 500,
                         color: isActive ? "#1976d2" : "inherit",
                         transition: "font-weight 0.2s ease, color 0.2s ease",
+                        whiteSpace: "nowrap",
                       },
                     }}
                   />
