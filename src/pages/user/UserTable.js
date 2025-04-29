@@ -28,6 +28,8 @@ import {
   Typography,
   alpha,
   Autocomplete,
+  FormControl,
+  InputLabel,
 } from "@mui/material";
 import {
   Search,
@@ -50,6 +52,7 @@ import styles from "./user.module.css";
 import DeleteUser from "./DeleteUser";
 import Migration from "./Migration";
 import CreateUser from "./CreateUser";
+import { toast } from "react-toastify";
 
 const CustomSwitch = styled(Switch)(({ theme, checked }) => ({
   "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
@@ -74,7 +77,7 @@ const rows = [
     department: "Backend",
     role: "N/A",
     email: "user2@appolo.com",
-    storageUsed: "10GB",
+    storageUsed: "200MB",
     manageStorage: "1 GB",
     status: false,
     avaliableStorage: "9 GB",
@@ -87,7 +90,7 @@ const rows = [
     department: "Backend",
     role: "N/A",
     email: "user5@appolo.com",
-    storageUsed: "10GB",
+    storageUsed: "200MB",
     manageStorage: "1 GB",
     status: false,
     avaliableStorage: "9 GB",
@@ -100,7 +103,7 @@ const rows = [
     department: "Frontend",
     role: "N/A",
     email: "user6@appolo.com",
-    storageUsed: "10GB",
+    storageUsed: "200MB",
     manageStorage: "1 GB",
     status: true,
     avaliableStorage: "9 GB",
@@ -128,6 +131,11 @@ export default function UserTable() {
   const [migrationDialog, setMigrationDialog] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editData, setEditData] = useState({});
+  const [Storage, setStorage] = React.useState("");
+
+  const handleChangeStorage = (event) => {
+    setStorage(event.target.value);
+  };
 
   const handleEdit = (e, row) => {
     console.log(row);
@@ -204,12 +212,18 @@ export default function UserTable() {
   };
 
   const handleStatusToggle = (rowId) => {
-    const updatedRows = [...rowsData];
-    const rowIndex = updatedRows.findIndex((row) => row.id === rowId); // Find the row by id
-    if (rowIndex !== -1) {
-      updatedRows[rowIndex].status = !updatedRows[rowIndex].status; // Toggle the status
-      setRowsData(updatedRows); // Update the state
-    }
+    setRowData((prev) =>
+      prev.map((d) =>
+        d.name === rowId.name ? { ...d, isActive: !d.isActive } : d
+      )
+    );
+    toast({
+      open: true,
+      message: `Department "${rowId.name}" ${
+        !rowId.isActive ? "activated" : "deactivated"
+      }`,
+      severity: "success",
+    });
   };
 
   const handleCreateUser = () => {
@@ -297,7 +311,7 @@ export default function UserTable() {
         height: "calc(100vh - 48px)",
       }}
     >
-      <Paper sx={{ width: "100%", overflow: "hidden" }}>
+      <Paper sx={{ width: "100%", overflow: "hidden" ,borderRadius:'28px'}}>
         <TableContainer sx={{ maxHeight: "84vh", height: "84vh" }}>
           <Table stickyHeader>
             <TableHead className={styles.tableHeader}>
@@ -322,14 +336,15 @@ export default function UserTable() {
                     onChange={handleSelectAllClick}
                   />
                 </TableCell>
-                <TableCell align="center">USER NAME</TableCell>
-                <TableCell align="center">NAME</TableCell>
-                <TableCell align="center">DEPARTMENT</TableCell>
-                <TableCell align="center">ROLE</TableCell>
-                <TableCell align="center">USER EMAIL</TableCell>
-                <TableCell align="center">STORAGE USED</TableCell>
-                <TableCell align="center">MANAGE STORAGE</TableCell>
-                <TableCell align="center">TOOLS</TableCell>
+                {/* <TableCell align="center">USER NAME</TableCell> */}
+                <TableCell align="center">Name</TableCell>
+                <TableCell align="center">Department</TableCell>
+                <TableCell align="center">Role</TableCell>
+                <TableCell align="center">User email</TableCell>
+                <TableCell align="center">Storage used</TableCell>
+                <TableCell align="center">Manage storage</TableCell>
+                <TableCell align="center">Active license</TableCell>
+                <TableCell align="center">Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -353,12 +368,12 @@ export default function UserTable() {
                           onChange={() => handleClick(row)}
                         />
                       </TableCell>
-                      <TableCell
+                      {/* <TableCell
                         align="center"
                         sx={{ padding: "10px 10px 10px 10px !important" }}
                       >
                         {row.userName}
-                      </TableCell>
+                      </TableCell> */}
                       <TableCell
                         align="center"
                         sx={{ padding: "10px 10px 10px 10px !important" }}
@@ -397,25 +412,66 @@ export default function UserTable() {
                           padding: "10px 10px 10px 10px !important",
                         }}
                       >
-                        <Autocomplete
-                          size="small"
-                          options={options}
-                          defaultValue="2GB"
-                          sx={{
-                            width: 120,
-
-                            // ".MuiInputBase-root": {
-                            //   padding: "10px 10px 10px 10px !important",
-                            // },
-                          }}
-                          renderInput={(params) => (
-                            <TextField
-                              {...params}
-                              size="small"
-                              defaultValue="2GB"
-                            />
-                          )}
-                        />
+                        <FormControl sx={{ m: 0, minWidth: 120 }} size="small">
+                          <Select
+                            id="demo-select-small"
+                            value={Storage}
+                            defaultValue="10GB"
+                            onChange={handleChangeStorage}
+                            displayEmpty
+                            sx={{borderRadius:'20px',".MuiSelect-outlined":{
+                              height:'5px !important'
+                            }}}
+                          >
+                            <MenuItem value="">
+                              <em>10GB</em>
+                            </MenuItem>
+                            <MenuItem value={10}>20GB</MenuItem>
+                            <MenuItem value={20}>40GB</MenuItem>
+                            <MenuItem value={30}>60GB</MenuItem>
+                          </Select>
+                        </FormControl>  
+                      </TableCell>
+                      <TableCell align="center">
+                        <Tooltip title={row.status ? "Active" : "Inactive"}>
+                          <Switch
+                            size="small"
+                            checked={row.status}
+                            onChange={() => handleStatusToggle(row)}
+                            sx={{
+                              "& .MuiSwitch-switchBase": {
+                                "&.Mui-checked": {
+                                  // When active/checked
+                                  color: "#2e7d32", // Green color
+                                  "& + .MuiSwitch-track": {
+                                    backgroundColor: "#4caf50", // Green track
+                                    opacity: 0.5,
+                                  },
+                                },
+                                "&.Mui-disabled": {
+                                  "& + .MuiSwitch-track": {
+                                    opacity: 0.5,
+                                  },
+                                },
+                              },
+                              "& .MuiSwitch-switchBase.Mui-checked:hover": {
+                                backgroundColor: "rgba(46, 125, 50, 0.08)", // Green hover effect
+                              },
+                              // When inactive/unchecked
+                              "& .MuiSwitch-switchBase:not(.Mui-checked)": {
+                                color: "#d32f2f", // Red color
+                                "& + .MuiSwitch-track": {
+                                  backgroundColor: "#ef5350", // Red track
+                                  opacity: 0.5,
+                                },
+                              },
+                              "& .MuiSwitch-switchBase:not(.Mui-checked):hover":
+                                {
+                                  backgroundColor: "rgba(211, 47, 47, 0.08)", // Red hover effect
+                                },
+                            }}
+                          />
+                        </Tooltip>
                       </TableCell>
                       <TableCell
                         align="center"
@@ -426,45 +482,6 @@ export default function UserTable() {
                       >
                         {hoveredRow === row.id && (
                           <>
-                            <Tooltip title={row.status ? "Active" : "Inactive"}>
-                              <Switch
-                                sx={{
-                                  "& .MuiSwitch-switchBase": {
-                                    "&.Mui-checked": {
-                                      color: statusColors.active,
-                                      "& + .MuiSwitch-track": {
-                                        backgroundColor: alpha(
-                                          statusColors.active,
-                                          0.5
-                                        ),
-                                      },
-                                    },
-                                  },
-                                  "& .MuiSwitch-thumb": {
-                                    backgroundColor:
-                                      (row.status || "pending") === "active"
-                                        ? statusColors.active
-                                        : (row.status || "pending") ===
-                                          "pending"
-                                        ? statusColors.pending
-                                        : statusColors.inactive,
-                                  },
-                                  "& .MuiSwitch-track": {
-                                    backgroundColor:
-                                      (row.status || "pending") === "active"
-                                        ? alpha(statusColors.active, 0.5)
-                                        : (row.status || "pending") ===
-                                          "pending"
-                                        ? alpha(statusColors.pending, 0.5)
-                                        : alpha(statusColors.inactive, 0.5),
-                                  },
-                                }}
-                                checked={row.status}
-                                onChange={() => handleStatusToggle(row.id)} // Use row.id to uniquely identify the row
-                                inputProps={{ "aria-label": "status switch" }}
-                              />
-                            </Tooltip>
-
                             <IconButton
                               size="small"
                               onClick={(e) => handleEdit(e, row)}
