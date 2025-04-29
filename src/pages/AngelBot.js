@@ -673,10 +673,10 @@ const AngelBot = ({ onThemeToggle }) => {
       <div className="child">
         <Box
           sx={{
-            display: "grid",
-            position: "relative",
-            // height: "100vh",
-            backgroundColor: "#f5f7fa",
+            // display: "grid",
+            // position: "relative",
+            // // height: "100vh",
+            // backgroundColor: "#f5f7fa",
           }}
         >
           <Grid container spacing={2} sx={{ justifyContent: 'center', alignItems: 'stretch' }}>
@@ -903,7 +903,7 @@ const AngelBot = ({ onThemeToggle }) => {
             </Grid>
           </Grid>
           <Grid container spacing={2}>
-            <Grid item xs={12} md={6} sx={{ marginTop: "20px" }}>
+            <Grid item xs={12} md={6} sx={{ marginTop: "20px", marginBottom: "15px" }}>
               <Paper elevation={0} sx={commonPaperStyles}>
                 <Box
                   sx={{

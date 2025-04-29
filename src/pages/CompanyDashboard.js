@@ -1644,6 +1644,7 @@ CloudNet (Basic),C4,4,3,2,180,95,45`;
                 p: '8px',
                 background: "linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)",
                 borderRadius: 3,
+                marginBottom: '10px'
                 // transition: "all 0.3s ease",
                 // "&:hover": {
                 //   transform: "translateY(-4px)",
@@ -1658,6 +1659,7 @@ CloudNet (Basic),C4,4,3,2,180,95,45`;
                     fontSize: '15px',
                     fontWeight: "bold",
                     color: "#2c3e50",
+
 
                     // paddingBottom: 1,
                   }}
