@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from "react";
-import '@fontsource/be-vietnam';
+// import '@fontsource/be-vietnam';
 import { useLocation } from "react-router-dom";
 import {
   AppBar,
@@ -24,7 +24,7 @@ import LanguageIcon from "@mui/icons-material/Language";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
 import LogoutIcon from "@mui/icons-material/Logout";
 import { useNavigate } from "react-router-dom";
-import debounce from 'lodash/debounce';
+import debounce from "lodash/debounce";
 
 const StyledAppBar = styled(AppBar)(({ theme }) => ({
   backgroundColor: "whitesmoke", // Match sidebar color
@@ -36,13 +36,12 @@ const StyledAppBar = styled(AppBar)(({ theme }) => ({
   position: "relative", // Ensure backdrop-filter works properly
   zIndex: 1100,
   fontFamily: '"Be Vietnam", sans-serif',
-
 }));
 
 const StyledToolbar = styled(Toolbar)({
   minHeight: "48px !important",
   padding: "0 16px !important",
-  fontFamily: '"Be Vietnam", sans-serif'
+  fontFamily: '"Be Vietnam", sans-serif',
 });
 
 const SearchWrapper = styled("div")({
@@ -59,9 +58,8 @@ const SearchWrapper = styled("div")({
   maxWidth: "400px",
   display: "flex",
   alignItems: "center",
-  fontFamily: '"Be Vietnam", sans-serif'
+  fontFamily: '"Be Vietnam", sans-serif',
 });
-
 
 const StyledInputBase = styled(InputBase)({
   color: "inherit",
@@ -74,7 +72,7 @@ const StyledInputBase = styled(InputBase)({
     "&::placeholder": {
       color: "rgba(0, 0, 0, 0.5)",
       opacity: 1,
-      fontFamily: '"Be Vietnam", sans-serif'
+      fontFamily: '"Be Vietnam", sans-serif',
     },
   },
 });
@@ -92,16 +90,16 @@ const SearchIconWrapper = styled("div")({
 
 const SearchResultWrapper = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(1),
-  maxHeight: '300px',
-  overflowY: 'auto',
-  width: '100%',
-  '& .MuiListItem-root': {
+  maxHeight: "300px",
+  overflowY: "auto",
+  width: "100%",
+  "& .MuiListItem-root": {
     borderRadius: 1,
     fontFamily: '"Be Vietnam", sans-serif',
-    '&:hover': {
+    "&:hover": {
       backgroundColor: theme.palette.action.hover,
-    }
-  }
+    },
+  },
 }));
 
 const Navbar = ({ onThemeToggle, onSearch, currentPage }) => {
@@ -117,7 +115,7 @@ const Navbar = ({ onThemeToggle, onSearch, currentPage }) => {
   // Load data from localStorage
   useEffect(() => {
     const loadUserData = () => {
-      const data = localStorage.getItem('dashboardRows');
+      const data = localStorage.getItem("dashboardRows");
       if (data) {
         setUserData(JSON.parse(data));
       }
@@ -125,33 +123,35 @@ const Navbar = ({ onThemeToggle, onSearch, currentPage }) => {
 
     loadUserData();
     // Add event listener for localStorage changes
-    window.addEventListener('storage', loadUserData);
-    return () => window.removeEventListener('storage', loadUserData);
+    window.addEventListener("storage", loadUserData);
+    return () => window.removeEventListener("storage", loadUserData);
   }, []);
-
 
   const getFormattedPath = () => {
     const path = location.pathname;
 
     // Handle root path
-    if (path === '/') return '';
+    if (path === "/") return "";
 
     // Remove leading slash and split by slashes
-    const segments = path.substring(1).split('/');
+    const segments = path.substring(1).split("/");
 
     // Map path segments to more readable format
     const pathMap = {
-      'user': 'Users',
-      'department': 'Departments',
-      'angelbot': 'AngelBot',
-      'ldap-config': 'LDAP Settings',
-      'company-dashboard': 'Company Dashboard'
+      user: "Users",
+      department: "Departments",
+      angelbot: "AngelBot",
+      "ldap-config": "LDAP Settings",
+      "company-dashboard": "Company Dashboard",
     };
 
     // Format each segment and join them
-    return segments.map(segment =>
-      pathMap[segment] || segment.charAt(0).toUpperCase() + segment.slice(1)
-    ).join(' / ');
+    return segments
+      .map(
+        (segment) =>
+          pathMap[segment] || segment.charAt(0).toUpperCase() + segment.slice(1)
+      )
+      .join(" / ");
   };
   const formattedPath = getFormattedPath();
 
@@ -165,24 +165,32 @@ const Navbar = ({ onThemeToggle, onSearch, currentPage }) => {
     const lowercaseQuery = query.toLowerCase();
     let results = [];
 
-    if (currentPage === 'departments') {
+    if (currentPage === "departments") {
       // Search in departments data
-      const departmentsData = JSON.parse(localStorage.getItem('departments') || '[]');
-      results = departmentsData.filter(item =>
-        item.name?.toLowerCase().includes(lowercaseQuery) ||
-        item.displayName?.toLowerCase().includes(lowercaseQuery) ||
-        item.storage?.toLowerCase().includes(lowercaseQuery) ||
-        item.roles?.some(role => role.toLowerCase().includes(lowercaseQuery))
+      const departmentsData = JSON.parse(
+        localStorage.getItem("departments") || "[]"
+      );
+      results = departmentsData.filter(
+        (item) =>
+          item.name?.toLowerCase().includes(lowercaseQuery) ||
+          item.displayName?.toLowerCase().includes(lowercaseQuery) ||
+          item.storage?.toLowerCase().includes(lowercaseQuery) ||
+          item.roles?.some((role) =>
+            role.toLowerCase().includes(lowercaseQuery)
+          )
       );
     } else {
       // Default user search
-      const userData = JSON.parse(localStorage.getItem('dashboardRows') || '[]');
-      results = userData.filter(item =>
-        item.username?.toLowerCase().includes(lowercaseQuery) ||
-        item.name?.toLowerCase().includes(lowercaseQuery) ||
-        item.email?.toLowerCase().includes(lowercaseQuery) ||
-        item.department?.toLowerCase().includes(lowercaseQuery) ||
-        item.role?.toLowerCase().includes(lowercaseQuery)
+      const userData = JSON.parse(
+        localStorage.getItem("dashboardRows") || "[]"
+      );
+      results = userData.filter(
+        (item) =>
+          item.username?.toLowerCase().includes(lowercaseQuery) ||
+          item.name?.toLowerCase().includes(lowercaseQuery) ||
+          item.email?.toLowerCase().includes(lowercaseQuery) ||
+          item.department?.toLowerCase().includes(lowercaseQuery) ||
+          item.role?.toLowerCase().includes(lowercaseQuery)
       );
     }
 
@@ -203,9 +211,8 @@ const Navbar = ({ onThemeToggle, onSearch, currentPage }) => {
     debouncedSearch(value);
   };
 
-
   const handleSearchResultClick = (result) => {
-    console.log('Selected result:', result);
+    console.log("Selected result:", result);
     setSearchTerm("");
     setSearchResults([]);
     setSearchAnchorEl(null);
@@ -216,8 +223,6 @@ const Navbar = ({ onThemeToggle, onSearch, currentPage }) => {
     setSearchResults([]);
     setSearchAnchorEl(null);
   };
-
-
 
   const handleLogout = () => {
     sessionStorage.removeItem("user");
@@ -238,18 +243,28 @@ const Navbar = ({ onThemeToggle, onSearch, currentPage }) => {
   };
 
   const renderSearchResult = (result) => {
-    if (currentPage === 'departments') {
+    if (currentPage === "departments") {
       return (
         <ListItemText
           primary={`${result.name} / ${result.displayName}`}
           secondary={
             <React.Fragment>
-              <Typography component="span" variant="body2" color="text.primary" sx={{ fontFamily: '"Be Vietnam", sans-serif' }} >
+              <Typography
+                component="span"
+                variant="body2"
+                color="text.primary"
+                sx={{ fontFamily: '"Be Vietnam", sans-serif' }}
+              >
                 Storage: {result.storage}
               </Typography>
               <br />
-              <Typography component="span" variant="caption" color="text.secondary" sx={{ fontFamily: '"Be Vietnam", sans-serif' }}>
-                Roles: {result.roles.join(', ')}
+              <Typography
+                component="span"
+                variant="caption"
+                color="text.secondary"
+                sx={{ fontFamily: '"Be Vietnam", sans-serif' }}
+              >
+                Roles: {result.roles.join(", ")}
               </Typography>
             </React.Fragment>
           }
@@ -263,11 +278,21 @@ const Navbar = ({ onThemeToggle, onSearch, currentPage }) => {
         primary={result.name}
         secondary={
           <React.Fragment>
-            <Typography component="span" variant="body2" color="text.primary" sx={{ fontFamily: '"Be Vietnam", sans-serif' }}>
+            <Typography
+              component="span"
+              variant="body2"
+              color="text.primary"
+              sx={{ fontFamily: '"Be Vietnam", sans-serif' }}
+            >
               {result.department} - {result.role}
             </Typography>
             <br />
-            <Typography component="span" variant="caption" color="text.secondary" sx={{ fontFamily: '"Be Vietnam", sans-serif' }}>
+            <Typography
+              component="span"
+              variant="caption"
+              color="text.secondary"
+              sx={{ fontFamily: '"Be Vietnam", sans-serif' }}
+            >
               {result.email}
             </Typography>
           </React.Fragment>
@@ -276,14 +301,13 @@ const Navbar = ({ onThemeToggle, onSearch, currentPage }) => {
     );
   };
 
-
   return (
     <StyledAppBar position="static">
       <StyledToolbar>
         <Box
           sx={{
-            display: 'flex',
-            alignItems: 'center',
+            display: "flex",
+            alignItems: "center",
             flexGrow: 1, // This will push other elements to the right
           }}
         >
@@ -316,7 +340,7 @@ const Navbar = ({ onThemeToggle, onSearch, currentPage }) => {
                   fontWeight: 400,
                   color: "rgba(0, 0, 0, 0.7)",
                   fontFamily: '"Be Vietnam", sans-serif',
-                  marginLeft: '40px'
+                  marginLeft: "40px",
                 }}
               >
                 {formattedPath}
@@ -324,19 +348,26 @@ const Navbar = ({ onThemeToggle, onSearch, currentPage }) => {
             </>
           )}
         </Box>
-        <Box sx={{
-          display: "flex", alignItems: "center", gap: 2, justifyContent: "flex-end",
-          maxWidth: "1000px"
-        }}>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 2,
+            justifyContent: "flex-end",
+            maxWidth: "1000px",
+          }}
+        >
           <SearchWrapper>
             <SearchIconWrapper>
               <SearchIcon sx={{ fontSize: "1.2rem", color: "inherit" }} />
             </SearchIconWrapper>
 
             <StyledInputBase
-              placeholder={currentPage === 'departments'
-                ? "Search departments, roles..."
-                : "Search users, departments, roles..."}
+              placeholder={
+                currentPage === "departments"
+                  ? "Search departments, roles..."
+                  : "Search users, departments, roles..."
+              }
               value={searchTerm}
               onChange={handleSearchChange}
               inputProps={{ "aria-label": "search" }}
@@ -349,7 +380,11 @@ const Navbar = ({ onThemeToggle, onSearch, currentPage }) => {
                     open={true}
                     anchorEl={searchAnchorEl}
                     placement="bottom-start"
-                    style={{ zIndex: 1301, width: searchAnchorEl ? searchAnchorEl.offsetWidth : 800, marginTop: 4 }}
+                    style={{
+                      zIndex: 1301,
+                      width: searchAnchorEl ? searchAnchorEl.offsetWidth : 800,
+                      marginTop: 4,
+                    }}
                   >
                     <SearchResultWrapper elevation={3}>
                       <List dense>
@@ -435,7 +470,6 @@ const Navbar = ({ onThemeToggle, onSearch, currentPage }) => {
           </MenuItem>
         </Menu> */}
         </Box>
-
       </StyledToolbar>
     </StyledAppBar>
   );

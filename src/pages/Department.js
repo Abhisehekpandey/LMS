@@ -67,7 +67,7 @@ import DialogActions from "@mui/material/DialogActions";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import { Checkbox } from "@mui/material";
-
+import styles from "./department.module.css";
 
 // Add this after your imports
 const commonTextStyle = {
@@ -78,7 +78,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
   // Add pagination state
   const [page, setPage] = useState(0);
   // const [rowsPerPage] = useState(9);
-  const [rowsPerPage, setRowsPerPage] = useState(25); // Default to 25 rows
+  const [rowsPerPage, setRowsPerPage] = useState(10); // Default to 25 rows
 
   const [openRows, setOpenRows] = useState({});
 
@@ -101,6 +101,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     initialRole: "",
     storage: "50GB", // Default storage value
     reportingManager: "", // Add this field
+    departmentOwner: "", // Add this line
     submitted: false,
   });
 
@@ -115,7 +116,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
   const [departmentToDelete, setDepartmentToDelete] = useState(null);
   const [editedDepartment, setEditedDepartment] = useState(null);
   // First, add a new state for managing row expansion
-const [expandedRows, setExpandedRows] = useState({});
+  const [expandedRows, setExpandedRows] = useState({});
 
   // Add these new state variables after other state declarations
   const [editRoleDialog, setEditRoleDialog] = useState(false);
@@ -161,12 +162,12 @@ const [expandedRows, setExpandedRows] = useState({});
   };
 
   // Add this handler function
-const handleToggleRow = (index) => {
-  setExpandedRows(prev => ({
-    ...prev,
-    [index]: !prev[index]
-  }));
-};
+  const handleToggleRow = (index) => {
+    setExpandedRows((prev) => ({
+      ...prev,
+      [index]: !prev[index],
+    }));
+  };
 
   const handleClick = (event, name) => {
     const selectedIndex = selected.indexOf(name);
@@ -274,6 +275,7 @@ const handleToggleRow = (index) => {
       const exportData = departments.map((dept) => ({
         Department: dept.name,
         "Display Name": dept.displayName,
+        "Department Owner": dept.departmentOwner, // Added Department Owner
         "Storage Allocated": dept.storage || "50GB",
         Roles: `${dept.roles.length} (${dept.roles.join(", ")})`,
         Status: dept.isActive ? "Active" : "Inactive", // Add Status column
@@ -286,6 +288,7 @@ const handleToggleRow = (index) => {
       const wscols = [
         { wch: 25 }, // Department
         { wch: 15 }, // Display Name
+        { wch: 25 }, // Department Owner
         { wch: 20 }, // Storage Allocated
         { wch: 50 }, // Combined Roles column
         { wch: 15 }, // Status column
@@ -331,6 +334,7 @@ const handleToggleRow = (index) => {
           const requiredColumns = {
             Department: false,
             "Display Name": false,
+            "Department Owner": false, // Added Department Owner
             "Storage Allocated": false,
             Role: false,
             Status: false,
@@ -372,6 +376,7 @@ const handleToggleRow = (index) => {
 
             if (!row.Department) errors.push("Department");
             if (!row["Display Name"]) errors.push("Display Name");
+            if (!row["Department Owner"]) errors.push("Department Owner"); // Added validation
             if (!row["Storage Allocated"]) errors.push("Storage Allocated");
             if (row.Role === undefined) errors.push("Role");
             if (!row.Status) errors.push("Status");
@@ -426,6 +431,16 @@ const handleToggleRow = (index) => {
 
           let updatedDepartmentsList = [...departments];
 
+          let operationSummary = {
+            added: [],
+            updated: [],
+            deleted: [],
+            rolesAdded: {},
+            rolesDeleted: {},
+            rolesUpdated: {},
+            skipped: [],
+          };
+
           // Process each department
           Object.entries(departmentGroups).forEach(([deptName, rows]) => {
             const existingDeptIndex = updatedDepartmentsList.findIndex(
@@ -433,15 +448,24 @@ const handleToggleRow = (index) => {
             );
 
             if (existingDeptIndex !== -1) {
-              // Department exists
               if (rows[0].Edit?.toString().toLowerCase() === "yes") {
+                // Update department details
                 updatedDepartmentsList[existingDeptIndex] = {
                   ...updatedDepartmentsList[existingDeptIndex],
                   displayName: rows[0]["Display Name"],
+                  departmentOwner: rows[0]["Department Owner"],
                   storage: rows[0]["Storage Allocated"],
                   isActive: rows[0].Status.toLowerCase() === "active",
                 };
+                operationSummary.updated.push(deptName);
+              } else {
+                operationSummary.skipped.push(deptName);
               }
+
+              // Track role changes
+              const initialRoles = [
+                ...updatedDepartmentsList[existingDeptIndex].roles,
+              ];
 
               // Process role deletions
               const updatedRoles = updatedDepartmentsList[
@@ -455,7 +479,16 @@ const handleToggleRow = (index) => {
                   )
               );
 
+              // Track deleted roles
+              const deletedRoles = initialRoles.filter(
+                (role) => !updatedRoles.includes(role)
+              );
+              if (deletedRoles.length > 0) {
+                operationSummary.rolesDeleted[deptName] = deletedRoles;
+              }
+
               // Add new roles
+              const initialRolesCount = updatedRoles.length;
               rows.forEach((row) => {
                 if (
                   row.Delete?.toString().toLowerCase() !== "yes" &&
@@ -466,11 +499,18 @@ const handleToggleRow = (index) => {
                 }
               });
 
+              // Track added roles
+              const addedRoles = updatedRoles.slice(initialRolesCount);
+              if (addedRoles.length > 0) {
+                operationSummary.rolesAdded[deptName] = addedRoles;
+              }
+
               if (updatedRoles.length === 0) {
                 // Remove department if no roles remain
                 updatedDepartmentsList = updatedDepartmentsList.filter(
                   (_, index) => index !== existingDeptIndex
                 );
+                operationSummary.deleted.push(deptName);
               } else {
                 updatedDepartmentsList[existingDeptIndex].roles = updatedRoles;
               }
@@ -485,10 +525,13 @@ const handleToggleRow = (index) => {
                 updatedDepartmentsList.push({
                   name: deptName,
                   displayName: rows[0]["Display Name"],
+                  departmentOwner: rows[0]["Department Owner"],
                   storage: rows[0]["Storage Allocated"],
                   roles: newDeptRoles,
                   isActive: rows[0].Status.toLowerCase() === "active",
                 });
+                operationSummary.added.push(deptName);
+                operationSummary.rolesAdded[deptName] = newDeptRoles;
               }
             }
           });
@@ -500,9 +543,56 @@ const handleToggleRow = (index) => {
             JSON.stringify(updatedDepartmentsList)
           );
 
+          let summaryMessages = [];
+
+          if (operationSummary.added.length > 0) {
+            summaryMessages.push(
+              `Added departments: ${operationSummary.added.join(", ")}`
+            );
+          }
+
+          if (operationSummary.updated.length > 0) {
+            summaryMessages.push(
+              `Updated departments: ${operationSummary.updated.join(", ")}`
+            );
+          }
+
+          if (operationSummary.deleted.length > 0) {
+            summaryMessages.push(
+              `Deleted departments: ${operationSummary.deleted.join(", ")}`
+            );
+          }
+
+          Object.entries(operationSummary.rolesAdded).forEach(
+            ([dept, roles]) => {
+              summaryMessages.push(
+                `Added roles in ${dept}: ${roles.join(", ")}`
+              );
+            }
+          );
+
+          Object.entries(operationSummary.rolesDeleted).forEach(
+            ([dept, roles]) => {
+              summaryMessages.push(
+                `Deleted roles in ${dept}: ${roles.join(", ")}`
+              );
+            }
+          );
+
+          if (operationSummary.skipped.length > 0) {
+            summaryMessages.push(
+              `Skipped departments (no changes): ${operationSummary.skipped.join(
+                ", "
+              )}`
+            );
+          }
+
           setSnackbar({
             open: true,
-            message: "Departments and roles updated successfully",
+            message:
+              summaryMessages.length > 0
+                ? summaryMessages.join("\n")
+                : "No changes were made",
             severity: "success",
           });
         } catch (error) {
@@ -555,10 +645,10 @@ const handleToggleRow = (index) => {
     if (!deptToSort) return [];
 
     return [...deptToSort].sort((a, b) => {
-      if (orderBy === "userCount") {
-        const aCount = a.userCount || 0;
-        const bCount = b.userCount || 0;
-        return order === "asc" ? aCount - bCount : bCount - aCount;
+      if (orderBy === "roles") {
+        return order === "asc"
+          ? a.roles.length - b.roles.length
+          : b.roles.length - a.roles.length;
       }
 
       // ... existing sorting logic for other columns
@@ -573,7 +663,7 @@ const handleToggleRow = (index) => {
       backgroundColor: "#ffffff",
     },
     "&:nth-of-type(even)": {
-      backgroundColor: "#f8fafc",
+      backgroundColor: "#fffff",
     },
     "&:hover": {
       backgroundColor: "#f1f5f9 !important",
@@ -603,7 +693,8 @@ const handleToggleRow = (index) => {
       !newDepartment.displayName ||
       !newDepartment.initialRole ||
       !newDepartment.storage ||
-      !newDepartment.reportingManager
+      !newDepartment.reportingManager ||
+      !newDepartment.departmentOwner
     ) {
       setSnackbar({
         open: true,
@@ -628,6 +719,7 @@ const handleToggleRow = (index) => {
       roles: [newDepartment.initialRole],
       storage: newDepartment.storage,
       reportingManager: newDepartment.reportingManager,
+      departmentOwner: newDepartment.departmentOwner,
       userCount: 0, // Initialize user count
       isActive: true, // Initialize as active
       createdAt: new Date().toISOString(), // Add creation timestamp
@@ -749,6 +841,7 @@ const handleToggleRow = (index) => {
       {
         Department: "Example Department",
         "Display Name": "EXD",
+        "Department Owner": "John Doe", // Added Department Owner
         "Storage Allocated": "50GB",
         Role: "Role1",
         Status: "Active",
@@ -758,6 +851,7 @@ const handleToggleRow = (index) => {
       {
         Department: "Example Department",
         "Display Name": "EXD",
+        "Department Owner": "John Doe", // Added Department Owner
         "Storage Allocated": "50GB",
         Role: "Role2",
         Status: "Active",
@@ -772,6 +866,7 @@ const handleToggleRow = (index) => {
     const wscols = [
       { wch: 25 }, // Department
       { wch: 15 }, // Display Name
+      { wch: 25 }, // Department Owner
       { wch: 20 }, // Storage Allocated
       { wch: 30 }, // Role
       { wch: 15 }, // Status
@@ -796,6 +891,7 @@ const handleToggleRow = (index) => {
             {
               Department: dept.name,
               "Display Name": dept.displayName,
+              "Department Owner": dept.departmentOwner, // Added Department Owner
               "Storage Allocated": dept.storage || "50GB",
               Role: "",
               Status: dept.isActive ? "Active" : "Inactive",
@@ -808,6 +904,7 @@ const handleToggleRow = (index) => {
         return dept.roles.map((role) => ({
           Department: dept.name,
           "Display Name": dept.displayName,
+          "Department Owner": dept.departmentOwner, // Added Department Owner
           "Storage Allocated": dept.storage || "50GB",
           Role: role,
           Status: dept.isActive ? "Active" : "Inactive",
@@ -821,6 +918,7 @@ const handleToggleRow = (index) => {
       const wscols = [
         { wch: 25 }, // Department
         { wch: 15 }, // Display Name
+        { wch: 25 }, // Department Owner
         { wch: 20 }, // Storage Allocated
         { wch: 30 }, // Role
         { wch: 15 }, // Status
@@ -853,663 +951,712 @@ const handleToggleRow = (index) => {
       sx={{
         display: "flex",
         position: "relative",
-        height: "100vh",
+        height: "100% ",
+        marginLeft: "60px",
+        marginTop: "12px",
+        marginRight: "18px",
         overflow: "hidden",
+        // backgroundColor: "#f5f5f5", // Add this line for whitesmoke background
+        // bgcolor: "whitesmoke !important",
+        bgcolor: "#f5f5f5", // Whitesmoke background for the main container
       }}
     >
-      {/* <Sidebar /> */}
-      <Box
+      <TableContainer
+        component={Paper}
         sx={{
-          flexGrow: 2,
-          marginLeft: 0,
-          transition: "margin-left 0.3s",
-          overflow: "hidden",
+          maxHeight: "calc(100vh - 80px)",
+          height: "calc(100vh - 80px)",
+          backgroundColor: "#ffffff",
+          "& .MuiTableHead-root": {
+            position: "sticky",
+            top: 0,
+            zIndex: 1,
+            backgroundColor: "#ffff",
+            boxShadow: "0 1px 2px 0 rgba(59, 52, 52, 0.05)",
+          },
+          "& .MuiTableHead-root .MuiTableCell-root": {
+            backgroundColor: "#ffff",
+            // borderBottom: "2px solid #e2e8f0",
+            borderBottom: "2px solid #94a3b8", // Changed border color and made it thicker
+            fontSize: "0.875rem",
+            fontWeight: "700 !important",
+            color: "#475569",
+            height: "30px",
+            padding: "2px 16px",
+            ...commonTextStyle,
+          },
+          "& .MuiTableCell-root": {
+            padding: "8px 16px",
+            fontSize: "0.8125rem",
+            color: "#334155",
+            borderBottom: "1px solid #e2e8f0",
+            ...commonTextStyle,
+          },
+          "& .MuiTable-root": {
+            borderCollapse: "separate",
+            borderSpacing: 0,
+            border: "1px solid #e2e8f0",
+          },
+          boxShadow: "0 1px 3px 0 rgb(0 0 0 / 0.1)",
+          borderRadius: "8px",
+          position: "relative",
         }}
       >
-        {/* <Navbar
-          onThemeToggle={onThemeToggle}
-          onSearch={handleSearch}
-          currentPage="departments"
-        /> */}
-        {/* <Box sx={{ p: 3, marginLeft: "50px", overflow: "hidden" }}> */}
-        <Box
-          sx={{
-            p: 0,
-            marginLeft: "64px", // Keep the sidebar margin
-            marginTop: "12px", // Add top margin for Navbar separation
-            marginRight: "24px", // Add right margin
-            overflow: "hidden",
-            height: "calc(100vh - 30px)", // Adjust height to account for top margin
-          }}
-        >
-          <TableContainer
-            component={Paper}
-            sx={{
-              height: "calc(100vh - 96px)",
-              "& .MuiTableHead-root": {
-                position: "sticky",
-                top: 0,
-                zIndex: 1,
+        <Table sx={{ border: "0px solid #e2e8f0 !important" }}>
+          <TableHead className={styles.tableHeader}>
+            {/* <TableRow> */}
+            <TableRow
+              sx={{ boxShadow: "0 -2px 8px 0 rgba(0, 0, 0, 0.2) !important" }}
+            >
+              <TableCell padding="checkbox" sx={{ width: "48px" }}>
+                <Checkbox
+                  color="primary"
+                  indeterminate={
+                    selected.length > 0 &&
+                    selected.length < sortedDepartments.length
+                  }
+                  checked={
+                    sortedDepartments.length > 0 &&
+                    selected.length === sortedDepartments.length
+                  }
+                  onChange={handleSelectAllClick}
+                  inputProps={{
+                    "aria-label": "select all departments",
+                  }}
+                  size="small"
+                />
+              </TableCell>
 
-                backgroundColor: "#f8fafc", // Lighter background
-              },
-
-              "& .MuiTableHead-root .MuiTableCell-root": {
-                backgroundColor: "#f8fafc",
-                borderBottom: "2px solid #e2e8f0",
-                fontSize: "0.875rem", // 14px
-                fontWeight: 600,
-                color: "#475569",
-                height: "30px",
-                padding: "2px 16px", // Adjusted padding
-                ...commonTextStyle,
-              },
-
-              "& .MuiTableCell-root": {
-                padding: "8px 16px",
-                fontSize: "0.8125rem", // 13px
-                color: "#334155",
-                borderBottom: "1px solid #e2e8f0",
-
-                ...commonTextStyle,
-              },
-              "& .MuiTable-root": {
-                borderCollapse: "separate",
-                borderSpacing: 0,
-                border: "1px solid #e2e8f0", // Add outer border
-              },
-
-              boxShadow: "0 1px 3px 0 rgb(0 0 0 / 0.1)",
-              borderRadius: "8px",
-              overflow: "auto",
-              position: "relative",
-            }}
-          >
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell
-                    padding="checkbox"
-                    sx={{
-                      width: "48px",
-                      padding: "8px 8px",
-                      height: "40px",
-                    }}
-                  >
-                    <Checkbox
-                      color="primary"
-                      indeterminate={
-                        selected.length > 0 &&
-                        selected.length < sortedDepartments.length
-                      }
-                      checked={
-                        sortedDepartments.length > 0 &&
-                        selected.length === sortedDepartments.length
-                      }
-                      onChange={handleSelectAllClick}
-                      inputProps={{
-                        "aria-label": "select all departments",
-                      }}
-                      size="small"
-                    />
-                  </TableCell>
-
-                  <TableCell
-                    sx={{
-                      ...commonTextStyle,
-                      width: "200px",
-                      padding: "8px 8px",
-                      height: "40px",
-                      fontWeight: "bold",
-                      color: "#444",
-                    }}
-                  >
-                    <TableSortLabel
-                      active={orderBy === "name"}
-                      direction={orderBy === "name" ? order : "asc"}
-                      onClick={() => handleRequestSort("name")}
-                      sx={{
-                        "& .MuiTableSortLabel-icon": {
-                          fontSize: "1.125rem",
-                          color: "#64748b",
-                        },
-                      }}
-                    >
-                      <Typography
-                        variant="body1"
-                        fontWeight="bold"
-                        sx={{
-                          ...commonTextStyle,
-                          fontWeight: "bold",
-                        }}
-                      >
-                        Department
-                      </Typography>
-                    </TableSortLabel>
-                  </TableCell>
-
-                  <TableCell
-                    sx={{
-                      ...commonTextStyle,
-                      width: "150px",
-                      padding: "8px 8px",
-                      height: "40px",
-                      fontWeight: "bold",
-                      color: "#444",
-                      textAlign: "center",
-                    }}
-                  >
-                    <TableSortLabel
-                      active={orderBy === "displayName"}
-                      direction={orderBy === "displayName" ? order : "asc"}
-                      onClick={() => handleRequestSort("displayName")}
-                      sx={{
-                        "& .MuiTableSortLabel-icon": {
-                          fontSize: "1.125rem",
-                          color: "#64748b",
-                        },
-                      }}
-                    >
-                      <Typography
-                        variant="body1"
-                        fontWeight="bold"
-                        sx={{
-                          ...commonTextStyle,
-                          fontWeight: "bold",
-                        }}
-                      >
-                        Short Name
-                      </Typography>
-                    </TableSortLabel>
-                  </TableCell>
-                  {/* <TableCell sx={{ width: "150px", padding: "1px 8px" }}> */}
-                  <TableCell
-                    sx={{
-                      ...commonTextStyle,
-                      width: "150px",
-                      padding: "2px 8px",
-                      height: "32px",
-                      fontWeight: "bold",
-                      color: "#444",
-                      textAlign: "center",
-                    }}
-                  >
-                    <Typography
-                      variant="body1"
-                      fontWeight="bold"
-                      sx={{
-                        ...commonTextStyle,
-                        fontWeight: "bold",
-                      }}
-                    >
-                      Storage Allocated
-                    </Typography>
-                  </TableCell>
-                  {/* <TableCell sx={{ width: "150px", padding: "1px 8px" }}> */}
-                  <TableCell
-                    sx={{
-                      ...commonTextStyle,
-                      width: "150px",
-                      padding: "2px 8px",
-                      height: "32px",
-                      fontWeight: "bold",
-                      color: "#444",
-                      textAlign: "center",
-                    }}
-                  >
-                    <TableSortLabel
-                      active={orderBy === "userCount"}
-                      direction={orderBy === "userCount" ? order : "asc"}
-                      onClick={() => handleRequestSort("userCount")}
-                      sx={{
-                        "& .MuiTableSortLabel-icon": {
-                          fontSize: "1.125rem",
-                          color: "#64748b",
-                        },
-                      }}
-                    >
-                      <Typography
-                        variant="body1"
-                        fontWeight="bold"
-                        sx={{
-                          ...commonTextStyle,
-                          fontWeight: "bold",
-                        }}
-                      >
-                        Number of People
-                      </Typography>
-                    </TableSortLabel>
-                  </TableCell>
-                  {/* <TableCell sx={{ width: "150px", padding: "1px 8px" }}> */}
-                  <TableCell
-                    sx={{
-                      ...commonTextStyle,
-                      width: "150px",
-                      padding: "2px 8px",
-                      height: "32px",
-                      fontWeight: "bold",
-                      color: "#444",
-                      textAlign: "center",
-                    }}
-                  >
-                    <Typography
-                      variant="body1"
-                      fontWeight="bold"
-                      sx={{
-                        ...commonTextStyle,
-                        fontWeight: "bold",
-                      }}
-                    >
-                      Actions
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {sortedDepartments
-                  ?.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                  .map((dept, index) => {
-                    const isItemSelected = isSelected(dept.name);
-                    return (
-                      <React.Fragment key={index}>
-                        <StyledTableRow
-                          hover
-                          // onClick={(event) => handleClick(event, dept.name)}
-                          role="checkbox"
-                          aria-checked={isItemSelected}
-                          tabIndex={-1}
-                          selected={isItemSelected}
-                          sx={{
-                            cursor: "default", // Change cursor to default instead of pointer
-                          }}
-                        >
-                          <TableCell
-                            padding="checkbox"
-                            sx={{
-                              width: "48px",
-                              padding: "2px 8px",
-                              height: "32px",
-                            }}
-                          >
-                            <Checkbox
-                              color="primary"
-                              checked={isItemSelected}
-                              size="small"
-                              // onClick={(event) => event.stopPropagation()}
-                              onChange={(event) =>
-                                handleClick(event, dept.name)
-                              }
-                            />
-                          </TableCell>
-
-                          <TableCell
-                            sx={{ ...commonTextStyle, padding: "2px 8px" }}
-                          >
-                            {dept.name}
-                          </TableCell>
-                          <TableCell
-                            sx={{
-                              ...commonTextStyle,
-                              textAlign: "center",
-                              padding: "2px 8px",
-                            }}
-                          >
-                            {dept.displayName}
-                          </TableCell>
-                          <TableCell
-                            sx={{
-                              ...commonTextStyle,
-                              textAlign: "center",
-                              padding: "2px 8px",
-                            }}
-                          >
-                            {dept.storage}
-                          </TableCell>
-
-                          {/* <TableCell
-                            sx={{ ...commonTextStyle, padding: "2px 8px" }}
-                          >
-                            <Box
-                              sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 1,
-                                justifyContent: "center",
-                              }}
-                            >
-                              {dept.userCount || 0}
-                            </Box>
-                          </TableCell> */}
-
-<TableCell sx={{ ...commonTextStyle, padding: "2px 8px" }}>
-  <Box
-    sx={{
-      display: "flex",
-      alignItems: "center",
-      gap: 1,
-      justifyContent: "center",
-      cursor: "pointer",
-      "&:hover": {
-        "& .MuiSvgIcon-root": {
-          color: "primary.main",
-        },
-      },
-    }}
-    onClick={() => handleRowToggle(index)}
-  >
-    {dept.userCount || 0}
-    <KeyboardArrowDownIcon
-      sx={{
-        fontSize: "1.1rem",
-        color: "#64748b",
-        transition: "transform 0.2s ease-in-out",
-        transform: openRows[index] ? "rotate(-180deg)" : "rotate(0)",
-      }}
-    />
-  </Box>
-</TableCell>
-
-                          <TableCell
-                            sx={{ ...commonTextStyle, padding: "2px 8px" }}
-                          >
-                            <Box
-                              sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                gap: 0.5,
-                              }}
-                            >
-                              <Switch
-                                size="small"
-                                checked={dept.isActive}
-                                onChange={() => handleDepartmentToggle(dept)}
-                                sx={{
-                                  "& .MuiSwitch-switchBase.Mui-checked": {
-                                    color: "#1976d2", // Brighter blue
-                                  },
-                                  "& .MuiSwitch-track": {
-                                    backgroundColor: "#90caf9", // Light blue track
-                                  },
-                                }}
-                              />
-                              <IconButton
-                                size="small"
-                                onClick={() => handleEditDepartment(dept)}
-                                sx={{
-                                  color: "#1976d2", // Brighter blue
-                                  "&:hover": {
-                                    backgroundColor: "#e3f2fd", // Light blue background on hover
-                                    color: "#1565c0", // Darker blue on hover
-                                  },
-                                  padding: "4px",
-                                }}
-                                title="Edit Department"
-                              >
-                                <EditIcon fontSize="small" />
-                              </IconButton>
-                              <IconButton
-                                size="small"
-                                onClick={() => {
-                                  setDepartmentToDelete(dept);
-                                  setDeleteDialogOpen(true);
-                                }}
-                                sx={{
-                                  color: "#d32f2f", // Brighter red
-                                  "&:hover": {
-                                    backgroundColor: "#ffebee", // Light red background on hover
-                                    color: "#c62828", // Darker red on hover
-                                  },
-                                  padding: "4px",
-                                }}
-                                title="Delete Department"
-                              >
-                                <DeleteIcon fontSize="small" />
-                              </IconButton>
-                            </Box>
-                          </TableCell>
-                        </StyledTableRow>
-                        <StyledTableRow key={index}>
-                          <TableCell
-                            style={{
-                              paddingBottom: 0,
-                              paddingTop: 0,
-                              borderBottom: "none",
-                              height: "auto",
-                            }}
-                            colSpan={6}
-                          >
-                            <Collapse
-                              in={openRows[index]}
-                              timeout="auto"
-                              unmountOnExit
-                            >
-                              <Box
-                                sx={{
-                                  margin: 0,
-                                  backgroundColor: "rgba(0, 0, 0, 0.01)",
-                                  borderRadius: 0,
-                                  padding: 0,
-                                }}
-                              >
-                                <List
-                                  dense
-                                  sx={{
-                                    padding: 0,
-                                    margin: 0,
-                                    "& .MuiListItem-root": {
-                                      padding: "2px 8px",
-                                      minHeight: "32px",
-                                      borderBottom: "1px solid #f0f0f0",
-                                      ...commonTextStyle,
-                                    },
-                                    "& .MuiListItemText-primary":
-                                      commonTextStyle,
-                                  }}
-                                >
-                                  {dept.roles.map((role, roleIndex) => (
-                                    <ListItem
-                                      key={roleIndex}
-                                      sx={{
-                                        height: "32px",
-                                        "&:hover": {
-                                          backgroundColor:
-                                            "rgba(0, 0, 0, 0.02)",
-                                        },
-                                      }}
-                                      secondaryAction={
-                                        <Box sx={{ display: "flex", gap: 1 }}>
-                                          <IconButton
-                                            // edge="end"
-                                            size="small"
-                                            onClick={() =>
-                                              handleEditRole(
-                                                index,
-                                                roleIndex,
-                                                role
-                                              )
-                                            }
-                                            sx={{
-                                              padding: "4px",
-                                              "& .MuiSvgIcon-root": {
-                                                fontSize: "1.1rem",
-                                              },
-                                            }}
-                                            title="Edit Role"
-                                          >
-                                            <EditIcon fontSize="small" />
-                                          </IconButton>
-                                          <IconButton
-                                            // edge="end"
-                                            size="small"
-                                            onClick={() =>
-                                              handleDeleteRole(index, roleIndex)
-                                            }
-                                            sx={{
-                                              padding: "4px",
-                                              "& .MuiSvgIcon-root": {
-                                                fontSize: "1.1rem",
-                                              },
-                                            }}
-                                            title="Delete Role"
-                                          >
-                                            <DeleteIcon
-                                              fontSize="small"
-                                              color="error"
-                                            />
-                                          </IconButton>
-                                        </Box>
-                                      }
-                                    >
-                                      <ListItemText
-                                        primary={role}
-                                        sx={{ marginLeft: 2 }}
-                                      />
-                                    </ListItem>
-                                  ))}
-                                </List>
-                              </Box>
-                            </Collapse>
-                          </TableCell>
-                        </StyledTableRow>
-                      </React.Fragment>
-                    );
-                  })}
-              </TableBody>
-
-              <TableFooter
+              <TableCell
                 sx={{
-                  position: "sticky",
-                  bottom: 0,
-                  backgroundColor: "#fff",
-                  zIndex: 2,
+                  ...commonTextStyle,
+                  width: "150px",
+                  padding: "8px 8px",
+                  height: "40px",
+                  fontWeight: "bold",
+                  color: "#444",
                 }}
               >
-                <TableRow>
-                  <TableCell colSpan={6}>
-                    <TablePagination
-                      component="div"
-                      count={departments?.length || 0}
-                      page={page}
-                      onPageChange={handleChangePage}
-                      rowsPerPage={rowsPerPage}
-                      onRowsPerPageChange={handleChangeRowsPerPage}
-                      rowsPerPageOptions={[25, 50]}
+                <TableSortLabel
+                  active={orderBy === "name"}
+                  direction={orderBy === "name" ? order : "asc"}
+                  onClick={() => handleRequestSort("name")}
+                  sx={{
+                    "& .MuiTableSortLabel-icon": {
+                      fontSize: "1.125rem",
+                      color: "#64748b",
+                      fontWeight: "bold",
+                    },
+                  }}
+                >
+                  <Typography
+                    variant="body1"
+                    // fontWeight="bold"
+
+                    sx={{
+                      ...commonTextStyle,
+                      // fontWeight: "bold",
+                      fontWeight: "700 !important",
+                      fontSize: "13px",
+                    }}
+                  >
+                    DEPARTMENT
+                  </Typography>
+                </TableSortLabel>
+              </TableCell>
+
+              <TableCell
+                sx={{
+                  ...commonTextStyle,
+                  width: "150px",
+                  padding: "8px 8px",
+                  height: "40px",
+                  fontWeight: "bold",
+                  color: "#444",
+                  textAlign: "center",
+                }}
+              >
+                <TableSortLabel
+                  active={orderBy === "displayName"}
+                  direction={orderBy === "displayName" ? order : "asc"}
+                  onClick={() => handleRequestSort("displayName")}
+                  sx={{
+                    "& .MuiTableSortLabel-icon": {
+                      fontSize: "1.125rem",
+                      color: "#64748b",
+                      fontWeight: "bold",
+                    },
+                  }}
+                >
+                  <Typography
+                    variant="body1"
+                    // fontWeight="bold"
+                    sx={{
+                      ...commonTextStyle,
+                      // fontWeight: "bold",
+                      fontWeight: "700 !important",
+                      fontSize: "13px",
+                    }}
+                  >
+                    SHORT NAME
+                  </Typography>
+                </TableSortLabel>
+              </TableCell>
+
+              <TableCell
+                sx={{
+                  ...commonTextStyle,
+                  width: "200px",
+                  padding: "2px 8px",
+                  height: "32px",
+                  fontWeight: "bold",
+                  color: "#444",
+                  textAlign: "center",
+                  alignItems: "center",
+                }}
+              >
+                <TableSortLabel
+                  active={orderBy === "departmentOwner"}
+                  direction={orderBy === "departmentOwner" ? order : "asc"}
+                  onClick={() => handleRequestSort("departmentOwner")}
+                  sx={{
+                    "& .MuiTableSortLabel-icon": {
+                      fontSize: "1.125rem",
+                      color: "#64748b",
+                      fontWeight: "bold",
+                    },
+                  }}
+                >
+                  <Typography
+                    variant="body1"
+                    sx={{
+                      ...commonTextStyle,
+                      fontWeight: "700 !important",
+                      fontSize: "13px",
+                    }}
+                  >
+                    DEPARTMENT OWNER
+                  </Typography>
+                </TableSortLabel>
+              </TableCell>
+              {/* <TableCell sx={{ width: "150px", padding: "1px 8px" }}> */}
+              <TableCell
+                sx={{
+                  ...commonTextStyle,
+                  width: "150px",
+                  padding: "2px 8px",
+                  height: "32px",
+                  fontWeight: "bold",
+                  color: "#444",
+                  textAlign: "center",
+                }}
+              >
+                <Typography
+                  variant="body1"
+                  // fontWeight="bold"
+                  sx={{
+                    ...commonTextStyle,
+                    // fontWeight: "bold",
+                    fontWeight: "700 !important",
+                    fontSize: "13px",
+                  }}
+                >
+                  STORAGE ALLOCATED
+                </Typography>
+              </TableCell>
+
+              <TableCell
+                sx={{
+                  ...commonTextStyle,
+                  width: "150px",
+                  padding: "2px 8px",
+                  height: "32px",
+                  fontWeight: "bold",
+                  color: "#444",
+                  textAlign: "center",
+                }}
+              >
+                <TableSortLabel
+                  active={orderBy === "roles"}
+                  direction={orderBy === "roles" ? order : "asc"}
+                  onClick={() => handleRequestSort("roles")}
+                  sx={{
+                    "& .MuiTableSortLabel-icon": {
+                      fontSize: "1.125rem",
+                      color: "#64748b",
+                      fontWeight: "bold",
+                    },
+                  }}
+                >
+                  <Typography
+                    variant="body1"
+                    sx={{
+                      ...commonTextStyle,
+                      fontWeight: "700 !important",
+                      fontSize: "13px",
+                    }}
+                  >
+                    NUMBER OF ROLES
+                  </Typography>
+                </TableSortLabel>
+              </TableCell>
+
+              {/* <TableCell sx={{ width: "150px", padding: "1px 8px" }}> */}
+              <TableCell
+                sx={{
+                  ...commonTextStyle,
+                  width: "150px",
+                  padding: "2px 8px",
+                  height: "32px",
+                  fontWeight: "bold",
+                  color: "#444",
+                  textAlign: "center",
+                }}
+              >
+                <Typography
+                  variant="body1"
+                  // fontWeight="bold"
+                  sx={{
+                    ...commonTextStyle,
+                    // fontWeight: "bold",
+                    fontWeight: "700 !important",
+                    fontSize: "13px",
+                  }}
+                >
+                  ACTIONS
+                </Typography>
+              </TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {sortedDepartments
+              ?.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+              .map((dept, index) => {
+                const isItemSelected = isSelected(dept.name);
+                return (
+                  <React.Fragment key={index}>
+                    <StyledTableRow
+                      hover
+                      // onClick={(event) => handleClick(event, dept.name)}
+                      role="checkbox"
+                      aria-checked={isItemSelected}
+                      tabIndex={-1}
+                      selected={isItemSelected}
                       sx={{
-                        border: "none",
-                        // borderTop: "1px solid #e2e8f0",
-                        ".MuiTablePagination-toolbar": {
-                          padding: "0 8px",
-                          height: "40px",
-                          minHeight: "40px",
-                          ...commonTextStyle,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "flex-start",
-                        },
-                        ".MuiTablePagination-select": {
-                          paddingTop: 0,
-                          paddingBottom: 0,
-                          marginLeft: 0,
-                          marginRight: "8px",
-                        },
-                        ".MuiTablePagination-selectLabel": {
-                          fontSize: "0.8125rem",
-                          color: "#475569",
-                          marginLeft: 0,
-                          marginRight: "8px",
-                        },
-                        ".MuiTablePagination-displayedRows": {
-                          fontSize: "0.8125rem",
-                          color: "#475569",
-                          marginLeft: "16px",
-                          marginRight: "auto",
-                        },
-                        ".MuiSelect-select": {
-                          fontSize: "0.8125rem",
-                        },
-                        ".MuiTablePagination-actions": {
-                          marginLeft: "8px",
-                        },
-                        backgroundColor: "#f8fafc",
-                        display: "flex",
-                        justifyContent: "flex-start",
+                        cursor: "default", // Change cursor to default instead of pointer
                       }}
-                    />
-                  </TableCell>
-                </TableRow>
-              </TableFooter>
-            </Table>
-          </TableContainer>
-        </Box>
-      </Box>
+                    >
+                      <TableCell
+                        padding="checkbox"
+                        sx={{
+                          width: "48px",
+                          padding: "2px 8px",
+                          height: "32px",
+                        }}
+                      >
+                        <Checkbox
+                          color="primary"
+                          checked={isItemSelected}
+                          size="small"
+                          // onClick={(event) => event.stopPropagation()}
+                          onChange={(event) => handleClick(event, dept.name)}
+                        />
+                      </TableCell>
 
-      <Box
-        sx={{
-          position: "fixed",
-          bottom: 48,
-          right: 45,
-          zIndex: 1000,
-          display: "flex",
-          gap: 1,
-          flexDirection: "row-reverse",
-        }}
-      >
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleBulkUpload}
-          accept=".xlsx,.xls"
-          style={{ display: "none" }}
-        />
-        <Tooltip title="Add Department" placement="left">
-          <SpeedDial
-            ariaLabel="Department actions"
-            icon={<DepartmentRolesIcon />}
-            onClick={() => setShowAddDepartment(true)}
-            direction="left"
-            FabProps={{
-              sx: {
-                bgcolor: "blue",
-                "&:hover": {
-                  bgcolor: "blue",
-                },
-                width: 30,
-                height: 30,
-                "& .MuiSpeedDialIcon-root": {
-                  fontSize: "1.2rem",
-                  color: "white",
-                },
-              },
-            }}
+                      <TableCell
+                        sx={{ ...commonTextStyle, padding: "2px 8px" }}
+                      >
+                        {dept.name}
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          ...commonTextStyle,
+                          textAlign: "center",
+                          padding: "2px 8px",
+                        }}
+                      >
+                        {dept.displayName}
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          ...commonTextStyle,
+                          textAlign: "center",
+                          padding: "2px 8px",
+                        }}
+                      >
+                        {dept.departmentOwner}
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          ...commonTextStyle,
+                          textAlign: "center",
+                          padding: "2px 8px",
+                        }}
+                      >
+                        {dept.storage}
+                      </TableCell>
+
+                      <TableCell
+                        sx={{ ...commonTextStyle, padding: "2px 8px" }}
+                      >
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1,
+                            justifyContent: "center",
+                            cursor: "pointer",
+                            "&:hover": {
+                              "& .MuiSvgIcon-root": {
+                                color: "primary.main",
+                              },
+                            },
+                          }}
+                          onClick={() => handleRowToggle(index)}
+                        >
+                          {dept.roles.length}{" "}
+                          {/* Display roles count instead of userCount */}
+                          <KeyboardArrowDownIcon
+                            sx={{
+                              fontSize: "1.1rem",
+                              color: "#64748b",
+                              transition: "transform 0.2s ease-in-out",
+                              transform: openRows[index]
+                                ? "rotate(-180deg)"
+                                : "rotate(0)",
+                            }}
+                          />
+                        </Box>
+                      </TableCell>
+
+                      <TableCell
+                        sx={{ ...commonTextStyle, padding: "2px 8px" }}
+                      >
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: 0.5,
+                          }}
+                        >
+                          <Switch
+                            size="small"
+                            checked={dept.isActive}
+                            onChange={() => handleDepartmentToggle(dept)}
+                            sx={{
+                              "& .MuiSwitch-switchBase": {
+                                "&.Mui-checked": {
+                                  // When active/checked
+                                  color: "#2e7d32", // Green color
+                                  "& + .MuiSwitch-track": {
+                                    backgroundColor: "#4caf50", // Green track
+                                    opacity: 0.5,
+                                  },
+                                },
+                                "&.Mui-disabled": {
+                                  "& + .MuiSwitch-track": {
+                                    opacity: 0.5,
+                                  },
+                                },
+                              },
+                              "& .MuiSwitch-switchBase.Mui-checked:hover": {
+                                backgroundColor: "rgba(46, 125, 50, 0.08)", // Green hover effect
+                              },
+                              // When inactive/unchecked
+                              "& .MuiSwitch-switchBase:not(.Mui-checked)": {
+                                color: "#d32f2f", // Red color
+                                "& + .MuiSwitch-track": {
+                                  backgroundColor: "#ef5350", // Red track
+                                  opacity: 0.5,
+                                },
+                              },
+                              "& .MuiSwitch-switchBase:not(.Mui-checked):hover":
+                                {
+                                  backgroundColor: "rgba(211, 47, 47, 0.08)", // Red hover effect
+                                },
+                            }}
+                          />
+                          <IconButton
+                            size="small"
+                            onClick={() => handleEditDepartment(dept)}
+                            sx={{
+                              color: "#1976d2", // Brighter blue
+                              "&:hover": {
+                                backgroundColor: "#e3f2fd", // Light blue background on hover
+                                color: "#1565c0", // Darker blue on hover
+                              },
+                              padding: "4px",
+                            }}
+                            title="Edit Department"
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            onClick={() => {
+                              setDepartmentToDelete(dept);
+                              setDeleteDialogOpen(true);
+                            }}
+                            sx={{
+                              color: "#d32f2f", // Brighter red
+                              "&:hover": {
+                                backgroundColor: "#ffebee", // Light red background on hover
+                                color: "#c62828", // Darker red on hover
+                              },
+                              padding: "4px",
+                            }}
+                            title="Delete Department"
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
+                      </TableCell>
+                    </StyledTableRow>
+
+                    <StyledTableRow key={index}>
+                      <TableCell
+                        style={{
+                          paddingBottom: 0,
+                          paddingTop: 0,
+                          borderBottom: "none",
+                          height: "auto",
+                        }}
+                        colSpan={6}
+                      >
+                        <Collapse
+                          in={openRows[index]}
+                          timeout="auto"
+                          unmountOnExit
+                        >
+                          <Box
+                            sx={{
+                              position: "absolute",
+                              left: "75%", // Center horizontally within the cell
+                              transform: "translateX(-50%)", // Center adjust
+                              width: "200px",
+                              backgroundColor: "#ffff",
+                              borderRadius: "8px",
+                              border: "1px solid #e2e8f0",
+                              boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                              zIndex: 2,
+                              marginTop: "4px", // Small gap from the count
+                            }}
+                          >
+                            <Table size="small" aria-label="roles">
+                              <TableHead>
+                                <TableRow>
+                                  <TableCell
+                                    sx={{
+                                      backgroundColor: "#f1f5f9",
+                                      fontWeight: "600 !important",
+                                      color: "#475569",
+                                      fontSize: "0.75rem",
+                                      borderBottom: "1px solid #e2e8f0",
+                                      padding: "8px 12px",
+                                      ...commonTextStyle,
+                                    }}
+                                  >
+                                    Role Name
+                                  </TableCell>
+                                  <TableCell
+                                    align="right"
+                                    sx={{
+                                      backgroundColor: "#f1f5f9",
+                                      fontWeight: "600 !important",
+                                      color: "#475569",
+                                      fontSize: "0.75rem",
+                                      borderBottom: "1px solid #e2e8f0",
+                                      padding: "8px 12px",
+                                      width: "60px",
+                                      ...commonTextStyle,
+                                    }}
+                                  >
+                                    Actions
+                                  </TableCell>
+                                </TableRow>
+                              </TableHead>
+                              <TableBody>
+                                {dept.roles.map((role, roleIndex) => (
+                                  <TableRow
+                                    key={roleIndex}
+                                    sx={{
+                                      "&:hover": {
+                                        backgroundColor: "rgba(0, 0, 0, 0.02)",
+                                      },
+                                      "& td": {
+                                        borderBottom:
+                                          roleIndex === dept.roles.length - 1
+                                            ? "none"
+                                            : "1px solid #e2e8f0",
+                                      },
+                                    }}
+                                  >
+                                    <TableCell
+                                      sx={{
+                                        ...commonTextStyle,
+                                        padding: "6px 12px",
+                                        fontSize: "0.75rem",
+                                        color: "#334155",
+                                      }}
+                                    >
+                                      {role}
+                                    </TableCell>
+                                    <TableCell
+                                      align="right"
+                                      sx={{
+                                        padding: "4px 8px",
+                                      }}
+                                    >
+                                      <Box
+                                        sx={{
+                                          display: "flex",
+                                          gap: 0.5,
+                                          justifyContent: "flex-end",
+                                        }}
+                                      >
+                                        <IconButton
+                                          size="small"
+                                          onClick={() =>
+                                            handleEditRole(
+                                              index,
+                                              roleIndex,
+                                              role
+                                            )
+                                          }
+                                          sx={{
+                                            padding: "2px",
+                                            color: "primary.main",
+                                            "&:hover": {
+                                              backgroundColor:
+                                                "primary.lighter",
+                                            },
+                                          }}
+                                          title="Edit Role"
+                                        >
+                                          <EditIcon
+                                            sx={{ fontSize: "0.875rem" }}
+                                          />
+                                        </IconButton>
+                                        <IconButton
+                                          size="small"
+                                          onClick={() =>
+                                            handleDeleteRole(index, roleIndex)
+                                          }
+                                          sx={{
+                                            padding: "2px",
+                                            color: "error.main",
+                                            "&:hover": {
+                                              backgroundColor: "error.lighter",
+                                            },
+                                          }}
+                                          title="Delete Role"
+                                        >
+                                          <DeleteIcon
+                                            sx={{ fontSize: "0.875rem" }}
+                                          />
+                                        </IconButton>
+                                      </Box>
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </Box>
+                        </Collapse>
+                      </TableCell>
+                    </StyledTableRow>
+                  </React.Fragment>
+                );
+              })}
+          </TableBody>
+        </Table>
+
+        <Box
+          sx={{
+            position: "sticky",
+            bottom: 0,
+            backgroundColor: "#ffffff",
+            // borderTop: '1px solid #e2e8f0',
+            zIndex: 2,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            width: "100%",
+          }}
+        >
+          <TablePagination
+            component="div"
+            count={departments?.length || 0}
+            page={page}
+            onPageChange={handleChangePage}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            rowsPerPageOptions={[9, 18, 27]}
           />
-        </Tooltip>
 
-        {selected.length > 0 && (
-          <Tooltip title="Bulk Download" placement="left">
-            <SpeedDial
-              ariaLabel="Bulk Download"
-              icon={<FileDownloadIcon />}
-              direction="left"
-              FabProps={{
-                sx: {
-                  bgcolor: "#2e7d32",
-                  "&:hover": {
-                    bgcolor: "#1b5e20",
-                  },
-                  width: 30,
-                  height: 30,
-                  "& .MuiSpeedDialIcon-root": {
-                    fontSize: "1.2rem",
-                    color: "white",
-                  },
-                },
-              }}
-              onClick={() => handleBulkDownloadSelected(selected)}
+          <Box
+            sx={{
+              display: "flex",
+              gap: 1,
+              flexDirection: "row-reverse",
+              pr: 2,
+            }}
+          >
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleBulkUpload}
+              accept=".xlsx,.xls"
+              style={{ display: "none" }}
             />
-          </Tooltip>
-        )}
-      </Box>
+            <Tooltip title="Add Department" placement="left">
+              <SpeedDial
+                ariaLabel="Department actions"
+                icon={<DepartmentRolesIcon />}
+                onClick={() => setShowAddDepartment(true)}
+                direction="left"
+                FabProps={{
+                  sx: {
+                    bgcolor: "rgb(251, 68, 36)",
+                    "&:hover": {
+                      bgcolor: "rgb(251, 68, 36)",
+                    },
+                    width: 37,
+                    height: 30,
+                    "& .MuiSpeedDialIcon-root": {
+                      fontSize: "1.2rem",
+                      color: "white",
+                    },
+                  },
+                }}
+              />
+            </Tooltip>
+
+            {selected.length > 0 && (
+              <Tooltip title="Bulk Download" placement="left">
+                <SpeedDial
+                  ariaLabel="Bulk Download"
+                  icon={<FileDownloadIcon />}
+                  direction="left"
+                  color="primary"
+                  FabProps={{
+                    sx: {
+                      width: 37,
+                      height: 30,
+                      "& .MuiSpeedDialIcon-root": {
+                        fontSize: "1.2rem",
+                        color: "white",
+                      },
+                    },
+                  }}
+                  onClick={() => handleBulkDownloadSelected(selected)}
+                />
+              </Tooltip>
+            )}
+          </Box>
+        </Box>
+      </TableContainer>
 
       <Snackbar
         open={snackbar.open}
@@ -1666,7 +1813,7 @@ const handleToggleRow = (index) => {
             </FormControl>
             <TextField
               size="small"
-              label="Display Name"
+              label="Short Name"
               value={newDepartment.displayName}
               onChange={(e) =>
                 setNewDepartment((prev) => ({
@@ -1681,6 +1828,40 @@ const handleToggleRow = (index) => {
                   ? "Display name is required"
                   : "Short form"
               }
+              InputProps={{
+                sx: {
+                  fontFamily: '"Be Vietnam", sans-serif',
+                },
+              }}
+              InputLabelProps={{
+                sx: {
+                  fontFamily: '"Be Vietnam", sans-serif',
+                },
+              }}
+              FormHelperTextProps={{
+                sx: {
+                  fontFamily: '"Be Vietnam", sans-serif',
+                },
+              }}
+            />
+            <TextField
+              size="small"
+              label="Department Owner"
+              value={newDepartment.departmentOwner}
+              onChange={(e) =>
+                setNewDepartment((prev) => ({
+                  ...prev,
+                  departmentOwner: e.target.value,
+                }))
+              }
+              required
+              error={!newDepartment.departmentOwner && newDepartment.submitted}
+              helperText={
+                !newDepartment.departmentOwner && newDepartment.submitted
+                  ? "Department Owner is required"
+                  : ""
+              }
+              fullWidth
               InputProps={{
                 sx: {
                   fontFamily: '"Be Vietnam", sans-serif',
@@ -2016,7 +2197,3 @@ const handleToggleRow = (index) => {
 }
 
 export default Department;
-
-
-
-

@@ -420,8 +420,9 @@ const AngelBot = ({ onThemeToggle }) => {
         trigger: "item",
         formatter: (params) => {
           return `<div style="font-weight: 700; font-size: 14px; color: #000;">
-                    ${params.name}: ${params.value}${params.name.includes("Storage") ? "GB" : ""
-            } (${params.percent}%)
+                    ${params.name}: ${params.value}${
+            params.name.includes("Storage") ? "GB" : ""
+          } 
                   </div>`;
         },
         backgroundColor: "rgba(255, 255, 255, 0.95)",
@@ -485,8 +486,15 @@ const AngelBot = ({ onThemeToggle }) => {
               shadowColor: "rgba(0, 0, 0, 0.5)",
             },
           },
+
           label: {
-            show: false,
+            show: true,
+            position: "inside",
+            formatter: "({d}%)",
+            fontSize: 12,
+            fontWeight: "bold",
+            color: "#ffff",
+            fontFamily: "Be Vietnam",
           },
         },
       ],
@@ -503,16 +511,13 @@ const AngelBot = ({ onThemeToggle }) => {
 
   const StorageDistributionChart = ({ data }) => {
     const option = {
-      // tooltip: {
-      //   trigger: "item",
-      //   formatter: "{b}: {c}GB ({d}%)",
-      // },
       tooltip: {
         trigger: "item",
         formatter: (params) => {
           return `<div style="font-weight: 700; font-size: 14px; color: #000;">
-              ${params.name}: ${params.value}${params.name.includes("Storage") ? "GB" : ""
-            } (${params.percent}%)
+              ${params.name}: ${params.value}${
+            params.name.includes("Storage") ? "GB" : ""
+          } 
             </div>`;
         },
         backgroundColor: "rgba(255, 255, 255, 0.95)",
@@ -567,9 +572,15 @@ const AngelBot = ({ onThemeToggle }) => {
               shadowColor: "rgba(0, 0, 0, 0.5)",
             },
           },
+
           label: {
-            show: false,
-            // formatter: "{b}: {c}GB",
+            show: true,
+            position: "inside",
+            formatter: "({d}%)",
+            fontSize: 12,
+            fontWeight: "bold",
+            color: "#ffff",
+            fontFamily: "Be Vietnam",
           },
         },
       ],
@@ -587,16 +598,13 @@ const AngelBot = ({ onThemeToggle }) => {
   // For License Data chart:
   const LicenseDataChart = ({ data }) => {
     const option = {
-      // tooltip: {
-      //   trigger: "item",
-      //   formatter: "{b}: {c}GB ({d}%)",
-      // },
       tooltip: {
         trigger: "item",
         formatter: (params) => {
           return `<div style="font-weight: 700; font-size: 14px; color: #000;">
-                    ${params.name}: ${params.value}${params.name.includes("Storage") ? "GB" : ""
-            } (${params.percent}%)
+                    ${params.name}: ${params.value}${
+            params.name.includes("Storage") ? "GB" : ""
+          } 
                   </div>`;
         },
         backgroundColor: "rgba(255, 255, 255, 0.95)",
@@ -649,9 +657,15 @@ const AngelBot = ({ onThemeToggle }) => {
               shadowColor: "rgba(0, 0, 0, 0.5)",
             },
           },
+
           label: {
-            show: false,
-            formatter: "{b}: {c}GB",
+            show: true,
+            position: "inside",
+            formatter: "({d}%)",
+            fontSize: 12,
+            fontWeight: "bold",
+            color: "#ffff",
+            fontFamily: "Be Vietnam",
           },
         },
       ],
@@ -667,53 +681,66 @@ const AngelBot = ({ onThemeToggle }) => {
   };
 
   return (
-    <Box
-      className='child-container'
-    >
+    <Box className="child-container">
       <div className="child">
         <Box
-          sx={{
-            // display: "grid",
-            // position: "relative",
-            // // height: "100vh",
-            // backgroundColor: "#f5f7fa",
-          }}
+          sx={
+            {
+              // display: "grid",
+              // position: "relative",
+              // // height: "100vh",
+              // backgroundColor: "#f5f7fa",
+            }
+          }
         >
-          <Grid container spacing={2} sx={{ justifyContent: 'center', alignItems: 'stretch' }}>
+          <Grid
+            container
+            spacing={2}
+            sx={{ justifyContent: "center", alignItems: "stretch" }}
+          >
             <Grid item xs={4}>
               <Card
                 sx={{
                   p: 1,
                   borderRadius: 3,
                   boxShadow: 3,
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between'
+                  height: "100%",
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "space-between",
                 }}
               >
                 <CardHeader
-                  sx={{ padding: '0px !important' }}
+                  sx={{ padding: "0px !important" }}
                   title={
-                    <div style={{
-                      display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'flex-start',
-                    }}>
-
-                      < GroupIcon color="primary" />
-                      <Typography variant='h6'>License Status</Typography>
-
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "10px",
+                        justifyContent: "flex-start",
+                      }}
+                    >
+                      <GroupIcon color="primary" />
+                      <Typography variant="h6">License Status</Typography>
                     </div>
                   }
                 />
                 <CardContent
-                  sx={{ mb: 'auto', pb: '0 !important', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
+                  sx={{
+                    mb: "auto",
+                    pb: "0 !important",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "space-between",
+                  }}
                 >
                   <div>
-
                     <UserDistributionChart data={userStats} />
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'row-reverse' }}>
-
+                  <div
+                    style={{ display: "flex", flexDirection: "row-reverse" }}
+                  >
                     <Fab
                       size="small"
                       sx={{
@@ -727,9 +754,7 @@ const AngelBot = ({ onThemeToggle }) => {
                       <AddIcon sx={{ color: "#fff" }} />
                     </Fab>
                   </div>
-
                 </CardContent>
-
               </Card>
             </Grid>
             <Grid item xs={4}>
@@ -738,33 +763,43 @@ const AngelBot = ({ onThemeToggle }) => {
                   p: 1,
                   borderRadius: 3,
                   boxShadow: 3,
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between'
+                  height: "100%",
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "space-between",
                 }}
               >
                 <CardHeader
-                  sx={{ padding: '0px !important' }}
+                  sx={{ padding: "0px !important" }}
                   title={
-                    <div style={{
-                      display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'flex-start',
-                    }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "10px",
+                        justifyContent: "flex-start",
+                      }}
+                    >
                       <GroupIcon color="primary" />
-                      <Typography variant='h6'> Storage Status</Typography>
-
+                      <Typography variant="h6"> Storage Status</Typography>
                     </div>
                   }
                 />
                 <CardContent
-                  sx={{ mb: 'auto', pb: '0 !important', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
+                  sx={{
+                    mb: "auto",
+                    pb: "0 !important",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "space-between",
+                  }}
                 >
                   <div>
-
                     <StorageDistributionChart data={storageStats} />
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'row-reverse' }}>
-
+                  <div
+                    style={{ display: "flex", flexDirection: "row-reverse" }}
+                  >
                     <Fab
                       size="small"
                       sx={{
@@ -780,37 +815,48 @@ const AngelBot = ({ onThemeToggle }) => {
                   </div>
                 </CardContent>
               </Card>
-            </Grid> <Grid item xs={4}>
+            </Grid>{" "}
+            <Grid item xs={4}>
               <Card
                 sx={{
                   p: 1,
                   borderRadius: 3,
                   boxShadow: 3,
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between'
+                  height: "100%",
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "space-between",
                 }}
               >
                 <CardHeader
-                  sx={{ padding: '0px !important' }}
+                  sx={{ padding: "0px !important" }}
                   title={
-                    <div style={{
-                      display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'flex-start',
-                    }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "10px",
+                        justifyContent: "flex-start",
+                      }}
+                    >
                       <GroupIcon color="primary" />
-                      <Typography variant='h6'>                  Storage Distribution
+                      <Typography variant="h6">
+                        {" "}
+                        Storage Distribution
                       </Typography>
-
                     </div>
                   }
                 />
                 <CardContent
-                  sx={{ mb: 'auto', pb: '0 !important', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
+                  sx={{
+                    mb: "auto",
+                    pb: "0 !important",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "space-between",
+                  }}
                 >
                   <div>
-
-
                     <LicenseDataChart
                       data={{
                         userStorage: storageStats.totalAllocated,
@@ -820,10 +866,9 @@ const AngelBot = ({ onThemeToggle }) => {
                         ),
                       }}
                     />
-                    <div style={{ display: 'flex', justifyContent: 'end' }}>
+                    <div style={{ display: "flex", justifyContent: "end" }}>
                       <Box
                         sx={{
-
                           gap: 0.5,
                           // backgroundColor: alpha(chartColors.error, 0.1),
                           padding: "8px 16px",
@@ -862,7 +907,6 @@ const AngelBot = ({ onThemeToggle }) => {
                         >
                           {getRemainingDays()}
                         </Typography>
-
                       </Box>
                       {getRemainingDays() === 0 && (
                         <Box
@@ -873,7 +917,10 @@ const AngelBot = ({ onThemeToggle }) => {
                             backgroundColor: alpha(chartColors.error, 0.15),
                             padding: "8px 12px",
                             borderRadius: 2,
-                            border: `1px solid ${alpha(chartColors.error, 0.3)}`,
+                            border: `1px solid ${alpha(
+                              chartColors.error,
+                              0.3
+                            )}`,
                           }}
                         >
                           <WarningIcon sx={{ color: chartColors.error }} />
@@ -895,15 +942,18 @@ const AngelBot = ({ onThemeToggle }) => {
                       )}
                       <BlockWarningDialog />
                     </div>
-
                   </div>
-
                 </CardContent>
               </Card>
             </Grid>
           </Grid>
           <Grid container spacing={2}>
-            <Grid item xs={12} md={6} sx={{ marginTop: "20px", marginBottom: "15px" }}>
+            <Grid
+              item
+              xs={12}
+              md={6}
+              sx={{ marginTop: "20px", marginBottom: "15px" }}
+            >
               <Paper elevation={0} sx={commonPaperStyles}>
                 <Box
                   sx={{
@@ -911,7 +961,6 @@ const AngelBot = ({ onThemeToggle }) => {
                     alignItems: "center",
                     mb: 3,
                     gap: 1,
-
                   }}
                 >
                   <DashboardIcon color="primary" />
@@ -1015,9 +1064,9 @@ const AngelBot = ({ onThemeToggle }) => {
                     sx={{
                       mt: 1,
                       ".MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows":
-                      {
-                        margin: 0,
-                      },
+                        {
+                          margin: 0,
+                        },
                     }}
                   />
                 </Box>
@@ -1130,9 +1179,9 @@ const AngelBot = ({ onThemeToggle }) => {
                     sx={{
                       mt: 1,
                       ".MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows":
-                      {
-                        margin: 0,
-                      },
+                        {
+                          margin: 0,
+                        },
                     }}
                   />
                 </Box>
@@ -1140,8 +1189,8 @@ const AngelBot = ({ onThemeToggle }) => {
             </Grid>
           </Grid>
         </Box>
-      </div >
-    </Box >
+      </div>
+    </Box>
   );
 };
 
