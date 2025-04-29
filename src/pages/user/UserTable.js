@@ -43,6 +43,8 @@ import {
   PowerSettingsNew,
   Block,
   Close,
+  Filter,
+  FilterList,
 } from "@mui/icons-material";
 import styles from "./user.module.css";
 import DeleteUser from "./DeleteUser";
@@ -100,21 +102,10 @@ const rows = [
     email: "user6@appolo.com",
     storageUsed: "10GB",
     manageStorage: "1 GB",
-    status: false,
+    status: true,
     avaliableStorage: "9 GB",
     phone: "1234567890",
   },
-];
-
-const columns = [
-  "USER NAME",
-  "NAME",
-  "DEPARTMENT",
-  "ROLE",
-  "USER EMAIL",
-  "STORAGE USED",
-  "MANAGE STORAGE",
-  "TOOLS",
 ];
 
 const statusColors = {
@@ -338,14 +329,7 @@ export default function UserTable() {
                 <TableCell align="center">USER EMAIL</TableCell>
                 <TableCell align="center">STORAGE USED</TableCell>
                 <TableCell align="center">MANAGE STORAGE</TableCell>
-                <TableCell align="center" sx={{ width: "200px" }}>
-                  TOOLS
-                </TableCell>
-                {/* {columns.map((column) => (
-                  <TableCell key={column} align="center">
-                    {column}
-                  </TableCell>
-                ))} */}
+                <TableCell align="center">TOOLS</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -598,7 +582,26 @@ export default function UserTable() {
                 sx={{
                   bgcolor: "rgb(251, 68, 36)", // Solid orange background color
                   color: "white",
-                  "&:hover": { bgcolor: "rgb(251, 68, 36)" },
+                  boxShadow:
+                    "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.6)", // Default shadow
+                  "&:hover": {
+                    backgroundColor: "rgb(251, 68, 36)", // Keep the background color on hover
+                    animation: "glowBorder 1.5s ease-in-out infinite", // Apply glowing animation on hover
+                  },
+                  "@keyframes glowBorder": {
+                    "0%": {
+                      boxShadow: "0 0 0px 2px rgba(251, 68, 36, 0.5)", // Start with soft glow
+                      borderColor: "transparent", // Initial transparent border
+                    },
+                    "50%": {
+                      boxShadow: "0 0 20px 5px rgba(251, 68, 36, 0.8)", // Stronger glow
+                      borderColor: "rgb(251, 68, 36)", // Glowing orange border
+                    },
+                    "100%": {
+                      boxShadow: "0 0 0px 2px rgba(251, 68, 36, 0.5)", // Glow fades out
+                      borderColor: "transparent", // Reset to transparent
+                    },
+                  },
                 }}
                 onClick={handleCreateUser}
               >

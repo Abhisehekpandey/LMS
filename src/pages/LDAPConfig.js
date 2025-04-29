@@ -70,19 +70,19 @@ const LDAPConfig = ({ onThemeToggle }) => {
   };
 
   return (
-    <Box sx={{ display: "flex", position: "relative", height: "100vh", overflow: "hidden" }}>
+    <Box sx={{ display: "flex", position: "relative", height: "100%", overflow: "hidden",backgroundColor:'whitesmoke' }}>
       <Box
         sx={{
-          flexGrow: 2,
+          flexGrow: 1,
           marginLeft: "48px",
           transition: "margin-left 0.3s",
           overflow: "hidden",
         }}
       >
         <Box sx={{ p: 0, marginLeft: "0px", overflow: "auto", height: "calc(100vh - 48px)" }}>
-          <Paper sx={{ m: 2, p: 3 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-              <Typography variant="h5" sx={{ fontWeight: 'bold', mr: 1 }}>
+          <Paper sx={{ m: 1, p: 0 , height:'91.5vh' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center',}}>
+              <Typography variant="h6" sx={{ fontWeight: 'bold', ml: 1 }}>
                 LDAP Configuration
               </Typography>
               <Tooltip title="Configure your LDAP connection settings below." arrow>
@@ -99,7 +99,7 @@ const LDAPConfig = ({ onThemeToggle }) => {
             )}
 
             <form onSubmit={handleSubmit}>
-              <Grid container spacing={3}>
+              <Grid container spacing={3} padding={2}>
                 <Grid item xs={12}>
                   <Grid container spacing={2}>
                     <Grid item xs={12} md={6}>
