@@ -951,9 +951,10 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         marginTop: "12px",
         marginRight: "18px",
         overflow: "hidden",
-        // backgroundColor: "#f5f5f5", // Add this line for whitesmoke background
-        // bgcolor: "whitesmoke !important",
+
         bgcolor: "#f5f5f5", // Whitesmoke background for the main container
+        borderRadius: "28px",
+        boxShadow: "2px 1px 11px 5px rgba(0, 0, 0, 0.2)!important",
       }}
     >
       <TableContainer
@@ -971,21 +972,19 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           },
           "& .MuiTableHead-root .MuiTableCell-root": {
             backgroundColor: "#ffff",
-            // borderBottom: "2px solid #e2e8f0",
+
             borderBottom: "2px solid #94a3b8", // Changed border color and made it thicker
             fontSize: "0.875rem",
             fontWeight: "700 !important",
             color: "#475569",
             height: "30px",
             padding: "2px 16px",
-            // ...commonTextStyle,
           },
           "& .MuiTableCell-root": {
             padding: "8px 16px",
             fontSize: "0.8125rem",
             color: "#334155",
             borderBottom: "1px solid #e2e8f0",
-            // ...commonTextStyle,
           },
           "& .MuiTable-root": {
             borderCollapse: "separate",
@@ -999,7 +998,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       >
         <Table sx={{ border: "0px solid #e2e8f0 !important" }}>
           <TableHead className={styles.tableHeader}>
-            {/* <TableRow> */}
             <TableRow
               sx={{ boxShadow: "0 -2px 8px 0 rgba(0, 0, 0, 0.2) !important" }}
             >
@@ -1024,8 +1022,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
               <TableCell
                 sx={{
-                  // ...commonTextStyle,
-                  width: "150px",
+                  width: "100px",
                   padding: "8px 8px",
                   height: "40px",
                   fontWeight: "bold",
@@ -1046,23 +1043,18 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 >
                   <Typography
                     variant="body1"
-                    // fontWeight="bold"
-
                     sx={{
-                      // ...commonTextStyle,
-                      // fontWeight: "bold",
                       fontWeight: "700 !important",
-                      fontSize: "13px",
+                      fontSize: "14px",
                     }}
                   >
-                    DEPARTMENT
+                    Department
                   </Typography>
                 </TableSortLabel>
               </TableCell>
 
               <TableCell
                 sx={{
-                  // ...commonTextStyle,
                   width: "150px",
                   padding: "8px 8px",
                   height: "40px",
@@ -1085,15 +1077,12 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 >
                   <Typography
                     variant="body1"
-                    // fontWeight="bold"
                     sx={{
-                      // ...commonTextStyle,
-                      // fontWeight: "bold",
                       fontWeight: "700 !important",
-                      fontSize: "13px",
+                      fontSize: "14px",
                     }}
                   >
-                    SHORT NAME
+                    Short name
                   </Typography>
                 </TableSortLabel>
               </TableCell>
@@ -1127,14 +1116,14 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     sx={{
                       // ...commonTextStyle,
                       fontWeight: "700 !important",
-                      fontSize: "13px",
+                      fontSize: "14px",
                     }}
                   >
-                    DEPARTMENT OWNER
+                    Department owner
                   </Typography>
                 </TableSortLabel>
               </TableCell>
-              {/* <TableCell sx={{ width: "150px", padding: "1px 8px" }}> */}
+
               <TableCell
                 sx={{
                   // ...commonTextStyle,
@@ -1150,13 +1139,11 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                   variant="body1"
                   // fontWeight="bold"
                   sx={{
-                    // ...commonTextStyle,
-                    // fontWeight: "bold",
                     fontWeight: "700 !important",
-                    fontSize: "13px",
+                    fontSize: "14px",
                   }}
                 >
-                  STORAGE ALLOCATED
+                  Storage
                 </Typography>
               </TableCell>
 
@@ -1188,10 +1175,10 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     sx={{
                       // ...commonTextStyle,
                       fontWeight: "700 !important",
-                      fontSize: "13px",
+                      fontSize: "14px",
                     }}
                   >
-                    NUMBER OF ROLES
+                    No. of roles
                   </Typography>
                 </TableSortLabel>
               </TableCell>
@@ -1212,13 +1199,11 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                   variant="body1"
                   // fontWeight="bold"
                   sx={{
-                    // ...commonTextStyle,
-                    // fontWeight: "bold",
                     fontWeight: "700 !important",
-                    fontSize: "13px",
+                    fontSize: "14px",
                   }}
                 >
-                  ACTIONS
+                  Actions
                 </Typography>
               </TableCell>
             </TableRow>
@@ -1423,12 +1408,12 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                               position: "absolute",
                               left: "75%", // Center horizontally within the cell
                               transform: "translateX(-50%)", // Center adjust
-                              width: "200px",
+                              width: "250px",
                               backgroundColor: "#ffff",
                               borderRadius: "8px",
                               border: "1px solid #e2e8f0",
                               boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-                              zIndex: 2,
+                              zIndex: 3,
                               marginTop: "4px", // Small gap from the count
                             }}
                           >

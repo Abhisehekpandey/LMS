@@ -15,27 +15,53 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
+import { useFormik } from "formik";
 import React from "react";
 import { useState } from "react";
+import * as yup from "yup";
+import { createUserAction } from "../../redux/userSlice";
+import { useDispatch } from "react-redux";
 
 const CreateUser = ({ handleClose }) => {
-  const [openDialog, setOpenDialog] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState("");
   const [selectedRole, setSelectedRole] = useState(null);
-  const [selectedManager, setSelectedManager] = useState(null);
   const [addDepartment, setAddDepartment] = useState(false);
   const [addRole, setAddRole] = useState(false);
+  const dispatch = useDispatch();
 
-  const handleIconClick = (event, department) => {
-    event.stopPropagation(); // Prevent selecting the option
-    setSelectedDepartment(department);
-    setOpenDialog(true);
+  const validationSchema = yup.object().shape({
+    userName: yup.string().required("user Name  is required"),
+    name: yup.string().required("Full Name is required"),
+    email: yup
+      .string()
+      .email("Enter a valid email")
+      .required("Email is required"),
+    phone: yup
+      .string()
+      .matches(/^\d{10}$/, "Phone Number must be 10 digits")
+      .required("Phone Number is required"),
+  });
+
+  const initialValues = {
+    userName: "",
+    name: "",
+    email: "",
+    phone: "",
+    storage: "",
+    role: "",
+    department: "",
+    reportingManager: "",
   };
 
-  const handleCloseDeptDialog = () => {
-    setOpenDialog(false);
-    setSelectedDepartment("");
-  };
+  const formik = useFormik({
+    initialValues: initialValues,
+    validationSchema,
+    onSubmit: function (values) {
+      console.log(values);
+      dispatch(createUserAction());
+      handleClose();
+    },
+  });
 
   const storageAllocation = ["25GB", "50GB", "100GB", "200GB", "500GB"];
 
@@ -53,12 +79,6 @@ const CreateUser = ({ handleClose }) => {
     "Software Engineer": ["Charlie", "David"],
     Accountant: ["Eve", "Frank"],
     "Sales Manager": ["George", "Helen"],
-  };
-
-  const handleDepartmentChange = (event, newValue) => {
-    setSelectedDepartment(newValue);
-    setSelectedRole(null); // Reset role and manager when department changes
-    setSelectedManager(null);
   };
 
   const roleOptions = selectedDepartment
@@ -119,302 +139,269 @@ const CreateUser = ({ handleClose }) => {
           />
         </IconButton>
       </DialogTitle>
-
       <DialogContent dividers padding={0}>
-        <Grid container spacing={2} padding={0}>
-          <Grid xs={12} item>
-            <Typography
-              variant="subtitle2"
-              sx={{
-                // mb: 2,
-                color: "black",
-                fontFamily: '"Be Vietnam", sans-serif',
-                fontWeight: "bold",
-              }}
-            >
-              Basic Information
-            </Typography>
-          </Grid>
-          <Grid xs={6} item>
-            <TextField
-              required
-              autoComplete="off"
-              size="small"
-              fullWidth
-              label="Username"
-              name="username"
-              InputProps={{
-                sx: {
+        <form onSubmit={formik.handleSubmit}>
+          <Grid container spacing={2} padding={0}>
+            <Grid xs={12} item>
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  // mb: 2,
+                  color: "black",
                   fontFamily: '"Be Vietnam", sans-serif',
-                },
-              }}
-              InputLabelProps={{
-                sx: {
+                  fontWeight: "bold",
+                }}
+              >
+                Basic Information
+              </Typography>
+            </Grid>
+            <Grid xs={6} item>
+              <TextField
+                required
+                autoComplete="off"
+                size="small"
+                fullWidth
+                label="User name"
+                name="userName"
+                value={formik.values.userName} // Bind to formik values
+                onChange={formik.handleChange} // Bind to formik handleChange
+                error={
+                  formik.touched.userName && Boolean(formik.errors.userName)
+                }
+                helperText={formik.touched.userName && formik.errors.userName}
+              />
+            </Grid>
+            <Grid item xs={6}>
+              <TextField
+                required
+                size="small"
+                Autocomplete="off"
+                fullWidth
+                label="Full Name"
+                name="name"
+                value={formik.values.name} // Bind to formik values
+                onChange={formik.handleChange} // Bind to formik handleChange
+                error={formik.touched.name && Boolean(formik.errors.name)}
+                helperText={formik.touched.name && formik.errors.name}
+              />
+            </Grid>
+            <Grid xs={12} item>
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  // mb: 2,
+                  color: "black",
                   fontFamily: '"Be Vietnam", sans-serif',
-                },
-              }}
-              FormHelperTextProps={{
-                sx: {
-                  fontFamily: '"Be Vietnam", sans-serif',
-                },
-              }}
-            />
-          </Grid>
-          <Grid item xs={6}>
-            <TextField
-              required
-              size="small"
-              Autocomplete="off"
-              fullWidth
-              label="Full Name"
-              name="name"
-              InputProps={{
-                sx: {
-                  fontFamily: '"Be Vietnam", sans-serif',
-                },
-              }}
-              InputLabelProps={{
-                sx: {
-                  fontFamily: '"Be Vietnam", sans-serif',
-                },
-              }}
-              FormHelperTextProps={{
-                sx: {
-                  fontFamily: '"Be Vietnam", sans-serif',
-                },
-              }}
-            />
-          </Grid>
-          <Grid xs={12} item>
-            <Typography
-              variant="subtitle2"
-              sx={{
-                // mb: 2,
-                color: "black",
-                fontFamily: '"Be Vietnam", sans-serif',
-                fontWeight: "bold",
-              }}
-            >
-              Department & Role
-            </Typography>
-          </Grid>
-          <Grid xs={4} item>
-            <Autocomplete
-              Autocomplete="off"
-              size="small"
-              id="department-autocomplete"
-              options={departments}
-              value={selectedDepartment}
-              onChange={handleDepartmentChange}
-              ListboxComponent={({ children, ...props }) => (
-                <ul {...props}>
-                  <li
-                    style={{
-                      padding: "2px",
-                      borderTop: "1px solid #eee",
-                    }}
-                  >
-                    <Button
-                      onClick={() => setAddDepartment(true)}
-                      color="primary"
-                      variant="outlined"
-                      size="small"
-                      fullWidth
-                      startIcon={<Add />}
-                      sx={{
-                        fontFamily: '"Be Vietnam", sans-serif',
+                  fontWeight: "bold",
+                }}
+              >
+                Department & Role
+              </Typography>
+            </Grid>
+            <Grid xs={4} item>
+              <Autocomplete
+                autoComplete="off"
+                size="small"
+                id="department-autocomplete"
+                options={departments}
+                value={formik.values.department || null}
+                onChange={(event, newValue) => {
+                  formik.setFieldValue("department", newValue);
+                  setSelectedDepartment(newValue); // optional, for local use
+                }}
+                ListboxComponent={({ children, ...props }) => (
+                  <ul {...props}>
+                    <li
+                      style={{
+                        padding: "2px",
+                        borderTop: "1px solid #eee",
                       }}
                     >
-                      Add New Department
-                    </Button>
-                  </li>
-                  {children}
-                </ul>
-              )}
-              renderInput={(params) => (
-                <TextField
-                  size="small"
-                  {...params}
-                  label="Department"
-                  InputProps={{
-                    ...params.InputProps,
-                    sx: { fontFamily: '"Be Vietnam", sans-serif' },
-                  }}
-                  InputLabelProps={{
-                    sx: { fontFamily: '"Be Vietnam", sans-serif' },
-                  }}
-                />
-              )}
-            />
-          </Grid>
-          <Grid xs={4} item>
-            <Autocomplete
-              size="small"
-              Autocomplete="off"
-              id="role-autocomplete"
-              options={roleOptions}
-              value={selectedRole}
-              disabled={!selectedDepartment} // 👈 Disable if no department selected
-              onChange={(event, newValue) => setSelectedRole(newValue)}
-              ListboxComponent={({ children, ...props }) => (
-                <ul {...props}>
-                  <li
-                    style={{
-                      padding: "2px",
-                      borderTop: "1px solid #eee",
-                    }}
-                  >
-                    <Button
-                      onClick={() => setAddRole(true)}
-                      color="primary"
-                      variant="outlined"
-                      size="small"
-                      fullWidth
-                      startIcon={<Add />}
-                      sx={{
-                        fontFamily: '"Be Vietnam", sans-serif',
+                      <Button
+                        onClick={() => setAddDepartment(true)}
+                        color="primary"
+                        variant="outlined"
+                        size="small"
+                        fullWidth
+                        startIcon={<Add />}
+                        sx={{ fontFamily: '"Be Vietnam", sans-serif' }}
+                      >
+                        Add New Department
+                      </Button>
+                    </li>
+                    {children}
+                  </ul>
+                )}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    size="small"
+                    label="Department"
+                    name="department"
+                    error={Boolean(
+                      formik.touched.department && formik.errors.department
+                    )}
+                    helperText={
+                      formik.touched.department && formik.errors.department
+                        ? formik.errors.department
+                        : ""
+                    }
+                  />
+                )}
+              />
+            </Grid>
+            <Grid xs={4} item>
+              <Autocomplete
+                size="small"
+                id="role-autocomplete"
+                options={roleOptions}
+                name="role"
+                autoComplete="off"
+                value={formik.values.role || null}
+                disabled={!formik.values.department}
+                onChange={(event, newValue) => {
+                  formik.setFieldValue("role", newValue);
+                  setSelectedRole(newValue); // optional local state
+                }}
+                ListboxComponent={({ children, ...props }) => (
+                  <ul {...props}>
+                    <li
+                      style={{
+                        padding: "2px",
+                        borderTop: "1px solid #eee",
                       }}
                     >
-                      Add New Role
-                    </Button>
-                  </li>
-                  {children}
-                </ul>
-              )}
-              renderInput={(params) => (
-                <TextField
-                  size="small"
-                  {...params}
-                  label="Role"
-                  InputProps={{
-                    ...params.InputProps,
-                    sx: { fontFamily: '"Be Vietnam", sans-serif' },
-                  }}
-                  InputLabelProps={{
-                    sx: { fontFamily: '"Be Vietnam", sans-serif' },
-                  }}
-                />
-              )}
-            />
+                      <Button
+                        onClick={() => setAddRole(true)}
+                        color="primary"
+                        variant="outlined"
+                        size="small"
+                        fullWidth
+                        startIcon={<Add />}
+                        sx={{ fontFamily: '"Be Vietnam", sans-serif' }}
+                      >
+                        Add New Role
+                      </Button>
+                    </li>
+                    {children}
+                  </ul>
+                )}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Role"
+                    name="role"
+                    error={Boolean(formik.touched.role && formik.errors.role)}
+                    helperText={
+                      formik.touched.role && formik.errors.role
+                        ? formik.errors.role
+                        : ""
+                    }
+                    InputProps={{
+                      ...params.InputProps,
+                      sx: { fontFamily: '"Be Vietnam", sans-serif' },
+                    }}
+                    InputLabelProps={{
+                      sx: { fontFamily: '"Be Vietnam", sans-serif' },
+                    }}
+                    FormHelperTextProps={{
+                      sx: { fontFamily: '"Be Vietnam", sans-serif' },
+                    }}
+                  />
+                )}
+              />
+            </Grid>
+            <Grid item xs={4}>
+              <Autocomplete
+                size="small"
+                id="manager-autocomplete"
+                options={managerOptions}
+                autoComplete="off"
+                name="reportingManager"
+                value={formik.values.manager || null}
+                disabled={!formik.values.role}
+                onChange={(event, newValue) => {
+                  formik.setFieldValue("reportingManager", newValue);
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Reporting Manager"
+                    name="manager"
+                    error={Boolean(
+                      formik.touched.manager && formik.errors.manager
+                    )}
+                    helperText={
+                      formik.touched.manager && formik.errors.manager
+                        ? formik.errors.manager
+                        : ""
+                    }
+                  />
+                )}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  // mb: 2,
+                  color: "black",
+                  fontFamily: '"Be Vietnam", sans-serif',
+                  fontWeight: "bold",
+                }}
+              >
+                Contact Information
+              </Typography>
+            </Grid>
+            <Grid xs={4} item>
+              <TextField
+                Autocomplete="off"
+                required
+                size="small"
+                fullWidth
+                label="Email"
+                name="email"
+                value={formik.values.email} // Bind to formik values
+                onChange={formik.handleChange} // Bind to formik handleChange
+                error={formik.touched.email && Boolean(formik.errors.email)}
+                helperText={formik.touched.email && formik.errors.email}
+              />
+            </Grid>
+            <Grid item xs={4}>
+              <TextField
+                Autocomplete="off"
+                required
+                size="small"
+                fullWidth
+                label="Storage"
+                name="storage"
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">GB</InputAdornment>
+                  ),
+                }}
+                value={formik.values.storage} // Bind to formik values
+                onChange={formik.handleChange} // Bind to formik handleChange
+                error={formik.touched.storage && Boolean(formik.errors.storage)}
+                helperText={formik.touched.storage && formik.errors.storage}
+              />
+            </Grid>
+            <Grid item xs={4}>
+              <TextField
+                Autocomplete="off"
+                required
+                size="small"
+                fullWidth
+                label="Phone Number"
+                name="phone"
+                value={formik.values.phone} // Bind to formik values
+                onChange={formik.handleChange} // Bind to formik handleChange
+                error={formik.touched.phone && Boolean(formik.errors.phone)}
+                helperText={formik.touched.phone && formik.errors.phone}
+              />
+            </Grid>
           </Grid>
-          <Grid item xs={4}>
-            <Autocomplete
-              Autocomplete="off"
-              size="small"
-              id="manager-autocomplete"
-              options={managerOptions}
-              value={selectedManager}
-              onChange={(event, newValue) => setSelectedManager(newValue)}
-              disabled={!selectedRole}
-              renderInput={(params) => (
-                <TextField
-                  size="small"
-                  {...params}
-                  label="Reporting Manager"
-                  InputProps={{
-                    ...params.InputProps,
-                    sx: { fontFamily: '"Be Vietnam", sans-serif' },
-                  }}
-                  InputLabelProps={{
-                    sx: { fontFamily: '"Be Vietnam", sans-serif' },
-                  }}
-                />
-              )}
-            />
-          </Grid>
-          <Grid item xs={12}>
-            <Typography
-              variant="subtitle2"
-              sx={{
-                // mb: 2,
-                color: "black",
-                fontFamily: '"Be Vietnam", sans-serif',
-                fontWeight: "bold",
-              }}
-            >
-              Contact Information
-            </Typography>
-          </Grid>
-          <Grid xs={4} item>
-            <TextField
-              Autocomplete="off"
-              required
-              size="small"
-              fullWidth
-              label="Email"
-              name="email"
-              InputProps={{
-                sx: {
-                  fontFamily: '"Be Vietnam", sans-serif',
-                },
-              }}
-              InputLabelProps={{
-                sx: {
-                  fontFamily: '"Be Vietnam", sans-serif',
-                },
-              }}
-              FormHelperTextProps={{
-                sx: {
-                  fontFamily: '"Be Vietnam", sans-serif',
-                },
-              }}
-            />
-          </Grid>
-          <Grid item xs={4}>
-            <TextField
-              Autocomplete="off"
-              required
-              size="small"
-              fullWidth
-              label="Storage"
-              name="storage"
-              InputProps={{
-                // Adding "GB" as a suffix
-                endAdornment: (
-                  <InputAdornment position="end">GB</InputAdornment>
-                ),
-                sx: {
-                  fontFamily: '"Be Vietnam", sans-serif',
-                },
-              }}
-              InputLabelProps={{
-                sx: {
-                  fontFamily: '"Be Vietnam", sans-serif',
-                },
-              }}
-              FormHelperTextProps={{
-                sx: {
-                  fontFamily: '"Be Vietnam", sans-serif',
-                },
-              }}
-            />
-          </Grid>
-          <Grid item xs={4}>
-            <TextField
-              Autocomplete="off"
-              required
-              size="small"
-              fullWidth
-              label="Phone Number"
-              name="phone"
-              InputProps={{
-                sx: {
-                  fontFamily: '"Be Vietnam", sans-serif',
-                },
-              }}
-              InputLabelProps={{
-                sx: {
-                  fontFamily: '"Be Vietnam", sans-serif',
-                },
-              }}
-              FormHelperTextProps={{
-                sx: {
-                  fontFamily: '"Be Vietnam", sans-serif',
-                },
-              }}
-            />
-          </Grid>
-        </Grid>
+        </form>
       </DialogContent>
       <DialogActions
         sx={{
@@ -467,14 +454,22 @@ const CreateUser = ({ handleClose }) => {
         <div>
           <Button
             variant="contained"
-            sx={{ background: "rgb(251, 68, 36)", color: "white" }}
-            onClick={handleClose}
+            sx={{
+              background: "rgb(251, 68, 36)",
+              color: "white",
+              "&:hover": {
+                background: "rgb(251, 68, 36)",
+                color: "white",
+              },
+            }}
+            // onClick={handleClose}
+            type="submit"
+            onClick={formik.handleSubmit}
           >
             ADD USER
           </Button>
         </div>
       </DialogActions>
-
       {/* add new dept */}
       <Dialog
         open={addDepartment}
@@ -538,21 +533,6 @@ const CreateUser = ({ handleClose }) => {
                 fullWidth
                 label="Department Name"
                 name="name"
-                InputProps={{
-                  sx: {
-                    fontFamily: '"Be Vietnam", sans-serif',
-                  },
-                }}
-                InputLabelProps={{
-                  sx: {
-                    fontFamily: '"Be Vietnam", sans-serif',
-                  },
-                }}
-                FormHelperTextProps={{
-                  sx: {
-                    fontFamily: '"Be Vietnam", sans-serif',
-                  },
-                }}
               />
             </Grid>
             <Grid xs={6} item>
@@ -563,21 +543,6 @@ const CreateUser = ({ handleClose }) => {
                 fullWidth
                 label="Reporting Manager"
                 name="name"
-                InputProps={{
-                  sx: {
-                    fontFamily: '"Be Vietnam", sans-serif',
-                  },
-                }}
-                InputLabelProps={{
-                  sx: {
-                    fontFamily: '"Be Vietnam", sans-serif',
-                  },
-                }}
-                FormHelperTextProps={{
-                  sx: {
-                    fontFamily: '"Be Vietnam", sans-serif',
-                  },
-                }}
               />
             </Grid>
             <Grid xs={4} item>
@@ -588,21 +553,6 @@ const CreateUser = ({ handleClose }) => {
                 fullWidth
                 label="Short Name"
                 name="name"
-                InputProps={{
-                  sx: {
-                    fontFamily: '"Be Vietnam", sans-serif',
-                  },
-                }}
-                InputLabelProps={{
-                  sx: {
-                    fontFamily: '"Be Vietnam", sans-serif',
-                  },
-                }}
-                FormHelperTextProps={{
-                  sx: {
-                    fontFamily: '"Be Vietnam", sans-serif',
-                  },
-                }}
               />
             </Grid>
             <Grid item xs={4}>
@@ -623,21 +573,6 @@ const CreateUser = ({ handleClose }) => {
                 fullWidth
                 label="Initail Role"
                 name="name"
-                InputProps={{
-                  sx: {
-                    fontFamily: '"Be Vietnam", sans-serif',
-                  },
-                }}
-                InputLabelProps={{
-                  sx: {
-                    fontFamily: '"Be Vietnam", sans-serif',
-                  },
-                }}
-                FormHelperTextProps={{
-                  sx: {
-                    fontFamily: '"Be Vietnam", sans-serif',
-                  },
-                }}
               />
             </Grid>
           </Grid>
@@ -661,7 +596,7 @@ const CreateUser = ({ handleClose }) => {
       </Dialog>
 
       {/* add new role */}
-      <Dialog open={addRole} onClose={() => setAddRole(false)} >
+      <Dialog open={addRole} onClose={() => setAddRole(false)}>
         <DialogTitle
           sx={{
             pb: 1,
@@ -708,34 +643,18 @@ const CreateUser = ({ handleClose }) => {
           </IconButton>
         </DialogTitle>
         <DialogContent dividers>
-
-        <Grid container spacing={2} padding={0}>
-          <Grid xs={12} item>
-            <TextField
-              required
-              size="small"
-              Autocomplete="off"
-              fullWidth
-              label="Role Name"
-              name="name"
-              InputProps={{
-                sx: {
-                  fontFamily: '"Be Vietnam", sans-serif',
-                },
-              }}
-              InputLabelProps={{
-                sx: {
-                  fontFamily: '"Be Vietnam", sans-serif',
-                },
-              }}
-              FormHelperTextProps={{
-                sx: {
-                  fontFamily: '"Be Vietnam", sans-serif',
-                },
-              }}
-            />
+          <Grid container spacing={2} padding={0}>
+            <Grid xs={12} item>
+              <TextField
+                required
+                size="small"
+                Autocomplete="off"
+                fullWidth
+                label="Role Name"
+                name="name"
+              />
+            </Grid>
           </Grid>
-        </Grid>
         </DialogContent>
         <DialogActions>
           <Button
@@ -752,7 +671,7 @@ const CreateUser = ({ handleClose }) => {
           >
             ADD ROLE
           </Button>
-          </DialogActions>
+        </DialogActions>
       </Dialog>
     </div>
   );
