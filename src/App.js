@@ -47,53 +47,53 @@ function App() {
     };
 
     return (
-        <ThemeProvider theme={theme}>
-            <Router>
-                <Layout>
-                    <Routes>
-                        <Route path="/login" element={<Login />} />
-                        <Route path="/signup" element={<Signup />} />
-                        <Route
-                            path="/user"
-                            element={
-                                <ProtectedRoute>
-                                    <Dashboard onThemeToggle={toggleTheme} departments={departments} setDepartments={setDepartments} /> {/* Pass the toggleTheme function */}
-                                </ProtectedRoute>
-                            }
-                        />
-                        <Route
-                            path="/department"
-                            element={
-                                <ProtectedRoute>
-                                    <Department onThemeToggle={toggleTheme} departments={departments} setDepartments={setDepartments} /> {/* Pass the toggleTheme function */}
-                                </ProtectedRoute>
-                            }
-                        />
-                        <Route
-                            path="/role"
-                            element={
-                                <ProtectedRoute>
-                                    <Role onThemeToggle={toggleTheme} departments={departments} /> {/* Pass the toggleTheme function */}
-                                </ProtectedRoute>
-                            }
-                        />
-                        <Route path="/" element={<Navigate to="/signup" />} />
-                        <Route path="/angelbot" element={<AngelBot onThemeToggle={toggleTheme} />} />
-                        <Route path="/ldap-config" element={<LDAPConfig />}
+        // <ThemeProvider theme={theme}>
+        <Router>
+            <Layout>
+                <Routes>
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/signup" element={<Signup />} />
+                    <Route
+                        path="/user"
+                        element={
+                            <ProtectedRoute>
+                                <Dashboard onThemeToggle={toggleTheme} departments={departments} setDepartments={setDepartments} /> {/* Pass the toggleTheme function */}
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/department"
+                        element={
+                            <ProtectedRoute>
+                                <Department onThemeToggle={toggleTheme} departments={departments} setDepartments={setDepartments} /> {/* Pass the toggleTheme function */}
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/role"
+                        element={
+                            <ProtectedRoute>
+                                <Role onThemeToggle={toggleTheme} departments={departments} /> {/* Pass the toggleTheme function */}
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route path="/" element={<Navigate to="/signup" />} />
+                    <Route path="/angelbot" element={<AngelBot onThemeToggle={toggleTheme} />} />
+                    <Route path="/ldap-config" element={<LDAPConfig />}
 
-                        />
-                        <Route
-                            path="/company-dashboard"
-                            element={
-                                <CompanyDashboard onThemeToggle={toggleTheme} />
-                            }
-                        />
-                        <Route path="/activate/:token" element={<ActivateAccount />} />
-                    </Routes>
-                </Layout>
+                    />
+                    <Route
+                        path="/company-dashboard"
+                        element={
+                            <CompanyDashboard onThemeToggle={toggleTheme} />
+                        }
+                    />
+                    <Route path="/activate/:token" element={<ActivateAccount />} />
+                </Routes>
+            </Layout>
 
-            </Router>
-        </ThemeProvider>
+        </Router>
+        // </ThemeProvider>
     );
 }
 

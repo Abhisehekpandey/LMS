@@ -20,21 +20,45 @@ import {
   Dashboard as DashboardIcon,
 } from "@mui/icons-material";
 import { Link, useLocation } from "react-router-dom";
-
+import { styled as muiStyled } from '@mui/system';
+const LogoText = muiStyled(Typography)(({ theme }) => ({
+  fontFamily: "'Poppins', sans-serif", // Modern font family
+  fontWeight: 700,
+  fontSize: '1.3rem',
+  letterSpacing: '0.5px',
+  background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+  WebkitBackgroundClip: 'text',
+  WebkitTextFillColor: 'transparent',
+  textShadow: '0px 1px 2px rgba(0, 0, 0, 0.05)',
+  display: 'inline-block',
+  position: 'relative',
+  '&::after': {
+    content: '""',
+    position: 'absolute',
+    width: '30%',
+    height: '2px',
+    bottom: 0,
+    left: '0',
+    background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+    borderRadius: '2px',
+  }
+}));
 // Styled Drawer
 const StyledDrawer = styled(Drawer)(({ theme, open }) => ({
   position: "absolute",
   zIndex: 1200,
-  width: open ? 220 : 48,
+  width: open ? 250 : 65,
   flexShrink: 0,
   "& .MuiDrawer-paper": {
-    width: open ? 200 : 48,
+    width: open ? 250 : 65,
     boxSizing: "border-box",
-    transition: theme.transitions.create(["width"], {
+    transition: theme.transitions.create(["width", "margin", "padding"], {
       easing: theme.transitions.easing.easeInOut,
       duration: theme.transitions.duration.standard,
     }),
-    backgroundColor: "whitesmoke",
+    backgroundColor: "rgba(255, 255, 255, 0.05)", // <-- light transparent white
+    backdropFilter: "blur(10px)", // <-- gives frosted glass effect
+    WebkitBackdropFilter: "blur(10px)", // <-- for Safari
     backdropFilter: "blur(8px)",
     color: "#424242",
     borderRight: "1px solid rgba(0, 0, 0, 0.08)",
@@ -76,6 +100,7 @@ const StyledListItemIcon = styled(ListItemIcon)(({ active }) => ({
   transition: "color 0.2s ease",
   marginLeft: "2px", // Add consistent left margin
   marginRight: "2px",
+
 }));
 
 const Sidebar = () => {
@@ -140,66 +165,61 @@ const Sidebar = () => {
       <Box
         // onClick={handleClick}
         sx={{
-          pl: "3px",
+          // pl: "3px",
           display: "flex",
           alignItems: "center",
           // cursor: 'pointer',
-          height: 60, // Add fixed height to prevent layout shift
+          height: 52, // Add fixed height to prevent layout shift
           borderBottom: "1px solid rgba(0,0,0,0.05)",
           mb: 1, // Add margin bottom
         }}
         className="user-info-view"
       >
-        <Box sx={{ py: 0.5 }}>
-          <Avatar
-            sx={{
-              height: 40,
-              width: 40,
-              background: "linear-gradient(135deg, #42a5f5, #1976d2)",
-              fontSize: 24,
-            }}
-          >
-            {/* {getUserAvatar()} */}A
-          </Avatar>
-        </Box>
         <Box
           sx={{
-            width: { xs: "calc(100% - 62px)", xl: "calc(100% - 72px)" },
-            ml: 4,
-            opacity: open ? 1 : 0, // Add fade effect
-            transition: "opacity 0.18s ease", // Match timing with list items
+            display: "flex",
+            alignItems: "center",
+            height: 52,
+            px: 1.2,
+            borderBottom: "1px solid rgba(0,0,0,0.05)",
+            mb: 1,
+            transition: "padding 0.3s ease",
           }}
-          className="user-info"
         >
-          <Box
+          <Avatar
             sx={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
+              height: 34,
+              width: 34,
+              fontSize: 18,
+              background: "linear-gradient(135deg, #42a5f5, #1976d2)",
             }}
           >
-            <Box
-              sx={{
-                mb: 0,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-                fontSize: 16,
-                fontWeight: "bold", // Use a constant value for boldness
-                color: "inherit",
-              }}
-              component="span"
-            >
-              Access Arc
-            </Box>
+            A
+          </Avatar>
+
+          <Box
+            sx={{
+              width: open ? "auto" : 0,
+              overflow: "hidden",
+              display: "flex",
+              alignItems: "center",
+              ml: open ? 0.8 : 0,
+              opacity: open ? 1 : 0,
+              transition: "all 0.3s ease",
+            }}
+          >
+            <LogoText component="span">Access Arc</LogoText>
           </Box>
         </Box>
+
       </Box>
 
       <List sx={{
-        pt: 0.5, paddingRight: "4px", paddingLeft: "4px", display: "flex",
+        pt: 0.5, padding:"8px", display: "flex",
         flexDirection: "column",
-        gap: "4px",
+        gap: "8px",
+        justifyContent: "center",
+        // alignItems: "center",
       }}>
         {menuItems.map((item) => {
           const isActive = location.pathname === item.path;
@@ -211,6 +231,7 @@ const Sidebar = () => {
             >
               <StyledListItem button active={isActive} sx={{
                 height: 44, // Fixed height instead of minHeight
+                padding:"5px !important",
                 overflow: "hidden" // Prevent content overflow
               }}>
                 <StyledListItemIcon active={isActive}>
