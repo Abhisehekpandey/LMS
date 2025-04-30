@@ -191,6 +191,7 @@ const Sidebar = () => {
               height: 40,
               width: 40,
               fontSize: 24,
+              marginTop: "5px",
               background: "linear-gradient(135deg, #42a5f5, #1976d2)",
             }}
           >
@@ -200,7 +201,7 @@ const Sidebar = () => {
             sx={{
               width: { xs: 'calc(100% - 62px)', xl: 'calc(100% - 72px)' },
               ml: 4,
-              color: color,
+              // color: "white",
             }}
             className='user-info'
           >
@@ -237,7 +238,7 @@ const Sidebar = () => {
               Administrator
             </Box>
           </Box>
-          <Box
+          {/* <Box
             sx={{
               width: open ? "auto" : 0,
               overflow: "hidden",
@@ -249,13 +250,13 @@ const Sidebar = () => {
             }}
           >
             <LogoText component="span">Access Arc</LogoText>
-          </Box>
+          </Box> */}
         </Box>
 
       </Box>
 
       <List sx={{
-        pt: 0.5, padding:"8px", display: "flex",
+        pt: 0.5, padding: "8px", display: "flex",
         flexDirection: "column",
         gap: "8px",
         justifyContent: "center",
@@ -271,7 +272,7 @@ const Sidebar = () => {
             >
               <StyledListItem button active={isActive} sx={{
                 height: 44, // Fixed height instead of minHeight
-                padding:"5px !important",
+                padding: "5px !important",
                 overflow: "hidden" // Prevent content overflow
               }}>
                 <StyledListItemIcon active={isActive}>
