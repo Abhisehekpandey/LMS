@@ -78,14 +78,14 @@ const StyledListItem = styled(ListItem)(({ active }) => ({
   //  padding: "0 0px !important",
   display: "flex",
   borderRadius: "8px",
-  backgroundColor: active ? "rgba(25, 118, 210, 0.08)" : "transparent",
+  backgroundColor: active ? "orange" : "transparent",
   color: active ? "#1976d2" : "rgba(0, 0, 0, 0.7)",
   transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
   transform: "translateZ(0)",
   willChange: "transform, box-shadow, background-color",
   "&:hover": {
     backgroundColor: active
-      ? "rgba(25, 118, 210, 0.12)"
+      ? "orange"
       : "rgba(0, 0, 0, 0.04)",
     transform: "translateY(-1px) translateZ(0)",
     boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
@@ -95,7 +95,7 @@ const StyledListItem = styled(ListItem)(({ active }) => ({
 // Styled Icon
 const StyledListItemIcon = styled(ListItemIcon)(({ active }) => ({
   minWidth: 32,
-  color: active ? "#1976d2" : "rgba(0, 0, 0, 0.6)",
+  color: active ? "white" : "rgba(0, 0, 0, 0.6)",
   justifyContent: "center",
   transition: "color 0.2s ease",
   marginLeft: "2px", // Add consistent left margin
@@ -110,11 +110,11 @@ const Sidebar = () => {
   const location = useLocation();
 
   const menuItems = React.useMemo(() => [
-    { path: "/user", icon: <UserIcon />, text: "User" },
-    { path: "/department", icon: <DepartmentRolesIcon />, text: "Department" },
-    { path: "/angelbot", icon: <TimelineIcon />, text: "AngelBot" },
-    { path: "/ldap-config", icon: <LDAPIcon />, text: "LDAP Settings" },
     { path: "/company-dashboard", icon: <DashboardIcon />, text: "Dashboard" },
+    { path: "/angelbot", icon: <TimelineIcon />, text: "AngelBot" },
+    { path: "/department", icon: <DepartmentRolesIcon />, text: "Department" },
+    { path: "/user", icon: <UserIcon />, text: "User" },
+    { path: "/ldap-config", icon: <LDAPIcon />, text: "LDAP Settings" },
   ], []); // Empty dependency array means this only runs once
 
   const handleMouseEnter = () => {
@@ -288,7 +288,7 @@ const Sidebar = () => {
                       "& .MuiListItemText-primary": {
                         fontSize: "0.875rem",
                         fontWeight: isActive ? 600 : 500,
-                        color: isActive ? "#1976d2" : "inherit",
+                        color: isActive ? "white" : "inherit",
                         transition: "font-weight 0.2s ease, color 0.2s ease",
                         whiteSpace: "nowrap",
                       },
