@@ -280,8 +280,9 @@ export default function UserTable() {
     );
     toast({
       open: true,
-      message: `Department "${rowId.name}" ${!rowId.isActive ? "activated" : "deactivated"
-        }`,
+      message: `Department "${rowId.name}" ${
+        !rowId.isActive ? "activated" : "deactivated"
+      }`,
       severity: "success",
     });
   };
@@ -769,12 +770,12 @@ export default function UserTable() {
             <Tooltip title="Add New User">
               <IconButton
                 sx={{
-                  bgcolor: "rgb(251, 68, 36)", // Solid orange background color
+                  bgcolor: "orange", // Solid orange background color
                   color: "white",
                   boxShadow:
                     "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.6)", // Default shadow
                   "&:hover": {
-                    backgroundColor: "rgb(251, 68, 36)", // Keep the background color on hover
+                    backgroundColor: "orange", // Keep the background color on hover
                     animation: "glowBorder 1.5s ease-in-out infinite", // Apply glowing animation on hover
                   },
                   "@keyframes glowBorder": {
@@ -980,7 +981,7 @@ export default function UserTable() {
                   fullWidth
                   variant="outlined"
                   value={editData.userName || ""}
-                // onChange={handleInputChange}
+                  // onChange={handleInputChange}
                 />
               </Grid>
               <Grid item xs={4}>
@@ -992,7 +993,7 @@ export default function UserTable() {
                   fullWidth
                   variant="outlined"
                   value={editData.name || ""}
-                // onChange={handleInputChange}
+                  // onChange={handleInputChange}
                 />
               </Grid>
               <Grid item xs={4}>
@@ -1004,7 +1005,7 @@ export default function UserTable() {
                   fullWidth
                   variant="outlined"
                   value={editData.department || ""}
-                // onChange={handleInputChange}
+                  // onChange={handleInputChange}
                 />
               </Grid>
               <Grid item xs={6}>
@@ -1016,7 +1017,7 @@ export default function UserTable() {
                   fullWidth
                   variant="outlined"
                   value={editData.role || ""}
-                // onChange={handleInputChange}
+                  // onChange={handleInputChange}
                 />
               </Grid>
               <Grid item xs={6}>
@@ -1049,8 +1050,8 @@ export default function UserTable() {
                   type="tel"
                   variant="outlined"
                   value={editData.phone || ""}
-                // onChange={handleInputChange}
-                // sx={{ width: "40%" }}
+                  // onChange={handleInputChange}
+                  // sx={{ width: "40%" }}
                 />
               </Grid>
               <Grid item xs={6}>
@@ -1062,7 +1063,7 @@ export default function UserTable() {
                   fullWidth
                   variant="outlined"
                   value={editData.storageUsed || ""}
-                // onChange={handleInputChange}
+                  // onChange={handleInputChange}
                 />
               </Grid>
             </Grid>
