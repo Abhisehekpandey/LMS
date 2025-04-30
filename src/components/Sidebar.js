@@ -169,8 +169,8 @@ const Sidebar = () => {
           display: "flex",
           alignItems: "center",
           // cursor: 'pointer',
-          height: 52, // Add fixed height to prevent layout shift
-          borderBottom: "1px solid rgba(0,0,0,0.05)",
+          // height: 52, // Add fixed height to prevent layout shift
+          // borderBottom: "1px solid rgba(0,0,0,0.05)",
           mb: 1, // Add margin bottom
         }}
         className="user-info-view"
@@ -191,16 +191,16 @@ const Sidebar = () => {
               height: 40,
               width: 40,
               fontSize: 24,
-              marginTop: "5px",
+              // marginTop: "5px",
               background: "linear-gradient(135deg, #42a5f5, #1976d2)",
             }}
           >
-            A
+            S
           </Avatar>
           <Box
             sx={{
               width: { xs: 'calc(100% - 62px)', xl: 'calc(100% - 72px)' },
-              ml: 4,
+              ml: 2,
               // color: "white",
             }}
             className='user-info'
