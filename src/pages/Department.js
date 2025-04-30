@@ -53,6 +53,7 @@ import {
   Timeline as TimelineIcon,
   ManageAccounts as LDAPIcon,
   Dashboard as DashboardIcon,
+  Add,
 } from "@mui/icons-material";
 
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
@@ -157,7 +158,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     initialRole: "",
     storage: "50GB", // Default storage value
     reportingManager: "", // Add this field
-    departmentOwner: "", // Add this line
+    departmentModerator: "", // Add this line
     submitted: false,
   });
 
@@ -303,11 +304,11 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       prev.map((dept, idx) =>
         idx === editingRole.departmentIndex
           ? {
-            ...dept,
-            roles: dept.roles.map((role, i) =>
-              i === editingRole.roleIndex ? editingRole.value : role
-            ),
-          }
+              ...dept,
+              roles: dept.roles.map((role, i) =>
+                i === editingRole.roleIndex ? editingRole.value : role
+              ),
+            }
           : dept
       )
     );
@@ -331,7 +332,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       const exportData = departments.map((dept) => ({
         Department: dept.name,
         "Display Name": dept.displayName,
-        "Department Owner": dept.departmentOwner, // Added Department Owner
+        "Department Moderator": dept.departmentModerator, // Added Department Owner
         "Storage Allocated": dept.storage || "50GB",
         Roles: `${dept.roles.length} (${dept.roles.join(", ")})`,
         Status: dept.isActive ? "Active" : "Inactive", // Add Status column
@@ -390,7 +391,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           const requiredColumns = {
             Department: false,
             "Display Name": false,
-            "Department Owner": false, // Added Department Owner
+            "Department Moderator": false, // Added Department Owner
             "Storage Allocated": false,
             Role: false,
             Status: false,
@@ -432,7 +433,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
             if (!row.Department) errors.push("Department");
             if (!row["Display Name"]) errors.push("Display Name");
-            if (!row["Department Owner"]) errors.push("Department Owner"); // Added validation
+            if (!row["Department Moderator"])
+              errors.push("Department Moderator"); // Added validation
             if (!row["Storage Allocated"]) errors.push("Storage Allocated");
             if (row.Role === undefined) errors.push("Role");
             if (!row.Status) errors.push("Status");
@@ -509,7 +511,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 updatedDepartmentsList[existingDeptIndex] = {
                   ...updatedDepartmentsList[existingDeptIndex],
                   displayName: rows[0]["Display Name"],
-                  departmentOwner: rows[0]["Department Owner"],
+                  departmentModerator: rows[0]["Department Moderator"],
                   storage: rows[0]["Storage Allocated"],
                   isActive: rows[0].Status.toLowerCase() === "active",
                 };
@@ -581,7 +583,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 updatedDepartmentsList.push({
                   name: deptName,
                   displayName: rows[0]["Display Name"],
-                  departmentOwner: rows[0]["Department Owner"],
+                  departmentModerator: rows[0]["Department Moderator"],
                   storage: rows[0]["Storage Allocated"],
                   roles: newDeptRoles,
                   isActive: rows[0].Status.toLowerCase() === "active",
@@ -750,7 +752,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       !newDepartment.initialRole ||
       !newDepartment.storage ||
       !newDepartment.reportingManager ||
-      !newDepartment.departmentOwner
+      !newDepartment.departmentModerator
     ) {
       setSnackbar({
         open: true,
@@ -775,7 +777,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       roles: [newDepartment.initialRole],
       storage: newDepartment.storage,
       reportingManager: newDepartment.reportingManager,
-      departmentOwner: newDepartment.departmentOwner,
+      departmentModerator: newDepartment.departmentModerator,
       userCount: 0, // Initialize user count
       isActive: true, // Initialize as active
       createdAt: new Date().toISOString(), // Add creation timestamp
@@ -864,8 +866,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     );
     setSnackbar({
       open: true,
-      message: `Department "${dept.name}" ${!dept.isActive ? "activated" : "deactivated"
-        }`,
+      message: `Department "${dept.name}" ${
+        !dept.isActive ? "activated" : "deactivated"
+      }`,
       severity: "success",
     });
   };
@@ -896,7 +899,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       {
         Department: "Example Department",
         "Display Name": "EXD",
-        "Department Owner": "John Doe", // Added Department Owner
+        "Department Moderator": "John Doe", // Added Department Owner
         "Storage Allocated": "50GB",
         Role: "Role1",
         Status: "Active",
@@ -906,7 +909,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       {
         Department: "Example Department",
         "Display Name": "EXD",
-        "Department Owner": "John Doe", // Added Department Owner
+        "Department Moderator": "John Doe", // Added Department Owner
         "Storage Allocated": "50GB",
         Role: "Role2",
         Status: "Active",
@@ -946,7 +949,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             {
               Department: dept.name,
               "Display Name": dept.displayName,
-              "Department Owner": dept.departmentOwner, // Added Department Owner
+              "Department Moderator": dept.departmentModerator, // Added Department Owner
               "Storage Allocated": dept.storage || "50GB",
               Role: "",
               Status: dept.isActive ? "Active" : "Inactive",
@@ -959,7 +962,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         return dept.roles.map((role) => ({
           Department: dept.name,
           "Display Name": dept.displayName,
-          "Department Owner": dept.departmentOwner, // Added Department Owner
+          "Department Moderator": dept.departmentModerator, // Added Department Owner
           "Storage Allocated": dept.storage || "50GB",
           Role: role,
           Status: dept.isActive ? "Active" : "Inactive",
@@ -1005,6 +1008,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     <Box
       sx={{
         display: "flex",
+        flexDirection: "column",
         position: "relative",
         height: "100% ",
         marginLeft: "80px",
@@ -1020,8 +1024,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       <TableContainer
         component={Paper}
         sx={{
-          maxHeight: "calc(100vh - 80px)",
-          height: "calc(100vh - 80px)",
+          maxHeight: "calc(100vh - 120px)",
+          height: "calc(100vh - 120px)",
           backgroundColor: "#ffffff",
           "& .MuiTableHead-root": {
             position: "sticky",
@@ -1047,7 +1051,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             borderBottom: "1px solid #e2e8f0",
           },
           "& .MuiTable-root": {
-            borderCollapse: "separate",
+            // borderCollapse: "separate",
             borderSpacing: 0,
             border: "1px solid #e2e8f0",
           },
@@ -1160,9 +1164,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 }}
               >
                 <TableSortLabel
-                  active={orderBy === "departmentOwner"}
-                  direction={orderBy === "departmentOwner" ? order : "asc"}
-                  onClick={() => handleRequestSort("departmentOwner")}
+                  active={orderBy === "departmentModerator"}
+                  direction={orderBy === "departmentModerator" ? order : "asc"}
+                  onClick={() => handleRequestSort("departmentModerator")}
                   sx={{
                     "& .MuiTableSortLabel-icon": {
                       fontSize: "1.125rem",
@@ -1179,7 +1183,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                       fontSize: "14px",
                     }}
                   >
-                    Department owner
+                    Department Moderator
                   </Typography>
                 </TableSortLabel>
               </TableCell>
@@ -1322,7 +1326,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                           padding: "2px 8px",
                         }}
                       >
-                        {dept.departmentOwner}
+                        {dept.departmentModerator}
                       </TableCell>
                       <TableCell
                         sx={{
@@ -1387,43 +1391,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                               }
                             />
                           </Tooltip>
-                          {/* <Switch
-                            size="small"
-                            checked={dept.isActive}
-                            onChange={() => handleDepartmentToggle(dept)}
-                            sx={{
-                              "& .MuiSwitch-switchBase": {
-                                "&.Mui-checked": {
-                                  // When active/checked
-                                  color: "#2e7d32", // Green color
-                                  "& + .MuiSwitch-track": {
-                                    backgroundColor: "#4caf50", // Green track
-                                    opacity: 0.5,
-                                  },
-                                },
-                                "&.Mui-disabled": {
-                                  "& + .MuiSwitch-track": {
-                                    opacity: 0.5,
-                                  },
-                                },
-                              },
-                              "& .MuiSwitch-switchBase.Mui-checked:hover": {
-                                backgroundColor: "rgba(46, 125, 50, 0.08)", // Green hover effect
-                              },
-                              // When inactive/unchecked
-                              "& .MuiSwitch-switchBase:not(.Mui-checked)": {
-                                color: "#d32f2f", // Red color
-                                "& + .MuiSwitch-track": {
-                                  backgroundColor: "#ef5350", // Red track
-                                  opacity: 0.5,
-                                },
-                              },
-                              "& .MuiSwitch-switchBase:not(.Mui-checked):hover":
-                                {
-                                  backgroundColor: "rgba(211, 47, 47, 0.08)", // Red hover effect
-                                },
-                            }}
-                          /> */}
+
                           <IconButton
                             size="small"
                             onClick={() => handleEditDepartment(dept)}
@@ -1618,57 +1586,82 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               })}
           </TableBody>
         </Table>
+      </TableContainer>
+
+      <Box
+        sx={{
+          position: "sticky",
+          bottom: 0,
+          backgroundColor: "#ffffff",
+          // borderTop: '1px solid #e2e8f0',
+          zIndex: 2,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          width: "100%",
+        }}
+      >
+        <TablePagination
+          component="div"
+          count={departments?.length || 0}
+          page={page}
+          onPageChange={handleChangePage}
+          rowsPerPage={rowsPerPage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+          rowsPerPageOptions={[9, 18, 27]}
+        />
 
         <Box
           sx={{
-            position: "sticky",
-            bottom: 0,
-            backgroundColor: "#ffffff",
-            // borderTop: '1px solid #e2e8f0',
-            zIndex: 2,
             display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            width: "100%",
+            gap: 1,
+            flexDirection: "row-reverse",
+            pr: 2,
           }}
         >
-          <TablePagination
-            component="div"
-            count={departments?.length || 0}
-            page={page}
-            onPageChange={handleChangePage}
-            rowsPerPage={rowsPerPage}
-            onRowsPerPageChange={handleChangeRowsPerPage}
-            rowsPerPageOptions={[9, 18, 27]}
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleBulkUpload}
+            accept=".xlsx,.xls"
+            style={{ display: "none" }}
           />
-
-          <Box
-            sx={{
-              display: "flex",
-              gap: 1,
-              flexDirection: "row-reverse",
-              pr: 2,
-            }}
-          >
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleBulkUpload}
-              accept=".xlsx,.xls"
-              style={{ display: "none" }}
+          <Tooltip title="Add Department" placement="left">
+            <SpeedDial
+              ariaLabel="Department actions"
+              icon={<Add />}
+              onClick={() => setShowAddDepartment(true)}
+              direction="left"
+              FabProps={{
+                sx: {
+                  bgcolor: "orange",
+                  // "&:hover": {
+                  //   bgcolor: "orange",
+                  // },
+                  "&:hover": {
+                    backgroundColor: "orange", // Keep the background color on hover
+                    animation: "glowBorder 1.5s ease-in-out infinite", // Apply glowing animation on hover
+                  },
+                  width: 37,
+                  height: 30,
+                  "& .MuiSpeedDialIcon-root": {
+                    fontSize: "1.2rem",
+                    color: "white",
+                  },
+                },
+              }}
             />
-            <Tooltip title="Add Department" placement="left">
+          </Tooltip>
+
+          {selected.length > 0 && (
+            <Tooltip title="Bulk Download" placement="left">
               <SpeedDial
-                ariaLabel="Department actions"
-                icon={<DepartmentRolesIcon />}
-                onClick={() => setShowAddDepartment(true)}
+                ariaLabel="Bulk Download"
+                icon={<FileDownloadIcon />}
                 direction="left"
+                color="primary"
                 FabProps={{
                   sx: {
-                    bgcolor: "rgb(251, 68, 36)",
-                    "&:hover": {
-                      bgcolor: "rgb(251, 68, 36)",
-                    },
                     width: 37,
                     height: 30,
                     "& .MuiSpeedDialIcon-root": {
@@ -1677,33 +1670,12 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     },
                   },
                 }}
+                onClick={() => handleBulkDownloadSelected(selected)}
               />
             </Tooltip>
-
-            {selected.length > 0 && (
-              <Tooltip title="Bulk Download" placement="left">
-                <SpeedDial
-                  ariaLabel="Bulk Download"
-                  icon={<FileDownloadIcon />}
-                  direction="left"
-                  color="primary"
-                  FabProps={{
-                    sx: {
-                      width: 37,
-                      height: 30,
-                      "& .MuiSpeedDialIcon-root": {
-                        fontSize: "1.2rem",
-                        color: "white",
-                      },
-                    },
-                  }}
-                  onClick={() => handleBulkDownloadSelected(selected)}
-                />
-              </Tooltip>
-            )}
-          </Box>
+          )}
         </Box>
-      </TableContainer>
+      </Box>
 
       <Snackbar
         open={snackbar.open}
@@ -1743,9 +1715,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         >
           <Typography
             variant="h6"
-          // sx={{
-          //   fontFamily: '"Be Vietnam", sans-serif',
-          // }}
+            // sx={{
+            //   fontFamily: '"Be Vietnam", sans-serif',
+            // }}
           >
             New Department
           </Typography>
@@ -1841,19 +1813,21 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             />
             <TextField
               size="small"
-              label="Department Owner"
-              value={newDepartment.departmentOwner}
+              label="Department Moderator"
+              value={newDepartment.departmentModerator}
               onChange={(e) =>
                 setNewDepartment((prev) => ({
                   ...prev,
-                  departmentOwner: e.target.value,
+                  departmentModerator: e.target.value,
                 }))
               }
               required
-              error={!newDepartment.departmentOwner && newDepartment.submitted}
+              error={
+                !newDepartment.departmentModerator && newDepartment.submitted
+              }
               helperText={
-                !newDepartment.departmentOwner && newDepartment.submitted
-                  ? "Department Owner is required"
+                !newDepartment.departmentModerator && newDepartment.submitted
+                  ? "Department Moderator is required"
                   : ""
               }
               fullWidth
