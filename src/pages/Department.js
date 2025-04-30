@@ -4,6 +4,7 @@ import {
   Box,
   Table,
   TableBody,
+  TableFooter,
   TableCell,
   TableContainer,
   TableHead,
@@ -23,7 +24,8 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Tooltip
+  Tooltip,
+  FormControlLabel,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
@@ -39,6 +41,20 @@ import * as XLSX from "xlsx";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import Switch from "@mui/material/Switch";
+import CloseIcon from "@mui/icons-material/Close";
+import FileDownloadIcon from "@mui/icons-material/FileDownload";
+import BusinessIcon from "@mui/icons-material/Business";
+// or
+import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
+import {
+  People as UserIcon,
+  ChevronLeft as ChevronLeftIcon,
+  Work as DepartmentRolesIcon,
+  Timeline as TimelineIcon,
+  ManageAccounts as LDAPIcon,
+  Dashboard as DashboardIcon,
+  Add,
+} from "@mui/icons-material";
 
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import { PersonAdd as PersonAddIcon } from "@mui/icons-material";
@@ -52,13 +68,74 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
-import { Checkbox } from '@mui/material';
+import { Checkbox } from "@mui/material";
+import styles from "./department.module.css";
+
+const IOSSwitch = styled((props) => (
+  <Switch focusVisibleClassName=".Mui-focusVisible" disableRipple {...props} />
+))(({ theme }) => ({
+  width: 42,
+  height: 26,
+  padding: 0,
+  "& .MuiSwitch-switchBase": {
+    padding: 0,
+    margin: 2,
+    transitionDuration: "300ms",
+    "&.Mui-checked": {
+      transform: "translateX(16px)",
+      color: "#fff",
+      "& + .MuiSwitch-track": {
+        backgroundColor: "#65C466",
+        opacity: 1,
+        border: 0,
+        ...theme.applyStyles("dark", {
+          backgroundColor: "#2ECA45",
+        }),
+      },
+      "&.Mui-disabled + .MuiSwitch-track": {
+        opacity: 0.5,
+      },
+    },
+    "&.Mui-focusVisible .MuiSwitch-thumb": {
+      color: "#33cf4d",
+      border: "6px solid #fff",
+    },
+    "&.Mui-disabled .MuiSwitch-thumb": {
+      color: theme.palette.grey[100],
+      ...theme.applyStyles("dark", {
+        color: theme.palette.grey[600],
+      }),
+    },
+    "&.Mui-disabled + .MuiSwitch-track": {
+      opacity: 0.7,
+      ...theme.applyStyles("dark", {
+        opacity: 0.3,
+      }),
+    },
+  },
+  "& .MuiSwitch-thumb": {
+    boxSizing: "border-box",
+    width: 22,
+    height: 22,
+  },
+  "& .MuiSwitch-track": {
+    borderRadius: 26 / 2,
+    backgroundColor: "#E9E9EA",
+    opacity: 1,
+    transition: theme.transitions.create(["background-color"], {
+      duration: 500,
+    }),
+    ...theme.applyStyles("dark", {
+      backgroundColor: "#39393D",
+    }),
+  },
+}));
 
 function Department({ departments, setDepartments, onThemeToggle }) {
   // Add pagination state
   const [page, setPage] = useState(0);
   // const [rowsPerPage] = useState(9);
-  const [rowsPerPage, setRowsPerPage] = useState(25); // Default to 25 rows
+  const [rowsPerPage, setRowsPerPage] = useState(10); // Default to 25 rows
 
   const [openRows, setOpenRows] = useState({});
 
@@ -81,6 +158,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     initialRole: "",
     storage: "50GB", // Default storage value
     reportingManager: "", // Add this field
+    departmentModerator: "", // Add this line
     submitted: false,
   });
 
@@ -94,6 +172,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [departmentToDelete, setDepartmentToDelete] = useState(null);
   const [editedDepartment, setEditedDepartment] = useState(null);
+  // First, add a new state for managing row expansion
+  const [expandedRows, setExpandedRows] = useState({});
 
   // Add these new state variables after other state declarations
   const [editRoleDialog, setEditRoleDialog] = useState(false);
@@ -104,62 +184,69 @@ function Department({ departments, setDepartments, onThemeToggle }) {
   });
 
   // Add these at the top of your component with other state declarations
-const [selected, setSelected] = useState([]);
-const [searchQuery, setSearchQuery] = useState('');
-const [filteredDepartments, setFilteredDepartments] = useState([]);
-// Add this handler function
-const handleSearch = (results) => {
-  if (!results || results.length === 0) {
-    setFilteredDepartments([]); 
-    setSearchQuery('');
-    return;
-  }
+  const [selected, setSelected] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filteredDepartments, setFilteredDepartments] = useState([]);
+  // Add this handler function
+  const handleSearch = (results) => {
+    if (!results || results.length === 0) {
+      setFilteredDepartments([]);
+      setSearchQuery("");
+      return;
+    }
 
-  const filtered = departments.filter(dept => 
-    results.some(result => 
-      result.name === dept.name || 
-      result.displayName === dept.displayName ||
-      result.roles.some(role => dept.roles.includes(role))
-    )
-  );
-
-  setFilteredDepartments(filtered);
-  setSearchQuery(results.query || '');
-};
-
-
-// Add these handler functions
-const handleSelectAllClick = (event) => {
-  if (event.target.checked) {
-    const newSelected = sortedDepartments.map((dept) => dept.name);
-    setSelected(newSelected);
-    return;
-  }
-  setSelected([]);
-};
-
-const handleClick = (event, name) => {
-  const selectedIndex = selected.indexOf(name);
-  let newSelected = [];
-
-  if (selectedIndex === -1) {
-    newSelected = newSelected.concat(selected, name);
-  } else if (selectedIndex === 0) {
-    newSelected = newSelected.concat(selected.slice(1));
-  } else if (selectedIndex === selected.length - 1) {
-    newSelected = newSelected.concat(selected.slice(0, -1));
-  } else if (selectedIndex > 0) {
-    newSelected = newSelected.concat(
-      selected.slice(0, selectedIndex),
-      selected.slice(selectedIndex + 1)
+    const filtered = departments.filter((dept) =>
+      results.some(
+        (result) =>
+          result.name === dept.name ||
+          result.displayName === dept.displayName ||
+          result.roles.some((role) => dept.roles.includes(role))
+      )
     );
-  }
 
-  setSelected(newSelected);
-};
+    setFilteredDepartments(filtered);
+    setSearchQuery(results.query || "");
+  };
 
-const isSelected = (name) => selected.indexOf(name) !== -1;
+  // Add these handler functions
+  const handleSelectAllClick = (event) => {
+    if (event.target.checked) {
+      const newSelected = sortedDepartments.map((dept) => dept.name);
+      setSelected(newSelected);
+      return;
+    }
+    setSelected([]);
+  };
 
+  // Add this handler function
+  const handleToggleRow = (index) => {
+    setExpandedRows((prev) => ({
+      ...prev,
+      [index]: !prev[index],
+    }));
+  };
+
+  const handleClick = (event, name) => {
+    const selectedIndex = selected.indexOf(name);
+    let newSelected = [];
+
+    if (selectedIndex === -1) {
+      newSelected = newSelected.concat(selected, name);
+    } else if (selectedIndex === 0) {
+      newSelected = newSelected.concat(selected.slice(1));
+    } else if (selectedIndex === selected.length - 1) {
+      newSelected = newSelected.concat(selected.slice(0, -1));
+    } else if (selectedIndex > 0) {
+      newSelected = newSelected.concat(
+        selected.slice(0, selectedIndex),
+        selected.slice(selectedIndex + 1)
+      );
+    }
+
+    setSelected(newSelected);
+  };
+
+  const isSelected = (name) => selected.indexOf(name) !== -1;
 
   // Add this handler function
   const handleChangeRowsPerPage = (event) => {
@@ -245,6 +332,7 @@ const isSelected = (name) => selected.indexOf(name) !== -1;
       const exportData = departments.map((dept) => ({
         Department: dept.name,
         "Display Name": dept.displayName,
+        "Department Moderator": dept.departmentModerator, // Added Department Owner
         "Storage Allocated": dept.storage || "50GB",
         Roles: `${dept.roles.length} (${dept.roles.join(", ")})`,
         Status: dept.isActive ? "Active" : "Inactive", // Add Status column
@@ -257,6 +345,7 @@ const isSelected = (name) => selected.indexOf(name) !== -1;
       const wscols = [
         { wch: 25 }, // Department
         { wch: 15 }, // Display Name
+        { wch: 25 }, // Department Owner
         { wch: 20 }, // Storage Allocated
         { wch: 50 }, // Combined Roles column
         { wch: 15 }, // Status column
@@ -287,7 +376,7 @@ const isSelected = (name) => selected.indexOf(name) !== -1;
   const handleBulkUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
-  
+
     try {
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -298,71 +387,76 @@ const isSelected = (name) => selected.indexOf(name) !== -1;
           const worksheet = workbook.Sheets[sheetName];
           const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
+          // Required columns
+          const requiredColumns = {
+            Department: false,
+            "Display Name": false,
+            "Department Moderator": false, // Added Department Owner
+            "Storage Allocated": false,
+            Role: false,
+            Status: false,
+            Edit: false,
+            Delete: false,
+          };
 
-          
-        // Required columns
-        const requiredColumns = {
-          'Department': false,
-          'Display Name': false,
-          'Storage Allocated': false,
-          'Role': false,
-          'Status': false,
-          'Edit': false,
-          'Delete': false
-        };
+          // Check which columns are present in the first row
+          if (jsonData.length > 0) {
+            const firstRow = jsonData[0];
+            Object.keys(firstRow).forEach((column) => {
+              if (requiredColumns.hasOwnProperty(column)) {
+                requiredColumns[column] = true;
+              }
+            });
+          }
 
-        // Check which columns are present in the first row
-        if (jsonData.length > 0) {
-          const firstRow = jsonData[0];
-          Object.keys(firstRow).forEach(column => {
-            if (requiredColumns.hasOwnProperty(column)) {
-              requiredColumns[column] = true;
+          // Find missing columns
+          const missingColumns = Object.entries(requiredColumns)
+            .filter(([_, present]) => !present)
+            .map(([column]) => column);
+
+          if (missingColumns.length > 0) {
+            setSnackbar({
+              open: true,
+              message: `Invalid file format. Missing required columns: ${missingColumns.join(
+                ", "
+              )}`,
+              severity: "error",
+            });
+            return;
+          }
+
+          // Validate data in each row
+          const invalidRows = [];
+          jsonData.forEach((row, index) => {
+            const rowNumber = index + 2; // Add 2 because Excel rows start at 1 and we skip header
+            const errors = [];
+
+            if (!row.Department) errors.push("Department");
+            if (!row["Display Name"]) errors.push("Display Name");
+            if (!row["Department Moderator"])
+              errors.push("Department Moderator"); // Added validation
+            if (!row["Storage Allocated"]) errors.push("Storage Allocated");
+            if (row.Role === undefined) errors.push("Role");
+            if (!row.Status) errors.push("Status");
+            if (row.Edit === undefined) errors.push("Edit");
+            if (row.Delete === undefined) errors.push("Delete");
+
+            if (errors.length > 0) {
+              invalidRows.push(
+                `Row ${rowNumber} missing values for: ${errors.join(", ")}`
+              );
             }
           });
-        }
 
-        // Find missing columns
-        const missingColumns = Object.entries(requiredColumns)
-          .filter(([_, present]) => !present)
-          .map(([column]) => column);
-
-        if (missingColumns.length > 0) {
-          setSnackbar({
-            open: true,
-            message: `Invalid file format. Missing required columns: ${missingColumns.join(", ")}`,
-            severity: "error",
-          });
-          return;
-        }
-
-        // Validate data in each row
-        const invalidRows = [];
-        jsonData.forEach((row, index) => {
-          const rowNumber = index + 2; // Add 2 because Excel rows start at 1 and we skip header
-          const errors = [];
-
-          if (!row.Department) errors.push("Department");
-          if (!row["Display Name"]) errors.push("Display Name");
-          if (!row["Storage Allocated"]) errors.push("Storage Allocated");
-          if (row.Role === undefined) errors.push("Role");
-          if (!row.Status) errors.push("Status");
-          if (row.Edit === undefined) errors.push("Edit");
-          if (row.Delete === undefined) errors.push("Delete");
-
-          if (errors.length > 0) {
-            invalidRows.push(`Row ${rowNumber} missing values for: ${errors.join(", ")}`);
+          if (invalidRows.length > 0) {
+            setSnackbar({
+              open: true,
+              message: `Data validation failed:\n${invalidRows.join("\n")}`,
+              severity: "error",
+            });
+            return;
           }
-        });
 
-        if (invalidRows.length > 0) {
-          setSnackbar({
-            open: true,
-            message: `Data validation failed:\n${invalidRows.join("\n")}`,
-            severity: "error",
-          });
-          return;
-        }
-  
           // Validation check
           const isValidData = jsonData.every(
             (row) =>
@@ -374,7 +468,7 @@ const isSelected = (name) => selected.indexOf(name) !== -1;
               row.Edit !== undefined &&
               row.Delete !== undefined
           );
-  
+
           if (!isValidData) {
             setSnackbar({
               open: true,
@@ -383,7 +477,7 @@ const isSelected = (name) => selected.indexOf(name) !== -1;
             });
             return;
           }
-  
+
           // Group rows by department
           const departmentGroups = {};
           jsonData.forEach((row) => {
@@ -392,35 +486,68 @@ const isSelected = (name) => selected.indexOf(name) !== -1;
             }
             departmentGroups[row.Department].push(row);
           });
-  
+
           let updatedDepartmentsList = [...departments];
-  
+
+          let operationSummary = {
+            added: [],
+            updated: [],
+            deleted: [],
+            rolesAdded: {},
+            rolesDeleted: {},
+            rolesUpdated: {},
+            skipped: [],
+          };
+
           // Process each department
           Object.entries(departmentGroups).forEach(([deptName, rows]) => {
             const existingDeptIndex = updatedDepartmentsList.findIndex(
               (d) => d.name === deptName
             );
-  
+
             if (existingDeptIndex !== -1) {
-              // Department exists
               if (rows[0].Edit?.toString().toLowerCase() === "yes") {
+                // Update department details
                 updatedDepartmentsList[existingDeptIndex] = {
                   ...updatedDepartmentsList[existingDeptIndex],
                   displayName: rows[0]["Display Name"],
+                  departmentModerator: rows[0]["Department Moderator"],
                   storage: rows[0]["Storage Allocated"],
-                  isActive: rows[0].Status.toLowerCase() === "active"
+                  isActive: rows[0].Status.toLowerCase() === "active",
                 };
+                operationSummary.updated.push(deptName);
+              } else {
+                operationSummary.skipped.push(deptName);
               }
-  
+
+              // Track role changes
+              const initialRoles = [
+                ...updatedDepartmentsList[existingDeptIndex].roles,
+              ];
+
               // Process role deletions
-              const updatedRoles = updatedDepartmentsList[existingDeptIndex].roles.filter(
-                role => !rows.some(
-                  row => row.Role === role && row.Delete?.toString().toLowerCase() === "yes"
-                )
+              const updatedRoles = updatedDepartmentsList[
+                existingDeptIndex
+              ].roles.filter(
+                (role) =>
+                  !rows.some(
+                    (row) =>
+                      row.Role === role &&
+                      row.Delete?.toString().toLowerCase() === "yes"
+                  )
               );
-  
+
+              // Track deleted roles
+              const deletedRoles = initialRoles.filter(
+                (role) => !updatedRoles.includes(role)
+              );
+              if (deletedRoles.length > 0) {
+                operationSummary.rolesDeleted[deptName] = deletedRoles;
+              }
+
               // Add new roles
-              rows.forEach(row => {
+              const initialRolesCount = updatedRoles.length;
+              rows.forEach((row) => {
                 if (
                   row.Delete?.toString().toLowerCase() !== "yes" &&
                   !updatedRoles.includes(row.Role) &&
@@ -429,65 +556,124 @@ const isSelected = (name) => selected.indexOf(name) !== -1;
                   updatedRoles.push(row.Role);
                 }
               });
-  
+
+              // Track added roles
+              const addedRoles = updatedRoles.slice(initialRolesCount);
+              if (addedRoles.length > 0) {
+                operationSummary.rolesAdded[deptName] = addedRoles;
+              }
+
               if (updatedRoles.length === 0) {
                 // Remove department if no roles remain
                 updatedDepartmentsList = updatedDepartmentsList.filter(
                   (_, index) => index !== existingDeptIndex
                 );
+                operationSummary.deleted.push(deptName);
               } else {
                 updatedDepartmentsList[existingDeptIndex].roles = updatedRoles;
               }
-  
             } else {
               // New department
               const newDeptRoles = rows
-                .filter(row => row.Delete?.toString().toLowerCase() !== "yes")
-                .map(row => row.Role)
-                .filter(role => role);
-  
+                .filter((row) => row.Delete?.toString().toLowerCase() !== "yes")
+                .map((row) => row.Role)
+                .filter((role) => role);
+
               if (newDeptRoles.length > 0) {
                 updatedDepartmentsList.push({
                   name: deptName,
                   displayName: rows[0]["Display Name"],
+                  departmentModerator: rows[0]["Department Moderator"],
                   storage: rows[0]["Storage Allocated"],
                   roles: newDeptRoles,
-                  isActive: rows[0].Status.toLowerCase() === "active"
+                  isActive: rows[0].Status.toLowerCase() === "active",
                 });
+                operationSummary.added.push(deptName);
+                operationSummary.rolesAdded[deptName] = newDeptRoles;
               }
             }
           });
-  
+
           // Update state and localStorage
           setDepartments(updatedDepartmentsList);
-          localStorage.setItem("departments", JSON.stringify(updatedDepartmentsList));
-  
+          localStorage.setItem(
+            "departments",
+            JSON.stringify(updatedDepartmentsList)
+          );
+
+          let summaryMessages = [];
+
+          if (operationSummary.added.length > 0) {
+            summaryMessages.push(
+              `Added departments: ${operationSummary.added.join(", ")}`
+            );
+          }
+
+          if (operationSummary.updated.length > 0) {
+            summaryMessages.push(
+              `Updated departments: ${operationSummary.updated.join(", ")}`
+            );
+          }
+
+          if (operationSummary.deleted.length > 0) {
+            summaryMessages.push(
+              `Deleted departments: ${operationSummary.deleted.join(", ")}`
+            );
+          }
+
+          Object.entries(operationSummary.rolesAdded).forEach(
+            ([dept, roles]) => {
+              summaryMessages.push(
+                `Added roles in ${dept}: ${roles.join(", ")}`
+              );
+            }
+          );
+
+          Object.entries(operationSummary.rolesDeleted).forEach(
+            ([dept, roles]) => {
+              summaryMessages.push(
+                `Deleted roles in ${dept}: ${roles.join(", ")}`
+              );
+            }
+          );
+
+          if (operationSummary.skipped.length > 0) {
+            summaryMessages.push(
+              `Skipped departments (no changes): ${operationSummary.skipped.join(
+                ", "
+              )}`
+            );
+          }
+
           setSnackbar({
             open: true,
-            message: "Departments and roles updated successfully",
-            severity: "success"
+            message:
+              summaryMessages.length > 0
+                ? summaryMessages.join("\n")
+                : "No changes were made",
+            severity: "success",
           });
-  
         } catch (error) {
           console.error("Error processing file:", error);
           setSnackbar({
             open: true,
-            message: "Error processing file. Please ensure it matches the template format.",
-            severity: "error"
+            message:
+              "Error processing file. Please ensure it matches the template format.",
+            severity: "error",
           });
         }
       };
-  
+
       reader.readAsArrayBuffer(file);
     } catch (error) {
       console.error("Error uploading file:", error);
       setSnackbar({
         open: true,
         message: "Error uploading file",
-        severity: "error"
+        severity: "error",
       });
     }
-  
+
     event.target.value = "";
   };
 
@@ -510,35 +696,35 @@ const isSelected = (name) => selected.indexOf(name) !== -1;
     setOrderBy(property);
   };
 
-  
-const sortedDepartments = React.useMemo(() => {
-  const deptToSort = filteredDepartments.length > 0 ? filteredDepartments : departments;
-  
-  if (!deptToSort) return [];
+  const sortedDepartments = React.useMemo(() => {
+    const deptToSort =
+      filteredDepartments.length > 0 ? filteredDepartments : departments;
 
-  return [...deptToSort].sort((a, b) => {
-    if (orderBy === "roles") {
+    if (!deptToSort) return [];
+
+    return [...deptToSort].sort((a, b) => {
+      if (orderBy === "roles") {
+        return order === "asc"
+          ? a.roles.length - b.roles.length
+          : b.roles.length - a.roles.length;
+      }
+
+      // ... existing sorting logic for other columns
       return order === "asc"
-        ? a.roles.length - b.roles.length
-        : b.roles.length - a.roles.length;
-    }
+        ? a[orderBy].localeCompare(b[orderBy])
+        : b[orderBy].localeCompare(a[orderBy]);
+    });
+  }, [departments, filteredDepartments, order, orderBy]);
 
-    return order === "asc"
-      ? a[orderBy].localeCompare(b[orderBy])
-      : b[orderBy].localeCompare(a[orderBy]);
-  });
-}, [departments, filteredDepartments, order, orderBy]);
-
- 
   const StyledTableRow = styled(TableRow)(({ theme }) => ({
     "&:nth-of-type(odd)": {
-      backgroundColor: "transparent",
+      backgroundColor: "#ffffff",
     },
     "&:nth-of-type(even)": {
-      backgroundColor: "rgba(0, 0, 0, 0.02)",
+      backgroundColor: "#fffff",
     },
     "&:hover": {
-      backgroundColor: "rgba(0, 0, 0, 0.04) !important",
+      backgroundColor: "#f1f5f9 !important",
     },
     "&.Mui-selected": {
       backgroundColor: "rgba(25, 118, 210, 0.08) !important",
@@ -547,19 +733,16 @@ const sortedDepartments = React.useMemo(() => {
       backgroundColor: "rgba(25, 118, 210, 0.12) !important",
     },
     "& .MuiTableCell-root": {
-      padding: "2px 8px",
-      height: "32px",
-      fontSize: "0.875rem",
-      color: "#333",
-      borderBottom: "1px solid #e0e0e0",
+      padding: "12px 16px",
+      fontSize: "0.8125rem",
+      color: "#334155",
+      borderBottom: "1px solid #e2e8f0",
       whiteSpace: "nowrap",
+      // ...commonTextStyle,
     },
-    margin: 0,
-    borderSpacing: 0,
-    transition: "background-color 0.1s ease",
+    transition: "background-color 0.2s ease",
   }));
 
-  // Add this function after other handlers
   const handleAddDepartment = () => {
     setNewDepartment((prev) => ({ ...prev, submitted: true }));
 
@@ -568,7 +751,8 @@ const sortedDepartments = React.useMemo(() => {
       !newDepartment.displayName ||
       !newDepartment.initialRole ||
       !newDepartment.storage ||
-      !newDepartment.reportingManager  // Add this validation
+      !newDepartment.reportingManager ||
+      !newDepartment.departmentModerator
     ) {
       setSnackbar({
         open: true,
@@ -592,30 +776,45 @@ const sortedDepartments = React.useMemo(() => {
       displayName: newDepartment.displayName,
       roles: [newDepartment.initialRole],
       storage: newDepartment.storage,
-      reportingManager: newDepartment.reportingManager, // Add this field
+      reportingManager: newDepartment.reportingManager,
+      departmentModerator: newDepartment.departmentModerator,
+      userCount: 0, // Initialize user count
+      isActive: true, // Initialize as active
+      createdAt: new Date().toISOString(), // Add creation timestamp
     };
 
     const updatedDepartments = [...departments, newDeptWithRole];
-    setDepartments(updatedDepartments);
 
-    // Store in localStorage
-    localStorage.setItem("departments", JSON.stringify(updatedDepartments));
+    try {
+      // Update state and localStorage
+      setDepartments(updatedDepartments);
+      localStorage.setItem("departments", JSON.stringify(updatedDepartments));
 
-    // setDepartments((prev) => [...prev, newDeptWithRole]);
-    setShowAddDepartment(false);
-    setNewDepartment({
-      name: "",
-      displayName: "",
-      initialRole: "",
-      storage: "50GB",
-      reportingManager: "", // Reset this field
-      submitted: false,
-    });
-    setSnackbar({
-      open: true,
-      message: `Department "${newDepartment.name}" added successfully with role "${newDepartment.initialRole}"!`,
-      severity: "success",
-    });
+      // Reset form
+      setShowAddDepartment(false);
+      setNewDepartment({
+        name: "",
+        displayName: "",
+        initialRole: "",
+        storage: "50GB",
+        reportingManager: "",
+        submitted: false,
+      });
+
+      // Show success message
+      setSnackbar({
+        open: true,
+        message: `Department "${newDepartment.name}" added successfully with role "${newDepartment.initialRole}"!`,
+        severity: "success",
+      });
+    } catch (error) {
+      console.error("Error adding department:", error);
+      setSnackbar({
+        open: true,
+        message: "Error adding department. Please try again.",
+        severity: "error",
+      });
+    }
   };
 
   // Add new handler function
@@ -638,19 +837,16 @@ const sortedDepartments = React.useMemo(() => {
       return;
     }
 
-   
+    // Update departments state with new role
+    const updatedDepartments = departments.map((dept) =>
+      dept.name === selectedDepartment.name
+        ? { ...dept, roles: [...dept.roles, newRole.trim()] }
+        : dept
+    );
 
-     // Update departments state with new role
-  const updatedDepartments = departments.map((dept) =>
-    dept.name === selectedDepartment.name
-      ? { ...dept, roles: [...dept.roles, newRole.trim()] }
-      : dept
-  );
-
-  // Update state and localStorage
-  setDepartments(updatedDepartments);
-  localStorage.setItem('departments', JSON.stringify(updatedDepartments));
-
+    // Update state and localStorage
+    setDepartments(updatedDepartments);
+    localStorage.setItem("departments", JSON.stringify(updatedDepartments));
 
     setSnackbar({
       open: true,
@@ -703,91 +899,96 @@ const sortedDepartments = React.useMemo(() => {
       {
         Department: "Example Department",
         "Display Name": "EXD",
+        "Department Moderator": "John Doe", // Added Department Owner
         "Storage Allocated": "50GB",
         Role: "Role1",
         Status: "Active",
         Edit: "No",
-        Delete: "No"  // Added Delete column
+        Delete: "No", // Added Delete column
       },
       {
         Department: "Example Department",
         "Display Name": "EXD",
+        "Department Moderator": "John Doe", // Added Department Owner
         "Storage Allocated": "50GB",
         Role: "Role2",
         Status: "Active",
         Edit: "No",
-        Delete: "No"  // Added Delete column
-      }
+        Delete: "No", // Added Delete column
+      },
     ];
-  
+
     const workbook = XLSX.utils.book_new();
     const worksheet = XLSX.utils.json_to_sheet(template);
-  
+
     const wscols = [
       { wch: 25 }, // Department
       { wch: 15 }, // Display Name
+      { wch: 25 }, // Department Owner
       { wch: 20 }, // Storage Allocated
       { wch: 30 }, // Role
       { wch: 15 }, // Status
       { wch: 10 }, // Edit
-      { wch: 10 }  // Delete
+      { wch: 10 }, // Delete
     ];
     worksheet["!cols"] = wscols;
-  
+
     XLSX.utils.book_append_sheet(workbook, worksheet, "Template");
     XLSX.writeFile(workbook, "department_upload_template.xlsx");
   };
 
-  
-  
-
   const handleBulkDownloadSelected = (selectedItems) => {
     try {
-      const selectedDepartments = departments.filter(dept => 
+      const selectedDepartments = departments.filter((dept) =>
         selectedItems.includes(dept.name)
       );
-  
+
       const exportData = selectedDepartments.flatMap((dept) => {
         if (!dept.roles || dept.roles.length === 0) {
-          return [{
-            Department: dept.name,
-            "Display Name": dept.displayName,
-            "Storage Allocated": dept.storage || "50GB",
-            Role: "",
-            Status: dept.isActive ? "Active" : "Inactive",
-            Edit: "No",
-            Delete: "No"  // Added Delete column
-          }];
+          return [
+            {
+              Department: dept.name,
+              "Display Name": dept.displayName,
+              "Department Moderator": dept.departmentModerator, // Added Department Owner
+              "Storage Allocated": dept.storage || "50GB",
+              Role: "",
+              Status: dept.isActive ? "Active" : "Inactive",
+              Edit: "No",
+              Delete: "No", // Added Delete column
+            },
+          ];
         }
-  
-        return dept.roles.map(role => ({
+
+        return dept.roles.map((role) => ({
           Department: dept.name,
           "Display Name": dept.displayName,
+          "Department Moderator": dept.departmentModerator, // Added Department Owner
           "Storage Allocated": dept.storage || "50GB",
           Role: role,
           Status: dept.isActive ? "Active" : "Inactive",
           Edit: "No",
-          Delete: "No"  // Added Delete column
+          Delete: "No", // Added Delete column
         }));
       });
-  
+
       const ws = XLSX.utils.json_to_sheet(exportData);
-  
+
       const wscols = [
         { wch: 25 }, // Department
         { wch: 15 }, // Display Name
+        { wch: 25 }, // Department Owner
         { wch: 20 }, // Storage Allocated
         { wch: 30 }, // Role
         { wch: 15 }, // Status
         { wch: 10 }, // Edit
-        { wch: 10 }  // Delete
+        { wch: 10 }, // Delete
       ];
       ws["!cols"] = wscols;
-  
+
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Selected Departments");
       XLSX.writeFile(wb, "selected_departments.xlsx");
-  
+
       setSnackbar({
         open: true,
         message: `Successfully exported ${selectedItems.length} departments`,
@@ -803,363 +1004,533 @@ const sortedDepartments = React.useMemo(() => {
     }
   };
 
-  
-
-  
   return (
     <Box
       sx={{
         display: "flex",
+        flexDirection: "column",
         position: "relative",
-        height: "100vh",
+        height: "100% ",
+        marginLeft: "80px",
+        marginTop: "12px",
+        marginRight: "18px",
         overflow: "hidden",
+
+        bgcolor: "#f5f5f5", // Whitesmoke background for the main container
+        borderRadius: "20px",
+        boxShadow: "2px 1px 11px 5px rgba(0, 0, 0, 0.2)!important",
       }}
     >
-      <Sidebar />
-      <Box
+      <TableContainer
+        component={Paper}
         sx={{
-          flexGrow: 2,
-          marginLeft: 0,
-          transition: "margin-left 0.3s",
-          overflow: "hidden",
+          maxHeight: "calc(100vh - 120px)",
+          height: "calc(100vh - 120px)",
+          backgroundColor: "#ffffff",
+          "& .MuiTableHead-root": {
+            position: "sticky",
+            top: 0,
+            zIndex: 1,
+            backgroundColor: "#ffff",
+            boxShadow: "0 1px 2px 0 rgba(59, 52, 52, 0.05)",
+          },
+          "& .MuiTableHead-root .MuiTableCell-root": {
+            backgroundColor: "#ffff",
+
+            borderBottom: "2px solid #94a3b8", // Changed border color and made it thicker
+            fontSize: "0.875rem",
+            fontWeight: "700 !important",
+            color: "#475569",
+            height: "30px",
+            padding: "2px 16px",
+          },
+          "& .MuiTableCell-root": {
+            padding: "8px 16px",
+            fontSize: "0.8125rem",
+            color: "#334155",
+            borderBottom: "1px solid #e2e8f0",
+          },
+          "& .MuiTable-root": {
+            // borderCollapse: "separate",
+            borderSpacing: 0,
+            border: "1px solid #e2e8f0",
+          },
+          boxShadow: "0 1px 3px 0 rgb(0 0 0 / 0.1)",
+          borderRadius: "8px",
+          position: "relative",
         }}
       >
-        <Navbar onThemeToggle={onThemeToggle} onSearch={handleSearch}
-  currentPage="departments" />
-        {/* <Box sx={{ p: 3, marginLeft: "50px", overflow: "hidden" }}> */}
-        <Box
-          sx={{
-            p: 0,
-            marginLeft: "64px", // Keep the sidebar margin
-            marginTop: "24px", // Add top margin for Navbar separation
-            marginRight: "24px", // Add right margin
-            overflow: "hidden",
-            height: "calc(100vh - 64px)", // Adjust height to account for top margin
-          }}
-        >
-          <TableContainer
-            component={Paper}
-          
-            sx={{
-              height: "calc(100vh - 96px)",
-              "& .MuiTableHead-root": {
-                position: "sticky",
-                top: 0,
-                zIndex: 1,
-                backgroundColor: "#f5f5f5",
-              },
-              "& .MuiTableHead-root .MuiTableCell-root": {
-                backgroundColor: "#f5f5f5",
-                fontWeight: "bold",
-                borderBottom: "2px solid #ddd",
-              },
-              "& .MuiTableCell-root": {
-                padding: "2px 8px",
-                height: "32px",
-              },
-              boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-              borderRadius: "4px",
-              overflow: "auto",
-              position: "relative",
-            }}
-          >
-            <Table>
-              <TableHead>
-                <TableRow>
-                <TableCell padding="checkbox"  sx={{ 
-        width: "48px",
-        padding: "2px 8px",
-        height: "32px"
-      }}>
-      <Checkbox
-        color="primary"
-        indeterminate={selected.length > 0 && selected.length < sortedDepartments.length}
-        checked={sortedDepartments.length > 0 && selected.length === sortedDepartments.length}
-        onChange={handleSelectAllClick}
-        inputProps={{
-          'aria-label': 'select all departments',
-        }}
-        size="small"
-      />
-    </TableCell>
-                  
-                  {/* <TableCell sx={{ width: "200px", padding: "1px 8px" }}> */}
-                  <TableCell
-                    sx={{
-                      width: "200px",
-                      padding: "2px 8px",
-                      height: "32px",
-                      fontWeight: "bold",
-                      color: "#444",
-                    }}
-                  >
-                    <TableSortLabel
-                      active={orderBy === "name"}
-                      direction={orderBy === "name" ? order : "asc"}
-                      onClick={() => handleRequestSort("name")}
-                    >
-                      <Typography variant="body1" fontWeight="bold">
-                        Department
-                      </Typography>
-                    </TableSortLabel>
-                  </TableCell>
-                  {/* <TableCell sx={{ width: "150px", padding: "1px 8px" }}> */}
-                  <TableCell
-                    sx={{
-                      width: "150px",
-                      padding: "2px 8px",
-                      height: "32px",
-                      fontWeight: "bold",
-                      color: "#444",
-                      textAlign: 'center'
-                    }}
-                  >
-                    <TableSortLabel
-                      active={orderBy === "displayName"}
-                      direction={orderBy === "displayName" ? order : "asc"}
-                      onClick={() => handleRequestSort("displayName")}
-                    >
-                      <Typography variant="body1" fontWeight="bold">
-                        Short Name
-                      </Typography>
-                    </TableSortLabel>
-                  </TableCell>
-                  {/* <TableCell sx={{ width: "150px", padding: "1px 8px" }}> */}
-                  <TableCell
-                    sx={{
-                      width: "150px",
-                      padding: "2px 8px",
-                      height: "32px",
-                      fontWeight: "bold",
-                      color: "#444",
-                      textAlign: 'center'
-                    }}
-                  >
-                    <Typography variant="body1" fontWeight="bold">
-                      Storage Allocated
-                    </Typography>
-                  </TableCell>
-                  {/* <TableCell sx={{ width: "150px", padding: "1px 8px" }}> */}
-                  <TableCell
-                    sx={{
-                      width: "150px",
-                      padding: "2px 8px",
-                      height: "32px",
-                      fontWeight: "bold",
-                      color: "#444",
-                      textAlign:'center'
-                      
-                    }}
-                  >
-                    <TableSortLabel
-                      active={orderBy === "roles"}
-                      direction={orderBy === "roles" ? order : "asc"}
-                      onClick={() => handleRequestSort("roles")}
-                    >
-                      <Typography variant="body1" fontWeight="bold">
-                        Number of Roles
-                      </Typography>
-                    </TableSortLabel>
-                  </TableCell>
-                  {/* <TableCell sx={{ width: "150px", padding: "1px 8px" }}> */}
-                  <TableCell
-                    sx={{
-                      width: "150px",
-                      padding: "2px 8px",
-                      height: "32px",
-                      fontWeight: "bold",
-                      color: "#444",
-                      textAlign: 'center'
-                      
+        <Table sx={{ border: "0px solid #e2e8f0 !important" }}>
+          <TableHead className={styles.tableHeader}>
+            <TableRow
+              sx={{ boxShadow: "0 -2px 8px 0 rgba(0, 0, 0, 0.2) !important" }}
+            >
+              <TableCell padding="checkbox" sx={{ width: "48px" }}>
+                <Checkbox
+                  color="primary"
+                  indeterminate={
+                    selected.length > 0 &&
+                    selected.length < sortedDepartments.length
+                  }
+                  checked={
+                    sortedDepartments.length > 0 &&
+                    selected.length === sortedDepartments.length
+                  }
+                  onChange={handleSelectAllClick}
+                  inputProps={{
+                    "aria-label": "select all departments",
+                  }}
+                  size="small"
+                />
+              </TableCell>
 
+              <TableCell
+                sx={{
+                  width: "100px",
+                  padding: "8px 8px",
+                  height: "40px",
+                  fontWeight: "bold",
+                  color: "#444",
+                }}
+              >
+                <TableSortLabel
+                  active={orderBy === "name"}
+                  direction={orderBy === "name" ? order : "asc"}
+                  onClick={() => handleRequestSort("name")}
+                  sx={{
+                    "& .MuiTableSortLabel-icon": {
+                      fontSize: "1.125rem",
+                      color: "#64748b",
+                      fontWeight: "bold",
+                    },
+                  }}
+                >
+                  <Typography
+                    variant="body1"
+                    sx={{
+                      fontWeight: "700 !important",
+                      fontSize: "14px",
                     }}
                   >
-                    <Typography variant="body1" fontWeight="bold">
-                      Actions
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {sortedDepartments
-                  ?.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                  .map((dept, index) => {
-                    const isItemSelected = isSelected(dept.name); 
-                    return (
-                    <React.Fragment key={index}>
-                     
-                      <StyledTableRow 
-          hover
-          onClick={(event) => handleClick(event, dept.name)}
-          role="checkbox"
-          aria-checked={isItemSelected}
-          tabIndex={-1}
-          selected={isItemSelected}
-        >
-          <TableCell padding="checkbox"  sx={{ 
-                width: "48px",
-                padding: "2px 8px",
-                height: "32px"
-              }}>
-            <Checkbox
-              color="primary"
-              checked={isItemSelected}
-              size="small"
-              onClick={(event) => event.stopPropagation()}
-              onChange={(event) => handleClick(event, dept.name)}
-            />
-          </TableCell>
-                      
-                        <TableCell  sx={{ padding: "2px 8px" }}>{dept.name}</TableCell>
-                        <TableCell sx={{ textAlign: 'center', padding: "2px 8px" }}>{dept.displayName}</TableCell>
-                        <TableCell sx={{ textAlign: 'center', padding: "2px 8px" }}>{dept.storage}</TableCell>
-                        <TableCell sx={{ padding: "2px 8px" }}>
-                          <Box
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 1,
-                              justifyContent: 'center'
-                            }}
-                          >
-                            {dept.roles.length}
-                            <IconButton
-                              size="small"
-                              onClick={() => handleRowToggle(index)}
-                            >
-                              {openRows[index] ? (
-                                <KeyboardArrowUpIcon />
-                              ) : (
-                                <KeyboardArrowDownIcon />
-                              )}
-                            </IconButton>
-                            <IconButton
-                              size="small"
-                              onClick={() => {
-                                setSelectedDepartment(dept);
-                                setShowAddRoleDialog(true);
-                              }}
-                              sx={{
-                                "&:hover": {
-                                  color: "primary.main",
-                                },
-                              }}
-                              title="Add New Role"
-                            >
-                              <ManageAccountsIcon fontSize="small" />
-                            </IconButton>
-                          </Box>
-                        </TableCell>
+                    Department
+                  </Typography>
+                </TableSortLabel>
+              </TableCell>
 
-                        <TableCell sx={{ padding: "2px 8px" }}>
-                          <Box
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              gap: 1,
-                            }}
-                          >
-                            <Switch
-                              size="small"
-                              checked={dept.isActive}
-                              onChange={() => handleDepartmentToggle(dept)}
-                              sx={{
-                                "& .MuiSwitch-switchBase.Mui-checked": {
-                                  color: "#1976d2", // Brighter blue
-                                },
-                                "& .MuiSwitch-track": {
-                                  backgroundColor: "#90caf9", // Light blue track
-                                },
-                              }}
-                            />
-                            <IconButton
-                              size="small"
-                              onClick={() => handleEditDepartment(dept)}
-                              sx={{
-                                color: "#1976d2", // Brighter blue
-                                "&:hover": {
-                                  backgroundColor: "#e3f2fd", // Light blue background on hover
-                                  color: "#1565c0", // Darker blue on hover
-                                },
-                                padding: "8px",
-                              }}
-                              title="Edit Department"
-                            >
-                              <EditIcon fontSize="small" />
-                            </IconButton>
-                            <IconButton
-                              size="small"
-                              onClick={() => {
-                                setDepartmentToDelete(dept);
-                                setDeleteDialogOpen(true);
-                              }}
-                              sx={{
-                                color: "#d32f2f", // Brighter red
-                                "&:hover": {
-                                  backgroundColor: "#ffebee", // Light red background on hover
-                                  color: "#c62828", // Darker red on hover
-                                },
-                                padding: "8px",
-                              }}
-                              title="Delete Department"
-                            >
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
-                          </Box>
-                        </TableCell>
-                      </StyledTableRow>
-                      <StyledTableRow key={index}>
-                       
-                        <TableCell
-                          style={{
-                            paddingBottom: 0,
-                            paddingTop: 0,
-                            borderBottom: "none",
-                            height: "auto",
+              <TableCell
+                sx={{
+                  width: "150px",
+                  padding: "8px 8px",
+                  height: "40px",
+                  fontWeight: "bold",
+                  color: "#444",
+                  textAlign: "center",
+                }}
+              >
+                <TableSortLabel
+                  active={orderBy === "displayName"}
+                  direction={orderBy === "displayName" ? order : "asc"}
+                  onClick={() => handleRequestSort("displayName")}
+                  sx={{
+                    "& .MuiTableSortLabel-icon": {
+                      fontSize: "1.125rem",
+                      color: "#64748b",
+                      fontWeight: "bold",
+                    },
+                  }}
+                >
+                  <Typography
+                    variant="body1"
+                    sx={{
+                      fontWeight: "700 !important",
+                      fontSize: "14px",
+                    }}
+                  >
+                    Short name
+                  </Typography>
+                </TableSortLabel>
+              </TableCell>
+
+              <TableCell
+                sx={{
+                  // ...commonTextStyle,
+                  width: "200px",
+                  padding: "2px 8px",
+                  height: "32px",
+                  fontWeight: "bold",
+                  color: "#444",
+                  textAlign: "center",
+                  alignItems: "center",
+                }}
+              >
+                <TableSortLabel
+                  active={orderBy === "departmentModerator"}
+                  direction={orderBy === "departmentModerator" ? order : "asc"}
+                  onClick={() => handleRequestSort("departmentModerator")}
+                  sx={{
+                    "& .MuiTableSortLabel-icon": {
+                      fontSize: "1.125rem",
+                      color: "#64748b",
+                      fontWeight: "bold",
+                    },
+                  }}
+                >
+                  <Typography
+                    variant="body1"
+                    sx={{
+                      // ...commonTextStyle,
+                      fontWeight: "700 !important",
+                      fontSize: "14px",
+                    }}
+                  >
+                    Department Moderator
+                  </Typography>
+                </TableSortLabel>
+              </TableCell>
+
+              <TableCell
+                sx={{
+                  // ...commonTextStyle,
+                  width: "150px",
+                  padding: "2px 8px",
+                  height: "32px",
+                  fontWeight: "bold",
+                  color: "#444",
+                  textAlign: "center",
+                }}
+              >
+                <Typography
+                  variant="body1"
+                  // fontWeight="bold"
+                  sx={{
+                    fontWeight: "700 !important",
+                    fontSize: "14px",
+                  }}
+                >
+                  Storage
+                </Typography>
+              </TableCell>
+
+              <TableCell
+                sx={{
+                  // ...commonTextStyle,
+                  width: "150px",
+                  padding: "2px 8px",
+                  height: "32px",
+                  fontWeight: "bold",
+                  color: "#444",
+                  textAlign: "center",
+                }}
+              >
+                <TableSortLabel
+                  active={orderBy === "roles"}
+                  direction={orderBy === "roles" ? order : "asc"}
+                  onClick={() => handleRequestSort("roles")}
+                  sx={{
+                    "& .MuiTableSortLabel-icon": {
+                      fontSize: "1.125rem",
+                      color: "#64748b",
+                      fontWeight: "bold",
+                    },
+                  }}
+                >
+                  <Typography
+                    variant="body1"
+                    sx={{
+                      // ...commonTextStyle,
+                      fontWeight: "700 !important",
+                      fontSize: "14px",
+                    }}
+                  >
+                    No. of roles
+                  </Typography>
+                </TableSortLabel>
+              </TableCell>
+
+              {/* <TableCell sx={{ width: "150px", padding: "1px 8px" }}> */}
+              <TableCell
+                sx={{
+                  // ...commonTextStyle,
+                  width: "150px",
+                  padding: "2px 8px",
+                  height: "32px",
+                  fontWeight: "bold",
+                  color: "#444",
+                  textAlign: "center",
+                }}
+              >
+                <Typography
+                  variant="body1"
+                  // fontWeight="bold"
+                  sx={{
+                    fontWeight: "700 !important",
+                    fontSize: "14px",
+                  }}
+                >
+                  Actions
+                </Typography>
+              </TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {sortedDepartments
+              ?.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+              .map((dept, index) => {
+                const isItemSelected = isSelected(dept.name);
+                return (
+                  <React.Fragment key={index}>
+                    <StyledTableRow
+                      hover
+                      // onClick={(event) => handleClick(event, dept.name)}
+                      role="checkbox"
+                      aria-checked={isItemSelected}
+                      tabIndex={-1}
+                      selected={isItemSelected}
+                      sx={{
+                        cursor: "default", // Change cursor to default instead of pointer
+                      }}
+                    >
+                      <TableCell
+                        padding="checkbox"
+                        sx={{
+                          width: "48px",
+                          padding: "2px 8px",
+                          height: "32px",
+                        }}
+                      >
+                        <Checkbox
+                          color="primary"
+                          checked={isItemSelected}
+                          size="small"
+                          // onClick={(event) => event.stopPropagation()}
+                          onChange={(event) => handleClick(event, dept.name)}
+                        />
+                      </TableCell>
+
+                      <TableCell sx={{ padding: "2px 8px" }}>
+                        {dept.name}
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          // ...commonTextStyle,
+                          textAlign: "center",
+                          padding: "2px 8px",
+                        }}
+                      >
+                        {dept.displayName}
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          // ...commonTextStyle,
+                          textAlign: "center",
+                          padding: "2px 8px",
+                        }}
+                      >
+                        {dept.departmentModerator}
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          // ...commonTextStyle,
+                          textAlign: "center",
+                          padding: "2px 8px",
+                        }}
+                      >
+                        {dept.storage}
+                      </TableCell>
+
+                      <TableCell sx={{ padding: "2px 8px" }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1,
+                            justifyContent: "center",
+                            cursor: "pointer",
+                            "&:hover": {
+                              "& .MuiSvgIcon-root": {
+                                color: "primary.main",
+                              },
+                            },
                           }}
-                          colSpan={6}
+                          onClick={() => handleRowToggle(index)}
                         >
-                          <Collapse
-                            in={openRows[index]}
-                            timeout="auto"
-                            unmountOnExit
-                          >
-                           
-                            <Box
-                              sx={{
-                                margin: 0,
-                                backgroundColor: "rgba(0, 0, 0, 0.01)",
-                                borderRadius: 0,
-                                padding: 0,
-                              }}
-                            >
+                          {dept.roles.length}{" "}
+                          {/* Display roles count instead of userCount */}
+                          <KeyboardArrowDownIcon
+                            sx={{
+                              fontSize: "1.1rem",
+                              color: "#64748b",
+                              transition: "transform 0.2s ease-in-out",
+                              transform: openRows[index]
+                                ? "rotate(-180deg)"
+                                : "rotate(0)",
+                            }}
+                          />
+                        </Box>
+                      </TableCell>
 
-                              <List
-                                dense
-                                sx={{
-                                  padding: 0,
-                                  margin: 0,
-                                  "& .MuiListItem-root": {
-                                    padding: "2px 8px",
-                                    minHeight: "32px",
-                                    borderBottom: "1px solid #f0f0f0",
-                                  },
-                                }}
-                              >
+                      <TableCell sx={{ padding: "2px 8px" }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: 0.5,
+                          }}
+                        >
+                          <Tooltip
+                            title={dept.isActive ? "Active" : "Inactive"}
+                          >
+                            <FormControlLabel
+                              control={
+                                <IOSSwitch
+                                  size="small"
+                                  checked={dept.isActive}
+                                  onChange={() => handleDepartmentToggle(dept)}
+                                />
+                              }
+                            />
+                          </Tooltip>
+
+                          <IconButton
+                            size="small"
+                            onClick={() => handleEditDepartment(dept)}
+                            sx={{
+                              color: "#1976d2", // Brighter blue
+                              "&:hover": {
+                                backgroundColor: "#e3f2fd", // Light blue background on hover
+                                color: "#1565c0", // Darker blue on hover
+                              },
+                              padding: "4px",
+                            }}
+                            title="Edit Department"
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            onClick={() => {
+                              setDepartmentToDelete(dept);
+                              setDeleteDialogOpen(true);
+                            }}
+                            sx={{
+                              color: "#d32f2f", // Brighter red
+                              "&:hover": {
+                                backgroundColor: "#ffebee", // Light red background on hover
+                                color: "#c62828", // Darker red on hover
+                              },
+                              padding: "4px",
+                            }}
+                            title="Delete Department"
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
+                      </TableCell>
+                    </StyledTableRow>
+
+                    <StyledTableRow key={index}>
+                      <TableCell
+                        style={{
+                          paddingBottom: 0,
+                          paddingTop: 0,
+                          borderBottom: "none",
+                          height: "auto",
+                        }}
+                        colSpan={6}
+                      >
+                        <Collapse
+                          in={openRows[index]}
+                          timeout="auto"
+                          unmountOnExit
+                        >
+                          <Box
+                            sx={{
+                              position: "absolute",
+                              left: "75%", // Center horizontally within the cell
+                              transform: "translateX(-50%)", // Center adjust
+                              width: "250px",
+                              backgroundColor: "#ffff",
+                              borderRadius: "8px",
+                              border: "1px solid #e2e8f0",
+                              boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                              zIndex: 3,
+                              marginTop: "4px", // Small gap from the count
+                            }}
+                          >
+                            <Table size="small" aria-label="roles">
+                              <TableHead>
+                                <TableRow>
+                                  <TableCell
+                                    sx={{
+                                      backgroundColor: "#f1f5f9",
+                                      fontWeight: "600 !important",
+                                      color: "#475569",
+                                      fontSize: "0.75rem",
+                                      borderBottom: "1px solid #e2e8f0",
+                                      padding: "8px 12px",
+                                      // ...commonTextStyle,
+                                    }}
+                                  >
+                                    Role Name
+                                  </TableCell>
+                                  <TableCell
+                                    align="right"
+                                    sx={{
+                                      backgroundColor: "#f1f5f9",
+                                      fontWeight: "600 !important",
+                                      color: "#475569",
+                                      fontSize: "0.75rem",
+                                      borderBottom: "1px solid #e2e8f0",
+                                      padding: "8px 12px",
+                                      width: "60px",
+                                      // ...commonTextStyle,
+                                    }}
+                                  >
+                                    Actions
+                                  </TableCell>
+                                </TableRow>
+                              </TableHead>
+                              <TableBody>
                                 {dept.roles.map((role, roleIndex) => (
-                                  <ListItem
+                                  <TableRow
                                     key={roleIndex}
                                     sx={{
-                                      height: "32px",
                                       "&:hover": {
                                         backgroundColor: "rgba(0, 0, 0, 0.02)",
                                       },
+                                      "& td": {
+                                        borderBottom:
+                                          roleIndex === dept.roles.length - 1
+                                            ? "none"
+                                            : "1px solid #e2e8f0",
+                                      },
                                     }}
-                                    secondaryAction={
-                                      <Box sx={{ display: "flex", gap: 1 }}>
+                                  >
+                                    <TableCell
+                                      sx={{
+                                        // ...commonTextStyle,
+                                        padding: "6px 12px",
+                                        fontSize: "0.75rem",
+                                        color: "#334155",
+                                      }}
+                                    >
+                                      {role}
+                                    </TableCell>
+                                    <TableCell
+                                      align="right"
+                                      sx={{
+                                        padding: "4px 8px",
+                                      }}
+                                    >
+                                      <Box
+                                        sx={{
+                                          display: "flex",
+                                          gap: 0.5,
+                                          justifyContent: "flex-end",
+                                        }}
+                                      >
                                         <IconButton
-                                          // edge="end"
                                           size="small"
                                           onClick={() =>
                                             handleEditRole(
@@ -1168,147 +1539,143 @@ const sortedDepartments = React.useMemo(() => {
                                               role
                                             )
                                           }
-                                         
                                           sx={{
-                                            padding: "4px",
-                                            "& .MuiSvgIcon-root": {
-                                              fontSize: "1.1rem",
+                                            padding: "2px",
+                                            color: "primary.main",
+                                            "&:hover": {
+                                              backgroundColor:
+                                                "primary.lighter",
                                             },
                                           }}
                                           title="Edit Role"
                                         >
-                                          <EditIcon fontSize="small" />
+                                          <EditIcon
+                                            sx={{ fontSize: "0.875rem" }}
+                                          />
                                         </IconButton>
                                         <IconButton
-                                          // edge="end"
                                           size="small"
                                           onClick={() =>
                                             handleDeleteRole(index, roleIndex)
                                           }
-                                         
                                           sx={{
-                                            padding: "4px",
-                                            "& .MuiSvgIcon-root": {
-                                              fontSize: "1.1rem",
+                                            padding: "2px",
+                                            color: "error.main",
+                                            "&:hover": {
+                                              backgroundColor: "error.lighter",
                                             },
                                           }}
                                           title="Delete Role"
                                         >
                                           <DeleteIcon
-                                            fontSize="small"
-                                            color="error"
+                                            sx={{ fontSize: "0.875rem" }}
                                           />
                                         </IconButton>
                                       </Box>
-                                    }
-                                  >
-                                    <ListItemText
-                                      primary={role}
-                                      sx={{ marginLeft: 2 }}
-                                    />
-                                  </ListItem>
+                                    </TableCell>
+                                  </TableRow>
                                 ))}
-                              </List>
-                            </Box>
-                          </Collapse>
-                        </TableCell>
-                      </StyledTableRow>
-                    </React.Fragment>
-                  )})}
-              </TableBody>
-            </Table>
-          </TableContainer>
-          <TablePagination
-            component="div"
-            count={departments?.length || 0}
-            page={page}
-            onPageChange={handleChangePage}
-            rowsPerPage={rowsPerPage}
-            onRowsPerPageChange={handleChangeRowsPerPage} // Add this line
-            rowsPerPageOptions={[25, 50]}
-            sx={{
-              position: "sticky",
-              bottom: 0,
-              bgcolor: "white",
-              borderTop: "1px solid #ddd",
-              "& .MuiToolbar-root": {
-                height: "36px",
-                minHeight: "36px",
-                paddingLeft: "16px",
-                paddingRight: "16px",
-              },
-              "& .MuiTablePagination-select": {
-                paddingTop: 0,
-                paddingBottom: 0,
-              },
-            }}
+                              </TableBody>
+                            </Table>
+                          </Box>
+                        </Collapse>
+                      </TableCell>
+                    </StyledTableRow>
+                  </React.Fragment>
+                );
+              })}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      <Box
+        sx={{
+          position: "sticky",
+          bottom: 0,
+          backgroundColor: "#ffffff",
+          // borderTop: '1px solid #e2e8f0',
+          zIndex: 2,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          width: "100%",
+        }}
+      >
+        <TablePagination
+          component="div"
+          count={departments?.length || 0}
+          page={page}
+          onPageChange={handleChangePage}
+          rowsPerPage={rowsPerPage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+          rowsPerPageOptions={[9, 18, 27]}
+        />
+
+        <Box
+          sx={{
+            display: "flex",
+            gap: 1,
+            flexDirection: "row-reverse",
+            pr: 2,
+          }}
+        >
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleBulkUpload}
+            accept=".xlsx,.xls"
+            style={{ display: "none" }}
           />
+          <Tooltip title="Add Department" placement="left">
+            <SpeedDial
+              ariaLabel="Department actions"
+              icon={<Add />}
+              onClick={() => setShowAddDepartment(true)}
+              direction="left"
+              FabProps={{
+                sx: {
+                  bgcolor: "orange",
+                  // "&:hover": {
+                  //   bgcolor: "orange",
+                  // },
+                  "&:hover": {
+                    backgroundColor: "orange", // Keep the background color on hover
+                    animation: "glowBorder 1.5s ease-in-out infinite", // Apply glowing animation on hover
+                  },
+                  width: 37,
+                  height: 30,
+                  "& .MuiSpeedDialIcon-root": {
+                    fontSize: "1.2rem",
+                    color: "white",
+                  },
+                },
+              }}
+            />
+          </Tooltip>
+
+          {selected.length > 0 && (
+            <Tooltip title="Bulk Download" placement="left">
+              <SpeedDial
+                ariaLabel="Bulk Download"
+                icon={<FileDownloadIcon />}
+                direction="left"
+                color="primary"
+                FabProps={{
+                  sx: {
+                    width: 37,
+                    height: 30,
+                    "& .MuiSpeedDialIcon-root": {
+                      fontSize: "1.2rem",
+                      color: "white",
+                    },
+                  },
+                }}
+                onClick={() => handleBulkDownloadSelected(selected)}
+              />
+            </Tooltip>
+          )}
         </Box>
       </Box>
-
-      
-      <Box sx={{ position: "fixed", bottom: 48, right: 36, zIndex: 1000 }}>
-  <input
-    type="file"
-    ref={fileInputRef}
-    onChange={handleBulkUpload}
-    accept=".xlsx,.xls"
-    style={{ display: "none" }}
-  />
-  
-  {/* Add conditional Bulk Download SpeedDial */}
-  {selected.length > 0 && (
-    <SpeedDial
-      ariaLabel="Bulk Download"
-      icon={<DownloadIcon />}
-      direction="left"
-      // sx={{ position: 'absolute', bottom: 60 }}
-      sx={{ 
-        position: 'absolute', 
-        bottom: 45, // Adjust this value to position it above the main SpeedDial
-        right: 0,
-      }}
-      FabProps={{
-        sx: {
-          bgcolor: "blue",
-          "&:hover": {
-            bgcolor: "blue",
-          },
-          width: 25,
-          height: 25,
-          "& .MuiSpeedDialIcon-root": {
-            fontSize: "1.2rem",
-            color: "white",
-          },
-        },
-      }}
-      onClick={() => handleBulkDownloadSelected(selected)}
-    />
-  )}
-
-  <SpeedDial
-  ariaLabel="Department actions"
-  icon={<FolderIcon />}
-  onClick={() => setShowAddDepartment(true)}  // Add onClick here
-  direction="left"
-  FabProps={{
-    sx: {
-      bgcolor: "blue",
-      "&:hover": {
-        bgcolor: "blue",
-      },
-      width: 25,
-      height: 25,
-      "& .MuiSpeedDialIcon-root": {
-        fontSize: "1.2rem",
-        color: "white",
-      },
-    },
-  }}
->
-  {/* Remove SpeedDialAction as we don't need it anymore */}
-</SpeedDial>
-</Box>
 
       <Snackbar
         open={snackbar.open}
@@ -1325,13 +1692,64 @@ const sortedDepartments = React.useMemo(() => {
         </Alert>
       </Snackbar>
 
-      {/* Add Department Dialog */}
       <Dialog
         open={showAddDepartment}
         onClose={() => setShowAddDepartment(false)}
         maxWidth="sm"
+        PaperProps={{
+          sx: {
+            borderRadius: "8px",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+          },
+        }}
       >
-        <DialogTitle>Add New Department</DialogTitle>
+        {/* <DialogTitle>Add New Department</DialogTitle> */}
+        <DialogTitle
+          sx={{
+            borderBottom: "1px solid #eee",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            p: 2,
+          }}
+        >
+          <Typography
+            variant="h6"
+            // sx={{
+            //   fontFamily: '"Be Vietnam", sans-serif',
+            // }}
+          >
+            New Department
+          </Typography>
+          <IconButton
+            onClick={() => setShowAddDepartment(false)}
+            size="small"
+            sx={{
+              color: "error.main",
+              width: 32,
+              height: 32,
+              border: "1px solid",
+              borderColor: "error.light",
+              bgcolor: "error.lighter",
+              borderRadius: "50%",
+              position: "relative",
+              "&:hover": {
+                color: "error.dark",
+                borderColor: "error.main",
+                bgcolor: "error.lighter",
+                transform: "rotate(180deg)",
+              },
+              transition: "transform 0.3s ease",
+            }}
+          >
+            <CloseIcon
+              sx={{
+                fontSize: "1.1rem",
+                transition: "transform 0.2s ease",
+              }}
+            />
+          </IconButton>
+        </DialogTitle>
         <DialogContent>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 2 }}>
             <TextField
@@ -1368,7 +1786,7 @@ const sortedDepartments = React.useMemo(() => {
                 required
                 error={!newDepartment.storage && newDepartment.submitted}
               >
-                {[0,25, 50, 75, 100, 150, 200].map((size) => (
+                {[0, 25, 50, 75, 100, 150, 200].map((size) => (
                   <MenuItem key={size} value={`${size}GB`}>
                     {size} GB
                   </MenuItem>
@@ -1377,7 +1795,7 @@ const sortedDepartments = React.useMemo(() => {
             </FormControl>
             <TextField
               size="small"
-              label="Display Name"
+              label="Short Name"
               value={newDepartment.displayName}
               onChange={(e) =>
                 setNewDepartment((prev) => ({
@@ -1392,6 +1810,27 @@ const sortedDepartments = React.useMemo(() => {
                   ? "Display name is required"
                   : "Short form"
               }
+            />
+            <TextField
+              size="small"
+              label="Department Moderator"
+              value={newDepartment.departmentModerator}
+              onChange={(e) =>
+                setNewDepartment((prev) => ({
+                  ...prev,
+                  departmentModerator: e.target.value,
+                }))
+              }
+              required
+              error={
+                !newDepartment.departmentModerator && newDepartment.submitted
+              }
+              helperText={
+                !newDepartment.departmentModerator && newDepartment.submitted
+                  ? "Department Moderator is required"
+                  : ""
+              }
+              fullWidth
             />
             <TextField
               size="small"
@@ -1412,90 +1851,109 @@ const sortedDepartments = React.useMemo(() => {
               }
             />
             <TextField
-  size="small"
-  label="Reporting Manager"
-  value={newDepartment.reportingManager}
-  onChange={(e) =>
-    setNewDepartment((prev) => ({
-      ...prev,
-      reportingManager: e.target.value,
-    }))
-  }
-  required
-  error={!newDepartment.reportingManager && newDepartment.submitted}
-  helperText={
-    !newDepartment.reportingManager && newDepartment.submitted
-      ? "Reporting Manager is required"
-      : ""
-  }
-  fullWidth
-  sx={{ mt: 2 }}
-/>
+              size="small"
+              label="Reporting Manager"
+              value={newDepartment.reportingManager}
+              onChange={(e) =>
+                setNewDepartment((prev) => ({
+                  ...prev,
+                  reportingManager: e.target.value,
+                }))
+              }
+              required
+              error={!newDepartment.reportingManager && newDepartment.submitted}
+              helperText={
+                !newDepartment.reportingManager && newDepartment.submitted
+                  ? "Reporting Manager is required"
+                  : ""
+              }
+              fullWidth
+              sx={{ mt: 2 }}
+            />
           </Box>
 
-    <Box sx={{ 
-  display: "flex", 
-  justifyContent: "space-between", // Change from center to space-between
-  alignItems: "center",
-  gap: 2, 
-  mt: 3,
-  pt: 2,
-  borderTop: "1px solid #eee",
-  width: "100%" // Add width
-}}>
-  <Box sx={{ display: "flex", gap: 1 }}> {/* Left side container */}
-    <Tooltip title="Bulk Upload">
-      <IconButton
-        onClick={() => fileInputRef.current?.click()}
-        sx={{
-          color: "primary.main",
-          "&:hover": {
-            backgroundColor: "rgba(25, 118, 210, 0.04)",
-          },
-        }}
-      >
-        <UploadFileIcon />
-      </IconButton>
-    </Tooltip>
-    <Tooltip title="Download Template">
-      <IconButton
-        onClick={handleTemplateDownload}
-        sx={{
-          color: "primary.main",
-          "&:hover": {
-            backgroundColor: "rgba(25, 118, 210, 0.04)",
-          },
-        }}
-      >
-        <DownloadIcon />
-      </IconButton>
-    </Tooltip>
-  </Box>
-  <Box sx={{ display: "flex", gap: 1 }}> {/* Right side - buttons */}
-    <Button
-      onClick={() => {
-        setShowAddDepartment(false);
-        setNewDepartment({
-          name: "",
-          displayName: "",
-          initialRole: "",
-          storage: "50GB",
-          submitted: false,
-        });
-      }}
-    >
-      Cancel
-    </Button>
-    <Button onClick={handleAddDepartment} color="primary" variant="contained">
-      Add
-    </Button>
-  </Box>
-  <Box sx={{ display: "flex", gap: 1 }}> {/* Right side container - for future use if needed */}
-    {/* Add any additional buttons/actions here */}
-  </Box>
-</Box>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: 2,
+              mt: 3,
+              pt: 2,
+              borderTop: "1px solid #eee",
+              width: "100%",
+            }}
+          >
+            <Box sx={{ display: "flex", gap: 1 }}>
+              <Tooltip title="Download Template" componentsProps={{}}>
+                <IconButton
+                  onClick={handleTemplateDownload}
+                  size="small"
+                  sx={{
+                    backgroundColor: "success.lighter",
+                    border: "1px solid",
+                    borderColor: "success.light",
+                    color: "success.main",
+                    width: 36,
+                    height: 36,
+                    borderRadius: "8px",
+                    "&:hover": {
+                      backgroundColor: "success.100",
+                      transform: "translateY(-1px)",
+                      boxShadow: "0 2px 8px rgba(46, 125, 50, 0.15)",
+                    },
+                    transition: "all 0.2s ease",
+                  }}
+                >
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                    <DownloadIcon sx={{ fontSize: 20 }} />
+                  </Box>
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Bulk Upload" componentsProps={{}}>
+                <IconButton
+                  onClick={() => fileInputRef.current?.click()}
+                  size="small"
+                  sx={{
+                    backgroundColor: "primary.lighter",
+                    border: "1px solid",
+                    borderColor: "primary.light",
+                    color: "primary.main",
+                    width: 36,
+                    height: 36,
+                    borderRadius: "8px",
+                    "&:hover": {
+                      backgroundColor: "primary.100",
+                      transform: "translateY(-1px)",
+                      boxShadow: "0 2px 8px rgba(25, 118, 210, 0.15)",
+                    },
+                    transition: "all 0.2s ease",
+                  }}
+                >
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                    <UploadFileIcon sx={{ fontSize: 20 }} />
+                  </Box>
+                </IconButton>
+              </Tooltip>
+            </Box>
+
+            <Button
+              onClick={handleAddDepartment}
+              variant="contained"
+              sx={{
+                bgcolor: "primary.main",
+                "&:hover": {
+                  bgcolor: "primary.dark",
+                },
+                px: 3,
+                py: 0.7,
+                // fontFamily: '"Be Vietnam", sans-serif',
+              }}
+            >
+              Add
+            </Button>
+          </Box>
         </DialogContent>
-       
       </Dialog>
 
       <Dialog

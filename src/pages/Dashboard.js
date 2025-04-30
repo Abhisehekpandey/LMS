@@ -31,6 +31,7 @@ import {
   TableSortLabel,
   TablePagination,
   InputLabel,
+  Divider,
 } from "@mui/material";
 import MoveToInboxIcon from "@mui/icons-material/MoveToInbox"; // Add this import
 import WifiProtectedSetupIcon from "@mui/icons-material/WifiProtectedSetup";
@@ -69,10 +70,18 @@ import DeleteForeverIcon from "@mui/icons-material/DeleteForever"; // For delete
 import PowerSettingsNewIcon from "@mui/icons-material/PowerSettingsNew"; // For activate
 import BlockIcon from "@mui/icons-material/Block"; // For deactivate
 import SaveOutlinedIcon from "@mui/icons-material/SaveOutlined"; // For save changes
+// First add this import at the top of your file if not already present
+import { keyframes } from "@emotion/react";
 
 import emailjs from "@emailjs/browser";
 import { v4 as uuidv4 } from "uuid";
-import UserTable from "./UserTable";
+import UserTable from "./user/UserTable";
+// import { Grid } from '@mui/material';
+import AddIcon from "@mui/icons-material/Add";
+// Add these imports at the top
+import { debounce } from "lodash";
+import { useMemo } from "react";
+import { memo, useCallback } from "react";
 
 const EMAIL_SERVICE_ID = "service_4h54d19";
 const EMAIL_TEMPLATE_ID = "template_so0uw3n";
@@ -234,6 +243,56 @@ const statusColors = {
   pending: "#ff9800", // Orange
 };
 
+const MemoizedTextField = memo(
+  ({ label, name, value, onChange, error, helperText, ...props }) => (
+    <TextField
+      size="small"
+      label={label}
+      name={name}
+      value={value || ""}
+      onChange={onChange}
+      error={error}
+      helperText={helperText}
+      inputProps={{
+        autoComplete: "off",
+      }}
+      {...props}
+    />
+  ),
+  (prevProps, nextProps) => {
+    return (
+      prevProps.value === nextProps.value && prevProps.error === nextProps.error
+    );
+  }
+);
+
+const MemoizedDepartmentField = memo(
+  ({
+    label,
+    value,
+    onChange,
+    error,
+    helperText,
+    required = false,
+    ...props
+  }) => (
+    <TextField
+      size="small"
+      label={label}
+      value={value || ""}
+      onChange={onChange}
+      error={error}
+      helperText={helperText}
+      required={required}
+      fullWidth
+      inputProps={{
+        autoComplete: "off",
+      }}
+      {...props}
+    />
+  )
+);
+
 emailjs.init(EMAIL_USER_ID);
 
 const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
@@ -300,6 +359,17 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
   // Add these state variables
   const [targetUser, setTargetUser] = useState(null);
   const [migrationError, setMigrationError] = useState("");
+
+  const debouncedInputChange = useMemo(
+    () =>
+      debounce((name, value) => {
+        setNewUserData((prev) => ({
+          ...prev,
+          [name]: value,
+        }));
+      }, 100),
+    []
+  );
 
   // Add this function to calculate total data
   const calculateTotalData = (selectedUsers) => {
@@ -599,111 +669,135 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
     setSnackbarOpen(true);
   };
 
-  const handleAddUser = async () => {
+  const validateForm = useCallback((data) => {
     const errors = {};
-    // Validate all required fields
-    if (!newUserData.name?.trim()) errors.name = "Name is required";
-    if (!newUserData.reportingManager) {
-      errors.reportingManager = "Reporting Manager is required";
-    }
-    if (!newUserData.department) errors.department = "Department is required";
-    if (!newUserData.role) errors.role = "Role is required";
-    if (!newUserData.email?.trim()) errors.email = "Email is required";
-    if (!newUserData.storageUsed?.trim())
-      errors.storageUsed = "Storage allocation is required";
+    const validate = (field, value, message) => {
+      if (!value?.trim()) {
+        errors[field] = message;
+      }
+    };
 
-    // Email format validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (newUserData.email && !emailRegex.test(newUserData.email)) {
+    validate("name", data.name, "Name is required");
+    validate("email", data.email, "Email is required");
+    validate("username", data.username, "Username is required");
+
+    // Email validation
+    if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
       errors.email = "Invalid email format";
     }
 
-    if (!newUserData.username?.trim()) errors.username = "Username is required";
-    // Add username uniqueness check
-    const isDuplicateUsername = rows.some(
-      (user) =>
-        user.username?.toLowerCase() === newUserData.username?.toLowerCase()
-    );
-    if (isDuplicateUsername) {
-      setSnackbarMessage("This username is already in use");
-      setSnackbarOpen(true);
-      return;
-    }
+    return errors;
+  }, []);
 
-    // Check for duplicate email
-    const isDuplicateEmail = rows.some(
-      (user) => user.email.toLowerCase() === newUserData.email?.toLowerCase()
-    );
+  const handleAddUser = useCallback(async () => {
+    if (formErrors.username || formErrors.email || formErrors.phone) return;
 
-    if (isDuplicateEmail) {
-      setSnackbarMessage("This email address is already in use");
-      setSnackbarOpen(true);
-      return;
-    }
-
+    // Pre-validate before proceeding
+    const errors = validateForm(newUserData);
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
       return;
     }
 
-    const inviteLink = generateInviteLink(newUserData.email);
-    console.log("Generated invite link:", inviteLink); // Debug log
-    const emailSent = await sendInviteEmail(newUserData.email, inviteLink);
-    console.log("Email send result:", emailSent); // Debug log
-    if (!emailSent) {
-      setSnackbarMessage("Error sending invite email. Please try again.");
+    // Check duplicates using Set for better performance
+    const existingUsernames = new Set(
+      rows.map((user) => user.username?.toLowerCase())
+    );
+    const existingEmails = new Set(
+      rows.map((user) => user.email?.toLowerCase())
+    );
+
+    if (existingUsernames.has(newUserData.username?.toLowerCase())) {
+      setSnackbarMessage("Username already exists");
       setSnackbarOpen(true);
       return;
     }
 
-    const updatedRows = [
-      ...rows,
-      {
+    if (existingEmails.has(newUserData.email?.toLowerCase())) {
+      setSnackbarMessage("Email already exists");
+      setSnackbarOpen(true);
+      return;
+    }
+
+    try {
+      // Create user object before async operations
+      const newUser = {
         ...newUserData,
+        department: newUserData.department || "",
+        role: newUserData.role || "",
         status: "pending",
         manageStorage: "1GB",
-      },
-    ];
-    setRows(updatedRows);
-    localStorage.setItem("dashboardRows", JSON.stringify(updatedRows));
-    setNewUserData({});
-    setFormErrors({});
-    setOpenAddUserDialog(false);
-    setChangesMade(true);
-    showSnackbar("User added successfully");
-  };
+      };
 
-  // Handle input change for new user
-  const handleNewUserInputChange = (e) => {
-    const { name, value } = e.target;
-    setNewUserData((prevData) => ({ ...prevData, [name]: value }));
-  };
+      // Update UI immediately
+      setRows((prev) => [...prev, newUser]);
+      setOpenAddUserDialog(false);
+      setChangesMade(true);
+
+      // Generate invite link and send email in parallel
+      const inviteLink = generateInviteLink(newUserData.email);
+      const emailPromise = sendInviteEmail(newUserData.email, inviteLink);
+
+      // Handle async operations
+      const emailSent = await emailPromise;
+      if (!emailSent) {
+        setSnackbarMessage("Email sending failed, but user was created");
+        setSnackbarOpen(true);
+        return;
+      }
+
+      // Update localStorage after successful operations
+      localStorage.setItem("dashboardRows", JSON.stringify([...rows, newUser]));
+
+      // Clear form
+      setNewUserData({});
+      setFormErrors({});
+      showSnackbar("User added successfully");
+    } catch (error) {
+      console.error("Error adding user:", error);
+      setSnackbarMessage("Error adding user. Please try again.");
+      setSnackbarOpen(true);
+    }
+  }, [newUserData, rows, formErrors, validateForm]);
+
+  const AddUserButton = memo(({ onClick, disabled }) => (
+    <Button
+      variant="contained"
+      onClick={onClick}
+      disabled={disabled}
+      sx={{
+        "&:active": {
+          transform: "translateY(1px)",
+        },
+        position: "relative",
+        "&::after": {
+          content: '""',
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: "transparent",
+          transition: "background-color 0.2s",
+        },
+        "&:active::after": {
+          backgroundColor: "rgba(0,0,0,0.1)",
+        },
+      }}
+    >
+      Add User
+    </Button>
+  ));
+
+  // Clean up debounce on unmount
+  useEffect(() => {
+    return () => {
+      debouncedInputChange.cancel();
+    };
+  }, [debouncedInputChange]);
 
   // Open Add User Dialog
   const [openAddUserDialog, setOpenAddUserDialog] = useState(false); // State for Add User dialog
-
-  const handleToggle = (name) => {
-    if (selected.length > 0) {
-      // If there are selected rows, toggle all selected rows
-      setRows((prevRows) =>
-        prevRows.map((row) =>
-          selected.includes(row.name)
-            ? { ...row, activeLicense: !row.activeLicense }
-            : row
-        )
-      );
-    } else {
-      // If no rows are selected, toggle only the clicked row
-      setRows((prevRows) =>
-        prevRows.map((row) =>
-          row.name === name
-            ? { ...row, activeLicense: !row.activeLicense }
-            : row
-        )
-      );
-    }
-    setChangesMade(true);
-  };
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
@@ -944,29 +1038,24 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
     setSnackbarOpen(true);
   };
 
-  // Handle input change in edit dialog
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setEditedUserData((prevData) => ({ ...prevData, [name]: value }));
-    // setChangesMade(true);
-  };
+  const handleInputChange = useCallback(
+    (name) => (event) => {
+      const { value } = event.target;
 
-  // Update the handleStorageChange function
-  const handleStorageChange = (name, value) => {
-    const updatedRows = rows.map((row) => {
-      if (row.name === name) {
-        return {
-          ...row,
-          manageStorage: value, // Only update manageStorage, leave storageUsed unchanged
-        };
-      }
-      return row;
-    });
+      requestAnimationFrame(() => {
+        setNewUserData((prev) => ({
+          ...prev,
+          [name]: value,
+        }));
 
-    setRows(updatedRows);
-    localStorage.setItem("dashboardRows", JSON.stringify(updatedRows));
-    setChangesMade(true);
-  };
+        setFormErrors((prev) => ({
+          ...prev,
+          [name]: "",
+        }));
+      });
+    },
+    []
+  );
 
   const handleSaveChanges = () => {
     localStorage.setItem("dashboardRows", JSON.stringify(rows));
@@ -982,160 +1071,6 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
     }
   }, [rows, changesMade]);
 
-  // Handle snackbar close
-  const handleSnackbarClose = () => {
-    setSnackbarOpen(false);
-  };
-
-  // Handle page change
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
-  };
-
-  // Handle rows per page change
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0); // Reset to first page
-  };
-
-  // Handle mouse enter and leave for row focus
-  const handleMouseEnter = (name) => {
-    setHoveredRow(name);
-  };
-
-  const handleMouseLeave = () => {
-    setHoveredRow(null);
-  };
-
-  // Modify the handleBulkUpload function:
-
-  const handleBulkUpload = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    try {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: "array" });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet);
-
-        // Validate the data structure
-        const isValidData = jsonData.every(
-          (row) =>
-            row.username &&
-            row.name &&
-            row.department &&
-            row.role &&
-            row.email &&
-            row.storageUsed &&
-            row.edit
-        );
-
-        if (!isValidData) {
-          setSnackbarMessage(
-            "Invalid file format. Please use the correct template."
-          );
-          setSnackbarOpen(true);
-          return;
-        }
-
-        const existingEmails = new Set(
-          rows.map((row) => row.email.toLowerCase())
-        );
-        const existingNames = new Set(
-          rows.map((row) => row.name.toLowerCase())
-        );
-        const duplicateEmails = [];
-        const duplicateNames = [];
-        const newUsers = [];
-        const updatedUsers = [];
-        const ignoredRows = [];
-        const emailEditAttempts = []; // New array to track email edit attemptsl
-
-        jsonData.forEach((user) => {
-          if (user.edit?.toLowerCase() === "yes") {
-            const existingUserIndex = rows.findIndex(
-              (row) => row.email.toLowerCase() === user.email.toLowerCase()
-            );
-
-            if (existingUserIndex >= 0) {
-              const existingEmail = rows[existingUserIndex].email;
-              updatedUsers.push({
-                ...user,
-                email: existingEmail,
-                status: rows[existingUserIndex].status, // Preserve existing status
-              });
-            } else {
-              ignoredRows.push({
-                ...user,
-                reason: "User not found for editing",
-              });
-            }
-          } else {
-            const isDuplicateEmail = existingEmails.has(
-              user.email.toLowerCase()
-            );
-            const isDuplicateName = existingNames.has(user.name.toLowerCase());
-
-            if (isDuplicateEmail) {
-              duplicateEmails.push(user.email);
-              ignoredRows.push({ ...user, reason: "Duplicate email" });
-            } else if (isDuplicateName) {
-              duplicateNames.push(user.name);
-              ignoredRows.push({ ...user, reason: "Duplicate name" });
-            } else {
-              newUsers.push({
-                ...user,
-                status: "pending", // Set status as pending for new users
-                manageStorage: "1GB",
-                phone: user.phone || "",
-              });
-              existingEmails.add(user.email.toLowerCase());
-              existingNames.add(user.name.toLowerCase());
-            }
-          }
-        });
-
-        // Update existing users
-        let updatedRows = [...rows];
-        updatedUsers.forEach((userToUpdate) => {
-          updatedRows = updatedRows.map((row) =>
-            row.email.toLowerCase() === userToUpdate.email.toLowerCase()
-              ? { ...userToUpdate, email: row.email }
-              : row
-          );
-        });
-
-        // Add new users with pending status
-        updatedRows = [...updatedRows, ...newUsers];
-        setRows(updatedRows);
-        localStorage.setItem("dashboardRows", JSON.stringify(updatedRows));
-        setChangesMade(true);
-
-        const message = [
-          `Successfully processed ${jsonData.length} rows:`,
-          `- ${newUsers.length} new users added (with pending status)`,
-          `- ${updatedUsers.length} users updated`,
-          `- ${ignoredRows.length} rows ignored`,
-        ].join("\n");
-
-        setSnackbarMessage(message);
-        setSnackbarOpen(true);
-      };
-
-      reader.readAsArrayBuffer(file);
-    } catch (error) {
-      console.error("Upload error:", error);
-      setSnackbarMessage("Error processing file. Please try again.");
-      setSnackbarOpen(true);
-    }
-
-    event.target.value = "";
-  };
-  // Add this handler function inside the Dashboard component
   const handleDeleteAll = () => {
     if (selected.length > 0) {
       setUserToDelete(selected.join(", "));
@@ -1259,28 +1194,6 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
     }
   }, []);
 
-  // Update handleStatusChange
-  const handleStatusChange = (name, newStatus) => {
-    if (newStatus === "pending") {
-      return;
-    }
-    setRows((prevRows) =>
-      prevRows.map((row) =>
-        row.name === name
-          ? {
-              ...row,
-              status: newStatus,
-            }
-          : row
-      )
-    );
-    setChangesMade(true);
-    // Update localStorage immediately
-    const updatedRows = rows.map((row) =>
-      row.name === name ? { ...row, status: newStatus } : row
-    );
-    localStorage.setItem("dashboardRows", JSON.stringify(updatedRows));
-  };
 
   // Add these functions inside Dashboard component
   const generateInviteLink = (email) => {
@@ -1356,26 +1269,17 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
     <Box
       sx={{
         display: "flex",
-        position: "relative",
-        height: "100vh",
-        overflow: "hidden",
       }}
     >
-      <Sidebar /> {/* Add Sidebar */}
       <Box
         sx={{
-          flexGrow: 2,
-          marginLeft: 0,
-          transition: "margin-left 0.3s",
-          overflow: "hidden",
+          flexGrow: 1,marginLeft:'50px'
         }}
       >
-        <Navbar onThemeToggle={onThemeToggle} onSearch={handleSearch} />
-
         <Box
           sx={{
-            p: "10px",
-            marginLeft: "48px",
+            // p: "10px",
+            // marginLeft: "48px",
             overflow: "hidden",
             height: "calc(100vh - 48px)",
           }}
@@ -1395,1057 +1299,7 @@ const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
           </Paper>
         </Box>
       </Box>
-      {/* create user */}
-      <Dialog
-        open={openAddUserDialog}
-        onClose={() => setOpenAddUserDialog(false)}
-        maxWidth="sm"
-      >
-        <DialogContent>
-          <Box sx={{ position: "relative", pb: 2 }}>
-            <IconButton
-              onClick={() => setOpenAddUserDialog(false)}
-              sx={{
-                position: "absolute",
-                right: -8,
-                top: -8,
-              }}
-            >
-              <CloseIcon fontSize="small" />
-            </IconButton>
-          </Box>
-          <TextField
-            required
-            margin="dense"
-            name="username"
-            label="Username"
-            type="text"
-            fullWidth
-            variant="outlined"
-            value={newUserData.username || ""}
-            onChange={(e) => {
-              setNewUserData({ ...newUserData, username: e.target.value });
-              setFormErrors({ ...formErrors, username: "" });
-            }}
-            error={Boolean(formErrors.username)}
-            helperText={formErrors.username}
-          />
-          <TextField
-            autoFocus
-            required
-            margin="dense"
-            name="name"
-            label="Full Name"
-            type="text"
-            fullWidth
-            variant="outlined"
-            value={newUserData.name || ""}
-            onChange={(e) => {
-              setNewUserData({ ...newUserData, name: e.target.value });
-              setFormErrors({ ...formErrors, name: "" });
-            }}
-            error={Boolean(formErrors.name)}
-            helperText={formErrors.name}
-          />
-          <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
-            <FormControl fullWidth error={Boolean(formErrors.department)}>
-              <Autocomplete
-                value={
-                  departments.find(
-                    (dept) => dept.name === newUserData.department
-                  ) || null
-                }
-                onChange={(event, newValue) => {
-                  if (newValue) {
-                    setNewUserData((prev) => ({
-                      ...prev,
-                      department: newValue.name,
-                      role: "",
-                    }));
-                  } else {
-                    setNewUserData((prev) => ({
-                      ...prev,
-                      department: "",
-                      role: "",
-                    }));
-                  }
-                }}
-                options={departments}
-                getOptionLabel={(option) =>
-                  `${option.name} / ${option.displayName}`
-                }
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Select Department"
-                    variant="outlined"
-                    required
-                    error={Boolean(formErrors.department)}
-                    helperText={formErrors.department}
-                  />
-                )}
-                noOptionsText={
-                  <Box sx={{ textAlign: "center", py: 1 }}>
-                    <Typography color="text.secondary" sx={{ mb: 1 }}>
-                      No departments found
-                    </Typography>
-                    <Button
-                      onClick={() => setShowAddDepartment(true)}
-                      color="primary"
-                      variant="outlined"
-                      size="small"
-                      fullWidth
-                    >
-                      Add New Department
-                    </Button>
-                  </Box>
-                }
-                ListboxProps={{
-                  style: { maxHeight: 250 },
-                }}
-                ListboxComponent={({ children, ...props }) => (
-                  <ul {...props}>
-                    {children}
-                    <li style={{ padding: "8px" }}>
-                      <Button
-                        onClick={() => setShowAddDepartment(true)}
-                        color="primary"
-                        variant="outlined"
-                        size="small"
-                        fullWidth
-                      >
-                        Add New Department
-                      </Button>
-                    </li>
-                  </ul>
-                )}
-                renderOption={(props, option) => (
-                  <li {...props}>{`${option.name} / ${option.displayName}`}</li>
-                )}
-                isOptionEqualToValue={(option, value) =>
-                  option.name === value.name
-                }
-              />
-            </FormControl>
-
-            <FormControl fullWidth error={Boolean(formErrors.role)}>
-              <Select
-                required
-                value={newUserData.role || ""}
-                onChange={(e) => {
-                  if (e.target.value === "add_new_role") {
-                    setShowAddRole(true);
-                  } else {
-                    setNewUserData({ ...newUserData, role: e.target.value });
-                    setFormErrors({ ...formErrors, role: "" });
-                  }
-                }}
-                displayEmpty
-                disabled={!newUserData.department}
-              >
-                <MenuItem value="" disabled>
-                  Select Role
-                </MenuItem>
-                {departments.find(
-                  (dept) => dept.name === newUserData.department
-                )?.roles.length === 0 ? (
-                  <MenuItem
-                    value=""
-                    disabled
-                    sx={{ color: "text.secondary", fontStyle: "italic" }}
-                  >
-                    No roles available for this department
-                  </MenuItem>
-                ) : (
-                  departments
-                    .find((dept) => dept.name === newUserData.department)
-                    ?.roles.map((role, index) => (
-                      <MenuItem key={index} value={role}>
-                        {role}
-                      </MenuItem>
-                    ))
-                )}
-                <MenuItem
-                  value="add_new_role"
-                  sx={{ borderTop: "1px solid #ccc" }}
-                >
-                  <Button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowAddRole(true);
-                    }}
-                    color="primary"
-                    variant="outlined"
-                    size="small"
-                    fullWidth
-                  >
-                    Add New Role
-                  </Button>
-                </MenuItem>
-              </Select>
-              {formErrors.role && (
-                <FormHelperText>{formErrors.role}</FormHelperText>
-              )}
-            </FormControl>
-            <FormControl
-              fullWidth
-              error={Boolean(formErrors.reportingManager)}
-              disabled={!newUserData.department}
-            >
-              <InputLabel>Reporting Manager</InputLabel>
-              <Select
-                value={newUserData.reportingManager || ""}
-                onChange={(e) => {
-                  setNewUserData({
-                    ...newUserData,
-                    reportingManager: e.target.value,
-                  });
-                  setFormErrors({ ...formErrors, reportingManager: "" });
-                }}
-                label="Reporting Manager"
-              >
-                <MenuItem value="" disabled>
-                  Select Reporting Manager
-                </MenuItem>
-                {newUserData.department &&
-                  departments.find(
-                    (dept) => dept.name === newUserData.department
-                  )?.reportingManager && (
-                    <MenuItem
-                      value={
-                        departments.find(
-                          (dept) => dept.name === newUserData.department
-                        ).reportingManager
-                      }
-                    >
-                      {
-                        departments.find(
-                          (dept) => dept.name === newUserData.department
-                        ).reportingManager
-                      }
-                    </MenuItem>
-                  )}
-              </Select>
-              {formErrors.reportingManager && (
-                <FormHelperText>{formErrors.reportingManager}</FormHelperText>
-              )}
-            </FormControl>
-          </Box>
-          <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
-            <TextField
-              required
-              margin="dense"
-              name="email"
-              label="Email"
-              type="email"
-              fullWidth
-              variant="outlined"
-              value={newUserData.email || ""}
-              onChange={(e) => {
-                setNewUserData({ ...newUserData, email: e.target.value });
-                setFormErrors({ ...formErrors, email: "" });
-              }}
-              error={Boolean(formErrors.email)}
-              helperText={formErrors.email}
-            />
-
-            <TextField
-              required
-              margin="dense"
-              name="storageUsed"
-              label="Storage"
-              type="text"
-              fullWidth
-              variant="outlined"
-              value={
-                newUserData.storageUsed
-                  ? newUserData.storageUsed.replace("GB", "")
-                  : ""
-              }
-              onChange={(e) => {
-                const numericValue = validateStorageInput(e.target.value);
-                setNewUserData({
-                  ...newUserData,
-                  storageUsed: numericValue ? `${numericValue}GB` : "",
-                });
-                setFormErrors({ ...formErrors, storageUsed: "" });
-              }}
-              error={Boolean(formErrors.storageUsed)}
-              helperText={formErrors.storageUsed || ""}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">GB</InputAdornment>
-                ),
-              }}
-              sx={{ width: "40%" }}
-            />
-            <TextField
-              margin="dense"
-              name="phone"
-              label="Phone Number"
-              type="tel"
-              variant="outlined"
-              value={newUserData.phone || ""}
-              onChange={(e) => {
-                setNewUserData({ ...newUserData, phone: e.target.value });
-                setFormErrors({ ...formErrors, phone: "" });
-              }}
-              error={Boolean(formErrors.phone)}
-              helperText={formErrors.phone}
-              sx={{ width: "40%" }}
-            />
-          </Box>
-
-          {/* Add Department and Role section moved to bottom */}
-          <Box sx={{ mt: 4, borderTop: "1px solid #ccc", pt: 2 }}>
-            {showAddDepartment && (
-              <Dialog
-                open={showAddDepartment}
-                onClose={() => setShowAddDepartment(false)}
-                maxWidth="sm"
-              >
-                <DialogTitle>Add New Department</DialogTitle>
-                <DialogContent>
-                  <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
-                    <TextField
-                      size="small"
-                      label="Department Name"
-                      value={newDepartment.name}
-                      onChange={(e) =>
-                        setNewDepartment((prev) => ({
-                          ...prev,
-                          name: e.target.value,
-                        }))
-                      }
-                      fullWidth
-                      required
-                      error={!newDepartment.name && newDepartment.submitted}
-                      helperText={
-                        !newDepartment.name && newDepartment.submitted
-                          ? "Department name is required"
-                          : ""
-                      }
-                    />
-                    <TextField
-                      size="small"
-                      label="Display Name"
-                      value={newDepartment.displayName}
-                      onChange={(e) =>
-                        setNewDepartment((prev) => ({
-                          ...prev,
-                          displayName: e.target.value.toUpperCase(),
-                        }))
-                      }
-                      required
-                      error={
-                        !newDepartment.displayName && newDepartment.submitted
-                      }
-                      helperText={
-                        !newDepartment.displayName && newDepartment.submitted
-                          ? "Display name is required"
-                          : "Short form"
-                      }
-                      sx={{ width: "30%" }}
-                      // helperText="Short form"
-                    />
-
-                    <TextField
-                      size="small"
-                      label="Reporting Manager"
-                      value={newDepartment.reportingManager}
-                      onChange={(e) =>
-                        setNewDepartment((prev) => ({
-                          ...prev,
-                          reportingManager: e.target.value,
-                        }))
-                      }
-                      required
-                      error={
-                        !newDepartment.reportingManager &&
-                        newDepartment.submitted
-                      }
-                      helperText={
-                        !newDepartment.reportingManager &&
-                        newDepartment.submitted
-                          ? "Reporting Manager is required"
-                          : ""
-                      }
-                      fullWidth
-                    />
-
-                    <FormControl fullWidth size="small">
-                      <InputLabel id="storage-label">
-                        Storage Allocation
-                      </InputLabel>
-                      <Select
-                        labelId="storage-label"
-                        value={newDepartment.storage}
-                        label="Storage Allocation"
-                        onChange={(e) =>
-                          setNewDepartment((prev) => ({
-                            ...prev,
-                            storage: e.target.value,
-                          }))
-                        }
-                        required
-                        error={
-                          !newDepartment.storage && newDepartment.submitted
-                        }
-                      >
-                        {[25, 50, 75, 100, 150, 200].map((size) => (
-                          <MenuItem key={size} value={`${size}GB`}>
-                            {size} GB
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-
-                    <TextField
-                      size="small"
-                      label="Initial Role"
-                      value={newDepartment.initialRole}
-                      onChange={(e) =>
-                        setNewDepartment((prev) => ({
-                          ...prev,
-                          initialRole: e.target.value,
-                        }))
-                      }
-                      required
-                      error={
-                        !newDepartment.initialRole && newDepartment.submitted
-                      }
-                      helperText={
-                        !newDepartment.initialRole && newDepartment.submitted
-                          ? "At least one role is required"
-                          : ""
-                      }
-                    />
-                  </Box>
-                </DialogContent>
-                <DialogActions>
-                  <Button
-                    onClick={() => {
-                      setShowAddDepartment(false);
-
-                      setNewDepartment({
-                        name: "",
-                        displayName: "",
-                        initialRole: "",
-                        storage: "50GB",
-                        submitted: false,
-                      });
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      setNewDepartment((prev) => ({
-                        ...prev,
-                        submitted: true,
-                      }));
-
-                      if (
-                        !newDepartment.name ||
-                        !newDepartment.displayName ||
-                        !newDepartment.initialRole ||
-                        !newDepartment.storage ||
-                        !newDepartment.reportingManager
-                      ) {
-                        setSnackbarMessage("Please fill all required fields");
-                        setSnackbarOpen(true);
-                        return;
-                      }
-
-                      if (
-                        departments.some(
-                          (dept) => dept.name === newDepartment.name
-                        )
-                      ) {
-                        setSnackbarMessage("Department already exists");
-                        setSnackbarOpen(true);
-                        return;
-                      }
-
-                      const newDeptWithRole = {
-                        name: newDepartment.name,
-                        displayName: newDepartment.displayName,
-                        roles: [newDepartment.initialRole],
-                        storage: newDepartment.storage,
-                        reportingManager: newDepartment.reportingManager,
-                      };
-
-                      const updatedDepartments = [
-                        ...departments,
-                        newDeptWithRole,
-                      ];
-                      setDepartments(updatedDepartments);
-
-                      // Store in localStorage
-                      localStorage.setItem(
-                        "departments",
-                        JSON.stringify(updatedDepartments)
-                      );
-
-                      // setDepartments((prev) => [...prev, newDeptWithRole]);
-                      setShowAddDepartment(false);
-                      setNewDepartment({
-                        name: "",
-                        displayName: "",
-                        initialRole: "",
-                        storage: "50GB",
-                        reportingManager: "",
-                        submitted: false,
-                      });
-                      setSnackbarMessage(
-                        `Department "${newDepartment.name}" added successfully with role "${newDepartment.initialRole}"!`
-                      );
-                      setSnackbarOpen(true);
-                    }}
-                    color="primary"
-                  >
-                    Add
-                  </Button>
-                </DialogActions>
-              </Dialog>
-            )}
-            {showAddRole && (
-              <Dialog
-                open={showAddRole}
-                onClose={() => setShowAddRole(false)}
-                maxWidth="sm"
-              >
-                <DialogTitle>Add New Role</DialogTitle>
-                <DialogContent>
-                  <TextField
-                    autoFocus
-                    size="small"
-                    label="New Role"
-                    value={newRole}
-                    onChange={(e) => setNewRole(e.target.value)}
-                    fullWidth
-                    sx={{ mt: 2 }}
-                  />
-                </DialogContent>
-                <DialogActions>
-                  <Button
-                    onClick={() => {
-                      setShowAddRole(false);
-                      setNewRole("");
-                    }}
-                  >
-                    Cancel
-                  </Button>
-
-                  <Button
-                    onClick={handleAddRole} // Replace the existing onClick with handleAddRole
-                    color="primary"
-                  >
-                    Add
-                  </Button>
-                </DialogActions>
-              </Dialog>
-            )}
-          </Box>
-
-          <DialogActions
-            sx={{
-              borderTop: "1px solid #eee",
-              padding: "16px 24px",
-            }}
-          >
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                width: "100%",
-              }}
-            >
-              {/* Left side - Template and Upload icons */}
-              <Box sx={{ display: "flex", gap: 1 }}>
-                <Tooltip title="Download Template" placement="top">
-                  <IconButton
-                    onClick={handleTemplateDownload}
-                    size="small"
-                    sx={{
-                      color: "primary.main",
-                      "&:hover": {
-                        backgroundColor: "rgba(25, 118, 210, 0.04)",
-                      },
-                    }}
-                  >
-                    <DownloadIcon />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="Bulk Upload" placement="top">
-                  <IconButton
-                    onClick={() => fileInputRef.current?.click()}
-                    size="small"
-                    sx={{
-                      color: "primary.main",
-                      "&:hover": {
-                        backgroundColor: "rgba(25, 118, 210, 0.04)",
-                      },
-                    }}
-                  >
-                    <UploadFileIcon />
-                  </IconButton>
-                </Tooltip>
-              </Box>
-
-              {/* Right side - Submit button */}
-              <Button
-                onClick={handleAddUser}
-                color="primary"
-                variant="contained"
-              >
-                Submit
-              </Button>
-            </Box>
-          </DialogActions>
-        </DialogContent>
-      </Dialog>
-     
-      <Dialog
-        open={editDialogOpen}
-        onClose={() => setEditDialogOpen(false)}
-        maxWidth="sm"
-      >
-        <DialogContent sx={{ pt: 6, pb: 1 }}>
-          <Box sx={{ position: "relative", mb: 1, mt: -1 }}>
-            <IconButton
-              onClick={() => setEditDialogOpen(false)}
-              sx={{
-                position: "absolute",
-                right: -12,
-                top: -25,
-              }}
-            >
-              <CloseIcon fontSize="small" />
-            </IconButton>
-          </Box>
-
-          {/* First row */}
-          <Box sx={{ display: "flex", gap: 2, mb: 1 }}>
-            <TextField
-              size="small"
-              name="username"
-              label="Username"
-              type="text"
-              fullWidth
-              variant="outlined"
-              value={editedUserData.username || ""}
-              onChange={handleInputChange}
-            />
-            <TextField
-              size="small"
-              name="name"
-              label="Full Name"
-              type="text"
-              fullWidth
-              variant="outlined"
-              value={editedUserData.name || ""}
-              onChange={handleInputChange}
-            />
-          </Box>
-
-          {/* Second row */}
-          <Box sx={{ display: "flex", gap: 2, mb: 1 }}>
-            <TextField
-              size="small"
-              name="department"
-              label="Department"
-              type="text"
-              fullWidth
-              variant="outlined"
-              value={editedUserData.department || ""}
-              onChange={handleInputChange}
-            />
-            <TextField
-              size="small"
-              name="role"
-              label="Role"
-              type="text"
-              fullWidth
-              variant="outlined"
-              value={editedUserData.role || ""}
-              onChange={handleInputChange}
-            />
-          </Box>
-
-          {/* Third row */}
-          <Box sx={{ display: "flex", gap: 2, mb: 1 }}>
-            <Tooltip title="Email cannot be edited" placement="top">
-              <TextField
-                size="small"
-                name="email"
-                label="Email"
-                type="email"
-                fullWidth
-                variant="outlined"
-                value={editedUserData.email || ""}
-                disabled
-                sx={{
-                  backgroundColor: "#f5f5f5",
-                  "& .MuiInputBase-input.Mui-disabled": {
-                    WebkitTextFillColor: "#666",
-                  },
-                  cursor: "not-allowed",
-                }}
-              />
-            </Tooltip>
-            <TextField
-              size="small"
-              name="phone"
-              label="Phone Number"
-              type="tel"
-              variant="outlined"
-              value={editedUserData.phone || ""}
-              onChange={handleInputChange}
-              sx={{ width: "40%" }}
-            />
-            <TextField
-              size="small"
-              name="storageUsed"
-              label="Storage Used"
-              type="text"
-              fullWidth
-              variant="outlined"
-              value={editedUserData.storageUsed || ""}
-              onChange={handleInputChange}
-            />
-          </Box>
-        </DialogContent>
-
-        <DialogActions sx={{ p: 1, pt: 0 }}>
-          {/* <Button onClick={() => setEditDialogOpen(false)} color="inherit">
-      Cancel
-    </Button> */}
-          <Button
-            onClick={saveEditedUser}
-            variant="contained"
-            color="primary"
-            size="small"
-            sx={{
-              fontSize: "0.875rem",
-              py: 0.5, // Reduced vertical padding
-              px: 2, // Adjusted horizontal padding
-            }}
-          >
-            Save Changes
-          </Button>
-        </DialogActions>
-      </Dialog>
-      <Dialog
-        open={selectAllDialogOpen}
-        onClose={handleSelectAllDialogClose}
-        maxWidth="xs"
-        PaperProps={{
-          sx: {
-            borderRadius: "8px",
-            boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
-          },
-        }}
-      >
-        <DialogTitle
-          sx={{
-            pb: 1,
-            fontSize: "1.1rem",
-            borderBottom: "1px solid #eee",
-          }}
-        >
-          Select Users
-        </DialogTitle>
-        <DialogContent sx={{ pt: 2, pb: 1 }}>
-          <DialogContentText
-            sx={{
-              fontSize: "0.9rem",
-              color: "text.secondary",
-              mb: 1,
-            }}
-          >
-            Do you want to select all users or just the current page?
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions
-          sx={{
-            p: 2,
-            pt: 1,
-            borderTop: "1px solid #eee",
-            gap: 1,
-          }}
-        >
-          <Button
-            onClick={handleSelectAllDialogClose}
-            size="small"
-            sx={{
-              color: "text.secondary",
-              "&:hover": {
-                backgroundColor: "rgba(0,0,0,0.04)",
-              },
-            }}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={() => handleSelectAllConfirm(false)}
-            variant="outlined"
-            size="small"
-            sx={{
-              px: 2,
-              "&:hover": {
-                backgroundColor: "primary.50",
-              },
-            }}
-          >
-            Current Page ({rowsPerPage})
-          </Button>
-          <Button
-            onClick={() => handleSelectAllConfirm(true)}
-            variant="contained"
-            size="small"
-            sx={{
-              px: 2,
-              boxShadow: "none",
-              "&:hover": {
-                boxShadow: "none",
-                backgroundColor: "primary.dark",
-              },
-            }}
-          >
-            All Users ({rows.length})
-          </Button>
-        </DialogActions>
-      </Dialog>
-      <Dialog
-        open={migrationDialogOpen}
-        onClose={() => setMigrationDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        {/* <DialogTitle
-          sx={{
-            borderBottom: "1px solid #eee",
-            pb: 1,
-            fontSize: "1.1rem",
-          }}
-        >
-          Migrate Users Storage
-        </DialogTitle> */}
-
-        <DialogContent sx={{ pt: 2 }}>
-          <Box
-            sx={{ mb: 2, p: 1, backgroundColor: "#f5f5f5", borderRadius: 1 }}
-          >
-            <Box
-              sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}
-            >
-              <Typography variant="subtitle2" color="text.secondary">
-                Total Data to Migrate:{" "}
-                {selectedUsersData.reduce((total, user) => {
-                  return total + parseInt(user.storageUsed);
-                }, 0)}
-                GB
-              </Typography>
-              <Typography variant="subtitle2" color="text.secondary">
-                Total Storage to Migrate:{" "}
-                {selectedUsersData.reduce((total, user) => {
-                  return (
-                    total +
-                    (migrationOptions[user.id]?.storage
-                      ? parseInt(user.storageAllocated)
-                      : 0)
-                  );
-                }, 0)}
-                GB
-              </Typography>
-            </Box>
-          </Box>
-
-          {/* List of selected users */}
-          {selectedUsersData.map((user, index) => (
-            <Box
-              key={index}
-              sx={{
-                mb: 1,
-                p: 1,
-                border: "1px solid #e0e0e0",
-                borderRadius: 1,
-                backgroundColor: "#f8f9fa",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-              }}
-            >
-              <Typography
-                variant="subtitle2"
-                sx={{ color: "#1976d2", minWidth: "200px" }}
-              >
-                {user.name}
-              </Typography>
-
-              <Box sx={{ display: "flex", alignItems: "center", gap: 3 }}>
-                {/* Data checkbox - always checked and disabled */}
-                <FormControlLabel
-                  control={
-                    <Checkbox checked={true} disabled={true} size="small" />
-                  }
-                  label={
-                    <Box sx={{ display: "flex", alignItems: "center" }}>
-                      <Typography
-                        variant="body2"
-                        sx={{ fontSize: "0.813rem", color: "#666", mr: 1 }}
-                      >
-                        Data
-                      </Typography>
-                      <Typography
-                        variant="body2"
-                        sx={{ color: "#2e7d32", fontWeight: 500 }}
-                      >
-                        {user.storageUsed}GB
-                      </Typography>
-                    </Box>
-                  }
-                  sx={{ m: 0 }}
-                />
-
-                {/* Storage checkbox - optional */}
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={migrationOptions[user.id]?.storage || false}
-                      onChange={(e) => {
-                        setMigrationOptions((prev) => ({
-                          ...prev,
-                          [user.id]: {
-                            ...prev[user.id],
-                            storage: e.target.checked,
-                          },
-                        }));
-                      }}
-                      size="small"
-                    />
-                  }
-                  label={
-                    <Box sx={{ display: "flex", alignItems: "center" }}>
-                      <Typography
-                        variant="body2"
-                        sx={{ fontSize: "0.813rem", color: "#666", mr: 1 }}
-                      >
-                        Storage
-                      </Typography>
-                      <Typography
-                        variant="body2"
-                        sx={{ color: "#1976d2", fontWeight: 500 }}
-                      >
-                        {user.storageAllocated}GB
-                      </Typography>
-                    </Box>
-                  }
-                  sx={{ m: 0 }}
-                />
-              </Box>
-            </Box>
-          ))}
-        </DialogContent>
-
-        <DialogActions
-          sx={{
-            borderTop: "1px solid #eee",
-            p: 1.5,
-            display: "flex",
-            justifyContent: "space-between",
-          }}
-        >
-          {/* Target user selection */}
-          <FormControl size="small" sx={{ minWidth: 250 }}>
-            <Select
-              value={targetUser?.name || ""}
-              displayEmpty
-              onChange={(e) => {
-                const selected = rows.find(
-                  (user) => user.name === e.target.value
-                );
-                setTargetUser(selected);
-                setMigrationError("");
-              }}
-              error={Boolean(migrationError)}
-            >
-              <MenuItem value="" disabled>
-                <Typography variant="body2" color="text.secondary">
-                  Select Target User
-                </Typography>
-              </MenuItem>
-
-              {rows
-                .filter(
-                  (row) =>
-                    !selectedUsersData.some(
-                      (selected) => selected.name === row.name
-                    )
-                )
-                .map((user) => {
-                  // Calculate available storage
-                  const storageAllocated = parseInt(
-                    user.storageUsed.replace("GB", "")
-                  );
-                  const storageUsed = parseInt(
-                    user.manageStorage.replace("GB", "")
-                  );
-                  const availableStorage = storageAllocated - storageUsed;
-
-                  return (
-                    <MenuItem key={user.name} value={user.name}>
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                      >
-                        <AccountCircleIcon
-                          sx={{ color: "#666", fontSize: 20 }}
-                        />
-                        <Box>
-                          <Typography variant="body2">{user.name}</Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            Available Storage: {availableStorage}GB
-                          </Typography>
-                        </Box>
-                      </Box>
-                    </MenuItem>
-                  );
-                })}
-            </Select>
-            {migrationError && (
-              <FormHelperText error>{migrationError}</FormHelperText>
-            )}
-          </FormControl>
-
-          {/* Action buttons */}
-          <Box sx={{ display: "flex", gap: 1 }}>
-            <Button
-              onClick={() => setMigrationDialogOpen(false)}
-              size="small"
-              sx={{ color: "text.secondary" }}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="contained"
-              color="primary"
-              size="small"
-              onClick={() => handleMigrate(targetUser)}
-              disabled={!targetUser || Boolean(migrationError)}
-            >
-              Migrate
-            </Button>
-          </Box>
-        </DialogActions>
-      </Dialog>
-      <Snackbar
-        open={snackbarOpen}
-        autoHideDuration={6000}
-        onClose={handleSnackbarClose}
-        message={snackbarMessage}
-      />
+    
     </Box>
   );
 };

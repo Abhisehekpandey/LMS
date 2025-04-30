@@ -12,7 +12,8 @@ import AngelBot from './pages/AngelBot';
 import LDAPConfig from './pages/LDAPConfig';
 import CompanyDashboard from './pages/CompanyDashboard';
 import ActivateAccount from './components/ActivateAccount';
-
+import Layout from './components/Layout';
+import './App.css'
 
 function App() {
     const [darkMode, setDarkMode] = useState(false);
@@ -46,8 +47,9 @@ function App() {
     };
 
     return (
-        <ThemeProvider theme={theme}>
-            <Router>
+        // <ThemeProvider theme={theme}>
+        <Router>
+            <Layout>
                 <Routes>
                     <Route path="/login" element={<Login />} />
                     <Route path="/signup" element={<Signup />} />
@@ -86,10 +88,12 @@ function App() {
                             <CompanyDashboard onThemeToggle={toggleTheme} />
                         }
                     />
-                     <Route path="/activate/:token" element={<ActivateAccount />} />
+                    <Route path="/activate/:token" element={<ActivateAccount />} />
                 </Routes>
-            </Router>
-        </ThemeProvider>
+            </Layout>
+
+        </Router>
+        // </ThemeProvider>
     );
 }
 

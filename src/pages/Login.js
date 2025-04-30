@@ -45,7 +45,7 @@ const Login = () => {
   const handleLogin = (e) => {
     e.preventDefault();
     const validationErrors = validateForm();
-    
+
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;
@@ -53,7 +53,7 @@ const Login = () => {
 
     const storedUser = JSON.parse(sessionStorage.getItem("user"));
     if (storedUser && storedUser.email === formData.email && storedUser.password === formData.password) {
-      navigate("/user");
+      navigate("/angelbot");
     } else {
       setErrors({ login: "Invalid email or password" });
     }
