@@ -30,6 +30,7 @@ import {
   Autocomplete,
   FormControl,
   InputLabel,
+  FormControlLabel,
 } from "@mui/material";
 import {
   Search,
@@ -116,6 +117,66 @@ const statusColors = {
   inactive: "#f44336", // Red
   pending: "#ff9800", // Orange
 };
+
+const IOSSwitch = styled((props) => (
+  <Switch focusVisibleClassName=".Mui-focusVisible" disableRipple {...props} />
+))(({ theme }) => ({
+  width: 42,
+  height: 26,
+  padding: 0,
+  "& .MuiSwitch-switchBase": {
+    padding: 0,
+    margin: 2,
+    transitionDuration: "300ms",
+    "&.Mui-checked": {
+      transform: "translateX(16px)",
+      color: "#fff",
+      "& + .MuiSwitch-track": {
+        backgroundColor: "#65C466",
+        opacity: 1,
+        border: 0,
+        ...theme.applyStyles("dark", {
+          backgroundColor: "#2ECA45",
+        }),
+      },
+      "&.Mui-disabled + .MuiSwitch-track": {
+        opacity: 0.5,
+      },
+    },
+    "&.Mui-focusVisible .MuiSwitch-thumb": {
+      color: "#33cf4d",
+      border: "6px solid #fff",
+    },
+    "&.Mui-disabled .MuiSwitch-thumb": {
+      color: theme.palette.grey[100],
+      ...theme.applyStyles("dark", {
+        color: theme.palette.grey[600],
+      }),
+    },
+    "&.Mui-disabled + .MuiSwitch-track": {
+      opacity: 0.7,
+      ...theme.applyStyles("dark", {
+        opacity: 0.3,
+      }),
+    },
+  },
+  "& .MuiSwitch-thumb": {
+    boxSizing: "border-box",
+    width: 22,
+    height: 22,
+  },
+  "& .MuiSwitch-track": {
+    borderRadius: 26 / 2,
+    backgroundColor: "#E9E9EA",
+    opacity: 1,
+    transition: theme.transitions.create(["background-color"], {
+      duration: 500,
+    }),
+    ...theme.applyStyles("dark", {
+      backgroundColor: "#39393D",
+    }),
+  },
+}));
 
 export default function UserTable() {
   const [page, setPage] = React.useState(0);
@@ -311,7 +372,10 @@ export default function UserTable() {
         height: "calc(100vh - 48px)",
       }}
     >
-      <Paper sx={{ width: "100%", overflow: "hidden" ,borderRadius:'28px'}}>
+      <Paper
+        elevation={24}
+        sx={{ width: "100%", overflow: "hidden", borderRadius: "28px" }}
+      >
         <TableContainer sx={{ maxHeight: "84vh", height: "84vh" }}>
           <Table stickyHeader>
             <TableHead className={styles.tableHeader}>
@@ -419,9 +483,12 @@ export default function UserTable() {
                             defaultValue="10GB"
                             onChange={handleChangeStorage}
                             displayEmpty
-                            sx={{borderRadius:'20px',".MuiSelect-outlined":{
-                              height:'5px !important'
-                            }}}
+                            sx={{
+                              borderRadius: "20px",
+                              ".MuiSelect-outlined": {
+                                height: "5px !important",
+                              },
+                            }}
                           >
                             <MenuItem value="">
                               <em>10GB</em>
@@ -430,10 +497,20 @@ export default function UserTable() {
                             <MenuItem value={20}>40GB</MenuItem>
                             <MenuItem value={30}>60GB</MenuItem>
                           </Select>
-                        </FormControl>  
+                        </FormControl>
                       </TableCell>
                       <TableCell align="center">
                         <Tooltip title={row.status ? "Active" : "Inactive"}>
+                          <FormControlLabel
+                            control={
+                              <IOSSwitch
+                                checked={row.status}
+                                onChange={() => handleStatusToggle(row)}
+                              />
+                            }
+                          />
+                        </Tooltip>
+                        {/* <Tooltip title={row.status ? "Active" : "Inactive"}>
                           <Switch
                             size="small"
                             checked={row.status}
@@ -471,7 +548,7 @@ export default function UserTable() {
                                 },
                             }}
                           />
-                        </Tooltip>
+                        </Tooltip> */}
                       </TableCell>
                       <TableCell
                         align="center"
@@ -530,7 +607,26 @@ export default function UserTable() {
                   sx={{
                     bgcolor: "#9c27b0", // Solid orange background color
                     color: "white",
-                    "&:hover": { bgcolor: "#9c27b0" },
+                    boxShadow:
+                      "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.6)", // Default shadow
+                    "&:hover": {
+                      backgroundColor: "#9c27b0", // Keep the background color on hover
+                      animation: "glowBorderMigrate 1.5s ease-in-out infinite", // Apply glowing animation on hover
+                    },
+                    "@keyframes glowBorderMigrate": {
+                      "0%": {
+                        boxShadow: "0 0 0px 2px #9c27b0", // Start with soft glow
+                        borderColor: "transparent", // Initial transparent border
+                      },
+                      "50%": {
+                        boxShadow: "0 0 20px 5px #9c27b0",
+                        borderColor: "#9c27b0", // Glowing orange border
+                      },
+                      "100%": {
+                        boxShadow: "0 0 0px 2px #9c27b0", // Glow fades out
+                        borderColor: "transparent", // Reset to transparent
+                      },
+                    },
                   }}
                   onClick={handleMigration}
                 >
@@ -544,7 +640,26 @@ export default function UserTable() {
                   sx={{
                     bgcolor: "#d32f2f", // Solid orange background color
                     color: "white",
-                    "&:hover": { bgcolor: "#d32f2f" },
+                    boxShadow:
+                      "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.6)", // Default shadow
+                    "&:hover": {
+                      backgroundColor: "#d32f2f", // Keep the background color on hover
+                      animation: "glowBorderDelete 1.5s ease-in-out infinite", // Apply glowing animation on hover
+                    },
+                    "@keyframes glowBorderDelete": {
+                      "0%": {
+                        boxShadow: "0 0 0px 2px #d32f2f", // Start with soft glow
+                        borderColor: "transparent", // Initial transparent border
+                      },
+                      "50%": {
+                        boxShadow: "0 0 20px 5px #d32f2f",
+                        borderColor: "#d32f2f", // Glowing orange border
+                      },
+                      "100%": {
+                        boxShadow: "0 0 0px 2px #d32f2f", // Glow fades out
+                        borderColor: "transparent", // Reset to transparent
+                      },
+                    },
                   }}
                   onClick={handleDelete}
                 >
@@ -558,7 +673,26 @@ export default function UserTable() {
                   sx={{
                     bgcolor: "rgba(46,125,50,1)", // Solid orange background color
                     color: "white",
-                    "&:hover": { bgcolor: "rgba(46,125,50,1)" },
+                    boxShadow:
+                      "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.6)", // Default shadow
+                    "&:hover": {
+                      backgroundColor: "rgba(46,125,50,1)", // Keep the background color on hover
+                      animation: "glowActivate 1.5s ease-in-out infinite", // Apply glowing animation on hover
+                    },
+                    "@keyframes glowActivate": {
+                      "0%": {
+                        boxShadow: "0 0 0px 2px rgba(46,125,50,1)", // Start with soft glow
+                        borderColor: "transparent", // Initial transparent border
+                      },
+                      "50%": {
+                        boxShadow: "0 0 20px 5px rgba(46,125,50,1)",
+                        borderColor: "rgba(46,125,50,1)", // Glowing orange border
+                      },
+                      "100%": {
+                        boxShadow: "0 0 0px 2px rgba(46,125,50,1)", // Glow fades out
+                        borderColor: "transparent", // Reset to transparent
+                      },
+                    },
                   }}
                   onClick={handleActivateAll}
                 >
@@ -572,7 +706,26 @@ export default function UserTable() {
                   sx={{
                     bgcolor: "#f5ac26", // Solid orange background color
                     color: "white",
-                    "&:hover": { bgcolor: "#f5ac26" },
+                    boxShadow:
+                      "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.6)", // Default shadow
+                    "&:hover": {
+                      backgroundColor: "#f5ac26", // Keep the background color on hover
+                      animation: "BorderDeactivate 1.5s ease-in-out infinite", // Apply glowing animation on hover
+                    },
+                    "@keyframes BorderDeactivate": {
+                      "0%": {
+                        boxShadow: "0 0 0px 2px #f5ac26", // Start with soft glow
+                        borderColor: "transparent", // Initial transparent border
+                      },
+                      "50%": {
+                        boxShadow: "0 0 20px 5px #f5ac26",
+                        borderColor: "#f5ac26", // Glowing orange border
+                      },
+                      "100%": {
+                        boxShadow: "0 0 0px 2px #f5ac26", // Glow fades out
+                        borderColor: "transparent", // Reset to transparent
+                      },
+                    },
                   }}
                 >
                   <Block />
@@ -586,7 +739,26 @@ export default function UserTable() {
                   sx={{
                     backgroundColor: "rgba(25,118,210,1)",
                     color: "white",
-                    "&:hover": { backgroundColor: "rgba(25,118,210,0.8)" },
+                    boxShadow:
+                      "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.6)", // Default shadow
+                    "&:hover": {
+                      backgroundColor: "rgba(25,118,210,0.8)", // Keep the background color on hover
+                      animation: "glowBorderDownload 1.5s ease-in-out infinite", // Apply glowing animation on hover
+                    },
+                    "@keyframes glowBorderDownload": {
+                      "0%": {
+                        boxShadow: "0 0 0px 2px rgba(25,118,210,0.8)", // Start with soft glow
+                        borderColor: "transparent", // Initial transparent border
+                      },
+                      "50%": {
+                        boxShadow: "0 0 20px 5px rgba(25,118,210,0.8)",
+                        borderColor: "rgba(25,118,210,0.8)", // Glowing orange border
+                      },
+                      "100%": {
+                        boxShadow: "0 0 0px 2px rgba(25,118,210,0.8)", // Glow fades out
+                        borderColor: "transparent", // Reset to transparent
+                      },
+                    },
                   }}
                   onClick={handleBulkDownload}
                 >
