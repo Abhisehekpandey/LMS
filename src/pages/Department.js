@@ -25,6 +25,7 @@ import {
   Select,
   MenuItem,
   Tooltip,
+  FormControlLabel,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
@@ -69,10 +70,65 @@ import Button from "@mui/material/Button";
 import { Checkbox } from "@mui/material";
 import styles from "./department.module.css";
 
-// Add this after your imports
-const commonTextStyle = {
-  fontFamily: '"Be Vietnam", sans-serif',
-};
+const IOSSwitch = styled((props) => (
+  <Switch focusVisibleClassName=".Mui-focusVisible" disableRipple {...props} />
+))(({ theme }) => ({
+  width: 42,
+  height: 26,
+  padding: 0,
+  "& .MuiSwitch-switchBase": {
+    padding: 0,
+    margin: 2,
+    transitionDuration: "300ms",
+    "&.Mui-checked": {
+      transform: "translateX(16px)",
+      color: "#fff",
+      "& + .MuiSwitch-track": {
+        backgroundColor: "#65C466",
+        opacity: 1,
+        border: 0,
+        ...theme.applyStyles("dark", {
+          backgroundColor: "#2ECA45",
+        }),
+      },
+      "&.Mui-disabled + .MuiSwitch-track": {
+        opacity: 0.5,
+      },
+    },
+    "&.Mui-focusVisible .MuiSwitch-thumb": {
+      color: "#33cf4d",
+      border: "6px solid #fff",
+    },
+    "&.Mui-disabled .MuiSwitch-thumb": {
+      color: theme.palette.grey[100],
+      ...theme.applyStyles("dark", {
+        color: theme.palette.grey[600],
+      }),
+    },
+    "&.Mui-disabled + .MuiSwitch-track": {
+      opacity: 0.7,
+      ...theme.applyStyles("dark", {
+        opacity: 0.3,
+      }),
+    },
+  },
+  "& .MuiSwitch-thumb": {
+    boxSizing: "border-box",
+    width: 22,
+    height: 22,
+  },
+  "& .MuiSwitch-track": {
+    borderRadius: 26 / 2,
+    backgroundColor: "#E9E9EA",
+    opacity: 1,
+    transition: theme.transitions.create(["background-color"], {
+      duration: 500,
+    }),
+    ...theme.applyStyles("dark", {
+      backgroundColor: "#39393D",
+    }),
+  },
+}));
 
 function Department({ departments, setDepartments, onThemeToggle }) {
   // Add pagination state
@@ -247,11 +303,11 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       prev.map((dept, idx) =>
         idx === editingRole.departmentIndex
           ? {
-              ...dept,
-              roles: dept.roles.map((role, i) =>
-                i === editingRole.roleIndex ? editingRole.value : role
-              ),
-            }
+            ...dept,
+            roles: dept.roles.map((role, i) =>
+              i === editingRole.roleIndex ? editingRole.value : role
+            ),
+          }
           : dept
       )
     );
@@ -680,7 +736,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       color: "#334155",
       borderBottom: "1px solid #e2e8f0",
       whiteSpace: "nowrap",
-      ...commonTextStyle,
+      // ...commonTextStyle,
     },
     transition: "background-color 0.2s ease",
   }));
@@ -808,9 +864,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     );
     setSnackbar({
       open: true,
-      message: `Department "${dept.name}" ${
-        !dept.isActive ? "activated" : "deactivated"
-      }`,
+      message: `Department "${dept.name}" ${!dept.isActive ? "activated" : "deactivated"
+        }`,
       severity: "success",
     });
   };
@@ -952,13 +1007,14 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         display: "flex",
         position: "relative",
         height: "100% ",
-        marginLeft: "60px",
+        marginLeft: "80px",
         marginTop: "12px",
         marginRight: "18px",
         overflow: "hidden",
-        // backgroundColor: "#f5f5f5", // Add this line for whitesmoke background
-        // bgcolor: "whitesmoke !important",
+
         bgcolor: "#f5f5f5", // Whitesmoke background for the main container
+        borderRadius: "20px",
+        boxShadow: "2px 1px 11px 5px rgba(0, 0, 0, 0.2)!important",
       }}
     >
       <TableContainer
@@ -976,21 +1032,19 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           },
           "& .MuiTableHead-root .MuiTableCell-root": {
             backgroundColor: "#ffff",
-            // borderBottom: "2px solid #e2e8f0",
+
             borderBottom: "2px solid #94a3b8", // Changed border color and made it thicker
             fontSize: "0.875rem",
             fontWeight: "700 !important",
             color: "#475569",
             height: "30px",
             padding: "2px 16px",
-            ...commonTextStyle,
           },
           "& .MuiTableCell-root": {
             padding: "8px 16px",
             fontSize: "0.8125rem",
             color: "#334155",
             borderBottom: "1px solid #e2e8f0",
-            ...commonTextStyle,
           },
           "& .MuiTable-root": {
             borderCollapse: "separate",
@@ -1004,7 +1058,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       >
         <Table sx={{ border: "0px solid #e2e8f0 !important" }}>
           <TableHead className={styles.tableHeader}>
-            {/* <TableRow> */}
             <TableRow
               sx={{ boxShadow: "0 -2px 8px 0 rgba(0, 0, 0, 0.2) !important" }}
             >
@@ -1029,8 +1082,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
               <TableCell
                 sx={{
-                  ...commonTextStyle,
-                  width: "150px",
+                  width: "100px",
                   padding: "8px 8px",
                   height: "40px",
                   fontWeight: "bold",
@@ -1051,23 +1103,18 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 >
                   <Typography
                     variant="body1"
-                    // fontWeight="bold"
-
                     sx={{
-                      ...commonTextStyle,
-                      // fontWeight: "bold",
                       fontWeight: "700 !important",
-                      fontSize: "13px",
+                      fontSize: "14px",
                     }}
                   >
-                    DEPARTMENT
+                    Department
                   </Typography>
                 </TableSortLabel>
               </TableCell>
 
               <TableCell
                 sx={{
-                  ...commonTextStyle,
                   width: "150px",
                   padding: "8px 8px",
                   height: "40px",
@@ -1090,22 +1137,19 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 >
                   <Typography
                     variant="body1"
-                    // fontWeight="bold"
                     sx={{
-                      ...commonTextStyle,
-                      // fontWeight: "bold",
                       fontWeight: "700 !important",
-                      fontSize: "13px",
+                      fontSize: "14px",
                     }}
                   >
-                    SHORT NAME
+                    Short name
                   </Typography>
                 </TableSortLabel>
               </TableCell>
 
               <TableCell
                 sx={{
-                  ...commonTextStyle,
+                  // ...commonTextStyle,
                   width: "200px",
                   padding: "2px 8px",
                   height: "32px",
@@ -1130,19 +1174,19 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                   <Typography
                     variant="body1"
                     sx={{
-                      ...commonTextStyle,
+                      // ...commonTextStyle,
                       fontWeight: "700 !important",
-                      fontSize: "13px",
+                      fontSize: "14px",
                     }}
                   >
-                    DEPARTMENT OWNER
+                    Department owner
                   </Typography>
                 </TableSortLabel>
               </TableCell>
-              {/* <TableCell sx={{ width: "150px", padding: "1px 8px" }}> */}
+
               <TableCell
                 sx={{
-                  ...commonTextStyle,
+                  // ...commonTextStyle,
                   width: "150px",
                   padding: "2px 8px",
                   height: "32px",
@@ -1155,19 +1199,17 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                   variant="body1"
                   // fontWeight="bold"
                   sx={{
-                    ...commonTextStyle,
-                    // fontWeight: "bold",
                     fontWeight: "700 !important",
-                    fontSize: "13px",
+                    fontSize: "14px",
                   }}
                 >
-                  STORAGE ALLOCATED
+                  Storage
                 </Typography>
               </TableCell>
 
               <TableCell
                 sx={{
-                  ...commonTextStyle,
+                  // ...commonTextStyle,
                   width: "150px",
                   padding: "2px 8px",
                   height: "32px",
@@ -1191,12 +1233,12 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                   <Typography
                     variant="body1"
                     sx={{
-                      ...commonTextStyle,
+                      // ...commonTextStyle,
                       fontWeight: "700 !important",
-                      fontSize: "13px",
+                      fontSize: "14px",
                     }}
                   >
-                    NUMBER OF ROLES
+                    No. of roles
                   </Typography>
                 </TableSortLabel>
               </TableCell>
@@ -1204,7 +1246,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               {/* <TableCell sx={{ width: "150px", padding: "1px 8px" }}> */}
               <TableCell
                 sx={{
-                  ...commonTextStyle,
+                  // ...commonTextStyle,
                   width: "150px",
                   padding: "2px 8px",
                   height: "32px",
@@ -1217,13 +1259,11 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                   variant="body1"
                   // fontWeight="bold"
                   sx={{
-                    ...commonTextStyle,
-                    // fontWeight: "bold",
                     fontWeight: "700 !important",
-                    fontSize: "13px",
+                    fontSize: "14px",
                   }}
                 >
-                  ACTIONS
+                  Actions
                 </Typography>
               </TableCell>
             </TableRow>
@@ -1263,14 +1303,12 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                         />
                       </TableCell>
 
-                      <TableCell
-                        sx={{ ...commonTextStyle, padding: "2px 8px" }}
-                      >
+                      <TableCell sx={{ padding: "2px 8px" }}>
                         {dept.name}
                       </TableCell>
                       <TableCell
                         sx={{
-                          ...commonTextStyle,
+                          // ...commonTextStyle,
                           textAlign: "center",
                           padding: "2px 8px",
                         }}
@@ -1279,7 +1317,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                       </TableCell>
                       <TableCell
                         sx={{
-                          ...commonTextStyle,
+                          // ...commonTextStyle,
                           textAlign: "center",
                           padding: "2px 8px",
                         }}
@@ -1288,7 +1326,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                       </TableCell>
                       <TableCell
                         sx={{
-                          ...commonTextStyle,
+                          // ...commonTextStyle,
                           textAlign: "center",
                           padding: "2px 8px",
                         }}
@@ -1296,9 +1334,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                         {dept.storage}
                       </TableCell>
 
-                      <TableCell
-                        sx={{ ...commonTextStyle, padding: "2px 8px" }}
-                      >
+                      <TableCell sx={{ padding: "2px 8px" }}>
                         <Box
                           sx={{
                             display: "flex",
@@ -1329,9 +1365,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                         </Box>
                       </TableCell>
 
-                      <TableCell
-                        sx={{ ...commonTextStyle, padding: "2px 8px" }}
-                      >
+                      <TableCell sx={{ padding: "2px 8px" }}>
                         <Box
                           sx={{
                             display: "flex",
@@ -1340,7 +1374,20 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                             gap: 0.5,
                           }}
                         >
-                          <Switch
+                          <Tooltip
+                            title={dept.isActive ? "Active" : "Inactive"}
+                          >
+                            <FormControlLabel
+                              control={
+                                <IOSSwitch
+                                  size="small"
+                                  checked={dept.isActive}
+                                  onChange={() => handleDepartmentToggle(dept)}
+                                />
+                              }
+                            />
+                          </Tooltip>
+                          {/* <Switch
                             size="small"
                             checked={dept.isActive}
                             onChange={() => handleDepartmentToggle(dept)}
@@ -1376,7 +1423,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                   backgroundColor: "rgba(211, 47, 47, 0.08)", // Red hover effect
                                 },
                             }}
-                          />
+                          /> */}
                           <IconButton
                             size="small"
                             onClick={() => handleEditDepartment(dept)}
@@ -1434,12 +1481,12 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                               position: "absolute",
                               left: "75%", // Center horizontally within the cell
                               transform: "translateX(-50%)", // Center adjust
-                              width: "200px",
+                              width: "250px",
                               backgroundColor: "#ffff",
                               borderRadius: "8px",
                               border: "1px solid #e2e8f0",
                               boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-                              zIndex: 2,
+                              zIndex: 3,
                               marginTop: "4px", // Small gap from the count
                             }}
                           >
@@ -1454,7 +1501,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                       fontSize: "0.75rem",
                                       borderBottom: "1px solid #e2e8f0",
                                       padding: "8px 12px",
-                                      ...commonTextStyle,
+                                      // ...commonTextStyle,
                                     }}
                                   >
                                     Role Name
@@ -1469,7 +1516,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                       borderBottom: "1px solid #e2e8f0",
                                       padding: "8px 12px",
                                       width: "60px",
-                                      ...commonTextStyle,
+                                      // ...commonTextStyle,
                                     }}
                                   >
                                     Actions
@@ -1494,7 +1541,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                   >
                                     <TableCell
                                       sx={{
-                                        ...commonTextStyle,
+                                        // ...commonTextStyle,
                                         padding: "6px 12px",
                                         fontSize: "0.75rem",
                                         color: "#334155",
@@ -1681,9 +1728,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           sx: {
             borderRadius: "8px",
             boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
-            "& .MuiDialogTitle-root": commonTextStyle,
-            "& .MuiDialogContent-root": commonTextStyle,
-            "& .MuiDialogContentText-root": commonTextStyle,
           },
         }}
       >
@@ -1699,9 +1743,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         >
           <Typography
             variant="h6"
-            sx={{
-              fontFamily: '"Be Vietnam", sans-serif',
-            }}
+          // sx={{
+          //   fontFamily: '"Be Vietnam", sans-serif',
+          // }}
           >
             New Department
           </Typography>
@@ -1754,31 +1798,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                   ? "Department name is required"
                   : ""
               }
-              InputProps={{
-                sx: {
-                  fontFamily: '"Be Vietnam", sans-serif',
-                },
-              }}
-              InputLabelProps={{
-                sx: {
-                  fontFamily: '"Be Vietnam", sans-serif',
-                },
-              }}
-              FormHelperTextProps={{
-                sx: {
-                  fontFamily: '"Be Vietnam", sans-serif',
-                },
-              }}
             />
             <FormControl fullWidth size="small">
-              <InputLabel
-                id="storage-label"
-                sx={{
-                  fontFamily: '"Be Vietnam", sans-serif',
-                }}
-              >
-                Storage Allocation
-              </InputLabel>
+              <InputLabel id="storage-label">Storage Allocation</InputLabel>
               <Select
                 labelId="storage-label"
                 value={newDepartment.storage || "50GB"}
@@ -1791,21 +1813,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 }
                 required
                 error={!newDepartment.storage && newDepartment.submitted}
-                sx={{
-                  fontFamily: '"Be Vietnam", sans-serif',
-                  "& .MuiSelect-select": {
-                    fontFamily: '"Be Vietnam", sans-serif',
-                  },
-                }}
               >
                 {[0, 25, 50, 75, 100, 150, 200].map((size) => (
-                  <MenuItem
-                    key={size}
-                    value={`${size}GB`}
-                    sx={{
-                      fontFamily: '"Be Vietnam", sans-serif',
-                    }}
-                  >
+                  <MenuItem key={size} value={`${size}GB`}>
                     {size} GB
                   </MenuItem>
                 ))}
@@ -1828,21 +1838,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                   ? "Display name is required"
                   : "Short form"
               }
-              InputProps={{
-                sx: {
-                  fontFamily: '"Be Vietnam", sans-serif',
-                },
-              }}
-              InputLabelProps={{
-                sx: {
-                  fontFamily: '"Be Vietnam", sans-serif',
-                },
-              }}
-              FormHelperTextProps={{
-                sx: {
-                  fontFamily: '"Be Vietnam", sans-serif',
-                },
-              }}
             />
             <TextField
               size="small"
@@ -1862,21 +1857,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                   : ""
               }
               fullWidth
-              InputProps={{
-                sx: {
-                  fontFamily: '"Be Vietnam", sans-serif',
-                },
-              }}
-              InputLabelProps={{
-                sx: {
-                  fontFamily: '"Be Vietnam", sans-serif',
-                },
-              }}
-              FormHelperTextProps={{
-                sx: {
-                  fontFamily: '"Be Vietnam", sans-serif',
-                },
-              }}
             />
             <TextField
               size="small"
@@ -1895,21 +1875,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                   ? "At least one role is required"
                   : ""
               }
-              InputProps={{
-                sx: {
-                  fontFamily: '"Be Vietnam", sans-serif',
-                },
-              }}
-              InputLabelProps={{
-                sx: {
-                  fontFamily: '"Be Vietnam", sans-serif',
-                },
-              }}
-              FormHelperTextProps={{
-                sx: {
-                  fontFamily: '"Be Vietnam", sans-serif',
-                },
-              }}
             />
             <TextField
               size="small"
@@ -1929,21 +1894,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                   : ""
               }
               fullWidth
-              InputProps={{
-                sx: {
-                  fontFamily: '"Be Vietnam", sans-serif',
-                },
-              }}
-              InputLabelProps={{
-                sx: {
-                  fontFamily: '"Be Vietnam", sans-serif',
-                },
-              }}
-              FormHelperTextProps={{
-                sx: {
-                  fontFamily: '"Be Vietnam", sans-serif',
-                },
-              }}
               sx={{ mt: 2 }}
             />
           </Box>
@@ -1961,14 +1911,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             }}
           >
             <Box sx={{ display: "flex", gap: 1 }}>
-              <Tooltip
-                title="Download Template"
-                componentsProps={{
-                  tooltip: {
-                    sx: commonTextStyle,
-                  },
-                }}
-              >
+              <Tooltip title="Download Template" componentsProps={{}}>
                 <IconButton
                   onClick={handleTemplateDownload}
                   size="small"
@@ -1993,14 +1936,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                   </Box>
                 </IconButton>
               </Tooltip>
-              <Tooltip
-                title="Bulk Upload"
-                componentsProps={{
-                  tooltip: {
-                    sx: commonTextStyle,
-                  },
-                }}
-              >
+              <Tooltip title="Bulk Upload" componentsProps={{}}>
                 <IconButton
                   onClick={() => fileInputRef.current?.click()}
                   size="small"
@@ -2037,7 +1973,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 },
                 px: 3,
                 py: 0.7,
-                fontFamily: '"Be Vietnam", sans-serif',
+                // fontFamily: '"Be Vietnam", sans-serif',
               }}
             >
               Add
@@ -2073,10 +2009,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             onClick={() => {
               setShowAddRoleDialog(false);
               setNewRole("");
-            }}
-            sx={{
-              ...commonTextStyle,
-              // other styles
             }}
           >
             Cancel

@@ -188,15 +188,55 @@ const Sidebar = () => {
         >
           <Avatar
             sx={{
-              height: 34,
-              width: 34,
-              fontSize: 18,
+              height: 40,
+              width: 40,
+              fontSize: 24,
               background: "linear-gradient(135deg, #42a5f5, #1976d2)",
             }}
           >
             A
           </Avatar>
-
+          <Box
+            sx={{
+              width: { xs: 'calc(100% - 62px)', xl: 'calc(100% - 72px)' },
+              ml: 4,
+              color: color,
+            }}
+            className='user-info'
+          >
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <Box
+                sx={{
+                  mb: 0,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  fontSize: 16,
+                  fontWeight: 'bold', // Use a constant value for boldness
+                  color: 'inherit',
+                }}
+                component='span'
+              >
+                Sumit
+              </Box>
+            </Box>
+            <Box
+              sx={{
+                mt: -0.5,
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                color: 'inherit',
+              }}
+            >
+              Administrator
+            </Box>
+          </Box>
           <Box
             sx={{
               width: open ? "auto" : 0,

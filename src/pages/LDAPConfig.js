@@ -70,18 +70,19 @@ const LDAPConfig = ({ onThemeToggle }) => {
   };
 
   return (
-    <Box sx={{ display: "flex", position: "relative", height: "100%", overflow: "hidden",backgroundColor:'whitesmoke' }}>
-      <Box
+    <Box sx={{ display: "flex", padding: "14px", position: "relative", marginLeft: "24px", height: "100%", overflow: "hidden", backgroundColor: 'whitesmoke' }}>
+      {/* <Box
         sx={{
+          borderRadius: "20px",
           flexGrow: 1,
           marginLeft: "48px",
           transition: "margin-left 0.3s",
           overflow: "hidden",
         }}
-      >
-        <Box sx={{ p: 0, marginLeft: "0px", overflow: "auto", height: "calc(100vh - 48px)" }}>
-          <Paper sx={{ m: 1, p: 0 , height:'91.5vh' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center',}}>
+      > */}
+        {/* <Box sx={{ p: 0, marginLeft: "0px", overflow: "hidden", }}> */}
+          <Paper elevation={24} sx={{ p: 0, height: '90vh' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', }}>
               <Typography variant="h6" sx={{ fontWeight: 'bold', ml: 1 }}>
                 LDAP Configuration
               </Typography>
@@ -252,8 +253,8 @@ const LDAPConfig = ({ onThemeToggle }) => {
               </Box>
             )}
           </Paper>
-        </Box>
-      </Box>
+        {/* </Box> */}
+      {/* </Box> */}
     </Box>
   );
 };
