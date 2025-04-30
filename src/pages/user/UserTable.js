@@ -376,7 +376,7 @@ export default function UserTable() {
         elevation={24}
         sx={{ width: "100%", overflow: "hidden", borderRadius: "20px" }}
       >
-        <TableContainer sx={{ maxHeight: "84vh", height: "84vh" }}>
+        <TableContainer sx={{ maxHeight: "83vh", height: "83vh" }}>
           <Table stickyHeader>
             <TableHead className={styles.tableHeader}>
               <TableRow

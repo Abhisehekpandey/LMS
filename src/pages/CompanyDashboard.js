@@ -1477,11 +1477,14 @@ CloudNet (Basic),C4,4,3,2,180,95,45`;
     },
   };
   return (
-    <div style={{ display: 'flex', backgroundColor: 'whitesmoke' }}>
+    <div style={{ display: 'flex', backgroundColor: 'whitesmoke', marginLeft: "22px", }}>
 
-      <div style={{ marginLeft: '50px', flexGrow: 1 }}>
+      <div style={{
+        marginLeft: '60px', marginTop: "30px", marginRight: "10px", flexGrow: 1, boxShadow: "2px 1px 11px 5px rgba(0, 0, 0, 0.2)!important", 
+      }}>
 
-        <div style={{
+        <Paper evaluation={24} sx={{
+          borderRadius: "20px"
           // height: '92vh'
         }}>
           {/* <UserTable /> */}
@@ -1546,7 +1549,7 @@ CloudNet (Basic),C4,4,3,2,180,95,45`;
           <Grid container spacing={2} padding={1}>
 
             <Grid item xs={6} md={6} lg={6}>
-              <Paper evaluation={24} sx={{ borderRadius: 3 }}>
+              <Paper evaluation={24} sx={{ borderRadius: 3, borderRadius: "6px" }} >
                 <Typography
                   variant="h6"
                   sx={{
@@ -1577,7 +1580,8 @@ CloudNet (Basic),C4,4,3,2,180,95,45`;
                     color: "#2c3e50b3",
                     borderBottom: "2px solid #e0e0e0",
                     // paddingBottom: 1,
-                    textAlign: "center"
+                    textAlign: "center",
+                    borderRadius: "6px"
                   }}
                 >
                   License Allocation and Usage
@@ -1600,7 +1604,9 @@ CloudNet (Basic),C4,4,3,2,180,95,45`;
                     color: "#2c3e50b3",
                     borderBottom: "2px solid #e0e0e0",
                     // paddingBottom: 1,
-                    textAlign: "center"
+                    textAlign: "center",
+                    borderRadius: "6px"
+
                   }}
                 >
                   License Expiration Status
@@ -1623,7 +1629,8 @@ CloudNet (Basic),C4,4,3,2,180,95,45`;
                     color: "#2c3e50b3",
                     borderBottom: "2px solid #e0e0e0",
                     // paddingBottom: 1,
-                    textAlign: "center"
+                    textAlign: "center",
+                    borderRadius: "6px"
                   }}
                 >
                   Cost Server Storage Analysis
@@ -2345,7 +2352,7 @@ CloudNet (Basic),C4,4,3,2,180,95,45`;
             </Snackbar>
           </Box>
 
-        </div>
+        </Paper>
 
       </div>
     </div>

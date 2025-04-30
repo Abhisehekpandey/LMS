@@ -19,6 +19,7 @@ import {
   ListItemText,
   ClickAwayListener,
   Divider,
+  alpha,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import LanguageIcon from "@mui/icons-material/Language";
@@ -51,6 +52,15 @@ const SearchWrapper = styled("div")({
   backgroundColor: "rgba(246,249,254)", // Darker background for search
   "&:hover": {
     backgroundColor: "rgba(246,249,254)",
+
+  minHeight: 40,
+  position: 'relative',
+  '& .searchRoot': {
+    position: { xs: 'absolute', sm: 'relative' },
+    right: { xs: 0, sm: 'auto' },
+    top: { xs: 0, sm: 'auto' },
+
+},
   },
   marginRight: "20px",
   marginLeft: "20px",
@@ -466,13 +476,29 @@ const Navbar = ({ onThemeToggle, onSearch, currentPage }) => {
 
           <Box sx={{ flexGrow: 1 }} />
 
-          <Box sx={{ display: "flex", gap: 1 }}>
+          <Box sx={{ display: "flex", gap: 3 }}>
             <Tooltip title="Toggle Theme" arrow>
               <IconButton
                 onClick={onThemeToggle}
                 size="medium"
                 // sx={{ color: 'text.secondary' }}
-                sx={{ color: "rgba(0, 0, 0, 0.6)", backgroundColor: "rgba(246,249,254)" }}
+                sx={{
+                  borderRadius: '50%',
+                  width: 40,
+                  height: 35,
+                  marginTop: '3px',
+                  color: "rgba(0, 0, 0, 0.6)",
+                  backgroundColor: "rgba(246, 249, 254)",
+                  border: 1,
+                  borderColor: 'transparent',
+                  '&:hover, &:focus': {
+                    color: (theme) => theme.palette.text.primary,
+                    backgroundColor: "rgba(246,249,254)",
+                    borderColor: (theme) =>
+                      alpha(theme.palette.text.secondary, 0.25),
+                  },
+                }}
+              // sx={{ color: "rgba(0, 0, 0, 0.6)", backgroundColor: "rgba(246,249,254)" }}
               >
                 <Brightness4Icon sx={{ fontSize: "1.2rem" }} />
               </IconButton>
@@ -493,8 +519,22 @@ const Navbar = ({ onThemeToggle, onSearch, currentPage }) => {
               <IconButton
                 onClick={handleLogout}
                 size="medium"
-                // sx={{ color: 'text.secondary' }}
-                sx={{ color: "rgba(0, 0, 0, 0.6)", backgroundColor: "rgba(246,249,254)" }}
+                sx={{
+                  borderRadius: '50%',
+                  width: 40,
+                  height: 35,
+                  marginTop: '3px',
+                  color: "rgba(0, 0, 0, 0.6)",
+                  backgroundColor: "rgba(246, 249, 254)",
+                  border: 1,
+                  borderColor: 'transparent',
+                  '&:hover, &:focus': {
+                    color: (theme) => theme.palette.text.primary,
+                    backgroundColor: "rgba(246,249,254)",
+                    borderColor: (theme) =>
+                      alpha(theme.palette.text.secondary, 0.25),
+                  },
+                }}
               >
                 <LogoutIcon sx={{ fontSize: "1.2rem" }} />
               </IconButton>
