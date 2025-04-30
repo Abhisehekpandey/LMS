@@ -135,7 +135,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
   // Add pagination state
   const [page, setPage] = useState(0);
   // const [rowsPerPage] = useState(9);
-  const [rowsPerPage, setRowsPerPage] = useState(10); // Default to 25 rows
+  const [rowsPerPage, setRowsPerPage] = useState(9); // Default to 25 rows
 
   const [openRows, setOpenRows] = useState({});
 
@@ -1602,13 +1602,13 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         }}
       >
         <TablePagination
+          rowsPerPageOptions={[9, 18, 27]}
           component="div"
-          count={departments?.length || 0}
+          count={departments?.length}
+          rowsPerPage={rowsPerPage}
           page={page}
           onPageChange={handleChangePage}
-          rowsPerPage={rowsPerPage}
           onRowsPerPageChange={handleChangeRowsPerPage}
-          rowsPerPageOptions={[9, 18, 27]}
         />
 
         <Box
