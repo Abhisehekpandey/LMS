@@ -18,6 +18,7 @@ import {
   ListItem,
   ListItemText,
   ClickAwayListener,
+  Divider,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import LanguageIcon from "@mui/icons-material/Language";
@@ -27,10 +28,10 @@ import { useNavigate } from "react-router-dom";
 import debounce from "lodash/debounce";
 
 const StyledAppBar = styled(AppBar)(({ theme }) => ({
-  backgroundColor: "whitesmoke", // Match sidebar color
+  backgroundColor: "white", // Match sidebar color
   color: "#424242",
   boxShadow: "0 1px 2px rgba(0,0,0,0.15)",
-  height: "48px",
+  height: "50px",
   backdropFilter: "blur(8px)",
   boxShadow: "0 1px 2px rgba(0,0,0,0.08)",
   position: "relative", // Ensure backdrop-filter works properly
@@ -47,9 +48,9 @@ const StyledToolbar = styled(Toolbar)({
 const SearchWrapper = styled("div")({
   position: "relative",
   borderRadius: "20px",
-  backgroundColor: "white", // Darker background for search
+  backgroundColor: "rgba(246,249,254)", // Darker background for search
   "&:hover": {
-    backgroundColor: "white",
+    backgroundColor: "rgba(246,249,254)",
   },
   marginRight: "20px",
   marginLeft: "20px",
@@ -334,17 +335,75 @@ const Navbar = ({ onThemeToggle, onSearch, currentPage }) => {
                 }}
               >
               </Typography> */}
-              <Typography
+              <Box
+                sx={{
+                  height: { xs: 56, sm: 60 },
+                  padding: 2.5,
+                  display: 'flex',
+                  flexDirection: 'row',
+                  cursor: 'pointer',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginLeft: "60px",
+                  '& svg': {
+                    height: { xs: 40, sm: 45 },
+                    width: '13rem',
+                  },
+                }}
+                className='app-logo'
+              >
+                {/* <Logo fill={theme.palette.primary.main} /> */}
+                {/* <img
+        src={theme.palette.mode === 'dark' ? dark : pic}
+        style={{width: '9rem', maxWidth: '100%', height: 'auto'}}
+      /> */}
+
+                <div>
+                  <Typography
+                    variant='h5'
+                    sx={{ fontSize: '1.6rem', color: '#00318e', fontWeight: 'bold' }}
+                  >
+                    Angel<span style={{ color: '#ff0000' }}>Bot</span>
+                  </Typography>
+                  <Divider>
+                    <Typography
+                      variant='h6'
+                      sx={{
+                        fontSize: '1rem',
+                        color: '#707070',
+                        fontFamily: 'fangsong',
+                      }}
+                    >
+                      Access Arc
+                    </Typography>
+                  </Divider>
+                </div>
+                <Box
+                  sx={{
+                    mt: 1,
+                    display: { xs: 'none', md: 'block' },
+                    '& svg': {
+                      height: { xs: 25, sm: 30 },
+                    },
+                  }}
+                >
+                  {/* <Kms fill={alpha(theme.palette.text.primary, 0.8)} /> */}
+                  <h1></h1>
+                  {/* <LogoText fill={alpha(theme.palette.text.primary, 0.8)} /> */}
+                </Box>
+              </Box>
+
+              {/* <Typography
                 sx={{
                   fontSize: "1rem",
                   fontWeight: 400,
                   color: "rgba(0, 0, 0, 0.7)",
                   fontFamily: '"Be Vietnam", sans-serif',
-                  marginLeft: "40px",
+                  marginLeft: "60px",
                 }}
               >
                 {formattedPath}
-              </Typography>
+              </Typography> */}
             </>
           )}
         </Box>
@@ -411,9 +470,9 @@ const Navbar = ({ onThemeToggle, onSearch, currentPage }) => {
             <Tooltip title="Toggle Theme" arrow>
               <IconButton
                 onClick={onThemeToggle}
-                size="small"
+                size="medium"
                 // sx={{ color: 'text.secondary' }}
-                sx={{ color: "rgba(0, 0, 0, 0.6)" }}
+                sx={{ color: "rgba(0, 0, 0, 0.6)", backgroundColor: "rgba(246,249,254)" }}
               >
                 <Brightness4Icon sx={{ fontSize: "1.2rem" }} />
               </IconButton>
@@ -433,9 +492,9 @@ const Navbar = ({ onThemeToggle, onSearch, currentPage }) => {
             <Tooltip title="Logout" arrow>
               <IconButton
                 onClick={handleLogout}
-                size="small"
+                size="medium"
                 // sx={{ color: 'text.secondary' }}
-                sx={{ color: "rgba(0, 0, 0, 0.6)" }}
+                sx={{ color: "rgba(0, 0, 0, 0.6)", backgroundColor: "rgba(246,249,254)" }}
               >
                 <LogoutIcon sx={{ fontSize: "1.2rem" }} />
               </IconButton>

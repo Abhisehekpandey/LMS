@@ -303,11 +303,11 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       prev.map((dept, idx) =>
         idx === editingRole.departmentIndex
           ? {
-              ...dept,
-              roles: dept.roles.map((role, i) =>
-                i === editingRole.roleIndex ? editingRole.value : role
-              ),
-            }
+            ...dept,
+            roles: dept.roles.map((role, i) =>
+              i === editingRole.roleIndex ? editingRole.value : role
+            ),
+          }
           : dept
       )
     );
@@ -864,9 +864,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     );
     setSnackbar({
       open: true,
-      message: `Department "${dept.name}" ${
-        !dept.isActive ? "activated" : "deactivated"
-      }`,
+      message: `Department "${dept.name}" ${!dept.isActive ? "activated" : "deactivated"
+        }`,
       severity: "success",
     });
   };
@@ -1008,13 +1007,13 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         display: "flex",
         position: "relative",
         height: "100% ",
-        marginLeft: "60px",
+        marginLeft: "80px",
         marginTop: "12px",
         marginRight: "18px",
         overflow: "hidden",
 
         bgcolor: "#f5f5f5", // Whitesmoke background for the main container
-        borderRadius: "28px",
+        borderRadius: "20px",
         boxShadow: "2px 1px 11px 5px rgba(0, 0, 0, 0.2)!important",
       }}
     >
@@ -1744,9 +1743,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         >
           <Typography
             variant="h6"
-            // sx={{
-            //   fontFamily: '"Be Vietnam", sans-serif',
-            // }}
+          // sx={{
+          //   fontFamily: '"Be Vietnam", sans-serif',
+          // }}
           >
             New Department
           </Typography>

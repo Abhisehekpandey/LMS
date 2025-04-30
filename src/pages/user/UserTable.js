@@ -280,9 +280,8 @@ export default function UserTable() {
     );
     toast({
       open: true,
-      message: `Department "${rowId.name}" ${
-        !rowId.isActive ? "activated" : "deactivated"
-      }`,
+      message: `Department "${rowId.name}" ${!rowId.isActive ? "activated" : "deactivated"
+        }`,
       severity: "success",
     });
   };
@@ -366,15 +365,16 @@ export default function UserTable() {
   return (
     <Box
       sx={{
-        p: "10px",
+        marginLeft: "14px",
         bgcolor: "whitesmoke",
         overflow: "hidden",
         height: "calc(100vh - 48px)",
+        padding: "15px",
       }}
     >
       <Paper
         elevation={24}
-        sx={{ width: "100%", overflow: "hidden", borderRadius: "28px" }}
+        sx={{ width: "100%", overflow: "hidden", borderRadius: "20px" }}
       >
         <TableContainer sx={{ maxHeight: "84vh", height: "84vh" }}>
           <Table stickyHeader>
@@ -980,7 +980,7 @@ export default function UserTable() {
                   fullWidth
                   variant="outlined"
                   value={editData.userName || ""}
-                  // onChange={handleInputChange}
+                // onChange={handleInputChange}
                 />
               </Grid>
               <Grid item xs={4}>
@@ -992,7 +992,7 @@ export default function UserTable() {
                   fullWidth
                   variant="outlined"
                   value={editData.name || ""}
-                  // onChange={handleInputChange}
+                // onChange={handleInputChange}
                 />
               </Grid>
               <Grid item xs={4}>
@@ -1004,7 +1004,7 @@ export default function UserTable() {
                   fullWidth
                   variant="outlined"
                   value={editData.department || ""}
-                  // onChange={handleInputChange}
+                // onChange={handleInputChange}
                 />
               </Grid>
               <Grid item xs={6}>
@@ -1016,7 +1016,7 @@ export default function UserTable() {
                   fullWidth
                   variant="outlined"
                   value={editData.role || ""}
-                  // onChange={handleInputChange}
+                // onChange={handleInputChange}
                 />
               </Grid>
               <Grid item xs={6}>
@@ -1049,8 +1049,8 @@ export default function UserTable() {
                   type="tel"
                   variant="outlined"
                   value={editData.phone || ""}
-                  // onChange={handleInputChange}
-                  // sx={{ width: "40%" }}
+                // onChange={handleInputChange}
+                // sx={{ width: "40%" }}
                 />
               </Grid>
               <Grid item xs={6}>
@@ -1062,7 +1062,7 @@ export default function UserTable() {
                   fullWidth
                   variant="outlined"
                   value={editData.storageUsed || ""}
-                  // onChange={handleInputChange}
+                // onChange={handleInputChange}
                 />
               </Grid>
             </Grid>
