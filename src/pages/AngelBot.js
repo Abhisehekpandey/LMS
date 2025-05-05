@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import ReactECharts from "echarts-for-react";
+import { motion } from "framer-motion";
+// import { Paper } from "@mui/material";
 import {
   Box,
   Paper,
@@ -420,9 +422,8 @@ const AngelBot = ({ onThemeToggle }) => {
         trigger: "item",
         formatter: (params) => {
           return `<div style="font-weight: 700; font-size: 14px; color: #000;">
-                    ${params.name}: ${params.value}${
-            params.name.includes("Storage") ? "GB" : ""
-          } 
+                    ${params.name}: ${params.value}${params.name.includes("Storage") ? "GB" : ""
+            } 
                   </div>`;
         },
         backgroundColor: "rgba(255, 255, 255, 0.95)",
@@ -515,9 +516,8 @@ const AngelBot = ({ onThemeToggle }) => {
         trigger: "item",
         formatter: (params) => {
           return `<div style="font-weight: 700; font-size: 14px; color: #000;">
-              ${params.name}: ${params.value}${
-            params.name.includes("Storage") ? "GB" : ""
-          } 
+              ${params.name}: ${params.value}${params.name.includes("Storage") ? "GB" : ""
+            } 
             </div>`;
         },
         backgroundColor: "rgba(255, 255, 255, 0.95)",
@@ -602,9 +602,8 @@ const AngelBot = ({ onThemeToggle }) => {
         trigger: "item",
         formatter: (params) => {
           return `<div style="font-weight: 700; font-size: 14px; color: #000;">
-                    ${params.name}: ${params.value}${
-            params.name.includes("Storage") ? "GB" : ""
-          } 
+                    ${params.name}: ${params.value}${params.name.includes("Storage") ? "GB" : ""
+            } 
                   </div>`;
         },
         backgroundColor: "rgba(255, 255, 255, 0.95)",
@@ -681,6 +680,8 @@ const AngelBot = ({ onThemeToggle }) => {
   };
 
   return (
+
+
     <Box className="child-container">
       <div className="child">
         <Box
@@ -905,14 +906,14 @@ const AngelBot = ({ onThemeToggle }) => {
                             fontSize: "2rem",
                           }}
                         >
-                          {getRemainingDays()} 
+                          {getRemainingDays()}
                         </Typography>
                         <Typography sx={{
-                            color: chartColors.error,
-                            fontWeight: 700,
-                            lineHeight: 1,
-                            fontSize: "1rem",
-                          }}>Days</Typography>
+                          color: chartColors.error,
+                          fontWeight: 700,
+                          lineHeight: 1,
+                          fontSize: "1rem",
+                        }}>Days</Typography>
                       </Box>
                       {getRemainingDays() === 0 && (
                         <Box
@@ -1070,9 +1071,9 @@ const AngelBot = ({ onThemeToggle }) => {
                     sx={{
                       mt: 1,
                       ".MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows":
-                        {
-                          margin: 0,
-                        },
+                      {
+                        margin: 0,
+                      },
                     }}
                   />
                 </Box>
@@ -1185,9 +1186,9 @@ const AngelBot = ({ onThemeToggle }) => {
                     sx={{
                       mt: 1,
                       ".MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows":
-                        {
-                          margin: 0,
-                        },
+                      {
+                        margin: 0,
+                      },
                     }}
                   />
                 </Box>
@@ -1197,6 +1198,7 @@ const AngelBot = ({ onThemeToggle }) => {
         </Box>
       </div>
     </Box>
+
   );
 };
 

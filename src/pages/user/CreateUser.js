@@ -107,10 +107,7 @@ const CreateUser = ({ handleClose }) => {
     : [];
 
   return (
-    <div style={{
-      height: '100vh',
-      overflow: 'hidden'
-    }}>
+    <div>
       <DialogTitle
         sx={{
           //   borderBottom: "1px solid #eee",
