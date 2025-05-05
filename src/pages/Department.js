@@ -156,7 +156,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     displayName: "",
     initialRole: "",
     storage: "50GB", // Default storage value
-    // reportingManager: "", // Add this field
+
     departmentModerator: "", // Add this line
     submitted: false,
   });
@@ -181,6 +181,16 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     roleIndex: null,
     value: "",
   });
+
+
+  const storageOptions = ['0GB', '25GB','50GB','75GB', '100GB', '150GB','200GB'];
+
+  const handleStorageChange = (name, newStorage) => {
+    const updated = departments.map((dept) =>
+      dept.name === name ? { ...dept, storage: newStorage } : dept
+    );
+    setDepartments(updated);
+  };
 
   // Add these at the top of your component with other state declarations
   const [selected, setSelected] = useState([]);
@@ -274,7 +284,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               "Cannot delete the last role. Department must have at least one role.",
             severity: "error",
           });
-          // return dept; // Skip modification
+          return dept
+          
         }
 
         const updatedRoles = dept.roles.filter((_, i) => i !== roleIndex);
@@ -320,7 +331,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     });
   };
 
-  // Add handleSnackbarClose function
+ 
   const handleSnackbarClose = (event, reason) => {
     if (reason === "clickaway") return;
     setSnackbar((prev) => ({ ...prev, open: false }));
@@ -1005,6 +1016,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     }
   };
 
+
+
   return (
     <Box
       sx={{
@@ -1198,7 +1211,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
               <TableCell
                 sx={{
-                  // ...commonTextStyle,
+                 
                   width: "150px",
                   padding: "2px 8px",
                   height: "32px",
@@ -1209,7 +1222,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               >
                 <Typography
                   variant="body1"
-                  // fontWeight="bold"
+        
                   sx={{
                     fontWeight: "bold !important",
                     fontSize: "15px",
@@ -1219,6 +1232,32 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                   Storage
                 </Typography>
               </TableCell>
+
+              <TableCell
+                sx={{
+                 
+                  width: "150px",
+                  padding: "2px 8px",
+                  height: "32px",
+                  fontWeight: "bold",
+                  color: "#444",
+                  textAlign: "center",
+                }}
+              >
+                <Typography
+                  variant="body1"
+        
+                  sx={{
+                    fontWeight: "bold !important",
+                    fontSize: "15px",
+                    letterSpacing: "-0.01em",
+                  }}
+                >
+                  Manage Storage
+                </Typography>
+              </TableCell>
+
+              
 
               <TableCell
                 sx={{
@@ -1341,12 +1380,32 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                       </TableCell>
                       <TableCell
                         sx={{
-                          // ...commonTextStyle,
+                          
                           textAlign: "center",
                           padding: "2px 8px",
                         }}
                       >
                         {dept.storage}
+                      </TableCell>
+
+                      <TableCell
+                        sx={{
+                          
+                          textAlign: "center",
+                          padding: "2px 8px",
+                        }}
+                      >
+                         <Select
+                  value={dept.storage}
+                  onChange={(e) => handleStorageChange(dept.name, e.target.value)}
+                  sx={{width:"100px", height:"30px",borderRadius:"28px"}}
+                >
+                  {storageOptions.map((option) => (
+                    <MenuItem key={option} value={option}>
+                      {option}
+                    </MenuItem>
+                  ))}
+                </Select>
                       </TableCell>
 
                       <TableCell
@@ -1923,20 +1982,50 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             }}
           >
             <Box sx={{ display: "flex", gap: 1 }}>
-              <Tooltip title="Download Template" componentsProps={{}}>
+             
+              <Tooltip title="Download Template">
+  <IconButton
+    onClick={handleTemplateDownload}
+    size="small"
+    sx={{
+      backgroundColor: "primary.lighter",
+      border: "1px solid",
+      borderColor: "primary.light",
+      color: "primary.main",
+      px: 1,
+      height: 36,
+      borderRadius: "8px",
+      "&:hover": {
+        backgroundColor: "primary.100",
+        transform: "translateY(-1px)",
+        boxShadow: "0 2px 8px rgba(46, 125, 50, 0.15)",
+      },
+      transition: "all 0.2s ease",
+    }}
+  >
+    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+      {/* <DownloadIcon sx={{ fontSize: 20 }} /> */}
+      <Typography variant="body2">Download Template</Typography>
+      <DownloadIcon sx={{ fontSize: 20 }} />
+    </Box>
+  </IconButton>
+</Tooltip>
+
+              <Tooltip title="Bulk Upload" componentsProps={{}}>
                 <IconButton
-                  onClick={handleTemplateDownload}
+                  onClick={() => fileInputRef.current?.click()}
                   size="small"
+                 
                   sx={{
-                    backgroundColor: "success.lighter",
+                    backgroundColor: "primary.dark",
                     border: "1px solid",
-                    borderColor: "success.light",
-                    color: "success.main",
-                    width: 36,
+                    borderColor: "primary.light",
+                    color: "white",
+                    px: 1,
                     height: 36,
                     borderRadius: "8px",
                     "&:hover": {
-                      backgroundColor: "success.100",
+                    
                       transform: "translateY(-1px)",
                       boxShadow: "0 2px 8px rgba(46, 125, 50, 0.15)",
                     },
@@ -1944,31 +2033,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                   }}
                 >
                   <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                    <DownloadIcon sx={{ fontSize: 20 }} />
-                  </Box>
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Bulk Upload" componentsProps={{}}>
-                <IconButton
-                  onClick={() => fileInputRef.current?.click()}
-                  size="small"
-                  sx={{
-                    backgroundColor: "primary.lighter",
-                    border: "1px solid",
-                    borderColor: "primary.light",
-                    color: "primary.main",
-                    width: 36,
-                    height: 36,
-                    borderRadius: "8px",
-                    "&:hover": {
-                      backgroundColor: "primary.100",
-                      transform: "translateY(-1px)",
-                      boxShadow: "0 2px 8px rgba(25, 118, 210, 0.15)",
-                    },
-                    transition: "all 0.2s ease",
-                  }}
-                >
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                    
+                    <Typography variant="body2">Bulk Upload</Typography>
                     <UploadFileIcon sx={{ fontSize: 20 }} />
                   </Box>
                 </IconButton>
@@ -1979,9 +2045,11 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               onClick={handleAddDepartment}
               variant="contained"
               sx={{
-                bgcolor: "primary.main",
+                // bgcolor: "primary.main",
+                background: "rgb(251, 68, 36)",
                 "&:hover": {
-                  bgcolor: "primary.dark",
+                  // bgcolor: "primary.dark",
+                  background: "rgb(251, 68, 36)",
                 },
                 px: 3,
                 py: 0.7,

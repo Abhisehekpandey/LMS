@@ -541,7 +541,7 @@ const CreateUser = ({ handleClose }) => {
                 size="small"
                 Autocomplete="off"
                 fullWidth
-                label="Reporting Manager"
+                label="Department Moderator"
                 name="name"
               />
             </Grid>
@@ -561,13 +561,13 @@ const CreateUser = ({ handleClose }) => {
                 Autocomplete="off"
                 options={storageAllocation}
                 renderInput={(params) => (
-                  <TextField {...params} label="Storage Allocation" />
+                  <TextField {...params} label="Storage" />
                 )}
               />
             </Grid>
             <Grid item xs={4}>
               <TextField
-                required
+                
                 size="small"
                 Autocomplete="off"
                 fullWidth
