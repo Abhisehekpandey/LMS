@@ -425,10 +425,11 @@ export default function UserTable() {
                       selected={isItemSelected}
                       onMouseEnter={() => setHoveredRow(row.id)}
                       onMouseLeave={() => setHoveredRow(null)}
+                      
                     >
                       <TableCell padding="checkbox">
                         <Checkbox
-                          sx={{ padding: "10px 10px 10px 10px !important" }}
+                          sx={{ padding: "1px 1px 1px 1px !important" }}
                           checked={isItemSelected}
                           onChange={() => handleClick(row)}
                         />

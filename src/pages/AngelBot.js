@@ -905,8 +905,14 @@ const AngelBot = ({ onThemeToggle }) => {
                             fontSize: "2rem",
                           }}
                         >
-                          {getRemainingDays()}
+                          {getRemainingDays()} 
                         </Typography>
+                        <Typography sx={{
+                            color: chartColors.error,
+                            fontWeight: 700,
+                            lineHeight: 1,
+                            fontSize: "1rem",
+                          }}>Days</Typography>
                       </Box>
                       {getRemainingDays() === 0 && (
                         <Box
