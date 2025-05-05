@@ -110,11 +110,11 @@ const Sidebar = () => {
   const location = useLocation();
 
   const menuItems = React.useMemo(() => [
-    { path: "/company-dashboard", icon: <DashboardIcon />, text: "Dashboard" },
     { path: "/angelbot", icon: <TimelineIcon />, text: "AngelBot" },
-    { path: "/department", icon: <DepartmentRolesIcon />, text: "Department" },
     { path: "/user", icon: <UserIcon />, text: "User" },
+    { path: "/department", icon: <DepartmentRolesIcon />, text: "Department" },
     { path: "/ldap-config", icon: <LDAPIcon />, text: "LDAP Settings" },
+    { path: "/company-dashboard", icon: <DashboardIcon />, text: "Dashboard" },
   ], []); // Empty dependency array means this only runs once
 
   const handleMouseEnter = () => {
@@ -136,23 +136,6 @@ const Sidebar = () => {
     setOpen(newLock);
   };
 
-  // const username = sessionStorage.getItem('AdminName');
-
-  // const getUserAvatar = () => {
-  //   if (username) {
-  //     return username
-  //       .split(' ') // Split the name into an array of words
-  //       .map((word) => word.charAt(0).toUpperCase()) // Get the first letter of each word and convert to uppercase
-  //       .join('');
-  //   }
-  //   if (user?.displayName) {
-  //     return user.displayName.charAt(0).toUpperCase();
-  //   }
-  //   if (user?.email) {
-  //     return user.email.charAt(0).toUpperCase();
-  //   }
-  //   return 'U'; // Default letter if no username, displayName, or email is found
-  // };
 
   return (
     <StyledDrawer
@@ -163,14 +146,12 @@ const Sidebar = () => {
       onMouseLeave={handleMouseLeave}
     >
       <Box
-        // onClick={handleClick}
+     
         sx={{
           // pl: "3px",
           display: "flex",
           alignItems: "center",
-          // cursor: 'pointer',
-          // height: 52, // Add fixed height to prevent layout shift
-          // borderBottom: "1px solid rgba(0,0,0,0.05)",
+   
           mb: 1, // Add margin bottom
         }}
         className="user-info-view"
@@ -238,19 +219,7 @@ const Sidebar = () => {
               Administrator
             </Box>
           </Box>
-          {/* <Box
-            sx={{
-              width: open ? "auto" : 0,
-              overflow: "hidden",
-              display: "flex",
-              alignItems: "center",
-              ml: open ? 0.8 : 0,
-              opacity: open ? 1 : 0,
-              transition: "all 0.3s ease",
-            }}
-          >
-            <LogoText component="span">Access Arc</LogoText>
-          </Box> */}
+      
         </Box>
 
       </Box>

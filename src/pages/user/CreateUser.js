@@ -27,7 +27,25 @@ const CreateUser = ({ handleClose }) => {
   const [selectedRole, setSelectedRole] = useState(null);
   const [addDepartment, setAddDepartment] = useState(false);
   const [addRole, setAddRole] = useState(false);
+  const [bulkFile, setBulkFile] = useState(null);
+  const [fileName, setFileName] = useState("");
   const dispatch = useDispatch();
+  // File ko handle karne ka function
+  const handleFileChange = (event) => {
+    const file = event.target.files[0]; // Sirf pehla file
+    if (file) {
+      setBulkFile(file);          // File ko state mein daal diya
+      setFileName(file.name);     // File ka naam state mein daal diya
+    }
+  };
+  const handleBulkUpload = () => {
+    if (bulkFile) {
+      console.log("File upload ho rahi hai:", bulkFile);
+      // API call ya file upload logic yahan implement kar sakte ho
+    } else {
+      alert("Pehle file select karo!");
+    }
+  };
 
   const validationSchema = yup.object().shape({
     userName: yup.string().required("user Name  is required"),
@@ -89,7 +107,10 @@ const CreateUser = ({ handleClose }) => {
     : [];
 
   return (
-    <div>
+    <div style={{
+      height: '100vh',
+      overflow: 'hidden'
+    }}>
       <DialogTitle
         sx={{
           //   borderBottom: "1px solid #eee",
@@ -312,8 +333,10 @@ const CreateUser = ({ handleClose }) => {
               />
             </Grid>
             <Grid item xs={4}>
-              <Autocomplete
+              <TextField
+                label="Reporting Manager"
                 size="small"
+                fullWidth
                 id="manager-autocomplete"
                 options={managerOptions}
                 autoComplete="off"
@@ -412,6 +435,9 @@ const CreateUser = ({ handleClose }) => {
       >
         <div style={{ display: "flex", gap: "5px" }}>
           <Button
+            component="a"
+            href="/templates/user_template.csv"
+            download
             sx={{
               backgroundColor: "primary.lighter",
               border: "1px solid",
@@ -447,9 +473,25 @@ const CreateUser = ({ handleClose }) => {
             color="primary"
             endIcon={<UploadFile />}
             variant="contained"
+            onClick={() => document.getElementById("bulk-upload-input").click()}
           >
             Bulk Upload
           </Button>
+          <input
+            id="bulk-upload-input"
+            type="file"
+            style={{ display: "none" }}
+            accept=".csv" // File type jo allowed hai
+            onChange={handleFileChange} // File select hone par handleFileChange chalega
+          />
+
+          {/* File name dikhana */}
+          {fileName && (
+            <Typography variant="body2" sx={{ mt: 2 }}>
+              Selected File: {fileName}
+            </Typography>
+          )}
+
         </div>
         <div>
           <Button

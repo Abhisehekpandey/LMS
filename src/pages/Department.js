@@ -59,6 +59,7 @@ import {
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import { PersonAdd as PersonAddIcon } from "@mui/icons-material";
 import { ManageAccounts as ManageAccountsIcon } from "@mui/icons-material";
+import ClickAwayListener from "@mui/material/ClickAwayListener";
 
 // Add this import with other imports
 import AddBusinessIcon from "@mui/icons-material/AddBusiness";
@@ -132,14 +133,12 @@ const IOSSwitch = styled((props) => (
 }));
 
 function Department({ departments, setDepartments, onThemeToggle }) {
-  // Add pagination state
   const [page, setPage] = useState(0);
-  // const [rowsPerPage] = useState(9);
+
   const [rowsPerPage, setRowsPerPage] = useState(9); // Default to 25 rows
 
   const [openRows, setOpenRows] = useState({});
 
-  // Add sorting state
   const [orderBy, setOrderBy] = useState("name");
   const [order, setOrder] = useState("asc");
 
@@ -157,7 +156,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     displayName: "",
     initialRole: "",
     storage: "50GB", // Default storage value
-    reportingManager: "", // Add this field
+    // reportingManager: "", // Add this field
     departmentModerator: "", // Add this line
     submitted: false,
   });
@@ -253,35 +252,35 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0); // Reset to first page when changing rows per page
   };
-  // Add these new handler functions
-  const handleEditRole = (deptIndex, roleIndex, currentRole) => {
+
+  const handleEditRole = (deptName, roleIndex, currentRole) => {
     setEditingRole({
-      departmentIndex: deptIndex,
+      departmentName: deptName,
       roleIndex: roleIndex,
       value: currentRole,
     });
     setEditRoleDialog(true);
   };
 
-  const handleDeleteRole = (deptIndex, roleIndex) => {
-    const department = sortedDepartments[deptIndex];
-    if (department.roles.length <= 1) {
-      setSnackbar({
-        open: true,
-        message:
-          "Cannot delete the last role. Department must have at least one role.",
-        severity: "error",
-      });
-      return;
-    }
+  const handleDeleteRole = (deptName, roleIndex) => {
+    setDepartments((prevDepartments) => {
+      return prevDepartments.map((dept) => {
+        if (dept.name !== deptName) return dept;
 
-    setDepartments((prev) =>
-      prev.map((dept, idx) =>
-        idx === deptIndex
-          ? { ...dept, roles: dept.roles.filter((_, i) => i !== roleIndex) }
-          : dept
-      )
-    );
+        if (dept.roles.length <= 1) {
+          setSnackbar({
+            open: true,
+            message:
+              "Cannot delete the last role. Department must have at least one role.",
+            severity: "error",
+          });
+          // return dept; // Skip modification
+        }
+
+        const updatedRoles = dept.roles.filter((_, i) => i !== roleIndex);
+        return { ...dept, roles: updatedRoles };
+      });
+    });
 
     setSnackbar({
       open: true,
@@ -301,8 +300,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     }
 
     setDepartments((prev) =>
-      prev.map((dept, idx) =>
-        idx === editingRole.departmentIndex
+      prev.map((dept) =>
+        dept.name === editingRole.departmentName
           ? {
               ...dept,
               roles: dept.roles.map((role, i) =>
@@ -749,9 +748,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     if (
       !newDepartment.name ||
       !newDepartment.displayName ||
-      !newDepartment.initialRole ||
+      // !newDepartment.initialRole ||
       !newDepartment.storage ||
-      !newDepartment.reportingManager ||
+      // !newDepartment.reportingManager ||
       !newDepartment.departmentModerator
     ) {
       setSnackbar({
@@ -774,9 +773,11 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     const newDeptWithRole = {
       name: newDepartment.name,
       displayName: newDepartment.displayName,
-      roles: [newDepartment.initialRole],
+      // roles: [newDepartment.initialRole],
+      roles: newDepartment.initialRole ? [newDepartment.initialRole] : [],
+
       storage: newDepartment.storage,
-      reportingManager: newDepartment.reportingManager,
+      // reportingManager: newDepartment.reportingManager,
       departmentModerator: newDepartment.departmentModerator,
       userCount: 0, // Initialize user count
       isActive: true, // Initialize as active
@@ -797,7 +798,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         displayName: "",
         initialRole: "",
         storage: "50GB",
-        reportingManager: "",
+        // reportingManager: "",
         submitted: false,
       });
 
@@ -1065,7 +1066,10 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             <TableRow
               sx={{ boxShadow: "0 -2px 8px 0 rgba(0, 0, 0, 0.2) !important" }}
             >
-              <TableCell padding="checkbox" sx={{ width: "48px" }}>
+              <TableCell
+                padding="checkbox"
+                sx={{ width: "48px", textAlign: "center" }}
+              >
                 <Checkbox
                   color="primary"
                   indeterminate={
@@ -1091,6 +1095,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                   height: "40px",
                   fontWeight: "bold",
                   color: "#444",
+                  // textAlign: "center",
                 }}
               >
                 <TableSortLabel
@@ -1108,8 +1113,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                   <Typography
                     variant="body1"
                     sx={{
-                      fontWeight: "700 !important",
-                      fontSize: "14px",
+                      fontWeight: "bold !important",
+                      fontSize: "15px",
+                      letterSpacing: "-0.01em",
                     }}
                   >
                     Department
@@ -1142,8 +1148,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                   <Typography
                     variant="body1"
                     sx={{
-                      fontWeight: "700 !important",
-                      fontSize: "14px",
+                      fontWeight: "bold !important",
+                      fontSize: "15px",
+                      letterSpacing: "-0.01em",
                     }}
                   >
                     Short name
@@ -1179,8 +1186,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     variant="body1"
                     sx={{
                       // ...commonTextStyle,
-                      fontWeight: "700 !important",
-                      fontSize: "14px",
+                      fontWeight: "bold !important",
+                      fontSize: "15px",
+                      letterSpacing: "-0.01em",
                     }}
                   >
                     Department Moderator
@@ -1203,8 +1211,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                   variant="body1"
                   // fontWeight="bold"
                   sx={{
-                    fontWeight: "700 !important",
-                    fontSize: "14px",
+                    fontWeight: "bold !important",
+                    fontSize: "15px",
+                    letterSpacing: "-0.01em",
                   }}
                 >
                   Storage
@@ -1213,7 +1222,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
               <TableCell
                 sx={{
-                  // ...commonTextStyle,
                   width: "150px",
                   padding: "2px 8px",
                   height: "32px",
@@ -1238,11 +1246,12 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     variant="body1"
                     sx={{
                       // ...commonTextStyle,
-                      fontWeight: "700 !important",
-                      fontSize: "14px",
+                      fontWeight: "bold !important",
+                      fontSize: "15px",
+                      letterSpacing: "-0.01em",
                     }}
                   >
-                    No. of roles
+                    Number of Role
                   </Typography>
                 </TableSortLabel>
               </TableCell>
@@ -1263,8 +1272,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                   variant="body1"
                   // fontWeight="bold"
                   sx={{
-                    fontWeight: "700 !important",
-                    fontSize: "14px",
+                    fontWeight: "bold !important",
+                    fontSize: "15px",
+                    letterSpacing: "-0.01em",
                   }}
                 >
                   Actions
@@ -1296,6 +1306,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                           width: "48px",
                           padding: "2px 8px",
                           height: "32px",
+                          textAlign: "center",
                         }}
                       >
                         <Checkbox
@@ -1338,34 +1349,61 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                         {dept.storage}
                       </TableCell>
 
-                      <TableCell sx={{ padding: "2px 8px" }}>
+                      <TableCell
+                        sx={{ padding: "2px 8px", textAlign: "center" }}
+                      >
                         <Box
                           sx={{
                             display: "flex",
                             alignItems: "center",
                             gap: 1,
                             justifyContent: "center",
-                            cursor: "pointer",
-                            "&:hover": {
-                              "& .MuiSvgIcon-root": {
+                          }}
+                        >
+                          <Typography variant="body2">
+                            {dept.roles?.length || 0}
+                          </Typography>
+
+                          <IconButton
+                            size="small"
+                            onClick={() => handleRowToggle(index)}
+                            sx={{
+                              padding: "2px",
+                              color: "#64748b",
+                              "&:hover": {
                                 color: "primary.main",
                               },
-                            },
-                          }}
-                          onClick={() => handleRowToggle(index)}
-                        >
-                          {dept.roles.length}{" "}
-                          {/* Display roles count instead of userCount */}
-                          <KeyboardArrowDownIcon
-                            sx={{
-                              fontSize: "1.1rem",
-                              color: "#64748b",
-                              transition: "transform 0.2s ease-in-out",
-                              transform: openRows[index]
-                                ? "rotate(-180deg)"
-                                : "rotate(0)",
                             }}
-                          />
+                          >
+                            <KeyboardArrowDownIcon
+                              sx={{
+                                fontSize: "1.1rem",
+                                transition: "transform 0.2s ease-in-out",
+                                transform: openRows[index]
+                                  ? "rotate(-180deg)"
+                                  : "rotate(0)",
+                              }}
+                            />
+                          </IconButton>
+
+                          <Tooltip title="Add Role">
+                            <IconButton
+                              size="small"
+                              onClick={() => {
+                                setSelectedDepartment(dept);
+                                setShowAddRoleDialog(true);
+                              }}
+                              sx={{
+                                padding: "2px",
+                                color: "primary.main",
+                                "&:hover": {
+                                  backgroundColor: "primary.lighter",
+                                },
+                              }}
+                            >
+                              <AddCircleOutlineIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
                         </Box>
                       </TableCell>
 
@@ -1439,146 +1477,166 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                         }}
                         colSpan={6}
                       >
-                        <Collapse
-                          in={openRows[index]}
-                          timeout="auto"
-                          unmountOnExit
+                        <ClickAwayListener
+                          onClickAway={() =>
+                            setOpenRows((prev) => ({ ...prev, [index]: false }))
+                          }
                         >
-                          <Box
-                            sx={{
-                              position: "absolute",
-                              left: "75%", // Center horizontally within the cell
-                              transform: "translateX(-50%)", // Center adjust
-                              width: "250px",
-                              backgroundColor: "#ffff",
-                              borderRadius: "8px",
-                              border: "1px solid #e2e8f0",
-                              boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-                              zIndex: 3,
-                              marginTop: "4px", // Small gap from the count
-                            }}
+                          <Collapse
+                            in={openRows[index]}
+                            timeout="auto"
+                            unmountOnExit
                           >
-                            <Table size="small" aria-label="roles">
-                              <TableHead>
-                                <TableRow>
-                                  <TableCell
-                                    sx={{
-                                      backgroundColor: "#f1f5f9",
-                                      fontWeight: "600 !important",
-                                      color: "#475569",
-                                      fontSize: "0.75rem",
-                                      borderBottom: "1px solid #e2e8f0",
-                                      padding: "8px 12px",
-                                      // ...commonTextStyle,
-                                    }}
-                                  >
-                                    Role Name
-                                  </TableCell>
-                                  <TableCell
-                                    align="right"
-                                    sx={{
-                                      backgroundColor: "#f1f5f9",
-                                      fontWeight: "600 !important",
-                                      color: "#475569",
-                                      fontSize: "0.75rem",
-                                      borderBottom: "1px solid #e2e8f0",
-                                      padding: "8px 12px",
-                                      width: "60px",
-                                      // ...commonTextStyle,
-                                    }}
-                                  >
-                                    Actions
-                                  </TableCell>
-                                </TableRow>
-                              </TableHead>
-                              <TableBody>
-                                {dept.roles.map((role, roleIndex) => (
-                                  <TableRow
-                                    key={roleIndex}
-                                    sx={{
-                                      "&:hover": {
-                                        backgroundColor: "rgba(0, 0, 0, 0.02)",
-                                      },
-                                      "& td": {
-                                        borderBottom:
-                                          roleIndex === dept.roles.length - 1
-                                            ? "none"
-                                            : "1px solid #e2e8f0",
-                                      },
-                                    }}
-                                  >
+                            <Box
+                              sx={{
+                                position: "absolute",
+                                left: "75%", // Center horizontally within the cell
+                                transform: "translateX(-50%)", // Center adjust
+                                width: "250px",
+                                backgroundColor: "#ffff",
+                                borderRadius: "8px",
+                                border: "1px solid #e2e8f0",
+                                boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                                zIndex: 3,
+                                marginTop: "4px", // Small gap from the count
+                              }}
+                            >
+                              <Table size="small" aria-label="roles">
+                                <TableHead>
+                                  <TableRow>
                                     <TableCell
                                       sx={{
-                                        // ...commonTextStyle,
-                                        padding: "6px 12px",
+                                        backgroundColor: "#f1f5f9",
+                                        fontWeight: "600 !important",
+                                        color: "#475569",
                                         fontSize: "0.75rem",
-                                        color: "#334155",
+                                        borderBottom: "1px solid #e2e8f0",
+                                        padding: "8px 12px",
+                                        // ...commonTextStyle,
                                       }}
                                     >
-                                      {role}
+                                      Role Name
                                     </TableCell>
                                     <TableCell
                                       align="right"
                                       sx={{
-                                        padding: "4px 8px",
+                                        backgroundColor: "#f1f5f9",
+                                        fontWeight: "600 !important",
+                                        color: "#475569",
+                                        fontSize: "0.75rem",
+                                        borderBottom: "1px solid #e2e8f0",
+                                        padding: "8px 12px",
+                                        width: "60px",
                                       }}
                                     >
-                                      <Box
-                                        sx={{
-                                          display: "flex",
-                                          gap: 0.5,
-                                          justifyContent: "flex-end",
-                                        }}
-                                      >
-                                        <IconButton
-                                          size="small"
-                                          onClick={() =>
-                                            handleEditRole(
-                                              index,
-                                              roleIndex,
-                                              role
-                                            )
-                                          }
-                                          sx={{
-                                            padding: "2px",
-                                            color: "primary.main",
-                                            "&:hover": {
-                                              backgroundColor:
-                                                "primary.lighter",
-                                            },
-                                          }}
-                                          title="Edit Role"
-                                        >
-                                          <EditIcon
-                                            sx={{ fontSize: "0.875rem" }}
-                                          />
-                                        </IconButton>
-                                        <IconButton
-                                          size="small"
-                                          onClick={() =>
-                                            handleDeleteRole(index, roleIndex)
-                                          }
-                                          sx={{
-                                            padding: "2px",
-                                            color: "error.main",
-                                            "&:hover": {
-                                              backgroundColor: "error.lighter",
-                                            },
-                                          }}
-                                          title="Delete Role"
-                                        >
-                                          <DeleteIcon
-                                            sx={{ fontSize: "0.875rem" }}
-                                          />
-                                        </IconButton>
-                                      </Box>
+                                      Actions
                                     </TableCell>
                                   </TableRow>
-                                ))}
-                              </TableBody>
-                            </Table>
-                          </Box>
-                        </Collapse>
+                                </TableHead>
+                                <TableBody>
+                                  {dept.roles.map((role, roleIndex) => (
+                                    <TableRow
+                                      key={roleIndex}
+                                      sx={{
+                                        "&:hover": {
+                                          backgroundColor:
+                                            "rgba(0, 0, 0, 0.02)",
+                                        },
+                                        "& td": {
+                                          borderBottom:
+                                            roleIndex === dept.roles.length - 1
+                                              ? "none"
+                                              : "1px solid #e2e8f0",
+                                        },
+                                      }}
+                                    >
+                                      <TableCell
+                                        sx={{
+                                          // ...commonTextStyle,
+                                          padding: "6px 12px",
+                                          fontSize: "0.75rem",
+                                          color: "#334155",
+                                        }}
+                                      >
+                                        {role}
+                                      </TableCell>
+                                      <TableCell
+                                        align="right"
+                                        sx={{
+                                          padding: "4px 8px",
+                                        }}
+                                      >
+                                        <Box
+                                          sx={{
+                                            display: "flex",
+                                            gap: 0.5,
+                                            justifyContent: "flex-end",
+                                          }}
+                                        >
+                                          <IconButton
+                                            size="small"
+                                            // onClick={() =>
+                                            //   handleEditRole(
+                                            //     index,
+                                            //     roleIndex,
+                                            //     role
+                                            //   )
+                                            // }
+                                            onClick={() =>
+                                              handleEditRole(
+                                                dept.name,
+                                                roleIndex,
+                                                role
+                                              )
+                                            }
+                                            sx={{
+                                              padding: "2px",
+                                              color: "primary.main",
+                                              "&:hover": {
+                                                backgroundColor:
+                                                  "primary.lighter",
+                                              },
+                                            }}
+                                            title="Edit Role"
+                                          >
+                                            <EditIcon
+                                              sx={{ fontSize: "0.875rem" }}
+                                            />
+                                          </IconButton>
+                                          <IconButton
+                                            size="small"
+                                            // onClick={() =>
+                                            //   handleDeleteRole(index, roleIndex)
+                                            // }
+                                            onClick={() =>
+                                              handleDeleteRole(
+                                                dept.name,
+                                                roleIndex
+                                              )
+                                            }
+                                            sx={{
+                                              padding: "2px",
+                                              color: "error.main",
+                                              "&:hover": {
+                                                backgroundColor:
+                                                  "error.lighter",
+                                              },
+                                            }}
+                                            title="Delete Role"
+                                          >
+                                            <DeleteIcon
+                                              sx={{ fontSize: "0.875rem" }}
+                                            />
+                                          </IconButton>
+                                        </Box>
+                                      </TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </Box>
+                          </Collapse>
+                        </ClickAwayListener>
                       </TableCell>
                     </StyledTableRow>
                   </React.Fragment>
@@ -1842,33 +1900,13 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                   initialRole: e.target.value,
                 }))
               }
-              required
+              // required
               error={!newDepartment.initialRole && newDepartment.submitted}
               helperText={
                 !newDepartment.initialRole && newDepartment.submitted
                   ? "At least one role is required"
                   : ""
               }
-            />
-            <TextField
-              size="small"
-              label="Reporting Manager"
-              value={newDepartment.reportingManager}
-              onChange={(e) =>
-                setNewDepartment((prev) => ({
-                  ...prev,
-                  reportingManager: e.target.value,
-                }))
-              }
-              required
-              error={!newDepartment.reportingManager && newDepartment.submitted}
-              helperText={
-                !newDepartment.reportingManager && newDepartment.submitted
-                  ? "Reporting Manager is required"
-                  : ""
-              }
-              fullWidth
-              sx={{ mt: 2 }}
             />
           </Box>
 
