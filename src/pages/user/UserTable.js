@@ -175,19 +175,19 @@ const rows = [
     avaliableStorage: "9 GB",
     phone: "1234567890",
   },
-  {
-    userName: "shivangi807",
-    id: "9",
-    name: "shivangi dhavan",
-    department: "backend",
-    role: "software engineer",
-    email: "shivangi@appolo.com",
-    storageUsed: "800MB",
-    manageStorage: "1 GB",
-    status: true,
-    avaliableStorage: "9 GB",
-    phone: "1234567890",
-  },
+  // {
+  //   userName: "shivangi807",
+  //   id: "9",
+  //   name: "shivangi dhavan",
+  //   department: "backend",
+  //   role: "software engineer",
+  //   email: "shivangi@appolo.com",
+  //   storageUsed: "800MB",
+  //   manageStorage: "1 GB",
+  //   status: true,
+  //   avaliableStorage: "9 GB",
+  //   phone: "1234567890",
+  // },
   // {
   //   userName: "arpita809",
   //   id: "10",
@@ -201,7 +201,6 @@ const rows = [
   //   avaliableStorage: "9 GB",
   //   phone: "1234567890",
   // },
- 
 ];
 
 const statusColors = {
@@ -372,8 +371,9 @@ export default function UserTable() {
     );
     toast({
       open: true,
-      message: `Department "${rowId.name}" ${!rowId.isActive ? "activated" : "deactivated"
-        }`,
+      message: `Department "${rowId.name}" ${
+        !rowId.isActive ? "activated" : "deactivated"
+      }`,
       severity: "success",
     });
   };
@@ -516,7 +516,6 @@ export default function UserTable() {
                       selected={isItemSelected}
                       onMouseEnter={() => setHoveredRow(row.id)}
                       onMouseLeave={() => setHoveredRow(null)}
-
                     >
                       <TableCell padding="checkbox">
                         <Checkbox
@@ -583,9 +582,7 @@ export default function UserTable() {
                               },
                             }}
                           >
-                            <MenuItem value="">
-                              10GB
-                            </MenuItem>
+                            <MenuItem value="">10GB</MenuItem>
                             <MenuItem value={10}>20GB</MenuItem>
                             <MenuItem value={20}>40GB</MenuItem>
                             <MenuItem value={30}>60GB</MenuItem>
@@ -603,7 +600,6 @@ export default function UserTable() {
                             }
                           />
                         </Tooltip>
-                        
                       </TableCell>
                       <TableCell
                         align="center"
@@ -613,21 +609,21 @@ export default function UserTable() {
                         }}
                       >
                         {/* {hoveredRow === row.id && ( */}
-                          <>
-                            <IconButton
-                              size="small"
-                              onClick={(e) => handleEdit(e, row)}
-                            >
-                              <Edit />
-                            </IconButton>
-                            <IconButton
-                              size="small"
-                              color="error"
-                              onClick={handleDelete}
-                            >
-                              <Delete />
-                            </IconButton>
-                          </>
+                        <>
+                          <IconButton
+                            size="small"
+                            onClick={(e) => handleEdit(e, row)}
+                          >
+                            <Edit />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={handleDelete}
+                          >
+                            <Delete />
+                          </IconButton>
+                        </>
                         {/* )} */}
                       </TableCell>
                     </TableRow>
@@ -1035,7 +1031,7 @@ export default function UserTable() {
                   fullWidth
                   variant="outlined"
                   value={editData.userName || ""}
-                // onChange={handleInputChange}
+                  // onChange={handleInputChange}
                 />
               </Grid>
               <Grid item xs={4}>
@@ -1047,7 +1043,7 @@ export default function UserTable() {
                   fullWidth
                   variant="outlined"
                   value={editData.name || ""}
-                // onChange={handleInputChange}
+                  // onChange={handleInputChange}
                 />
               </Grid>
               <Grid item xs={4}>
@@ -1059,7 +1055,7 @@ export default function UserTable() {
                   fullWidth
                   variant="outlined"
                   value={editData.department || ""}
-                // onChange={handleInputChange}
+                  // onChange={handleInputChange}
                 />
               </Grid>
               <Grid item xs={6}>
@@ -1071,7 +1067,7 @@ export default function UserTable() {
                   fullWidth
                   variant="outlined"
                   value={editData.role || ""}
-                // onChange={handleInputChange}
+                  // onChange={handleInputChange}
                 />
               </Grid>
               <Grid item xs={6}>
@@ -1104,8 +1100,8 @@ export default function UserTable() {
                   type="tel"
                   variant="outlined"
                   value={editData.phone || ""}
-                // onChange={handleInputChange}
-                // sx={{ width: "40%" }}
+                  // onChange={handleInputChange}
+                  // sx={{ width: "40%" }}
                 />
               </Grid>
               <Grid item xs={6}>
@@ -1117,7 +1113,7 @@ export default function UserTable() {
                   fullWidth
                   variant="outlined"
                   value={editData.storageUsed || ""}
-                // onChange={handleInputChange}
+                  // onChange={handleInputChange}
                 />
               </Grid>
             </Grid>
