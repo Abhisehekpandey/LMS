@@ -72,12 +72,12 @@ const CustomSwitch = styled(Switch)(({ theme, checked }) => ({
 
 const rows = [
   {
-    userName: "User2",
-    id: "2",
-    name: "Name2",
-    department: "Backend",
-    role: "N/A",
-    email: "user2@appolo.com",
+    userName: "kunal7791",
+    id: "1",
+    name: "kunal kamboj",
+    department: "frontend",
+    role: "software engineer",
+    email: "kunal@appolo.com",
     storageUsed: "200MB",
     manageStorage: "1 GB",
     status: false,
@@ -85,12 +85,12 @@ const rows = [
     phone: "1234567890",
   },
   {
-    userName: "User5",
-    id: "5",
-    name: "Name5",
-    department: "Backend",
-    role: "N/A",
-    email: "user5@appolo.com",
+    userName: "pratibha44",
+    id: "2",
+    name: "pratibha thakur",
+    department: "frontend",
+    role: "frontend developer",
+    email: "pratibha@appolo.com",
     storageUsed: "200MB",
     manageStorage: "1 GB",
     status: false,
@@ -98,96 +98,110 @@ const rows = [
     phone: "9876543201",
   },
   {
-    userName: "User6",
+    userName: "abhishek99",
     id: "3",
-    name: "Name6",
+    name: "abhishek panday",
     department: "Frontend",
-    role: "N/A",
-    email: "user6@appolo.com",
-    storageUsed: "200MB",
+    role: "software developer",
+    email: "abhishek@appolo.com",
+    storageUsed: "800MB",
     manageStorage: "1 GB",
     status: true,
     avaliableStorage: "9 GB",
     phone: "1234567890",
   },
   {
-    userName: "User7",
+    userName: "dhruv77",
     id: "4",
-    name: "sdnnd",
-    department: "sdsd",
-    role: "N/A",
-    email: "user7@appolo.com",
-    storageUsed: "200MB",
+    name: "dhruv sethi",
+    department: "backend",
+    role: "manager",
+    email: "dhruv@appolo.com",
+    storageUsed: "800MB",
     manageStorage: "1 GB",
     status: true,
     avaliableStorage: "9 GB",
-    phone: "1234567890sd",
+    phone: "1234567890",
   },
   {
-    userName: "User8",
+    userName: "manish48",
     id: "5",
-    name: "dmsndms",
-    department: "sndn d",
-    role: "N/A",
-    email: "user8@appolo.com",
-    storageUsed: "200MB",
+    name: "manish yadav",
+    department: "backend",
+    role: "software engineer",
+    email: "manish@appolo.com",
+    storageUsed: "800MB",
     manageStorage: "1 GB",
     status: true,
     avaliableStorage: "9 GB",
     phone: "1234567890",
   },
   {
-    userName: "User9",
+    userName: "prince90",
     id: "6",
-    name: "nddjjd",
-    department: "ndanajd",
-    role: "N/A",
-    email: "user9@appolo.com",
-    storageUsed: "200MB",
+    name: "prince tiwari",
+    department: "backend",
+    role: "backend developer",
+    email: "prince@appolo.com",
+    storageUsed: "800MB",
     manageStorage: "1 GB",
     status: true,
     avaliableStorage: "9 GB",
     phone: "1234567890",
   },
   {
-    userName: "User10",
+    userName: "dheeraj45",
     id: "7",
-    name: "ndcbdf",
-    department: "ddmd",
-    role: "N/A",
-    email: "user10@appolo.com",
-    storageUsed: "200MB",
+    name: "dheeraj",
+    department: "Frontend",
+    role: "senior frontend developer",
+    email: "dheeraj@appolo.com",
+    storageUsed: "800MB",
     manageStorage: "1 GB",
     status: true,
     avaliableStorage: "9 GB",
     phone: "1234567890",
   },
   {
-    userName: "User11",
+    userName: "satyam38",
     id: "8",
-    name: "ffwfwad",
-    department: "sbdsn",
-    role: "N/A",
-    email: "user6@appolo.com",
-    storageUsed: "200MB",
+    name: "satyam aggarwal",
+    department: "Frontend",
+    role: "senior frontend developer",
+    email: "satyam@appolo.com",
+    storageUsed: "800MB",
     manageStorage: "1 GB",
     status: true,
     avaliableStorage: "9 GB",
     phone: "1234567890",
   },
   {
-    userName: "User12",
+    userName: "shivangi807",
     id: "9",
-    name: "cadf",
-    department: "sbdsn",
-    role: "N/A",
-    email: "user9@appolo.com",
-    storageUsed: "200MB",
+    name: "shivangi dhavan",
+    department: "backend",
+    role: "software engineer",
+    email: "shivangi@appolo.com",
+    storageUsed: "800MB",
     manageStorage: "1 GB",
     status: true,
     avaliableStorage: "9 GB",
     phone: "1234567890",
   },
+  // {
+  //   userName: "arpita809",
+  //   id: "10",
+  //   name: "arpita shukla ",
+  //   department: "devops",
+  //   role: "senior devops engineer",
+  //   email: "arpita@appolo.com",
+  //   storageUsed: "800MB",
+  //   manageStorage: "1 GB",
+  //   status: true,
+  //   avaliableStorage: "9 GB",
+  //   phone: "1234567890",
+  // },
+ 
 ];
 
 const statusColors = {
@@ -358,9 +372,8 @@ export default function UserTable() {
     );
     toast({
       open: true,
-      message: `Department "${rowId.name}" ${
-        !rowId.isActive ? "activated" : "deactivated"
-      }`,
+      message: `Department "${rowId.name}" ${!rowId.isActive ? "activated" : "deactivated"
+        }`,
       severity: "success",
     });
   };
@@ -503,7 +516,7 @@ export default function UserTable() {
                       selected={isItemSelected}
                       onMouseEnter={() => setHoveredRow(row.id)}
                       onMouseLeave={() => setHoveredRow(null)}
-                      
+
                     >
                       <TableCell padding="checkbox">
                         <Checkbox
@@ -590,45 +603,7 @@ export default function UserTable() {
                             }
                           />
                         </Tooltip>
-                        {/* <Tooltip title={row.status ? "Active" : "Inactive"}>
-                          <Switch
-                            size="small"
-                            checked={row.status}
-                            onChange={() => handleStatusToggle(row)}
-                            sx={{
-                              "& .MuiSwitch-switchBase": {
-                                "&.Mui-checked": {
-                                  // When active/checked
-                                  color: "#2e7d32", // Green color
-                                  "& + .MuiSwitch-track": {
-                                    backgroundColor: "#4caf50", // Green track
-                                    opacity: 0.5,
-                                  },
-                                },
-                                "&.Mui-disabled": {
-                                  "& + .MuiSwitch-track": {
-                                    opacity: 0.5,
-                                  },
-                                },
-                              },
-                              "& .MuiSwitch-switchBase.Mui-checked:hover": {
-                                backgroundColor: "rgba(46, 125, 50, 0.08)", // Green hover effect
-                              },
-                              // When inactive/unchecked
-                              "& .MuiSwitch-switchBase:not(.Mui-checked)": {
-                                color: "#d32f2f", // Red color
-                                "& + .MuiSwitch-track": {
-                                  backgroundColor: "#ef5350", // Red track
-                                  opacity: 0.5,
-                                },
-                              },
-                              "& .MuiSwitch-switchBase:not(.Mui-checked):hover":
-                                {
-                                  backgroundColor: "rgba(211, 47, 47, 0.08)", // Red hover effect
-                                },
-                            }}
-                          />
-                        </Tooltip> */}
+                        
                       </TableCell>
                       <TableCell
                         align="center"
@@ -637,7 +612,7 @@ export default function UserTable() {
                           padding: "10px 10px 10px 10px !important",
                         }}
                       >
-                        {hoveredRow === row.id && (
+                        {/* {hoveredRow === row.id && ( */}
                           <>
                             <IconButton
                               size="small"
@@ -653,7 +628,7 @@ export default function UserTable() {
                               <Delete />
                             </IconButton>
                           </>
-                        )}
+                        {/* )} */}
                       </TableCell>
                     </TableRow>
                   );
@@ -1060,7 +1035,7 @@ export default function UserTable() {
                   fullWidth
                   variant="outlined"
                   value={editData.userName || ""}
-                  // onChange={handleInputChange}
+                // onChange={handleInputChange}
                 />
               </Grid>
               <Grid item xs={4}>
@@ -1072,7 +1047,7 @@ export default function UserTable() {
                   fullWidth
                   variant="outlined"
                   value={editData.name || ""}
-                  // onChange={handleInputChange}
+                // onChange={handleInputChange}
                 />
               </Grid>
               <Grid item xs={4}>
@@ -1084,7 +1059,7 @@ export default function UserTable() {
                   fullWidth
                   variant="outlined"
                   value={editData.department || ""}
-                  // onChange={handleInputChange}
+                // onChange={handleInputChange}
                 />
               </Grid>
               <Grid item xs={6}>
@@ -1096,7 +1071,7 @@ export default function UserTable() {
                   fullWidth
                   variant="outlined"
                   value={editData.role || ""}
-                  // onChange={handleInputChange}
+                // onChange={handleInputChange}
                 />
               </Grid>
               <Grid item xs={6}>
@@ -1129,8 +1104,8 @@ export default function UserTable() {
                   type="tel"
                   variant="outlined"
                   value={editData.phone || ""}
-                  // onChange={handleInputChange}
-                  // sx={{ width: "40%" }}
+                // onChange={handleInputChange}
+                // sx={{ width: "40%" }}
                 />
               </Grid>
               <Grid item xs={6}>
@@ -1142,7 +1117,7 @@ export default function UserTable() {
                   fullWidth
                   variant="outlined"
                   value={editData.storageUsed || ""}
-                  // onChange={handleInputChange}
+                // onChange={handleInputChange}
                 />
               </Grid>
             </Grid>
