@@ -571,7 +571,7 @@ export default function UserTable() {
                             }}
                           >
                             <MenuItem value="">
-                              <em>10GB</em>
+                              10GB
                             </MenuItem>
                             <MenuItem value={10}>20GB</MenuItem>
                             <MenuItem value={20}>40GB</MenuItem>
