@@ -3,6 +3,7 @@ import {
   Autocomplete,
   Box,
   Button,
+  Card,
   Dialog,
   DialogActions,
   DialogContent,
@@ -11,6 +12,7 @@ import {
   Grid,
   IconButton,
   InputAdornment,
+  Paper,
   TextField,
   Tooltip,
   Typography,
@@ -31,6 +33,9 @@ const CreateUser = ({ handleClose }) => {
   const [fileName, setFileName] = useState("");
   const dispatch = useDispatch();
   // File ko handle karne ka function
+
+  const storageOptions = ["10", "20", "40", "60"];
+
   const handleFileChange = (event) => {
     const file = event.target.files[0]; // Sirf pehla file
     if (file) {
@@ -157,270 +162,280 @@ const CreateUser = ({ handleClose }) => {
           />
         </IconButton>
       </DialogTitle>
-      <DialogContent dividers padding={0}>
+      <DialogContent dividers padding="8px 10px !important">
         <form onSubmit={formik.handleSubmit}>
-          <Grid container spacing={2} padding={0}>
-            <Grid xs={12} item>
-              <Typography
-                variant="subtitle2"
-                sx={{
-                  // mb: 2,
-                  color: "black",
-                  fontFamily: '"Be Vietnam", sans-serif',
-                  fontWeight: "bold",
-                }}
-              >
-                Basic Information
-              </Typography>
-            </Grid>
-            <Grid xs={6} item>
-              <TextField
-                required
-                autoComplete="off"
-                size="small"
-                fullWidth
-                label="User name"
-                name="userName"
-                value={formik.values.userName} // Bind to formik values
-                onChange={formik.handleChange} // Bind to formik handleChange
-                error={
-                  formik.touched.userName && Boolean(formik.errors.userName)
-                }
-                helperText={formik.touched.userName && formik.errors.userName}
-              />
-            </Grid>
-            <Grid item xs={6}>
-              <TextField
-                required
-                size="small"
-                Autocomplete="off"
-                fullWidth
-                label="Full Name"
-                name="name"
-                value={formik.values.name} // Bind to formik values
-                onChange={formik.handleChange} // Bind to formik handleChange
-                error={formik.touched.name && Boolean(formik.errors.name)}
-                helperText={formik.touched.name && formik.errors.name}
-              />
-            </Grid>
-            <Grid xs={12} item>
-              <Typography
-                variant="subtitle2"
-                sx={{
-                  // mb: 2,
-                  color: "black",
-                  fontFamily: '"Be Vietnam", sans-serif',
-                  fontWeight: "bold",
-                }}
-              >
-                Department & Role
-              </Typography>
-            </Grid>
-            <Grid xs={4} item>
-              <Autocomplete
-                autoComplete="off"
-                size="small"
-                id="department-autocomplete"
-                options={departments}
-                value={formik.values.department || null}
-                onChange={(event, newValue) => {
-                  formik.setFieldValue("department", newValue);
-                  setSelectedDepartment(newValue); // optional, for local use
-                }}
-                ListboxComponent={({ children, ...props }) => (
-                  <ul {...props}>
-                    <li
-                      style={{
-                        padding: "2px",
-                        borderTop: "1px solid #eee",
+          <Paper elevation={4} sx={{ padding: 2 }}>
+            <Grid container spacing={2} padding={0}>
+              <Grid xs={12} item>
+                <Typography
+                  variant="subtitle2"
+                  sx={{
+                    // mb: 2,
+                    color: "black",
+                    fontFamily: '"Be Vietnam", sans-serif',
+                    fontWeight: "bold",
+                  }}
+                >
+                  Basic Information
+                </Typography>
+              </Grid>
+              <Grid xs={6} item>
+                <TextField
+                  required
+                  autoComplete="off"
+                  size="small"
+                  fullWidth
+                  label="User name"
+                  name="userName"
+                  value={formik.values.userName} // Bind to formik values
+                  onChange={formik.handleChange} // Bind to formik handleChange
+                  error={
+                    formik.touched.userName && Boolean(formik.errors.userName)
+                  }
+                  helperText={formik.touched.userName && formik.errors.userName}
+                />
+              </Grid>
+              <Grid item xs={6}>
+                <TextField
+                  required
+                  size="small"
+                  Autocomplete="off"
+                  fullWidth
+                  label="Full Name"
+                  name="name"
+                  value={formik.values.name} // Bind to formik values
+                  onChange={formik.handleChange} // Bind to formik handleChange
+                  error={formik.touched.name && Boolean(formik.errors.name)}
+                  helperText={formik.touched.name && formik.errors.name}
+                />
+              </Grid>
+              <Grid xs={4} item>
+                <TextField
+                  Autocomplete="off"
+                  required
+                  size="small"
+                  fullWidth
+                  label="Email"
+                  name="email"
+                  value={formik.values.email} // Bind to formik values
+                  onChange={formik.handleChange} // Bind to formik handleChange
+                  error={formik.touched.email && Boolean(formik.errors.email)}
+                  helperText={formik.touched.email && formik.errors.email}
+                />
+              </Grid>
+              <Grid item xs={4}>
+                <TextField
+                  Autocomplete="off"
+                  // required
+                  size="small"
+                  fullWidth
+                  label="Phone Number"
+                  name="phone"
+                  value={formik.values.phone} // Bind to formik values
+                  onChange={formik.handleChange} // Bind to formik handleChange
+                  error={formik.touched.phone && Boolean(formik.errors.phone)}
+                  helperText={formik.touched.phone && formik.errors.phone}
+                />
+              </Grid>
+              <Grid item xs={4}>
+                <Autocomplete
+                  options={storageOptions}
+                  getOptionLabel={(option) => option.toString()} // if options are numbers or strings
+                  value={formik.values.storage || ""} // Bind to formik
+                  onChange={(event, value) =>
+                    formik.setFieldValue("storage", value)
+                  }
+                  onBlur={() => formik.setFieldTouched("storage", true)}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      required
+                      size="small"
+                      fullWidth
+                      label="Storage"
+                      name="storage"
+                      error={
+                        formik.touched.storage && Boolean(formik.errors.storage)
+                      }
+                      helperText={
+                        formik.touched.storage && formik.errors.storage
+                      }
+                      InputProps={{
+                        ...params.InputProps,
+                        endAdornment: (
+                          <>
+                            <InputAdornment position="end">GB</InputAdornment>
+                            {params.InputProps.endAdornment}
+                          </>
+                        ),
                       }}
-                    >
-                      <Button
-                        onClick={() => setAddDepartment(true)}
-                        color="primary"
-                        variant="outlined"
-                        size="small"
-                        fullWidth
-                        startIcon={<Add />}
-                        sx={{ fontFamily: '"Be Vietnam", sans-serif' }}
-                      >
-                        Add New Department
-                      </Button>
-                    </li>
-                    {children}
-                  </ul>
-                )}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    size="small"
-                    label="Department"
-                    name="department"
-                    error={Boolean(
-                      formik.touched.department && formik.errors.department
-                    )}
-                    helperText={
-                      formik.touched.department && formik.errors.department
-                        ? formik.errors.department
-                        : ""
-                    }
-                  />
-                )}
-              />
+                    />
+                  )}
+                />
+              </Grid>
             </Grid>
-            <Grid xs={4} item>
-              <Autocomplete
-                size="small"
-                id="role-autocomplete"
-                options={roleOptions}
-                name="role"
-                autoComplete="off"
-                value={formik.values.role || null}
-                disabled={!formik.values.department}
-                onChange={(event, newValue) => {
-                  formik.setFieldValue("role", newValue);
-                  setSelectedRole(newValue); // optional local state
-                }}
-                ListboxComponent={({ children, ...props }) => (
-                  <ul {...props}>
-                    <li
-                      style={{
-                        padding: "2px",
-                        borderTop: "1px solid #eee",
+          </Paper>
+          <Paper elevation={4} sx={{ mt: 1, padding: 2 }}>
+            <Grid container spacing={2} padding={0}>
+              <Grid xs={12} item>
+                <Typography
+                  variant="subtitle2"
+                  sx={{
+                    // mb: 2,
+                    color: "black",
+                    fontFamily: '"Be Vietnam", sans-serif',
+                    fontWeight: "bold",
+                  }}
+                >
+                  Department & Role
+                </Typography>
+              </Grid>
+              <Grid xs={4} item>
+                <Autocomplete
+                  autoComplete="off"
+                  size="small"
+                  id="department-autocomplete"
+                  options={departments}
+                  value={formik.values.department || null}
+                  onChange={(event, newValue) => {
+                    formik.setFieldValue("department", newValue);
+                    setSelectedDepartment(newValue); // optional, for local use
+                  }}
+                  ListboxComponent={({ children, ...props }) => (
+                    <ul {...props}>
+                      <li
+                        style={{
+                          padding: "2px",
+                          borderTop: "1px solid #eee",
+                        }}
+                      >
+                        <Button
+                          onClick={() => setAddDepartment(true)}
+                          color="primary"
+                          variant="outlined"
+                          size="small"
+                          fullWidth
+                          startIcon={<Add />}
+                          sx={{ fontFamily: '"Be Vietnam", sans-serif' }}
+                        >
+                          Add New Department
+                        </Button>
+                      </li>
+                      {children}
+                    </ul>
+                  )}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      size="small"
+                      label="Department"
+                      name="department"
+                      error={Boolean(
+                        formik.touched.department && formik.errors.department
+                      )}
+                      helperText={
+                        formik.touched.department && formik.errors.department
+                          ? formik.errors.department
+                          : ""
+                      }
+                    />
+                  )}
+                />
+              </Grid>
+              <Grid xs={4} item>
+                <Autocomplete
+                  size="small"
+                  id="role-autocomplete"
+                  options={roleOptions}
+                  name="role"
+                  autoComplete="off"
+                  value={formik.values.role || null}
+                  disabled={!formik.values.department}
+                  onChange={(event, newValue) => {
+                    formik.setFieldValue("role", newValue);
+                    setSelectedRole(newValue); // optional local state
+                  }}
+                  ListboxComponent={({ children, ...props }) => (
+                    <ul {...props}>
+                      <li
+                        style={{
+                          padding: "2px",
+                          borderTop: "1px solid #eee",
+                        }}
+                      >
+                        <Button
+                          onClick={() => setAddRole(true)}
+                          color="primary"
+                          variant="outlined"
+                          size="small"
+                          fullWidth
+                          startIcon={<Add />}
+                          sx={{ fontFamily: '"Be Vietnam", sans-serif' }}
+                        >
+                          Add New Role
+                        </Button>
+                      </li>
+                      {children}
+                    </ul>
+                  )}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Role"
+                      name="role"
+                      error={Boolean(formik.touched.role && formik.errors.role)}
+                      helperText={
+                        formik.touched.role && formik.errors.role
+                          ? formik.errors.role
+                          : ""
+                      }
+                      InputProps={{
+                        ...params.InputProps,
+                        sx: { fontFamily: '"Be Vietnam", sans-serif' },
                       }}
-                    >
-                      <Button
-                        onClick={() => setAddRole(true)}
-                        color="primary"
-                        variant="outlined"
-                        size="small"
-                        fullWidth
-                        startIcon={<Add />}
-                        sx={{ fontFamily: '"Be Vietnam", sans-serif' }}
-                      >
-                        Add New Role
-                      </Button>
-                    </li>
-                    {children}
-                  </ul>
-                )}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Role"
-                    name="role"
-                    error={Boolean(formik.touched.role && formik.errors.role)}
-                    helperText={
-                      formik.touched.role && formik.errors.role
-                        ? formik.errors.role
-                        : ""
-                    }
-                    InputProps={{
-                      ...params.InputProps,
-                      sx: { fontFamily: '"Be Vietnam", sans-serif' },
-                    }}
-                    InputLabelProps={{
-                      sx: { fontFamily: '"Be Vietnam", sans-serif' },
-                    }}
-                    FormHelperTextProps={{
-                      sx: { fontFamily: '"Be Vietnam", sans-serif' },
-                    }}
-                  />
-                )}
-              />
+                      InputLabelProps={{
+                        sx: { fontFamily: '"Be Vietnam", sans-serif' },
+                      }}
+                      FormHelperTextProps={{
+                        sx: { fontFamily: '"Be Vietnam", sans-serif' },
+                      }}
+                    />
+                  )}
+                />
+              </Grid>
+              <Grid item xs={4}>
+                <TextField
+                  label="Reporting Manager"
+                  size="small"
+                  fullWidth
+                  id="manager-autocomplete"
+                  options={managerOptions}
+                  autoComplete="off"
+                  name="reportingManager"
+                  value={formik.values.manager || null}
+                  disabled={!formik.values.role}
+                  onChange={(event, newValue) => {
+                    formik.setFieldValue("reportingManager", newValue);
+                  }}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Reporting Manager"
+                      name="manager"
+                      error={Boolean(
+                        formik.touched.manager && formik.errors.manager
+                      )}
+                      helperText={
+                        formik.touched.manager && formik.errors.manager
+                          ? formik.errors.manager
+                          : ""
+                      }
+                    />
+                  )}
+                />
+              </Grid>
             </Grid>
-            <Grid item xs={4}>
-              <TextField
-                label="Reporting Manager"
-                size="small"
-                fullWidth
-                id="manager-autocomplete"
-                options={managerOptions}
-                autoComplete="off"
-                name="reportingManager"
-                value={formik.values.manager || null}
-                disabled={!formik.values.role}
-                onChange={(event, newValue) => {
-                  formik.setFieldValue("reportingManager", newValue);
-                }}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Reporting Manager"
-                    name="manager"
-                    error={Boolean(
-                      formik.touched.manager && formik.errors.manager
-                    )}
-                    helperText={
-                      formik.touched.manager && formik.errors.manager
-                        ? formik.errors.manager
-                        : ""
-                    }
-                  />
-                )}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <Typography
-                variant="subtitle2"
-                sx={{
-                  // mb: 2,
-                  color: "black",
-                  fontFamily: '"Be Vietnam", sans-serif',
-                  fontWeight: "bold",
-                }}
-              >
-                Contact Information
-              </Typography>
-            </Grid>
-            <Grid xs={4} item>
-              <TextField
-                Autocomplete="off"
-                required
-                size="small"
-                fullWidth
-                label="Email"
-                name="email"
-                value={formik.values.email} // Bind to formik values
-                onChange={formik.handleChange} // Bind to formik handleChange
-                error={formik.touched.email && Boolean(formik.errors.email)}
-                helperText={formik.touched.email && formik.errors.email}
-              />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField
-                Autocomplete="off"
-                required
-                size="small"
-                fullWidth
-                label="Phone Number"
-                name="phone"
-                value={formik.values.phone} // Bind to formik values
-                onChange={formik.handleChange} // Bind to formik handleChange
-                error={formik.touched.phone && Boolean(formik.errors.phone)}
-                helperText={formik.touched.phone && formik.errors.phone}
-              />
-            </Grid>
-            <Grid item xs={4}>
-              <TextField
-                Autocomplete="off"
-                required
-                size="small"
-                fullWidth
-                label="Storage"
-                name="storage"
-                InputProps={{
-                  endAdornment: (
-                    <InputAdornment position="end">GB</InputAdornment>
-                  ),
-                }}
-                value={formik.values.storage} // Bind to formik values
-                onChange={formik.handleChange} // Bind to formik handleChange
-                error={formik.touched.storage && Boolean(formik.errors.storage)}
-                helperText={formik.touched.storage && formik.errors.storage}
-              />
-            </Grid>
-          </Grid>
+          </Paper>
         </form>
       </DialogContent>
       <DialogActions
