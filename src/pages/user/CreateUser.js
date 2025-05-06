@@ -107,7 +107,7 @@ const CreateUser = ({ handleClose }) => {
     : [];
 
   return (
-    <div style={{}}>
+    <div>
       <DialogTitle
         sx={{
           //   borderBottom: "1px solid #eee",

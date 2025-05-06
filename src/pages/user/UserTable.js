@@ -175,32 +175,33 @@ const rows = [
     avaliableStorage: "9 GB",
     phone: "1234567890",
   },
-  // {
-  //   userName: "shivangi807",
-  //   id: "9",
-  //   name: "shivangi dhavan",
-  //   department: "backend",
-  //   role: "software engineer",
-  //   email: "shivangi@appolo.com",
-  //   storageUsed: "800MB",
-  //   manageStorage: "1 GB",
-  //   status: true,
-  //   avaliableStorage: "9 GB",
-  //   phone: "1234567890",
-  // },
-  // {
-  //   userName: "arpita809",
-  //   id: "10",
-  //   name: "arpita shukla ",
-  //   department: "devops",
-  //   role: "senior devops engineer",
-  //   email: "arpita@appolo.com",
-  //   storageUsed: "800MB",
-  //   manageStorage: "1 GB",
-  //   status: true,
-  //   avaliableStorage: "9 GB",
-  //   phone: "1234567890",
-  // },
+  {
+    userName: "shivangi807",
+    id: "9",
+    name: "shivangi dhavan",
+    department: "backend",
+    role: "software engineer",
+    email: "shivangi@appolo.com",
+    storageUsed: "800MB",
+    manageStorage: "1 GB",
+    status: true,
+    avaliableStorage: "9 GB",
+    phone: "1234567890",
+  },
+  {
+    userName: "arpita809",
+    id: "10",
+    name: "arpita shukla ",
+    department: "devops",
+    role: "senior devops engineer",
+    email: "arpita@appolo.com",
+    storageUsed: "800MB",
+    manageStorage: "1 GB",
+    status: true,
+    avaliableStorage: "9 GB",
+    phone: "1234567890",
+  },
+
 ];
 
 const statusColors = {
@@ -464,9 +465,27 @@ export default function UserTable() {
         padding: "15px",
       }}
     >
+
       <Paper
         elevation={24}
-        sx={{ width: "100%", overflow: "hidden", borderRadius: "20px" }}
+        sx={{
+          width: "100%",
+          overflow: "hidden",
+          borderRadius: "20px",
+          animation: "slideInFromLeft 0.3s ease-in-out forwards",
+          opacity: 0, // Start with opacity 0
+          transform: "translateX(-50px)", // Start from left
+          "@keyframes slideInFromLeft": {
+            "0%": {
+              opacity: 0,
+              transform: "translateX(-50px)",
+            },
+            "100%": {
+              opacity: 1,
+              transform: "translateX(0)",
+            }
+          }
+        }} className="PaperUI"
       >
         <TableContainer sx={{ maxHeight: "83vh", height: "83vh" }}>
           <Table stickyHeader>
@@ -600,6 +619,7 @@ export default function UserTable() {
                             }
                           />
                         </Tooltip>
+
                       </TableCell>
                       <TableCell
                         align="center"
@@ -1019,7 +1039,7 @@ export default function UserTable() {
               />
             </IconButton>
           </DialogTitle>
-          <DialogContent dividers>
+          <DialogContent dividers >
             {/* First row */}
             <Grid container spacing={2}>
               <Grid item xs={4}>
