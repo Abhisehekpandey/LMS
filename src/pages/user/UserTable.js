@@ -387,6 +387,9 @@ export default function UserTable() {
       message: `Department "${rowId.name}" ${
         !rowId.isActive ? "activated" : "deactivated"
       }`,
+      message: `Department "${rowId.name}" ${
+        !rowId.isActive ? "activated" : "deactivated"
+      }`,
       severity: "success",
     });
   };
@@ -614,6 +617,7 @@ export default function UserTable() {
                             }}
                           >
                             <MenuItem value="">10GB</MenuItem>
+                            <MenuItem value="">10GB</MenuItem>
                             <MenuItem value={10}>20GB</MenuItem>
                             <MenuItem value={20}>40GB</MenuItem>
                             <MenuItem value={30}>60GB</MenuItem>
@@ -644,6 +648,21 @@ export default function UserTable() {
                         }}
                       >
                         {/* {hoveredRow === row.id && ( */}
+                        <>
+                          <IconButton
+                            size="small"
+                            onClick={(e) => handleEdit(e, row)}
+                          >
+                            <Edit />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={handleDelete}
+                          >
+                            <Delete />
+                          </IconButton>
+                        </>
                         <>
                           <IconButton
                             size="small"
@@ -1070,6 +1089,7 @@ export default function UserTable() {
                   variant="outlined"
                   value={editData.userName || ""}
                   // onChange={handleInputChange}
+                  // onChange={handleInputChange}
                 />
               </Grid>
               <Grid item xs={4}>
@@ -1081,6 +1101,7 @@ export default function UserTable() {
                   fullWidth
                   variant="outlined"
                   value={editData.name || ""}
+                  // onChange={handleInputChange}
                   // onChange={handleInputChange}
                 />
               </Grid>
@@ -1094,6 +1115,7 @@ export default function UserTable() {
                   variant="outlined"
                   value={editData.department || ""}
                   // onChange={handleInputChange}
+                  // onChange={handleInputChange}
                 />
               </Grid>
               <Grid item xs={6}>
@@ -1105,6 +1127,7 @@ export default function UserTable() {
                   fullWidth
                   variant="outlined"
                   value={editData.role || ""}
+                  // onChange={handleInputChange}
                   // onChange={handleInputChange}
                 />
               </Grid>
@@ -1140,6 +1163,8 @@ export default function UserTable() {
                   value={editData.phone || ""}
                   // onChange={handleInputChange}
                   // sx={{ width: "40%" }}
+                  // onChange={handleInputChange}
+                  // sx={{ width: "40%" }}
                 />
               </Grid>
               <Grid item xs={6}>
@@ -1151,6 +1176,7 @@ export default function UserTable() {
                   fullWidth
                   variant="outlined"
                   value={editData.storageUsed || ""}
+                  // onChange={handleInputChange}
                   // onChange={handleInputChange}
                 />
               </Grid>
