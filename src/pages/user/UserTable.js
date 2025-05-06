@@ -31,6 +31,7 @@ import {
   FormControl,
   InputLabel,
   FormControlLabel,
+  Slide,
 } from "@mui/material";
 import {
   Search,
@@ -270,6 +271,17 @@ const IOSSwitch = styled((props) => (
   },
 }));
 
+const Transition = React.forwardRef(function Transition(props, ref) {
+  return (
+    <Slide
+      direction="right"
+      ref={ref}
+      {...props}
+     
+    />
+  );
+});
+
 export default function UserTable() {
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(10);
@@ -278,7 +290,7 @@ export default function UserTable() {
   const [checked, setChecked] = useState(false);
   const [rowsData, setRowsData] = useState(rows);
   const [deleteUser, setDeleteUser] = useState(false);
-  const [rowData, setRowData] = useState();
+  const [rowData, setRowData] = useState([]);
   const [selectAllData, setSelectAllData] = useState(false);
   const [hoveredRow, setHoveredRow] = useState(null);
   const [migrationDialog, setMigrationDialog] = useState(false);
@@ -372,8 +384,9 @@ export default function UserTable() {
     );
     toast({
       open: true,
-      message: `Department "${rowId.name}" ${!rowId.isActive ? "activated" : "deactivated"
-        }`,
+      message: `Department "${rowId.name}" ${
+        !rowId.isActive ? "activated" : "deactivated"
+      }`,
       severity: "success",
     });
   };
@@ -534,7 +547,6 @@ export default function UserTable() {
                       selected={isItemSelected}
                       onMouseEnter={() => setHoveredRow(row.id)}
                       onMouseLeave={() => setHoveredRow(null)}
-
                     >
                       <TableCell padding="checkbox">
                         <Checkbox
@@ -590,7 +602,7 @@ export default function UserTable() {
                         <FormControl sx={{ m: 0, minWidth: 120 }} size="small">
                           <Select
                             id="demo-select-small"
-                            value={Storage}
+                            value={Storage || ""} // Ensure Storage is not undefined
                             defaultValue="10GB"
                             onChange={handleChangeStorage}
                             displayEmpty
@@ -601,9 +613,7 @@ export default function UserTable() {
                               },
                             }}
                           >
-                            <MenuItem value="">
-                              <em>10GB</em>
-                            </MenuItem>
+                            <MenuItem value="">10GB</MenuItem>
                             <MenuItem value={10}>20GB</MenuItem>
                             <MenuItem value={20}>40GB</MenuItem>
                             <MenuItem value={30}>60GB</MenuItem>
@@ -616,7 +626,10 @@ export default function UserTable() {
                             control={
                               <IOSSwitch
                                 checked={row.status}
-                                onChange={() => handleStatusToggle(row)}
+                                onChange={() => {
+                                  console.log("Switch clicked:", row); // confirm this runs
+                                  handleStatusToggle(row);
+                                }}
                               />
                             }
                           />
@@ -630,23 +643,23 @@ export default function UserTable() {
                           padding: "10px 10px 10px 10px !important",
                         }}
                       >
-                        {hoveredRow === row.id && (
-                          <>
-                            <IconButton
-                              size="small"
-                              onClick={(e) => handleEdit(e, row)}
-                            >
-                              <Edit />
-                            </IconButton>
-                            <IconButton
-                              size="small"
-                              color="error"
-                              onClick={handleDelete}
-                            >
-                              <Delete />
-                            </IconButton>
-                          </>
-                        )}
+                        {/* {hoveredRow === row.id && ( */}
+                        <>
+                          <IconButton
+                            size="small"
+                            onClick={(e) => handleEdit(e, row)}
+                          >
+                            <Edit />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={handleDelete}
+                          >
+                            <Delete />
+                          </IconButton>
+                        </>
+                        {/* )} */}
                       </TableCell>
                     </TableRow>
                   );
@@ -985,6 +998,9 @@ export default function UserTable() {
           open={createUser}
           onClose={() => setCreateUser(false)}
           fullWidth
+          keepMounted
+          TransitionComponent={Transition}
+          aria-describedby="alert-dialog-slide-description"
           maxWidth="md"
         >
           <CreateUser handleClose={() => setCreateUser(false)} />
@@ -1053,7 +1069,7 @@ export default function UserTable() {
                   fullWidth
                   variant="outlined"
                   value={editData.userName || ""}
-                // onChange={handleInputChange}
+                  // onChange={handleInputChange}
                 />
               </Grid>
               <Grid item xs={4}>
@@ -1065,7 +1081,7 @@ export default function UserTable() {
                   fullWidth
                   variant="outlined"
                   value={editData.name || ""}
-                // onChange={handleInputChange}
+                  // onChange={handleInputChange}
                 />
               </Grid>
               <Grid item xs={4}>
@@ -1077,7 +1093,7 @@ export default function UserTable() {
                   fullWidth
                   variant="outlined"
                   value={editData.department || ""}
-                // onChange={handleInputChange}
+                  // onChange={handleInputChange}
                 />
               </Grid>
               <Grid item xs={6}>
@@ -1089,7 +1105,7 @@ export default function UserTable() {
                   fullWidth
                   variant="outlined"
                   value={editData.role || ""}
-                // onChange={handleInputChange}
+                  // onChange={handleInputChange}
                 />
               </Grid>
               <Grid item xs={6}>
@@ -1122,8 +1138,8 @@ export default function UserTable() {
                   type="tel"
                   variant="outlined"
                   value={editData.phone || ""}
-                // onChange={handleInputChange}
-                // sx={{ width: "40%" }}
+                  // onChange={handleInputChange}
+                  // sx={{ width: "40%" }}
                 />
               </Grid>
               <Grid item xs={6}>
@@ -1135,7 +1151,7 @@ export default function UserTable() {
                   fullWidth
                   variant="outlined"
                   value={editData.storageUsed || ""}
-                // onChange={handleInputChange}
+                  // onChange={handleInputChange}
                 />
               </Grid>
             </Grid>
