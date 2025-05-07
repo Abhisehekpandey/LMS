@@ -53,12 +53,16 @@ const StyledDrawer = styled(Drawer)(({ theme, open }) => ({
     width: open ? 250 : 65,
     boxSizing: "border-box",
     transition: theme.transitions.create(["width", "margin", "padding"], {
-      easing: theme.transitions.easing.easeInOut,
-      duration: theme.transitions.duration.standard,
+      easing: theme.transitions.easing.sharp,
+      duration: open
+        ? theme.transitions.duration.enteringScreen
+        : theme.transitions.duration.leavingScreen,
     }),
-    backgroundColor: "rgba(255, 255, 255, 0.05)", // <-- light transparent white
-    backdropFilter: "blur(10px)", // <-- gives frosted glass effect
-    WebkitBackdropFilter: "blur(10px)", // <-- for Safari
+    backgroundColor: "rgba(255, 255, 255, 0.60)",
+    // 👈 opacity thodi zyada (0.05 → 0.15 ya 0.2)
+    backdropFilter: "blur(4px)", // blur bhi thoda kam kar diya
+    WebkitBackdropFilter: "blur(4px)",
+
     backdropFilter: "blur(8px)",
     color: "#424242",
     borderRight: "1px solid rgba(0, 0, 0, 0.08)",
@@ -146,12 +150,12 @@ const Sidebar = () => {
       onMouseLeave={handleMouseLeave}
     >
       <Box
-     
+
         sx={{
           // pl: "3px",
           display: "flex",
           alignItems: "center",
-   
+
           mb: 1, // Add margin bottom
         }}
         className="user-info-view"
@@ -162,7 +166,7 @@ const Sidebar = () => {
             alignItems: "center",
             height: 52,
             px: 1.2,
-            borderBottom: "1px solid rgba(0,0,0,0.05)",
+            // borderBottom: "1px solid rgba(0,0,0,0.05)",
             mb: 1,
             transition: "padding 0.3s ease",
           }}
@@ -219,7 +223,7 @@ const Sidebar = () => {
               Administrator
             </Box>
           </Box>
-      
+
         </Box>
 
       </Box>
@@ -252,7 +256,7 @@ const Sidebar = () => {
                     primary={item.text}
                     sx={{
                       opacity: open ? 1 : 0,
-                      transition: "opacity 0.18s ease",
+                      transition: "opacity 0.3s ease, margin 0.3s ease",
                       marginRight: "4px",
                       "& .MuiListItemText-primary": {
                         fontSize: "0.875rem",

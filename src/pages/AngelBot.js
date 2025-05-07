@@ -41,6 +41,16 @@ const commonPaperStyles = {
     boxShadow: "0 4px 20px 0 rgba(0,0,0,0.08)",
   },
 };
+const getProgressBarColor = (percentage) => {
+  if (percentage == 100) {
+    // return "";
+    return "#FF7F50"
+  } else if (percentage > 30) {
+    return "#4caf50";
+  } else {
+    return "rgb(255, 193, 7)";
+  }
+};
 
 const AngelBot = () => {
   const [negativeCount, setNegativeCount] = useState(0);
@@ -168,8 +178,8 @@ const AngelBot = () => {
       {
         name: "Status",
         type: "pie",
-        radius: "70%",
-        center: ["45%", "50%"],
+        radius: "75%",
+        center: ["50%", "50%"],
         label: {
           position: "inside",
           fontSize: 13,
@@ -217,8 +227,8 @@ const AngelBot = () => {
       {
         name: "Status",
         type: "pie",
-        radius: "70%",
-        center: ["45%", "50%"],
+        radius: "75%",
+        center: ["50%", "50%"],
         label: {
           position: "inside",
           fontSize: 13,
@@ -261,8 +271,8 @@ const AngelBot = () => {
       {
         name: "Status",
         type: "pie",
-        radius: "70%",
-        center: ["45%", "50%"],
+        radius: "75%",
+        center: ["50%", "50%"],
         label: {
           position: "inside",
           fontSize: 13,
@@ -359,11 +369,11 @@ const AngelBot = () => {
   };
 
   const getSortedStorageUsers = [
-    { id: 1, name: "User1", storageUsed: 100, storageAllocated: 200 },
-    { id: 1, name: "User2", storageUsed: 200, storageAllocated: 300 },
+    { id: 1, name: "User1", storageUsed: 200, storageAllocated: 200 },
+    { id: 1, name: "User2", storageUsed: 250, storageAllocated: 300 },
     { id: 1, name: "User3", storageUsed: 150, storageAllocated: 200 },
-    { id: 1, name: "User4", storageUsed: 50, storageAllocated: 100 },
-    { id: 1, name: "User5", storageUsed: 120, storageAllocated: 200 },
+    { id: 1, name: "User4", storageUsed: 30, storageAllocated: 100 },
+    { id: 1, name: "User5", storageUsed: 40, storageAllocated: 200 },
     { id: 1, name: "User6", storageUsed: 150, storageAllocated: 250 },
     { id: 1, name: "User7", storageUsed: 150, storageAllocated: 200 },
     { id: 1, name: "User8", storageUsed: 300, storageAllocated: 500 },
@@ -409,6 +419,19 @@ const AngelBot = () => {
               // position: "relative",
               // // height: "100vh",
               // backgroundColor: "#f5f7fa",
+              animation: "slideInFromLeft 0.3s ease-in-out forwards",
+              opacity: 0, // Start with opacity 0
+              transform: "translateX(-50px)", // Start from left
+              "@keyframes slideInFromLeft": {
+                "0%": {
+                  opacity: 0,
+                  transform: "translateX(-50px)",
+                },
+                "100%": {
+                  opacity: 1,
+                  transform: "translateX(0)",
+                }
+              }
             }
           }
         >
@@ -458,7 +481,7 @@ const AngelBot = () => {
                   <div>
                     <ReactECharts
                       option={LicenseStatus}
-                      style={{ height: 400, width: "100%" }}
+                      style={{ height: 300, width: "100%" }}
                       onEvents={{
                         click: handleChartClick,
                       }}
@@ -546,7 +569,7 @@ const AngelBot = () => {
                   <div>
                     <ReactECharts
                       option={storageStatus}
-                      style={{ height: 400, width: "100%" }}
+                      style={{ height: 300, width: "100%" }}
                     />
                   </div>
                   <div
@@ -610,7 +633,7 @@ const AngelBot = () => {
                   <div>
                     <ReactECharts
                       option={storageDistribution}
-                      style={{ height: 400, width: "100%" }}
+                      style={{ height: 300, width: "100%" }}
                     />
                   </div>
                   <div
@@ -776,12 +799,13 @@ const AngelBot = () => {
                         </Box>
                         <Box sx={{ flex: 1, mx: 2 }}>
                           <LinearProgress
+
                             variant="determinate"
                             value={
                               (user.storageUsed / user.storageAllocated) * 100
                             }
                             sx={{
-                              height: 4,
+                              height: 10,
                               borderRadius: 2,
                               [`&.MuiLinearProgress-root`]: {
                                 backgroundColor: alpha(
@@ -790,8 +814,9 @@ const AngelBot = () => {
                                 ),
                               },
                               [`& .MuiLinearProgress-bar`]: {
+
                                 borderRadius: 3,
-                                backgroundColor: chartColors.primary,
+                                backgroundColor: getProgressBarColor((user.storageUsed / user.storageAllocated) * 100),
                               },
                             }}
                           />
@@ -898,7 +923,7 @@ const AngelBot = () => {
                             variant="determinate"
                             value={(dept.storage / 200) * 100}
                             sx={{
-                              height: 4,
+                              height: 10,
                               borderRadius: 2,
                               [`&.MuiLinearProgress-root`]: {
                                 backgroundColor: alpha(
@@ -907,8 +932,9 @@ const AngelBot = () => {
                                 ),
                               },
                               [`& .MuiLinearProgress-bar`]: {
+
                                 borderRadius: 3,
-                                backgroundColor: chartColors.warning,
+                                backgroundColor: getProgressBarColor((dept.storage / 200) * 100),
                               },
                             }}
                           />
