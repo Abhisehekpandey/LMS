@@ -17,6 +17,9 @@ import {
   Paper,
   TablePagination,
   Typography,
+  FormControl,
+  Select,
+  MenuItem
 } from "@mui/material";
 import React, { useEffect, useState } from "react";
 import ReactECharts from "echarts-for-react";
@@ -31,7 +34,7 @@ const chartColors = {
 };
 
 const commonPaperStyles = {
-  // p: 3,
+  p: 3,
   // mb: 2,
   borderRadius: 2,
   boxShadow: "0 2px 12px 0 rgba(0,0,0,0.05)",
@@ -77,6 +80,18 @@ const AngelBot = () => {
   const [deptRowsPerPage, setDeptRowsPerPage] = useState(7);
   const [backButton, setBackButton] = useState(false);
   const [selectedChart, setSelectedChart] = useState(null);
+  // const [userSortOption, setUserSortOption] = useState('highest');
+
+  const [userSortOption, setUserSortOption] = useState("high"); // Default option
+  const [getSortedStorageUsers, setSortedStorageUsers] = useState([
+    { id: 1, name: "abhishek", storageUsed: 200, storageAllocated: 200 },
+    { id: 2, name: "pratibha", storageUsed: 250, storageAllocated: 300 },
+    { id: 3, name: "ankit", storageUsed: 150, storageAllocated: 200 },
+    { id: 4, name: "satyam", storageUsed: 150, storageAllocated: 200 },
+    { id: 5, name: "abhimanyu", storageUsed: 50, storageAllocated: 200 },
+    { id: 6, name: "manish", storageUsed: 150, storageAllocated: 200 },
+    { id: 7, name: "prince", storageUsed: 50, storageAllocated: 200 },
+  ]);
 
   useEffect(() => {
     const calculateRemainingDays = () => {
@@ -146,6 +161,35 @@ const AngelBot = () => {
     </Dialog>
   );
 
+  const sortUsers = (sortOption) => {
+    let sortedUsers = [...getSortedStorageUsers];
+    switch (sortOption) {
+      case "high":
+        sortedUsers.sort(
+          (a, b) =>
+            b.storageUsed / b.storageAllocated -
+            a.storageUsed / a.storageAllocated
+        );
+        break;
+      case "low":
+        sortedUsers.sort(
+          (a, b) =>
+            a.storageUsed / a.storageAllocated -
+            b.storageUsed / b.storageAllocated
+        );
+        break;
+      case "az":
+        sortedUsers.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case "za":
+        sortedUsers.sort((a, b) => b.name.localeCompare(a.name));
+        break;
+      default:
+        break;
+    }
+    setSortedStorageUsers(sortedUsers);
+  };
+
   const data = [
     { value: 500, name: "Active", color: "#91CC75" }, // 500 MB
     { value: 580, name: "Inactive", color: "#EE6666" }, // 580 MB
@@ -155,14 +199,14 @@ const AngelBot = () => {
 
   // Helper function to format value as MB or GB
   const formatSize = (val) => {
-    return val < 1024 ? `${val} MB` : `${(val / 1024).toFixed(1)} GB`;
+    return val < 1024 ? `${val} MB` : `${(val / 1024).toFixed(1)}`;
   };
 
   const LicenseStatus = {
     tooltip: {
       trigger: "item",
       formatter: function (params) {
-        const valueFormatted = formatSize(params.value);
+        const valueFormatted = params.value;
         return `${params.name}: ${valueFormatted} (${params.percent}%)`;
       },
     },
@@ -171,7 +215,7 @@ const AngelBot = () => {
       left: "left",
       formatter: function (name) {
         const item = data.find((d) => d.name === name);
-        return `${name} (${formatSize(item.value)})`;
+        return `${name} ${(item.value)}`;
       },
     },
     series: [
@@ -204,7 +248,7 @@ const AngelBot = () => {
 
   // Helper function to format value as MB or GB
   const formatSizestorage = (val) => {
-    return val < 1024 ? `${val} MB` : `${(val / 1024).toFixed(1)} GB`;
+    return val < 1024 ? `${val} ` : `${(val / 1024).toFixed(1)} `;
   };
 
   const storageStatus = {
@@ -368,16 +412,16 @@ const AngelBot = () => {
     setBackButton(false);
   };
 
-  const getSortedStorageUsers = [
-    { id: 1, name: "User1", storageUsed: 200, storageAllocated: 200 },
-    { id: 1, name: "User2", storageUsed: 250, storageAllocated: 300 },
-    { id: 1, name: "User3", storageUsed: 150, storageAllocated: 200 },
-    { id: 1, name: "User4", storageUsed: 30, storageAllocated: 100 },
-    { id: 1, name: "User5", storageUsed: 40, storageAllocated: 200 },
-    { id: 1, name: "User6", storageUsed: 150, storageAllocated: 250 },
-    { id: 1, name: "User7", storageUsed: 150, storageAllocated: 200 },
-    { id: 1, name: "User8", storageUsed: 300, storageAllocated: 500 },
-  ];
+  // const getSortedStorageUsers = [
+  //   { id: 1, name: "User1", storageUsed: 200, storageAllocated: 200 },
+  //   { id: 1, name: "User2", storageUsed: 250, storageAllocated: 300 },
+  //   { id: 1, name: "User3", storageUsed: 150, storageAllocated: 200 },
+  //   { id: 1, name: "User4", storageUsed: 30, storageAllocated: 100 },
+  //   { id: 1, name: "User5", storageUsed: 40, storageAllocated: 200 },
+  //   { id: 1, name: "User6", storageUsed: 150, storageAllocated: 250 },
+  //   { id: 1, name: "User7", storageUsed: 150, storageAllocated: 200 },
+  //   { id: 1, name: "User8", storageUsed: 300, storageAllocated: 500 },
+  // ];
 
   const getSortedDepartments = [
     { id: 1, name: "IT", storage: 100, storageAllocated: 200 },
@@ -750,6 +794,21 @@ const AngelBot = () => {
                     Top User Storage Usage
                   </Typography>
                 </Box>
+                <FormControl size="small">
+                  <Select
+                    value={userSortOption}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setUserSortOption(value);
+                      sortUsers(value); // Call sort logic
+                    }}
+                  >
+                    <MenuItem value="high">High Usage</MenuItem>
+                    <MenuItem value="low">Low Usage</MenuItem>
+                    <MenuItem value="az">A-Z</MenuItem>
+                    <MenuItem value="za">Z-A</MenuItem>
+                  </Select>
+                </FormControl>
                 <Box>
                   {getSortedStorageUsers
                     .slice(
