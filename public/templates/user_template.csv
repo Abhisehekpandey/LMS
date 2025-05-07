@@ -1,2 +1,2 @@
-userName,name,email,phone,storage,role,department,reportingManager,edit,delete
-example00,abc,abc@costacloud.com,1234567890,10GB,software engineer ,frontend , dhruv sethi , no , no
+name,email,phone,storage,role,department,reportingManager,edit,delete
+abc,abc@costacloud.com,1234567890,10GB,software engineer ,frontend , dhruv sethi , no , no

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import PropTypes from "prop-types";
 import {
   Box,
@@ -28,6 +28,8 @@ import {
   FormControlLabel,
 } from "@mui/material";
 import { Card, CardContent } from "@mui/material";
+import { CircularProgress,  keyframes} from '@mui/material';
+
 
 import { styled } from "@mui/material/styles";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
@@ -59,7 +61,7 @@ import {
 } from "@mui/icons-material";
 
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
-import Drawer from '@mui/material/Drawer';
+import Drawer from "@mui/material/Drawer";
 
 import { PersonAdd as PersonAddIcon } from "@mui/icons-material";
 import { ManageAccounts as ManageAccountsIcon } from "@mui/icons-material";
@@ -136,6 +138,36 @@ const IOSSwitch = styled((props) => (
   },
 }));
 
+// Fade-in animation
+const fadeIn = keyframes`
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+`;
+
+// Styled overlay
+const LoaderWrapper = styled(Box)(({ theme }) => ({
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  width: '100vw',
+  height: '100vh',
+  background: 'rgba(255, 255, 255, 0.75)',
+  backdropFilter: 'blur(5px)',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  zIndex: 1300,
+  animation: `${fadeIn} 0.5s ease-in-out`,
+}));
+
+// Styled CircularProgress
+const CustomSpinner = styled(CircularProgress)(({ theme }) => ({
+  color: theme.palette.primary.main,
+  width: '80px !important',
+  height: '80px !important',
+  thickness: 3,
+}));
+
 function Department({ departments, setDepartments, onThemeToggle }) {
   const [page, setPage] = useState(0);
 
@@ -145,6 +177,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
   const [orderBy, setOrderBy] = useState("name");
   const [order, setOrder] = useState("asc");
+  const [loading, setLoading] = useState(true);
 
   // Add after other state declarations
   const [snackbar, setSnackbar] = useState({
@@ -186,8 +219,15 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     value: "",
   });
 
-
-  const storageOptions = ['0GB', '25GB','50GB','75GB', '100GB', '150GB','200GB'];
+  const storageOptions = [
+    "0GB",
+    "25GB",
+    "50GB",
+    "75GB",
+    "100GB",
+    "150GB",
+    "200GB",
+  ];
 
   const handleStorageChange = (name, newStorage) => {
     const updated = departments.map((dept) =>
@@ -288,8 +328,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               "Cannot delete the last role. Department must have at least one role.",
             severity: "error",
           });
-          return dept
-          
+          return dept;
         }
 
         const updatedRoles = dept.roles.filter((_, i) => i !== roleIndex);
@@ -335,7 +374,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     });
   };
 
- 
   const handleSnackbarClose = (event, reason) => {
     if (reason === "clickaway") return;
     setSnackbar((prev) => ({ ...prev, open: false }));
@@ -1019,8 +1057,41 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       });
     }
   };
+  // useEffect(() => {
+  //   // Simulate API call delay or loading state
+  //   const timer = setTimeout(() => {
+  //     setLoading(false);
+  //   }, 1500); // 1.5 seconds
+
+  //   return () => clearTimeout(timer);
+  // }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 300);
+    return () => clearTimeout(timer);
+  }, []);
 
 
+  // if (loading) {
+  //   return (
+  //     <Box
+  //       display="flex"
+  //       justifyContent="center"
+  //       alignItems="center"
+  //       height="100vh"
+  //     >
+  //       <CircularProgress />
+  //     </Box>
+  //   );
+  // }
+
+  if (loading) {
+    return (
+      <LoaderWrapper>
+        <CustomSpinner />
+      </LoaderWrapper>
+    );
+  }
 
   return (
     <Box
@@ -1038,18 +1109,18 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         borderRadius: "20px",
         boxShadow: "2px 1px 11px 5px rgba(0, 0, 0, 0.2)!important",
         animation: "slideInFromLeft 0.3s ease-in-out forwards",
-                  opacity: 0, // Start with opacity 0
-                  transform: "translateX(-50px)", // Start from left
-                  "@keyframes slideInFromLeft": {
-                    "0%": {
-                      opacity: 0,
-                      transform: "translateX(-50px)",
-                    },
-                    "100%": {
-                      opacity: 1,
-                      transform: "translateX(0)",
-                    }
-                  }
+        opacity: 0, // Start with opacity 0
+        transform: "translateX(-50px)", // Start from left
+        "@keyframes slideInFromLeft": {
+          "0%": {
+            opacity: 0,
+            transform: "translateX(-50px)",
+          },
+          "100%": {
+            opacity: 1,
+            transform: "translateX(0)",
+          },
+        },
       }}
     >
       <TableContainer
@@ -1228,7 +1299,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
               <TableCell
                 sx={{
-                 
                   width: "150px",
                   padding: "2px 8px",
                   height: "32px",
@@ -1239,7 +1309,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               >
                 <Typography
                   variant="body1"
-        
                   sx={{
                     fontWeight: "bold !important",
                     fontSize: "15px",
@@ -1252,7 +1321,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
               <TableCell
                 sx={{
-                 
                   width: "150px",
                   padding: "2px 8px",
                   height: "32px",
@@ -1263,7 +1331,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               >
                 <Typography
                   variant="body1"
-        
                   sx={{
                     fontWeight: "bold !important",
                     fontSize: "15px",
@@ -1273,8 +1340,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                   Manage Storage
                 </Typography>
               </TableCell>
-
-              
 
               <TableCell
                 sx={{
@@ -1397,7 +1462,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                       </TableCell>
                       <TableCell
                         sx={{
-                          
                           textAlign: "center",
                           padding: "2px 8px",
                         }}
@@ -1407,22 +1471,27 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
                       <TableCell
                         sx={{
-                          
                           textAlign: "center",
                           padding: "2px 8px",
                         }}
                       >
-                         <Select
-                  value={dept.storage}
-                  onChange={(e) => handleStorageChange(dept.name, e.target.value)}
-                  sx={{width:"100px", height:"30px",borderRadius:"28px"}}
-                >
-                  {storageOptions.map((option) => (
-                    <MenuItem key={option} value={option}>
-                      {option}
-                    </MenuItem>
-                  ))}
-                </Select>
+                        <Select
+                          value={dept.storage}
+                          onChange={(e) =>
+                            handleStorageChange(dept.name, e.target.value)
+                          }
+                          sx={{
+                            width: "100px",
+                            height: "30px",
+                            borderRadius: "28px",
+                          }}
+                        >
+                          {storageOptions.map((option) => (
+                            <MenuItem key={option} value={option}>
+                              {option}
+                            </MenuItem>
+                          ))}
+                        </Select>
                       </TableCell>
 
                       <TableCell
@@ -1826,162 +1895,198 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         </Alert>
       </Snackbar>
 
-      {/* <Dialog
+      <Drawer
+        anchor="left"
         open={showAddDepartment}
         onClose={() => setShowAddDepartment(false)}
-        maxWidth="sm"
         PaperProps={{
           sx: {
             borderRadius: "8px",
             boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+            position: "absolute",
+            top: "5%",
+            left: "35%",
+            // transform: "translate(-50%, -50%)",
+            m: 0,
+            height: "auto", // dynamic height
+            maxHeight: "95vh", // prevent it from overflowin
+            overflow: "hidden", // avoid extra scrollbars
+            animation: "slideInFromLeft 0.2s ease-in-out forwards",
+            opacity: 0, // Start with opacity 0
+            transform: "translateX(-50px)", // Start from left
+            "@keyframes slideInFromLeft": {
+              "0%": {
+                opacity: 0,
+                transform: "translateX(-50px)",
+              },
+              "100%": {
+                opacity: 1,
+                transform: "translateX(0)",
+              },
+            },
           },
         }}
       >
-       
-        <DialogTitle
-          sx={{
-            borderBottom: "1px solid #eee",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            p: 2,
-          }}
-        >
-          <Typography
-            variant="h6"
-           
-          >
-            New Department
-          </Typography>
-          <IconButton
-            onClick={() => setShowAddDepartment(false)}
-            size="small"
+        <Box sx={{ height: "70%", display: "flex", flexDirection: "column" }}>
+          <Box
             sx={{
-              color: "error.main",
-              width: 32,
-              height: 32,
-              border: "1px solid",
-              borderColor: "error.light",
-              bgcolor: "error.lighter",
-              borderRadius: "50%",
-              position: "relative",
-              "&:hover": {
-                color: "error.dark",
-                borderColor: "error.main",
-                bgcolor: "error.lighter",
-                transform: "rotate(180deg)",
-              },
-              transition: "transform 0.3s ease",
+              borderBottom: "1px solid #eee",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              p: 2,
+              
+              backgroundColor:"primary.main"
             }}
           >
-            <CloseIcon
+            <Typography variant="h6" sx={{color:"#ffff"}}>New Department</Typography>
+            <IconButton
+              onClick={() => setShowAddDepartment(false)}
+              size="small"
               sx={{
-                fontSize: "1.1rem",
-                transition: "transform 0.2s ease",
+                color: "#ffff",
+                width: 32,
+                height: 32,
+                border: "1px solid",
+                borderColor: "#ffff",
+                bgcolor: "error.lighter",
+                borderRadius: "50%",
+                position: "relative",
+                "&:hover": {
+                  // color: "error.dark",
+                  // borderColor: "error.main",
+                  // bgcolor: "error.lighter",
+                  transform: "rotate(180deg)",
+                },
+                transition: "transform 0.3s ease",
               }}
-            />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 2 }}>
-            <TextField
-              size="small"
-              label="Department Name"
-              value={newDepartment.name}
-              onChange={(e) =>
-                setNewDepartment((prev) => ({
-                  ...prev,
-                  name: e.target.value,
-                }))
-              }
-              fullWidth
-              required
-              error={!newDepartment.name && newDepartment.submitted}
-              helperText={
-                !newDepartment.name && newDepartment.submitted
-                  ? "Department name is required"
-                  : ""
-              }
-            />
-            <FormControl fullWidth size="small">
-              <InputLabel id="storage-label">Storage Allocation</InputLabel>
-              <Select
-                labelId="storage-label"
-                value={newDepartment.storage || "50GB"}
-                label="Storage Allocation"
-                onChange={(e) =>
-                  setNewDepartment((prev) => ({
-                    ...prev,
-                    storage: e.target.value,
-                  }))
-                }
-                required
-                error={!newDepartment.storage && newDepartment.submitted}
-              >
-                {[0, 25, 50, 75, 100, 150, 200].map((size) => (
-                  <MenuItem key={size} value={`${size}GB`}>
-                    {size} GB
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <TextField
-              size="small"
-              label="Short Name"
-              value={newDepartment.displayName}
-              onChange={(e) =>
-                setNewDepartment((prev) => ({
-                  ...prev,
-                  displayName: e.target.value.toUpperCase(),
-                }))
-              }
-              required
-              error={!newDepartment.displayName && newDepartment.submitted}
-              helperText={
-                !newDepartment.displayName && newDepartment.submitted
-                  ? "Display name is required"
-                  : "Short form"
-              }
-            />
-            <TextField
-              size="small"
-              label="Department Moderator"
-              value={newDepartment.departmentModerator}
-              onChange={(e) =>
-                setNewDepartment((prev) => ({
-                  ...prev,
-                  departmentModerator: e.target.value,
-                }))
-              }
-              required
-              error={
-                !newDepartment.departmentModerator && newDepartment.submitted
-              }
-              helperText={
-                !newDepartment.departmentModerator && newDepartment.submitted
-                  ? "Department Moderator is required"
-                  : ""
-              }
-              fullWidth
-            />
-            <TextField
-              size="small"
-              label="Initial Role"
-              value={newDepartment.initialRole}
-              onChange={(e) =>
-                setNewDepartment((prev) => ({
-                  ...prev,
-                  initialRole: e.target.value,
-                }))
-              }
-              // required
-              error={!newDepartment.initialRole && newDepartment.submitted}
-              helperText={
-                !newDepartment.initialRole && newDepartment.submitted
-                  ? "At least one role is required"
-                  : ""
-              }
-            />
+            >
+              <CloseIcon
+                sx={{ fontSize: "1.1rem", transition: "transform 0.2s ease" }}
+              />
+            </IconButton>
+          </Box>
+
+          <Box sx={{ p: 2, flex: 1, overflowY: "auto" }}>
+            <Box
+              sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}
+            >
+              {/* First Card - Grouped Text Fields */}
+              <Card elevation={2} sx={{ borderRadius: 2 }}>
+                <CardContent
+                  sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+                >
+                  {[
+                    {
+                      label: "Department Name",
+                      value: newDepartment.name,
+                      onChange: (e) =>
+                        setNewDepartment((prev) => ({
+                          ...prev,
+                          name: e.target.value,
+                        })),
+                      error: !newDepartment.name && newDepartment.submitted,
+                      helperText:
+                        !newDepartment.name && newDepartment.submitted
+                          ? "Department name is required"
+                          : "",
+                    },
+                    {
+                      label: "Short Name",
+                      value: newDepartment.displayName,
+                      onChange: (e) =>
+                        setNewDepartment((prev) => ({
+                          ...prev,
+                          displayName: e.target.value.toUpperCase(),
+                        })),
+                      error:
+                        !newDepartment.displayName && newDepartment.submitted,
+                      helperText:
+                        !newDepartment.displayName && newDepartment.submitted
+                          ? "Display name is required"
+                          : "Short form",
+                    },
+                    {
+                      label: "Department Moderator",
+                      value: newDepartment.departmentModerator,
+                      onChange: (e) =>
+                        setNewDepartment((prev) => ({
+                          ...prev,
+                          departmentModerator: e.target.value,
+                        })),
+                      error:
+                        !newDepartment.departmentModerator &&
+                        newDepartment.submitted,
+                      helperText:
+                        !newDepartment.departmentModerator &&
+                        newDepartment.submitted
+                          ? "Department Moderator is required"
+                          : "",
+                    },
+                    {
+                      label: "Initial Role",
+                      value: newDepartment.initialRole,
+                      onChange: (e) =>
+                        setNewDepartment((prev) => ({
+                          ...prev,
+                          initialRole: e.target.value,
+                        })),
+                      error:
+                        !newDepartment.initialRole && newDepartment.submitted,
+                      helperText:
+                        !newDepartment.initialRole && newDepartment.submitted
+                          ? "At least one role is required"
+                          : "",
+                    },
+                  ].map((field, index) => (
+                    <TextField
+                      key={index}
+                      fullWidth
+                      size="small"
+                      label={field.label}
+                      value={field.value}
+                      onChange={field.onChange}
+                      error={field.error}
+                      helperText={field.helperText}
+                      required
+                    />
+                  ))}
+                </CardContent>
+              </Card>
+
+              {/* Second Card - Storage Allocation */}
+              <Card elevation={2} sx={{ borderRadius: 2 }}>
+                <CardContent sx={{ p: 1.5 }}>
+                  <FormControl
+                    fullWidth
+                    size="small"
+                    error={!newDepartment.storage && newDepartment.submitted}
+                  >
+                    <InputLabel id="storage-label">
+                      Storage Allocation
+                    </InputLabel>
+                    <Select
+                      labelId="storage-label"
+                      value={newDepartment.storage || "50GB"}
+                      label="Storage Allocation"
+                      onChange={(e) =>
+                        setNewDepartment((prev) => ({
+                          ...prev,
+                          storage: e.target.value,
+                        }))
+                      }
+                      required
+                    >
+                      {[0, 25, 50, 75, 100, 150, 200].map((size) => (
+                        <MenuItem key={size} value={`${size}GB`}>
+                          {size} GB
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </CardContent>
+              </Card>
+            </Box>
           </Box>
 
           <Box
@@ -1990,47 +2095,42 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               justifyContent: "space-between",
               alignItems: "center",
               gap: 2,
-              mt: 3,
-              pt: 2,
+              p: 2,
               borderTop: "1px solid #eee",
-              width: "100%",
             }}
           >
             <Box sx={{ display: "flex", gap: 1 }}>
-             
               <Tooltip title="Download Template">
-  <IconButton
-    onClick={handleTemplateDownload}
-    size="small"
-    sx={{
-      backgroundColor: "primary.lighter",
-      border: "1px solid",
-      borderColor: "primary.light",
-      color: "primary.main",
-      px: 1,
-      height: 36,
-      borderRadius: "8px",
-      "&:hover": {
-        backgroundColor: "primary.100",
-        transform: "translateY(-1px)",
-        boxShadow: "0 2px 8px rgba(46, 125, 50, 0.15)",
-      },
-      transition: "all 0.2s ease",
-    }}
-  >
-    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-      
-      <Typography variant="body2">Download Template</Typography>
-      <DownloadIcon sx={{ fontSize: 20 }} />
-    </Box>
-  </IconButton>
-</Tooltip>
+                <IconButton
+                  onClick={handleTemplateDownload}
+                  size="small"
+                  sx={{
+                    backgroundColor: "primary.lighter",
+                    border: "1px solid",
+                    borderColor: "primary.light",
+                    color: "primary.main",
+                    px: 1,
+                    height: 36,
+                    borderRadius: "8px",
+                    "&:hover": {
+                      backgroundColor: "primary.100",
+                      transform: "translateY(-1px)",
+                      boxShadow: "0 2px 8px rgba(46, 125, 50, 0.15)",
+                    },
+                    transition: "all 0.2s ease",
+                  }}
+                >
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                    <Typography variant="body2">Download Template</Typography>
+                    <DownloadIcon sx={{ fontSize: 20 }} />
+                  </Box>
+                </IconButton>
+              </Tooltip>
 
               <Tooltip title="Bulk Upload" componentsProps={{}}>
                 <IconButton
                   onClick={() => fileInputRef.current?.click()}
                   size="small"
-                 
                   sx={{
                     backgroundColor: "primary.dark",
                     border: "1px solid",
@@ -2040,15 +2140,14 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     height: 36,
                     borderRadius: "8px",
                     "&:hover": {
-                    
+                      backgroundColor: "primary.dark",
                       transform: "translateY(-1px)",
-                      boxShadow: "0 2px 8px rgba(46, 125, 50, 0.15)",
+                      // boxShadow: "0 2px 8px rgba(46, 125, 50, 0.15)",
                     },
                     transition: "all 0.2s ease",
                   }}
                 >
                   <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                    
                     <Typography variant="body2">Bulk Upload</Typography>
                     <UploadFileIcon sx={{ fontSize: 20 }} />
                   </Box>
@@ -2060,286 +2159,116 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               onClick={handleAddDepartment}
               variant="contained"
               sx={{
-                // bgcolor: "primary.main",
                 background: "rgb(251, 68, 36)",
                 "&:hover": {
-                  // bgcolor: "primary.dark",
                   background: "rgb(251, 68, 36)",
                 },
                 px: 3,
                 py: 0.7,
-                // fontFamily: '"Be Vietnam", sans-serif',
               }}
             >
               Add
             </Button>
           </Box>
-        </DialogContent>
-      </Dialog> */}
+        </Box>
+      </Drawer>
 
-
-<Drawer
-  anchor="left"
-  open={showAddDepartment}
-  onClose={() => setShowAddDepartment(false)}
-  
-
-
-  PaperProps={{
-    sx: {
-      borderRadius: "8px",
-      boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
-      position: "absolute",
-      top: "5%",
-      left: "35%",
-      // transform: "translate(-50%, -50%)",
-      m: 0,
-      height: "auto", // dynamic height
-      maxHeight: "95vh", // prevent it from overflowin
-      overflow: "hidden", // avoid extra scrollbars
-      animation: "slideInFromLeft 0.2s ease-in-out forwards",
-                opacity: 0, // Start with opacity 0
-                transform: "translateX(-50px)", // Start from left
-                "@keyframes slideInFromLeft": {
-                  "0%": {
-                    opacity: 0,
-                    transform: "translateX(-50px)",
-                  },
-                  "100%": {
-                    opacity: 1,
-                    transform: "translateX(0)",
-                  }
-                }
-    },
-  }}
->
-  <Box sx={{ height: "70%", display: "flex", flexDirection: "column", }}>
-    <Box
-      sx={{
-        borderBottom: "1px solid #eee",
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        p: 2,
-        
-      }}
-    >
-      <Typography variant="h6">New Department</Typography>
-      <IconButton
-        onClick={() => setShowAddDepartment(false)}
-        size="small"
-        sx={{
-          color: "error.main",
-          width: 32,
-          height: 32,
-          border: "1px solid",
-          borderColor: "error.light",
-          bgcolor: "error.lighter",
-          borderRadius: "50%",
-          position: "relative",
-          "&:hover": {
-            color: "error.dark",
-            borderColor: "error.main",
-            bgcolor: "error.lighter",
-            transform: "rotate(180deg)",
-          },
-          transition: "transform 0.3s ease",
-        }}
-      >
-        <CloseIcon sx={{ fontSize: "1.1rem", transition: "transform 0.2s ease" }} />
-      </IconButton>
-    </Box>
-
-    <Box sx={{ p: 2, flex: 1, overflowY: "auto" }}>
-    
-<Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
-  {/* First Card - Grouped Text Fields */}
-  <Card elevation={2} sx={{ borderRadius: 2 }}>
-    <CardContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-      {[
-        {
-          label: "Department Name",
-          value: newDepartment.name,
-          onChange: (e) => setNewDepartment((prev) => ({ ...prev, name: e.target.value })),
-          error: !newDepartment.name && newDepartment.submitted,
-          helperText: !newDepartment.name && newDepartment.submitted ? "Department name is required" : "",
-        },
-        {
-          label: "Short Name",
-          value: newDepartment.displayName,
-          onChange: (e) => setNewDepartment((prev) => ({ ...prev, displayName: e.target.value.toUpperCase() })),
-          error: !newDepartment.displayName && newDepartment.submitted,
-          helperText: !newDepartment.displayName && newDepartment.submitted ? "Display name is required" : "Short form",
-        },
-        {
-          label: "Department Moderator",
-          value: newDepartment.departmentModerator,
-          onChange: (e) => setNewDepartment((prev) => ({ ...prev, departmentModerator: e.target.value })),
-          error: !newDepartment.departmentModerator && newDepartment.submitted,
-          helperText: !newDepartment.departmentModerator && newDepartment.submitted ? "Department Moderator is required" : "",
-        },
-        {
-          label: "Initial Role",
-          value: newDepartment.initialRole,
-          onChange: (e) => setNewDepartment((prev) => ({ ...prev, initialRole: e.target.value })),
-          error: !newDepartment.initialRole && newDepartment.submitted,
-          helperText: !newDepartment.initialRole && newDepartment.submitted ? "At least one role is required" : "",
-        },
-      ].map((field, index) => (
-        <TextField
-          key={index}
-          fullWidth
-          size="small"
-          label={field.label}
-          value={field.value}
-          onChange={field.onChange}
-          error={field.error}
-          helperText={field.helperText}
-          required
-        />
-      ))}
-    </CardContent>
-  </Card>
-
-  {/* Second Card - Storage Allocation */}
-  <Card elevation={2} sx={{ borderRadius: 2 }}>
-    <CardContent sx={{ p: 1.5 }}>
-      <FormControl fullWidth size="small" error={!newDepartment.storage && newDepartment.submitted}>
-        <InputLabel id="storage-label">Storage Allocation</InputLabel>
-        <Select
-          labelId="storage-label"
-          value={newDepartment.storage || "50GB"}
-          label="Storage Allocation"
-          onChange={(e) =>
-            setNewDepartment((prev) => ({
-              ...prev,
-              storage: e.target.value,
-            }))
-          }
-          required
-        >
-          {[0, 25, 50, 75, 100, 150, 200].map((size) => (
-            <MenuItem key={size} value={`${size}GB`}>
-              {size} GB
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
-    </CardContent>
-  </Card>
-</Box>
-
-
-    </Box>
-
-    <Box
-      sx={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        gap: 2,
-        p: 2,
-        borderTop: "1px solid #eee",
-       
-      }}
-    >
-      <Box sx={{ display: "flex", gap: 1 ,}}>
-        <Tooltip title="Download Template">
-          <IconButton
-            onClick={handleTemplateDownload}
-            size="small"
-            sx={{
-              backgroundColor: "primary.lighter",
-              border: "1px solid",
-              borderColor: "primary.light",
-              color: "primary.main",
-              px: 1,
-              height: 36,
-              borderRadius: "8px",
-              "&:hover": {
-                backgroundColor: "primary.100",
-                transform: "translateY(-1px)",
-                boxShadow: "0 2px 8px rgba(46, 125, 50, 0.15)",
-              },
-              transition: "all 0.2s ease",
-            }}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-              <Typography variant="body2">Download Template</Typography>
-              <DownloadIcon sx={{ fontSize: 20 }} />
-            </Box>
-          </IconButton>
-        </Tooltip>
-
-        <Tooltip title="Bulk Upload" componentsProps={{}}>
-          <IconButton
-            onClick={() => fileInputRef.current?.click()}
-            size="small"
-            sx={{
-              backgroundColor: "primary.dark",
-              border: "1px solid",
-              borderColor: "primary.light",
-              color: "white",
-              px: 1,
-              height: 36,
-              borderRadius: "8px",
-              "&:hover": {
-                transform: "translateY(-1px)",
-                boxShadow: "0 2px 8px rgba(46, 125, 50, 0.15)",
-              },
-              transition: "all 0.2s ease",
-            }}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-              <Typography variant="body2">Bulk Upload</Typography>
-              <UploadFileIcon sx={{ fontSize: 20 }} />
-            </Box>
-          </IconButton>
-        </Tooltip>
-      </Box>
-
-      <Button
-        onClick={handleAddDepartment}
-        variant="contained"
-        sx={{
-          background: "rgb(251, 68, 36)",
-          "&:hover": {
-            background: "rgb(251, 68, 36)",
-          },
-          px: 3,
-          py: 0.7,
-        }}
-      >
-        Add
-      </Button>
-    </Box>
-  </Box>
-</Drawer>
-
-
-      {/* <Dialog
+      <Drawer
+        anchor="left"
         open={showAddRoleDialog}
         onClose={() => {
           setShowAddRoleDialog(false);
           setNewRole("");
         }}
-        maxWidth="xs"
+        PaperProps={{
+          sx: {
+            borderRadius: "8px",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+            position: "absolute",
+            top: "30%",
+            left: "40%",
+            // transform: "translate(-50%, -50%)",
+            m: 0,
+            height: "auto", // dynamic height
+            maxHeight: "95vh", // prevent it from overflowin
+            overflow: "hidden", // avoid extra scrollbars
+            width: "350px",
+            animation: "slideInFromLeft 0.2s ease-in-out forwards",
+            opacity: 0, // Start with opacity 0
+            transform: "translateX(-50px)", // Start from left
+            "@keyframes slideInFromLeft": {
+              "0%": {
+                opacity: 0,
+                transform: "translateX(-50px)",
+              },
+              "100%": {
+                opacity: 1,
+                transform: "translateX(0)",
+              },
+            },
+          },
+        }}
       >
-        <DialogTitle>Add Role to {selectedDepartment?.name}</DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="New Role"
-            fullWidth
-            variant="outlined"
-            value={newRole}
-            onChange={(e) => setNewRole(e.target.value)}
+        <Box
+          sx={{
+            p: 2,
+            borderBottom: "1px solid #eee",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            backgroundColor:"primary.main"
+          }}
+        >
+          <Typography variant="h6"  sx={{color:"#ffff"}}>
+            Add Role to {selectedDepartment?.name}
+          </Typography>
+          <IconButton
             size="small"
-            sx={{ mt: 2 }}
-          />
-        </DialogContent>
-        <DialogActions>
+            onClick={() => {
+              setShowAddRoleDialog(false);
+              setNewRole("");
+            }}
+            sx={{
+              color: "#ffff",
+              border: "1px solid",
+              borderColor: "#ffff",
+              bgcolor: "error.lighter",
+              "&:hover": {
+                // bgcolor: "error.light",
+                transform: "rotate(180deg)",
+              },
+              transition: "all 0.3s ease",
+              borderRadius: "50%",
+            }}
+          >
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </Box>
+
+        <Box sx={{ p: 2, flexGrow: 1 }}>
+          <Card elevation={1} sx={{ borderRadius: 2 }}>
+            <CardContent>
+              <TextField
+                autoFocus
+                fullWidth
+                size="small"
+                label="New Role"
+                value={newRole}
+                onChange={(e) => setNewRole(e.target.value)}
+              />
+            </CardContent>
+          </Card>
+        </Box>
+
+        <Box
+          sx={{
+            p: 2,
+            display: "flex",
+            justifyContent: "flex-end",
+            gap: 1,
+            borderTop: "1px solid #eee",
+          }}
+        >
           <Button
             onClick={() => {
               setShowAddRoleDialog(false);
@@ -2348,147 +2277,125 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           >
             Cancel
           </Button>
-          <Button onClick={handleAddRole} color="primary" variant="contained">
+          <Button onClick={handleAddRole} variant="contained" color="primary" sx={{ background: "rgb(251, 68, 36)",}}>
             Add
           </Button>
-        </DialogActions>
-      </Dialog> */}
+        </Box>
+      </Drawer>
 
-
-<Drawer
-  anchor="left"
-  open={showAddRoleDialog}
-  onClose={() => {
-    setShowAddRoleDialog(false);
-    setNewRole("");
-  }}
-  
-
-  PaperProps={{
-    sx: {
-      borderRadius: "8px",
-      boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
-      position: "absolute",
-      top: "30%",
-      left: "40%",
-      // transform: "translate(-50%, -50%)",
-      m: 0,
-      height: "auto", // dynamic height
-      maxHeight: "95vh", // prevent it from overflowin
-      overflow: "hidden", // avoid extra scrollbars
-      width:"350px",
-      animation: "slideInFromLeft 0.2s ease-in-out forwards",
-                opacity: 0, // Start with opacity 0
-                transform: "translateX(-50px)", // Start from left
-                "@keyframes slideInFromLeft": {
-                  "0%": {
-                    opacity: 0,
-                    transform: "translateX(-50px)",
-                  },
-                  "100%": {
-                    opacity: 1,
-                    transform: "translateX(0)",
-                  }
-                }
-    },
-  }}
->
-  <Box sx={{ p: 2, borderBottom: "1px solid #eee", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-    <Typography variant="h6" fontWeight={600}>
-      Add Role to {selectedDepartment?.name}
-    </Typography>
-    <IconButton
-      size="small"
-      onClick={() => {
-        setShowAddRoleDialog(false);
-        setNewRole("");
-      }}
-      sx={{
-        color: "error.main",
-        border: "1px solid",
-        borderColor: "error.light",
-        bgcolor: "error.lighter",
-        "&:hover": {
-          bgcolor: "error.light",
-          transform: "rotate(180deg)",
-        },
-        transition: "all 0.3s ease",
-        borderRadius: "50%",
-      }}
-    >
-      <CloseIcon fontSize="small" />
-    </IconButton>
-  </Box>
-
-  <Box sx={{ p: 2, flexGrow: 1 }}>
-    <Card elevation={1} sx={{ borderRadius: 2 }}>
-      <CardContent>
-        <TextField
-          autoFocus
-          fullWidth
-          size="small"
-          label="New Role"
-          value={newRole}
-          onChange={(e) => setNewRole(e.target.value)}
-        />
-      </CardContent>
-    </Card>
-  </Box>
-
-  <Box sx={{ p: 2, display: "flex", justifyContent: "flex-end", gap: 1, borderTop: "1px solid #eee" }}>
-    <Button
-      onClick={() => {
-        setShowAddRoleDialog(false);
-        setNewRole("");
-      }}
-    >
-      Cancel
-    </Button>
-    <Button onClick={handleAddRole} variant="contained" color="primary">
-      Add
-    </Button>
-  </Box>
-</Drawer>
-
-
-      {/* <Dialog
+      <Drawer
+        anchor="left"
         open={editDialogOpen}
         onClose={() => setEditDialogOpen(false)}
-        maxWidth="sm"
+        PaperProps={{
+          sx: {
+            borderRadius: "8px",
+            // boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+            position: "absolute",
+            top: "30%",
+            left: "40%",
+            transform: "translate(-50%, -50%)",
+            m: 0,
+            height: "auto", // dynamic height
+            maxHeight: "95vh", // prevent it from overflowin
+            overflow: "hidden", // avoid extra scrollbars
+            width: "450px",
+            padding: "10px",
+            animation: "slideInFromLeft 0.2s ease-in-out forwards",
+            opacity: 0, // Start with opacity 0
+            transform: "translateX(-50px)", // Start from left
+            "@keyframes slideInFromLeft": {
+              "0%": {
+                opacity: 0,
+                transform: "translateX(-50px)",
+              },
+              "100%": {
+                opacity: 1,
+                transform: "translateX(0)",
+              },
+            },
+          },
+        }}
       >
-        <DialogTitle>Edit Department</DialogTitle>
-        <DialogContent>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 2 }}>
-            <TextField
-              size="small"
-              label="Department Name"
-              value={editedDepartment?.name || ""}
-              onChange={(e) =>
-                setEditedDepartment((prev) => ({
-                  ...prev,
-                  name: e.target.value,
-                }))
-              }
-              fullWidth
-              required
-            />
-            <TextField
-              size="small"
-              label="Display Name"
-              value={editedDepartment?.displayName || ""}
-              onChange={(e) =>
-                setEditedDepartment((prev) => ({
-                  ...prev,
-                  displayName: e.target.value.toUpperCase(),
-                }))
-              }
-              required
-            />
-          </Box>
-        </DialogContent>
-        <DialogActions>
+  
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            backgroundColor:"primary.main",
+          // borderRadius:"20px",
+            margin: 0,
+            padding:1
+            
+          }}
+        >
+          <Typography variant="h6" sx={{color:"#ffff"}}>
+            Edit Department
+          </Typography>
+          <IconButton
+            onClick={() => setEditDialogOpen(false)}
+            sx={{
+              color: "#ffff",
+              border: "1px solid",
+              borderColor: "#ffff",
+              bgcolor: "error.lighter",
+              "&:hover": {
+                // bgcolor: "error.light",
+                transform: "rotate(180deg)",
+              },
+              transition: "all 0.3s ease",
+              borderRadius: "50%",
+              size: "small"
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </Box>
+
+        {/* Form Fields */}
+        <Card elevation={1} sx={{ borderRadius: 2 }}>
+          <CardContent>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              <TextField
+                size="small"
+                label="Department Name"
+                fullWidth
+                required
+                value={editedDepartment?.name || ""}
+                onChange={(e) =>
+                  setEditedDepartment((prev) => ({
+                    ...prev,
+                    name: e.target.value,
+                  }))
+                }
+              />
+              <TextField
+                size="small"
+                label="Display Name"
+                fullWidth
+                required
+                value={editedDepartment?.displayName || ""}
+                onChange={(e) =>
+                  setEditedDepartment((prev) => ({
+                    ...prev,
+                    displayName: e.target.value.toUpperCase(),
+                  }))
+                }
+              />
+            </Box>
+          </CardContent>
+        </Card>
+
+        {/* Action Buttons */}
+        <Box
+          sx={{ display: "flex", justifyContent: "flex-end", gap: 1, mt: 3 }}
+        >
           <Button onClick={() => setEditDialogOpen(false)}>Cancel</Button>
           <Button
+          sx={{ background: "rgb(251, 68, 36)",}}
+            variant="contained"
+            color="primary"
             onClick={() => {
               setDepartments((prev) =>
                 prev.map((d) =>
@@ -2504,137 +2411,11 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 severity: "success",
               });
             }}
-            color="primary"
           >
             Save
           </Button>
-        </DialogActions>
-      </Dialog> */}
-
-
-
-<Drawer
-  anchor="left"
-  open={editDialogOpen}
-  onClose={() => setEditDialogOpen(false)}
-
-  PaperProps={{
-    sx: {
-      borderRadius: "8px",
-      // boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
-      position: "absolute",
-      top: "30%",
-      left: "40%",
-      transform: "translate(-50%, -50%)",
-      m: 0,
-      height: "auto", // dynamic height
-      maxHeight: "95vh", // prevent it from overflowin
-      overflow: "hidden", // avoid extra scrollbars
-      width:"450px",
-      padding:"10px",
-      animation: "slideInFromLeft 0.2s ease-in-out forwards",
-                opacity: 0, // Start with opacity 0
-                transform: "translateX(-50px)", // Start from left
-                "@keyframes slideInFromLeft": {
-                  "0%": {
-                    opacity: 0,
-                    transform: "translateX(-50px)",
-                  },
-                  "100%": {
-                    opacity: 1,
-                    transform: "translateX(0)",
-                  }
-                }
-    },
-  }}
->
-  {/* Header */}
-  <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-    <Typography variant="h6" fontWeight={600}>
-      Edit Department
-    </Typography>
-    <IconButton
-      onClick={() => setEditDialogOpen(false)}
-      sx={{
-        color: "error.main",
-        border: "1px solid",
-        borderColor: "error.light",
-        bgcolor: "error.lighter",
-        "&:hover": {
-          bgcolor: "error.light",
-          transform: "rotate(180deg)",
-        },
-        transition: "all 0.3s ease",
-        borderRadius: "50%",
-      }}
-    >
-      <CloseIcon />
-    </IconButton>
-  </Box>
-
- 
-
-  {/* Form Fields */}
-  <Card elevation={1} sx={{ borderRadius: 2 }}>
-    <CardContent>
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-        <TextField
-          size="small"
-          label="Department Name"
-          fullWidth
-          required
-          value={editedDepartment?.name || ""}
-          onChange={(e) =>
-            setEditedDepartment((prev) => ({
-              ...prev,
-              name: e.target.value,
-            }))
-          }
-        />
-        <TextField
-          size="small"
-          label="Display Name"
-          fullWidth
-          required
-          value={editedDepartment?.displayName || ""}
-          onChange={(e) =>
-            setEditedDepartment((prev) => ({
-              ...prev,
-              displayName: e.target.value.toUpperCase(),
-            }))
-          }
-        />
-      </Box>
-    </CardContent>
-  </Card>
-
-  {/* Action Buttons */}
-  <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1, mt: 3 }}>
-    <Button onClick={() => setEditDialogOpen(false)}>Cancel</Button>
-    <Button
-      variant="contained"
-      color="primary"
-      onClick={() => {
-        setDepartments((prev) =>
-          prev.map((d) =>
-            d.name === editedDepartment.originalName
-              ? { ...editedDepartment, name: editedDepartment.name }
-              : d
-          )
-        );
-        setEditDialogOpen(false);
-        setSnackbar({
-          open: true,
-          message: "Department updated successfully",
-          severity: "success",
-        });
-      }}
-    >
-      Save
-    </Button>
-  </Box>
-</Drawer>
-
+        </Box>
+      </Drawer>
 
       <Dialog
         open={deleteDialogOpen}
