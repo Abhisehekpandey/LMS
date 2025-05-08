@@ -409,28 +409,21 @@ export default function UserTable() {
     setDeleteUser(true);
   };
 
-  const handleStatusToggle = (rowId) => {
-    console.log(">>>>>aaaa")
-    console.log(">>>>bb", rowId)
-    console.log(">>>>>beforerows", rows)
+const handleStatusToggle = (userName) => {
+  setRowsData((prev) =>
+    prev.map((user) =>
+      user.name === userName ? { ...user, status: !user.status } : user
+    )
+  );
 
-    setRowsData((prev) =>
-      prev.map((d) =>
-        d.id === rowId ? { ...d, isActive: !d.isActive } : d
-      )
-    );
-    console.log(">>>>>afterrows", rows)
-    toast({
-      open: true,
-      message: `Department "${rowId.name}" ${
-        !rowId.isActive ? "activated" : "deactivated"
-      }`,
-      message: `Department "${rowId.name}" ${
-        !rowId.isActive ? "activated" : "deactivated"
-      }`,
-      severity: "success",
-    });
-  };
+  const updatedUser = rowsData.find((user) => user.name === userName);
+  toast.success(
+    `User "${updatedUser?.name}" has been ${
+      updatedUser?.status ? "deactivated" : "activated"
+    }`
+  );
+};
+
 
   const handleCreateUser = () => {
     setCreateUser(true);
@@ -567,14 +560,14 @@ export default function UserTable() {
                 <TableCell align="center">Department</TableCell>
                 <TableCell align="center">Role</TableCell>
                 <TableCell align="center">User email</TableCell>
-                <TableCell align="center">Storage used</TableCell>
-                <TableCell align="center">Manage storage</TableCell>
-                <TableCell align="center">Active license</TableCell>
+                <TableCell align="center" sx={{ whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden", maxWidth: 140 }}>Storage used</TableCell>
+                <TableCell align="center" sx={{ whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden", maxWidth: 140 }}>Manage storage</TableCell>
+                <TableCell align="center" sx={{ whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden", maxWidth: 140 }}>Active license</TableCell>
                 <TableCell align="center">Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {rows
+              {rowsData
                 .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                 .map((row, index) => {
                   const isItemSelected = isSelected(row.id);
@@ -663,7 +656,7 @@ export default function UserTable() {
                                 checked={row.status}
                                 onChange={() => {
                                   console.log("Switch clicked:", row); // confirm this runs
-                                  handleStatusToggle(row.id);
+                                  handleStatusToggle(row.name);
                                 }}
                               />
                             }
