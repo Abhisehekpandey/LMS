@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Paper,
@@ -55,6 +55,7 @@ import DeleteUser from "./DeleteUser";
 import Migration from "./Migration";
 import CreateUser from "./CreateUser";
 import { toast } from "react-toastify";
+import { CircularProgress, keyframes } from '@mui/material';
 
 const CustomSwitch = styled(Switch)(({ theme, checked }) => ({
   "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
@@ -71,13 +72,44 @@ const CustomSwitch = styled(Switch)(({ theme, checked }) => ({
   },
 }));
 
+
+const fadeIn = keyframes`
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+`;
+
+// Styled overlay
+const LoaderWrapper = styled(Box)(({ theme }) => ({
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  width: '100vw',
+  height: '100vh',
+  background: 'rgba(255, 255, 255, 0.75)',
+  backdropFilter: 'blur(5px)',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  zIndex: 1300,
+  animation: `${fadeIn} 0.5s ease-in-out`,
+}));
+
+// Styled CircularProgress
+const CustomSpinner = styled(CircularProgress)(({ theme }) => ({
+  color: theme.palette.primary.main,
+  width: '60px !important',
+  height: '80px !important',
+  thickness: 2,
+}));
+
+
 const rows = [
   {
-    userName: "kunal7791",
+
     id: "1",
     name: "kunal kamboj",
-    department: "frontend",
-    role: "software engineer",
+    department: "Frontend",
+    role: "Software Engineer",
     email: "kunal@appolo.com",
     storageUsed: "200MB",
     manageStorage: "1 GB",
@@ -86,11 +118,11 @@ const rows = [
     phone: "1234567890",
   },
   {
-    userName: "pratibha44",
+
     id: "2",
-    name: "pratibha thakur",
-    department: "frontend",
-    role: "frontend developer",
+    name: "Pratibha thakur",
+    department: "Frontend",
+    role: "Frontend Developer",
     email: "pratibha@appolo.com",
     storageUsed: "200MB",
     manageStorage: "1 GB",
@@ -99,11 +131,11 @@ const rows = [
     phone: "9876543201",
   },
   {
-    userName: "abhishek99",
+
     id: "3",
-    name: "abhishek panday",
+    name: "Abhishek Panday",
     department: "Frontend",
-    role: "software developer",
+    role: "Software Developer",
     email: "abhishek@appolo.com",
     storageUsed: "800MB",
     manageStorage: "1 GB",
@@ -112,11 +144,11 @@ const rows = [
     phone: "1234567890",
   },
   {
-    userName: "dhruv77",
+
     id: "4",
-    name: "dhruv sethi",
-    department: "backend",
-    role: "manager",
+    name: "Dhruv Sethi",
+    department: "Backend",
+    role: "Manager",
     email: "dhruv@appolo.com",
     storageUsed: "800MB",
     manageStorage: "1 GB",
@@ -125,11 +157,11 @@ const rows = [
     phone: "1234567890",
   },
   {
-    userName: "manish48",
+
     id: "5",
-    name: "manish yadav",
-    department: "backend",
-    role: "software engineer",
+    name: "Manish Yadav",
+    department: "Backend",
+    role: "Software engineer",
     email: "manish@appolo.com",
     storageUsed: "800MB",
     manageStorage: "1 GB",
@@ -138,11 +170,11 @@ const rows = [
     phone: "1234567890",
   },
   {
-    userName: "prince90",
+
     id: "6",
-    name: "prince tiwari",
-    department: "backend",
-    role: "backend developer",
+    name: "Prince Tiwari",
+    department: "Backend",
+    role: "Backend developer",
     email: "prince@appolo.com",
     storageUsed: "800MB",
     manageStorage: "1 GB",
@@ -151,11 +183,11 @@ const rows = [
     phone: "1234567890",
   },
   {
-    userName: "dheeraj45",
+
     id: "7",
-    name: "dheeraj",
+    name: "Dheeraj",
     department: "Frontend",
-    role: "senior frontend developer",
+    role: "Senior Frontend Developer",
     email: "dheeraj@appolo.com",
     storageUsed: "800MB",
     manageStorage: "1 GB",
@@ -164,11 +196,11 @@ const rows = [
     phone: "1234567890",
   },
   {
-    userName: "satyam38",
+
     id: "8",
-    name: "satyam aggarwal",
+    name: "Satyam Aggarwal",
     department: "Frontend",
-    role: "senior frontend developer",
+    role: "Senior Frontend Developer",
     email: "satyam@appolo.com",
     storageUsed: "800MB",
     manageStorage: "1 GB",
@@ -177,11 +209,11 @@ const rows = [
     phone: "1234567890",
   },
   {
-    userName: "shivangi807",
+
     id: "9",
-    name: "shivangi dhavan",
-    department: "backend",
-    role: "software engineer",
+    name: "Shivangi Dhavan",
+    department: "Backend",
+    role: "Software Engineer",
     email: "shivangi@appolo.com",
     storageUsed: "800MB",
     manageStorage: "1 GB",
@@ -190,11 +222,11 @@ const rows = [
     phone: "1234567890",
   },
   {
-    userName: "arpita809",
+
     id: "10",
-    name: "arpita shukla ",
+    name: "Arpita Shukla ",
     department: "devops",
-    role: "senior devops engineer",
+    role: "Senior Devops Engineer",
     email: "arpita@appolo.com",
     storageUsed: "800MB",
     manageStorage: "1 GB",
@@ -277,7 +309,7 @@ const Transition = React.forwardRef(function Transition(props, ref) {
       direction="right"
       ref={ref}
       {...props}
-     
+
     />
   );
 });
@@ -297,6 +329,7 @@ export default function UserTable() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editData, setEditData] = useState({});
   const [Storage, setStorage] = React.useState("");
+  const [loading, setLoading] = useState(true);
 
   const handleChangeStorage = (event) => {
     setStorage(event.target.value);
@@ -377,19 +410,22 @@ export default function UserTable() {
   };
 
   const handleStatusToggle = (rowId) => {
-    setRowData((prev) =>
+    console.log(">>>>>aaaa")
+    console.log(">>>>bb", rowId)
+    console.log(">>>>>beforerows", rows)
+
+    setRowsData((prev) =>
       prev.map((d) =>
-        d.name === rowId.name ? { ...d, isActive: !d.isActive } : d
+        d.id === rowId ? { ...d, isActive: !d.isActive } : d
       )
     );
+    console.log(">>>>>afterrows", rows)
     toast({
       open: true,
-      message: `Department "${rowId.name}" ${
-        !rowId.isActive ? "activated" : "deactivated"
-      }`,
-      message: `Department "${rowId.name}" ${
-        !rowId.isActive ? "activated" : "deactivated"
-      }`,
+      message: `Department "${rowId.name}" ${!rowId.isActive ? "activated" : "deactivated"
+        }`,
+      message: `Department "${rowId.name}" ${!rowId.isActive ? "activated" : "deactivated"
+        }`,
       severity: "success",
     });
   };
@@ -411,13 +447,7 @@ export default function UserTable() {
     setPage(0);
   };
 
-  // const handleSelectAllClick = (event) => {
-  //   if (event.target.checked) {
-  //     setSelectAllData(true); // Open the dialog
-  //   } else {
-  //     setSelected([]); // Deselect all
-  //   }
-  // };
+
 
   const handleSelectAllClick = (event) => {
     if (event.target.checked) {
@@ -469,6 +499,18 @@ export default function UserTable() {
   };
 
   const isSelected = (id) => selected.indexOf(id) !== -1;
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 300);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (loading) {
+    return (
+      <LoaderWrapper>
+        <CustomSpinner />
+      </LoaderWrapper>
+    );
+  }
 
   return (
     <Box
@@ -509,15 +551,7 @@ export default function UserTable() {
                 sx={{ boxShadow: "0 -2px 8px 0 rgba(0, 0, 0, 0.2) !important" }}
               >
                 <TableCell padding="checkbox">
-                  {/* <Checkbox
-                  indeterminate={
-                    selected.length > 0 && selected.length < rows.length
-                  }
-                  checked={
-                    rowsData.length > 0 && selected.length === rowsData.length
-                  }
-                  onChange={handleSelectAllClick}
-                /> */}
+
                   <Checkbox
                     indeterminate={
                       selected.length > 0 && selected.length < rows.length
@@ -558,12 +592,7 @@ export default function UserTable() {
                           onChange={() => handleClick(row)}
                         />
                       </TableCell>
-                      {/* <TableCell
-                        align="center"
-                        sx={{ padding: "10px 10px 10px 10px !important" }}
-                      >
-                        {row.userName}
-                      </TableCell> */}
+
                       <TableCell
                         align="center"
                         sx={{ padding: "10px 10px 10px 10px !important" }}
@@ -629,10 +658,10 @@ export default function UserTable() {
                           <FormControlLabel
                             control={
                               <IOSSwitch
-                                checked={row.status}
+                                // checked={row.status}
                                 onChange={() => {
                                   console.log("Switch clicked:", row); // confirm this runs
-                                  handleStatusToggle(row);
+                                  handleStatusToggle(row.id);
                                 }}
                               />
                             }
@@ -647,7 +676,7 @@ export default function UserTable() {
                           padding: "10px 10px 10px 10px !important",
                         }}
                       >
-                        {/* {hoveredRow === row.id && ( */}
+
                         <>
                           <IconButton
                             size="small"
@@ -663,21 +692,7 @@ export default function UserTable() {
                             <Delete />
                           </IconButton>
                         </>
-                        <>
-                          <IconButton
-                            size="small"
-                            onClick={(e) => handleEdit(e, row)}
-                          >
-                            <Edit />
-                          </IconButton>
-                          <IconButton
-                            size="small"
-                            color="error"
-                            onClick={handleDelete}
-                          >
-                            <Delete />
-                          </IconButton>
-                        </>
+
                         {/* )} */}
                       </TableCell>
                     </TableRow>
@@ -1021,6 +1036,21 @@ export default function UserTable() {
           TransitionComponent={Transition}
           aria-describedby="alert-dialog-slide-description"
           maxWidth="md"
+          sx={{
+            animation: "slideInFromLeft 0.2s ease-in-out forwards",
+            opacity: 0, // Start with opacity 0
+            transform: "translateX(-50px)", // Start from left
+            "@keyframes slideInFromLeft": {
+              "0%": {
+                opacity: 0,
+                transform: "translateX(-50px)",
+              },
+              "100%": {
+                opacity: 1,
+                transform: "translateX(0)",
+              },
+            },
+          }}
         >
           <CreateUser handleClose={() => setCreateUser(false)} />
         </Dialog>
@@ -1030,6 +1060,21 @@ export default function UserTable() {
           open={editDialogOpen}
           onClose={() => setEditDialogOpen(false)}
           maxWidth="sm"
+          sx={{
+            animation: "slideInFromLeft 0.2s ease-in-out forwards",
+            opacity: 0, // Start with opacity 0
+            transform: "translateX(-50px)", // Start from left
+            "@keyframes slideInFromLeft": {
+              "0%": {
+                opacity: 0,
+                transform: "translateX(-50px)",
+              },
+              "100%": {
+                opacity: 1,
+                transform: "translateX(0)",
+              },
+            },
+          }}
         >
           <DialogTitle
             sx={{
@@ -1039,12 +1084,14 @@ export default function UserTable() {
               justifyContent: "space-between",
               alignItems: "center",
               p: 1,
+              backgroundColor: "primary.main"
             }}
           >
             <Typography
               variant="h6"
               sx={{
                 fontFamily: '"Be Vietnam", sans-serif',
+                color: "#ffff"
               }}
             >
               EDIT USER
@@ -1053,15 +1100,15 @@ export default function UserTable() {
               onClick={() => setEditDialogOpen(false)}
               size="small"
               sx={{
-                color: "error.main",
+                color: "#ffff",
                 border: "1px solid",
-                borderColor: "error.light",
+                borderColor: "#ffff",
                 bgcolor: "error.lighter",
                 borderRadius: "50%",
                 position: "relative",
                 "&:hover": {
-                  color: "error.dark",
-                  borderColor: "error.main",
+                  color: "#ffff",
+                  borderColor: "#ffff",
                   bgcolor: "error.lighter",
                   transform: "rotate(180deg)",
                 },
@@ -1079,19 +1126,7 @@ export default function UserTable() {
           <DialogContent dividers >
             {/* First row */}
             <Grid container spacing={2}>
-              <Grid item xs={4}>
-                <TextField
-                  size="small"
-                  name="userName"
-                  label="Username"
-                  type="text"
-                  fullWidth
-                  variant="outlined"
-                  value={editData.userName || ""}
-                  // onChange={handleInputChange}
-                  // onChange={handleInputChange}
-                />
-              </Grid>
+
               <Grid item xs={4}>
                 <TextField
                   size="small"
@@ -1101,8 +1136,7 @@ export default function UserTable() {
                   fullWidth
                   variant="outlined"
                   value={editData.name || ""}
-                  // onChange={handleInputChange}
-                  // onChange={handleInputChange}
+
                 />
               </Grid>
               <Grid item xs={4}>
@@ -1114,8 +1148,7 @@ export default function UserTable() {
                   fullWidth
                   variant="outlined"
                   value={editData.department || ""}
-                  // onChange={handleInputChange}
-                  // onChange={handleInputChange}
+
                 />
               </Grid>
               <Grid item xs={6}>
@@ -1127,8 +1160,7 @@ export default function UserTable() {
                   fullWidth
                   variant="outlined"
                   value={editData.role || ""}
-                  // onChange={handleInputChange}
-                  // onChange={handleInputChange}
+
                 />
               </Grid>
               <Grid item xs={6}>
@@ -1161,10 +1193,7 @@ export default function UserTable() {
                   type="tel"
                   variant="outlined"
                   value={editData.phone || ""}
-                  // onChange={handleInputChange}
-                  // sx={{ width: "40%" }}
-                  // onChange={handleInputChange}
-                  // sx={{ width: "40%" }}
+
                 />
               </Grid>
               <Grid item xs={6}>
@@ -1176,17 +1205,14 @@ export default function UserTable() {
                   fullWidth
                   variant="outlined"
                   value={editData.storageUsed || ""}
-                  // onChange={handleInputChange}
-                  // onChange={handleInputChange}
+
                 />
               </Grid>
             </Grid>
           </DialogContent>
 
           <DialogActions>
-            {/* <Button onClick={() => setEditDialogOpen(false)} color="inherit">
-              Cancel
-            </Button> */}
+
             <Button
               // onClick={saveEditedUser}
               variant="contained"

@@ -1,4 +1,4 @@
-import { Add, Dashboard, Group, Warning } from "@mui/icons-material";
+import { Add, ArrowDownward, ArrowUpward, Dashboard, Group, Warning } from "@mui/icons-material";
 import {
   alpha,
   Box,
@@ -23,6 +23,8 @@ import {
 } from "@mui/material";
 import React, { useEffect, useState } from "react";
 import ReactECharts from "echarts-for-react";
+import { ArrowDropUp, ArrowDropDown, SortByAlpha, FilterList } from '@mui/icons-material';
+
 
 const chartColors = {
   primary: "#1976d2", // Main blue color
@@ -91,6 +93,8 @@ const AngelBot = () => {
     { id: 5, name: "abhimanyu", storageUsed: 50, storageAllocated: 200 },
     { id: 6, name: "manish", storageUsed: 150, storageAllocated: 200 },
     { id: 7, name: "prince", storageUsed: 50, storageAllocated: 200 },
+    { id: 8, name: "kunal", storageUsed: 50, storageAllocated: 50 },
+
   ]);
 
   useEffect(() => {
@@ -452,8 +456,6 @@ const AngelBot = () => {
   };
 
   return (
-
-
     <Box className="child-container">
       <div className="child">
         <Box
@@ -793,22 +795,82 @@ const AngelBot = () => {
                   <Typography variant="h6" color="primary">
                     Top User Storage Usage
                   </Typography>
+
+                  <FormControl size="small" sx={{ display: "flex", marginLeft: "auto" }}>
+                    <Select
+                      value={userSortOption}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setUserSortOption(value);
+                        sortUsers(value); // Call sort logic
+                      }}
+                      displayEmpty
+                      renderValue={(value) => {
+                        switch (value) {
+                          case "high":
+                            return (
+                              <>
+                                <FilterList />
+                              </>
+
+                            );
+                          case "low":
+                            return (
+                              <>
+                                <ArrowDownward />
+                              </>
+
+                            );
+                          case "az":
+                            return (
+                              // <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                              <>
+                                <SortByAlpha />
+                              </>
+                              // </div>
+                            );
+                          case "za":
+                            return (
+                              // <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                              <>
+                                <SortByAlpha sx={{ transform: "rotate(180deg)" }} />
+                              </>
+                              // </div>
+                            );
+                          default:
+                            return null;
+                        }
+                      }}
+                    >
+                      <MenuItem value="high">
+                        {/* <div style={{ display: "flex", alignItems: "center", gap: "10px" }}> */}
+                        High Usage
+                        <ArrowUpward />
+                        {/* </div> */}
+                      </MenuItem>
+                      <MenuItem value="low">
+                        {/* <div style={{ display: "flex", alignItems: "center", gap: "10px" }}> */}
+                        Low Usage
+                        <ArrowDownward />
+                        {/* </div> */}
+                      </MenuItem>
+                      <MenuItem value="az">
+                        {/* <div style={{ display: "flex", alignItems: "center", gap: "10px" }}> */}
+                        A-Z
+                        {/* </div> */}
+                      </MenuItem>
+                      <MenuItem value="za">
+                        {/* <div style={{ display: "flex", alignItems: "center", gap: "10px" }}> */}
+                        Z-A
+                        {/* </div> */}
+                      </MenuItem>
+                    </Select>
+                  </FormControl>
+
+
+
                 </Box>
-                <FormControl size="small">
-                  <Select
-                    value={userSortOption}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      setUserSortOption(value);
-                      sortUsers(value); // Call sort logic
-                    }}
-                  >
-                    <MenuItem value="high">High Usage</MenuItem>
-                    <MenuItem value="low">Low Usage</MenuItem>
-                    <MenuItem value="az">A-Z</MenuItem>
-                    <MenuItem value="za">Z-A</MenuItem>
-                  </Select>
-                </FormControl>
+
                 <Box>
                   {getSortedStorageUsers
                     .slice(
@@ -1035,7 +1097,6 @@ const AngelBot = () => {
         </Box>
       </div>
     </Box>
-
   );
 };
 
