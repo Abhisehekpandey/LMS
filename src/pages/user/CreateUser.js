@@ -41,7 +41,7 @@ const CreateUser = ({ handleClose }) => {
     }
   }, [expandedIndex]);
 
-  const storageOptions = ["10GB", "20GB", "25GB","40GB","50GB", "60GB","100GB","200GB","500GB"];
+  const storageOptions = ["10GB", "20GB", "25GB", "40GB", "50GB", "60GB", "100GB", "200GB", "500GB"];
   const storageAllocation = ["25GB", "50GB", "100GB", "200GB", "500GB"];
   const departments = ["HR", "IT", "Finance", "Sales"];
   const rolesByDepartment = {
@@ -93,117 +93,117 @@ const CreateUser = ({ handleClose }) => {
     <>
       {/* <DialogTitle>ADD NEW USERS</DialogTitle> */}
       <DialogTitle
-              sx={{
-                
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                p: 1,
-                
-                backgroundColor:"primary.main"
-                
-              }}
-            >
-              <Typography
-                variant="h6"
-                sx={{
-                  alignItems: "center",
-                  display: "flex",
-                  fontFamily: '"Be Vietnam", sans-serif',
-                  color:"#ffff"
-                }}
-              >
-                ADD NEW USER
-              </Typography>
-      
-              <IconButton
-                onClick={handleClose}
-                size="small"
-                sx={{
-                  color: "#ffff",
-                  width: 32,
-                  height: 32,
-                  border: "1px solid",
-                  borderColor: "#ffff",
-                  bgcolor: "error.lighter",
-                  borderRadius: "50%",
-                  position: "relative",
-                  "&:hover": {
-                   
-                    transform: "rotate(180deg)",
-                  },
-                  transition: "transform 0.3s ease",
-                }}
-              >
-                <Close
-                  sx={{
-                    fontSize: "1rem",
-                    transition: "transform 0.2s ease",
-                  }}
-                />
-              </IconButton>
-            </DialogTitle>
-            
+        sx={{
+
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          p: 1,
+
+          backgroundColor: "primary.main"
+
+        }}
+      >
+        <Typography
+          variant="h6"
+          sx={{
+            alignItems: "center",
+            display: "flex",
+            fontFamily: '"Be Vietnam", sans-serif',
+            color: "#ffff"
+          }}
+        >
+          ADD NEW USER
+        </Typography>
+
+        <IconButton
+          onClick={handleClose}
+          size="small"
+          sx={{
+            color: "#ffff",
+            width: 32,
+            height: 32,
+            border: "1px solid",
+            borderColor: "#ffff",
+            bgcolor: "error.lighter",
+            borderRadius: "50%",
+            position: "relative",
+            "&:hover": {
+
+              transform: "rotate(180deg)",
+            },
+            transition: "transform 0.3s ease",
+          }}
+        >
+          <Close
+            sx={{
+              fontSize: "1rem",
+              transition: "transform 0.2s ease",
+            }}
+          />
+        </IconButton>
+      </DialogTitle>
+
       <DialogContent dividers>
-         <div style={{ display: "flex", gap: "10px", marginLeft:"230px" ,marginBottom:"15px" }}>
-                  <Button
-                    component="a"
-                    href="/templates/user_template.csv"
-                    download
-                    sx={{
-                      backgroundColor: "primary.lighter",
-                      border: "1px solid",
-                      borderColor: "primary.light",
-                      color: "primary.main",
-                      "&:hover": {
-                        backgroundColor: "primary.100",
-                        transform: "translateY(-1px)",
-                        boxShadow: "0 2px 8px rgba(25, 118, 210, 0.15)",
-                      },
-                      transition: "all 0.2s ease",
-                      borderRadius: "8px",
-                    }}
-                    endIcon={<Download sx={{ fontSize: 20 }} />}
-                  >
-                    Download Template
-                  </Button>
-                  <Button
-                    sx={{
-                      // backgroundColor: "success.lighter",
-                      border: "1px solid",
-                      borderColor: "success.light",
-                      color: "success.main",
-                      "&:hover": {
-                        //   backgroundColor: "success.100",
-                        transform: "translateY(-1px)",
-                        boxShadow: "0 2px 8px rgba(46, 125, 50, 0.15)",
-                      },
-                      transition: "all 0.2s ease",
-                      color: "white",
-                      borderRadius: "8px",
-                    }}
-                    color="primary"
-                    endIcon={<UploadFile />}
-                    variant="contained"
-                    onClick={() => document.getElementById("bulk-upload-input").click()}
-                  >
-                    Bulk Upload
-                  </Button>
-                  <input
-                    id="bulk-upload-input"
-                    type="file"
-                    style={{ display: "none" }}
-                    accept=".csv" // File type jo allowed hai
-                    onChange={handleFileChange} // File select hone par handleFileChange chalega
-                  />
-        
-                  {/* File name dikhana */}
-                  {fileName && (
-                    <Typography variant="body2" sx={{ mt: 2 }}>
-                      Selected File: {fileName}
-                    </Typography>
-                  )}
-                </div>
+        <div style={{ display: "flex", gap: "10px", marginLeft: "230px", marginBottom: "15px" }}>
+          <Button
+            component="a"
+            href="/templates/user_template.csv"
+            download
+            sx={{
+              backgroundColor: "primary.lighter",
+              border: "1px solid",
+              borderColor: "primary.light",
+              color: "primary.main",
+              "&:hover": {
+                backgroundColor: "primary.100",
+                transform: "translateY(-1px)",
+                boxShadow: "0 2px 8px rgba(25, 118, 210, 0.15)",
+              },
+              transition: "all 0.2s ease",
+              borderRadius: "8px",
+            }}
+            endIcon={<Download sx={{ fontSize: 20 }} />}
+          >
+            Download Template
+          </Button>
+          <Button
+            sx={{
+              // backgroundColor: "success.lighter",
+              border: "1px solid",
+              borderColor: "success.light",
+              color: "success.main",
+              "&:hover": {
+                //   backgroundColor: "success.100",
+                transform: "translateY(-1px)",
+                boxShadow: "0 2px 8px rgba(46, 125, 50, 0.15)",
+              },
+              transition: "all 0.2s ease",
+              color: "white",
+              borderRadius: "8px",
+            }}
+            color="primary"
+            endIcon={<UploadFile />}
+            variant="contained"
+            onClick={() => document.getElementById("bulk-upload-input").click()}
+          >
+            Bulk Upload
+          </Button>
+          <input
+            id="bulk-upload-input"
+            type="file"
+            style={{ display: "none" }}
+            accept=".csv" // File type jo allowed hai
+            onChange={handleFileChange} // File select hone par handleFileChange chalega
+          />
+
+          {/* File name dikhana */}
+          {fileName && (
+            <Typography variant="body2" sx={{ mt: 2 }}>
+              Selected File: {fileName}
+            </Typography>
+          )}
+        </div>
         <Formik
           initialValues={initialValues}
           validationSchema={validationSchema}
@@ -228,13 +228,14 @@ const CreateUser = ({ handleClose }) => {
                           key={index}
                           ref={isExpanded ? lastFieldRef : null}
                           elevation={3}
-                          sx={{ padding: isExpanded ? 2 : 1, mb: 2, bgcolor: isExpanded ? 'background.paper' : 'grey.100',borderRadius:"20px" }}
+                          sx={{ padding: isExpanded ? 2 : 1, mb: 2, bgcolor: isExpanded ? 'background.paper' : 'grey.100', borderRadius: "20px" }}
                           onClick={() => setExpandedIndex(index)}
                         >
                           {isExpanded ? (
                             <Grid container spacing={2}>
                               <Grid item xs={4}>
                                 <TextField
+                                  autoComplete="off"
                                   label="Full Name"
                                   name={`users[${index}].name`}
                                   value={user.name}
@@ -248,6 +249,7 @@ const CreateUser = ({ handleClose }) => {
                               <Grid item xs={4}>
                                 <TextField
                                   label="Email"
+                                  autoComplete="off"
                                   name={`users[${index}].email`}
                                   value={user.email}
                                   onChange={formik.handleChange}
@@ -258,9 +260,10 @@ const CreateUser = ({ handleClose }) => {
                                 />
                               </Grid>
                               <Grid item xs={4}>
-                                
+
                                 <TextField
                                   label="Phone Number"
+                                  autoComplete="off"
                                   name={`users[${index}].phone`}
                                   value={user.phone}
                                   onChange={formik.handleChange}
@@ -276,7 +279,7 @@ const CreateUser = ({ handleClose }) => {
                                   value={user.storage || ""}
                                   onChange={(e, value) => formik.setFieldValue(`users[${index}].storage`, value)}
                                   renderInput={(params) => (
-                                    <TextField {...params} label="Storage" size="small" fullWidth />
+                                    <TextField {...params} autoComplete="off" label="Storage" size="small" fullWidth />
                                   )}
                                 />
                               </Grid>
@@ -286,7 +289,7 @@ const CreateUser = ({ handleClose }) => {
                                   value={user.department || ""}
                                   onChange={(e, value) => formik.setFieldValue(`users[${index}].department`, value)}
                                   renderInput={(params) => (
-                                    <TextField {...params} label="Department" size="small" fullWidth />
+                                    <TextField {...params} autoComplete="off" label="Department" size="small" fullWidth />
                                   )}
                                   ListboxComponent={({ children, ...props }) => (
                                     <ul {...props}>
@@ -313,7 +316,7 @@ const CreateUser = ({ handleClose }) => {
                                   value={user.role || ""}
                                   onChange={(e, value) => formik.setFieldValue(`users[${index}].role`, value)}
                                   renderInput={(params) => (
-                                    <TextField {...params} label="Role" size="small" fullWidth />
+                                    <TextField {...params} autoComplete="off" label="Role" size="small" fullWidth />
                                   )}
                                   ListboxComponent={({ children, ...props }) => (
                                     <ul {...props}>
@@ -340,11 +343,11 @@ const CreateUser = ({ handleClose }) => {
                                   value={user.reportingManager || ""}
                                   onChange={(e, value) => formik.setFieldValue(`users[${index}].reportingManager`, value)}
                                   renderInput={(params) => (
-                                    <TextField {...params} label="Reporting Manager" size="small" fullWidth />
+                                    <TextField {...params} autoComplete="off" label="Reporting Manager" size="small" fullWidth />
                                   )}
                                 />
                               </Grid>
-                              <Grid item xs={12} >
+                              {/* <Grid item xs={12} >
                                 <IconButton
                                   onClick={() => remove(index)}
                                   disabled={formik.values.users.length === 1}
@@ -352,7 +355,14 @@ const CreateUser = ({ handleClose }) => {
                                 >
                                   <Close />
                                 </IconButton>
-                              </Grid>
+                              </Grid> */}
+                              {formik.values.users.length > 1 && (
+                                <Grid item xs={12}>
+                                  <IconButton onClick={() => remove(index)} color="error">
+                                    <Close />
+                                  </IconButton>
+                                </Grid>
+                              )}
                             </Grid>
                           ) : (
                             <Typography variant="body2">
@@ -363,110 +373,112 @@ const CreateUser = ({ handleClose }) => {
                       );
                     })}
 
-                    <div style={{  display: "flex", gap: "550px", }}>
-                    <Button
-                      variant="outlined"
-                      startIcon={<Add />}
-                      onClick={() => {
-                        const newIndex = formik.values.users.length;
-                        setExpandedIndex(newIndex);
-                        push({
-                          name: "",
-                          email: "",
-                          phone: "",
-                          storage: "",
-                          role: "",
-                          department: "",
-                          reportingManager: "",
-                        });
-                      }}
-                    >
-                      Add Another User
-                    </Button>
+                    <div style={{ display: "flex", gap: "550px", }}>
+                      <Button
+                        variant="outlined"
+                        startIcon={<Add />}
+                        onClick={() => {
+                          const newIndex = formik.values.users.length;
+                          setExpandedIndex(newIndex);
+                          push({
+                            name: "",
+                            email: "",
+                            phone: "",
+                            storage: "",
+                            role: "",
+                            department: "",
+                            reportingManager: "",
+                          });
+                        }}
+                      >
+                        Add Another User
+                      </Button>
 
-                    <Button
-                  type="submit"
-                  variant="contained"
-                  sx={{ backgroundColor: "rgb(251, 68, 36)", color: "white" }}
-                >
-                  ADD USERS
-                </Button>
-                </div>
-                  
+                      <Button
+                        type="submit"
+                        variant="contained"
+                        sx={{ backgroundColor: "rgb(251, 68, 36)", color: "white" }}
+                      >
+                        ADD USERS
+                      </Button>
+                    </div>
+
                   </>
                 )}
               </FieldArray>
-             
+
             </Form>
           )}
         </Formik>
       </DialogContent>
-      
-       <Dialog open={addDepartment} onClose={() => setAddDepartment(false)} fullWidth sx={{ animation: "slideInFromLeft 0.2s ease-in-out forwards",
-          opacity: 0, // Start with opacity 0
-          transform: "translateX(-50px)", // Start from left
-          "@keyframes slideInFromLeft": {
-            "0%": {
-              opacity: 0,
-              transform: "translateX(-50px)",
-            },
-            "100%": {
-              opacity: 1,
-              transform: "translateX(0)",
-            },
-          },}}>
-       
-         <DialogTitle
-                  sx={{
-                    pb: 1,
-                    borderBottom: "1px solid #eee",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    p: 1,
-                    backgroundColor:"primary.main"
-                  }}
-                >
-                  <Typography
-                    variant="h6"
-                    sx={{
-                      fontFamily: '"Be Vietnam", sans-serif',
-                      color:"#ffff"
-                    }}
-                  >
-                    ADD NEW DEPARTMENT
-                  </Typography>
-                  <IconButton
-                    onClick={() => setAddDepartment(false)}
-                    size="small"
-                    sx={{
-                      color: "#ffff",
-                      width: 32,
-                      height: 32,
-                      border: "1px solid",
-                      borderColor: "#ffff",
-                      bgcolor: "error.lighter",
-                      borderRadius: "50%",
-                      position: "relative",
-                      "&:hover": {
-                        // color: "error.dark",
-                        // borderColor: "error.main",
-                        // bgcolor: "error.lighter",
-                        transform: "rotate(180deg)",
-                      },
-                      transition: "transform 0.3s ease",
-                    }}
-                  >
-                    <Close
-                      sx={{
-                        fontSize: "1.1rem",
-                        transition: "transform 0.2s ease",
-                      }}
-                    />
-                  </IconButton>
-                </DialogTitle>
+
+      <Dialog open={addDepartment} onClose={() => setAddDepartment(false)} fullWidth sx={{
+        animation: "slideInFromLeft 0.2s ease-in-out forwards",
+        opacity: 0, // Start with opacity 0
+        transform: "translateX(-50px)", // Start from left
+        "@keyframes slideInFromLeft": {
+          "0%": {
+            opacity: 0,
+            transform: "translateX(-50px)",
+          },
+          "100%": {
+            opacity: 1,
+            transform: "translateX(0)",
+          },
+        },
+      }}>
+
+        <DialogTitle
+          sx={{
+            pb: 1,
+            borderBottom: "1px solid #eee",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            p: 1,
+            backgroundColor: "primary.main"
+          }}
+        >
+          <Typography
+            variant="h6"
+            sx={{
+              fontFamily: '"Be Vietnam", sans-serif',
+              color: "#ffff"
+            }}
+          >
+            ADD NEW DEPARTMENT
+          </Typography>
+          <IconButton
+            onClick={() => setAddDepartment(false)}
+            size="small"
+            sx={{
+              color: "#ffff",
+              width: 32,
+              height: 32,
+              border: "1px solid",
+              borderColor: "#ffff",
+              bgcolor: "error.lighter",
+              borderRadius: "50%",
+              position: "relative",
+              "&:hover": {
+                // color: "error.dark",
+                // borderColor: "error.main",
+                // bgcolor: "error.lighter",
+                transform: "rotate(180deg)",
+              },
+              transition: "transform 0.3s ease",
+            }}
+          >
+            <Close
+              sx={{
+                fontSize: "1.1rem",
+                transition: "transform 0.2s ease",
+              }}
+            />
+          </IconButton>
+        </DialogTitle>
         {/* <DialogContent> */}
-           <DialogContent dividers padding="0 !important">
+        <DialogContent dividers padding="0 !important">
           <Grid container spacing={2}>
             <Grid item xs={6}>
               <TextField fullWidth size="small" label="Department Name" />
@@ -486,80 +498,82 @@ const CreateUser = ({ handleClose }) => {
           </Grid>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setAddDepartment(false)} variant="contained" color="primary" sx={{backgroundColor: "rgb(251, 68, 36)",}}>
+          <Button onClick={() => setAddDepartment(false)} variant="contained" color="primary" sx={{ backgroundColor: "rgb(251, 68, 36)", }}>
             ADD DEPARTMENT
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* Add Role Dialog */}
-      <Dialog open={addRole} onClose={() => setAddRole(false)} fullWidth sx={{ animation: "slideInFromLeft 0.2s ease-in-out forwards",
-            opacity: 0, // Start with opacity 0
-            transform: "translateX(-50px)", // Start from left
-            "@keyframes slideInFromLeft": {
-              "0%": {
-                opacity: 0,
-                transform: "translateX(-50px)",
-              },
-              "100%": {
-                opacity: 1,
-                transform: "translateX(0)",
-              },
-            },}}>
+      <Dialog open={addRole} onClose={() => setAddRole(false)} fullWidth sx={{
+        animation: "slideInFromLeft 0.2s ease-in-out forwards",
+        opacity: 0, // Start with opacity 0
+        transform: "translateX(-50px)", // Start from left
+        "@keyframes slideInFromLeft": {
+          "0%": {
+            opacity: 0,
+            transform: "translateX(-50px)",
+          },
+          "100%": {
+            opacity: 1,
+            transform: "translateX(0)",
+          },
+        },
+      }}>
         {/* <DialogTitle>ADD NEW ROLE</DialogTitle> */}
-         <DialogTitle
-                  sx={{
-                    pb: 1,
-                    borderBottom: "1px solid #eee",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    p: 1,
-                    backgroundColor:"primary.main"
-                  }}
-                >
-                  <Typography
-                    variant="h6"
-                    sx={{
-                      fontFamily: '"Be Vietnam", sans-serif',
-                      color:"#ffff"
-                    }}
-                  >
-                    ADD NEW ROLE
-                  </Typography>
-                  <IconButton
-                    onClick={() => setAddRole(false)}
-                    size="small"
-                    sx={{
-                      color: "#ffff",
-                      border: "1px solid",
-                      borderColor: "#ffff",
-                      bgcolor: "error.lighter",
-                      borderRadius: "50%",
-                      position: "relative",
-                      "&:hover": {
-                        // color: "error.dark",
-                        // borderColor: "error.main",
-                        // bgcolor: "error.lighter",
-                        transform: "rotate(180deg)",
-                      },
-                      transition: "transform 0.3s ease",
-                    }}
-                  >
-                    <Close
-                      sx={{
-                        fontSize: "1.1rem",
-                        transition: "transform 0.2s ease",
-                      }}
-                    />
-                  </IconButton>
-                </DialogTitle>
+        <DialogTitle
+          sx={{
+            pb: 1,
+            borderBottom: "1px solid #eee",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            p: 1,
+            backgroundColor: "primary.main"
+          }}
+        >
+          <Typography
+            variant="h6"
+            sx={{
+              fontFamily: '"Be Vietnam", sans-serif',
+              color: "#ffff"
+            }}
+          >
+            ADD NEW ROLE
+          </Typography>
+          <IconButton
+            onClick={() => setAddRole(false)}
+            size="small"
+            sx={{
+              color: "#ffff",
+              border: "1px solid",
+              borderColor: "#ffff",
+              bgcolor: "error.lighter",
+              borderRadius: "50%",
+              position: "relative",
+              "&:hover": {
+                // color: "error.dark",
+                // borderColor: "error.main",
+                // bgcolor: "error.lighter",
+                transform: "rotate(180deg)",
+              },
+              transition: "transform 0.3s ease",
+            }}
+          >
+            <Close
+              sx={{
+                fontSize: "1.1rem",
+                transition: "transform 0.2s ease",
+              }}
+            />
+          </IconButton>
+        </DialogTitle>
         {/* <DialogContent> */}
-           <DialogContent dividers padding="0 !important">
-          <TextField  size="small" label="Role Name" />
+        <DialogContent dividers padding="0 !important">
+          <TextField size="small" label="Role Name" />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setAddRole(false)} variant="contained" color="primary" sx={{backgroundColor: "rgb(251, 68, 36)",}}>
+          <Button onClick={() => setAddRole(false)} variant="contained" color="primary" sx={{ backgroundColor: "rgb(251, 68, 36)", }}>
             ADD ROLE
           </Button>
         </DialogActions>

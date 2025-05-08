@@ -20,6 +20,7 @@ import SpeedDialAction from '@mui/material/SpeedDialAction';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import DownloadIcon from '@mui/icons-material/Download';
 import EditIcon from '@mui/icons-material/Edit';
+import { CircularProgress, keyframes, styled } from '@mui/material';
 
 // Add this with your other imports
 
@@ -58,9 +59,39 @@ ChartJS.register(
   ChartDataLabels
 );
 
+const fadeIn = keyframes`
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+`;
+
+// Styled overlay
+const LoaderWrapper = styled(Box)(({ theme }) => ({
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  width: '100vw',
+  height: '100vh',
+  background: 'rgba(255, 255, 255, 0.75)',
+  backdropFilter: 'blur(5px)',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  zIndex: 1300,
+  animation: `${fadeIn} 0.5s ease-in-out`,
+}));
+
+// Styled CircularProgress
+const CustomSpinner = styled(CircularProgress)(({ theme }) => ({
+  color: theme.palette.primary.main,
+  width: '60px !important',
+  height: '80px !important',
+  thickness: 2,
+}));
+
 const CompanyDashboard = ({ onThemeToggle }) => {
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [order, setOrder] = useState('asc');
+  const [loading, setLoading] = useState(true);
 
   const [orderBy, setOrderBy] = useState('daysLeft');
   const [sortedData, setSortedData] = useState(null);
@@ -1466,6 +1497,17 @@ CloudNet (Basic),C4,4,3,2,180,95,45`;
       },
     },
   };
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 300);
+    return () => clearTimeout(timer);
+  }, []);
+  if (loading) {
+    return (
+      <LoaderWrapper>
+        <CustomSpinner />
+      </LoaderWrapper>
+    );
+  }
   return (
     <Box sx={{
       animation: "slideInFromLeft 0.3s ease-in-out forwards",
