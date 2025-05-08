@@ -344,7 +344,7 @@ const CreateUser = ({ handleClose }) => {
                                   )}
                                 />
                               </Grid>
-                              <Grid item xs={12} >
+                              {/* <Grid item xs={12} >
                                 <IconButton
                                   onClick={() => remove(index)}
                                   disabled={formik.values.users.length === 1}
@@ -352,7 +352,14 @@ const CreateUser = ({ handleClose }) => {
                                 >
                                   <Close />
                                 </IconButton>
-                              </Grid>
+                              </Grid> */}
+                              {formik.values.users.length > 1 && (
+  <Grid item xs={12}>
+    <IconButton onClick={() => remove(index)} color="error">
+      <Close />
+    </IconButton>
+  </Grid>
+)}
                             </Grid>
                           ) : (
                             <Typography variant="body2">
