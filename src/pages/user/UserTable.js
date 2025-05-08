@@ -499,7 +499,7 @@ export default function UserTable() {
           }
         }} className="PaperUI"
       >
-        <TableContainer sx={{ maxHeight: "83vh", height: "83vh" }}>
+        <TableContainer sx={{ maxHeight: "83vh", height: "80vh" }}>
           <Table stickyHeader>
             <TableHead className={styles.tableHeader}>
               <TableRow
