@@ -195,45 +195,6 @@ const rows = [
     avaliableStorage: "9 GB",
     phone: "1234567890",
   },
-  {
-
-    id: "8",
-    name: "Satyam Aggarwal",
-    department: "Frontend",
-    role: "Senior Frontend Developer",
-    email: "satyam@appolo.com",
-    storageUsed: "800MB",
-    manageStorage: "1 GB",
-    status: true,
-    avaliableStorage: "9 GB",
-    phone: "1234567890",
-  },
-  {
-
-    id: "9",
-    name: "Shivangi Dhavan",
-    department: "Backend",
-    role: "Software Engineer",
-    email: "shivangi@appolo.com",
-    storageUsed: "800MB",
-    manageStorage: "1 GB",
-    status: true,
-    avaliableStorage: "9 GB",
-    phone: "1234567890",
-  },
-  {
-
-    id: "10",
-    name: "Arpita Shukla ",
-    department: "devops",
-    role: "Senior Devops Engineer",
-    email: "arpita@appolo.com",
-    storageUsed: "800MB",
-    manageStorage: "1 GB",
-    status: true,
-    avaliableStorage: "9 GB",
-    phone: "1234567890",
-  },
 
 ];
 
@@ -409,26 +370,20 @@ export default function UserTable() {
     setDeleteUser(true);
   };
 
-  const handleStatusToggle = (rowId) => {
-    console.log(">>>>>aaaa")
-    console.log(">>>>bb", rowId)
-    console.log(">>>>>beforerows", rows)
-
+  const handleStatusToggle = (userName) => {
     setRowsData((prev) =>
-      prev.map((d) =>
-        d.id === rowId ? { ...d, isActive: !d.isActive } : d
+      prev.map((user) =>
+        user.name === userName ? { ...user, status: !user.status } : user
       )
     );
-    console.log(">>>>>afterrows", rows)
-    toast({
-      open: true,
-      message: `Department "${rowId.name}" ${!rowId.isActive ? "activated" : "deactivated"
-        }`,
-      message: `Department "${rowId.name}" ${!rowId.isActive ? "activated" : "deactivated"
-        }`,
-      severity: "success",
-    });
+
+    const updatedUser = rowsData.find((user) => user.name === userName);
+    toast.success(
+      `User "${updatedUser?.name}" has been ${updatedUser?.status ? "deactivated" : "activated"
+      }`
+    );
   };
+
 
   const handleCreateUser = () => {
     setCreateUser(true);
@@ -565,14 +520,14 @@ export default function UserTable() {
                 <TableCell align="center">Department</TableCell>
                 <TableCell align="center">Role</TableCell>
                 <TableCell align="center">User email</TableCell>
-                <TableCell align="center">Storage used</TableCell>
-                <TableCell align="center">Manage storage</TableCell>
-                <TableCell align="center">Active license</TableCell>
+                <TableCell align="center" sx={{ whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden", maxWidth: 140 }}>Storage used</TableCell>
+                <TableCell align="center" sx={{ whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden", maxWidth: 140 }}>Manage storage</TableCell>
+                <TableCell align="center" sx={{ whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden", maxWidth: 140 }}>Active license</TableCell>
                 <TableCell align="center">Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {rows
+              {rowsData
                 .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                 .map((row, index) => {
                   const isItemSelected = isSelected(row.id);
@@ -626,9 +581,8 @@ export default function UserTable() {
                       <TableCell
                         align="center"
                         sx={{
-                          display: "flex",
-                          justifyContent: "center",
-                          padding: "10px 10px 10px 10px !important",
+                          // textAlign: "center",
+                          padding: "2px 8px",
                         }}
                       >
                         <FormControl sx={{ m: 0, minWidth: 120 }} size="small">
@@ -638,11 +592,16 @@ export default function UserTable() {
                             defaultValue="10GB"
                             onChange={handleChangeStorage}
                             displayEmpty
+                            // sx={{
+                            //   borderRadius: "20px",
+                            //   ".MuiSelect-outlined": {
+                            //     height: "5px !important",
+                            //   },
+                            // }}
                             sx={{
-                              borderRadius: "20px",
-                              ".MuiSelect-outlined": {
-                                height: "5px !important",
-                              },
+                              width: "100px",
+                              height: "30px",
+                              borderRadius: "28px",
                             }}
                           >
                             <MenuItem value="">10GB</MenuItem>
@@ -661,7 +620,7 @@ export default function UserTable() {
                                 // checked={row.status}
                                 onChange={() => {
                                   console.log("Switch clicked:", row); // confirm this runs
-                                  handleStatusToggle(row.id);
+                                  handleStatusToggle(row.name);
                                 }}
                               />
                             }

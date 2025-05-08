@@ -991,6 +991,7 @@ const AngelBot = () => {
                   <Typography variant="h6" color="primary">
                     Top Department Storage Usage
                   </Typography>
+
                 </Box>
                 <Box>
                   {getSortedDepartments

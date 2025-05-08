@@ -258,6 +258,7 @@ const CreateUser = ({ handleClose }) => {
                                 />
                               </Grid>
                               <Grid item xs={4}>
+                                
                                 <TextField
                                   label="Phone Number"
                                   name={`users[${index}].phone`}
@@ -361,6 +362,8 @@ const CreateUser = ({ handleClose }) => {
                         </Paper>
                       );
                     })}
+
+                    <div style={{  display: "flex", gap: "550px", }}>
                     <Button
                       variant="outlined"
                       startIcon={<Add />}
@@ -380,18 +383,20 @@ const CreateUser = ({ handleClose }) => {
                     >
                       Add Another User
                     </Button>
-                  </>
-                )}
-              </FieldArray>
-              <DialogActions>
-                <Button
+
+                    <Button
                   type="submit"
                   variant="contained"
                   sx={{ backgroundColor: "rgb(251, 68, 36)", color: "white" }}
                 >
                   ADD USERS
                 </Button>
-              </DialogActions>
+                </div>
+                  
+                  </>
+                )}
+              </FieldArray>
+             
             </Form>
           )}
         </Formik>
