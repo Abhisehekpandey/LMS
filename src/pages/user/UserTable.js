@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState , useEffect} from "react";
 import {
   Box,
   Paper,
@@ -31,6 +31,7 @@ import {
   FormControl,
   InputLabel,
   FormControlLabel,
+  Slide,
 } from "@mui/material";
 import {
   Search,
@@ -54,6 +55,7 @@ import DeleteUser from "./DeleteUser";
 import Migration from "./Migration";
 import CreateUser from "./CreateUser";
 import { toast } from "react-toastify";
+import { CircularProgress,  keyframes} from '@mui/material';
 
 const CustomSwitch = styled(Switch)(({ theme, checked }) => ({
   "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
@@ -70,14 +72,45 @@ const CustomSwitch = styled(Switch)(({ theme, checked }) => ({
   },
 }));
 
+
+const fadeIn = keyframes`
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+`;
+
+// Styled overlay
+const LoaderWrapper = styled(Box)(({ theme }) => ({
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  width: '100vw',
+  height: '100vh',
+  background: 'rgba(255, 255, 255, 0.75)',
+  backdropFilter: 'blur(5px)',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  zIndex: 1300,
+  animation: `${fadeIn} 0.5s ease-in-out`,
+}));
+
+// Styled CircularProgress
+const CustomSpinner = styled(CircularProgress)(({ theme }) => ({
+  color: theme.palette.primary.main,
+  width: '80px !important',
+  height: '80px !important',
+  thickness: 3,
+}));
+
+
 const rows = [
   {
-    userName: "User2",
-    id: "2",
-    name: "Name2",
-    department: "Backend",
-    role: "N/A",
-    email: "user2@appolo.com",
+    
+    id: "1",
+    name: "kunal kamboj",
+    department: "Frontend",
+    role: "Software Engineer",
+    email: "kunal@appolo.com",
     storageUsed: "200MB",
     manageStorage: "1 GB",
     status: false,
@@ -85,12 +118,12 @@ const rows = [
     phone: "1234567890",
   },
   {
-    userName: "User5",
-    id: "5",
-    name: "Name5",
-    department: "Backend",
-    role: "N/A",
-    email: "user5@appolo.com",
+    
+    id: "2",
+    name: "Pratibha thakur",
+    department: "Frontend",
+    role: "Frontend Developer",
+    email: "pratibha@appolo.com",
     storageUsed: "200MB",
     manageStorage: "1 GB",
     status: false,
@@ -98,18 +131,110 @@ const rows = [
     phone: "9876543201",
   },
   {
-    userName: "User6",
+    
     id: "3",
-    name: "Name6",
+    name: "Abhishek Panday",
     department: "Frontend",
-    role: "N/A",
-    email: "user6@appolo.com",
-    storageUsed: "200MB",
+    role: "Software Developer",
+    email: "abhishek@appolo.com",
+    storageUsed: "800MB",
     manageStorage: "1 GB",
     status: true,
     avaliableStorage: "9 GB",
     phone: "1234567890",
   },
+  {
+    
+    id: "4",
+    name: "Dhruv Sethi",
+    department: "Backend",
+    role: "Manager",
+    email: "dhruv@appolo.com",
+    storageUsed: "800MB",
+    manageStorage: "1 GB",
+    status: true,
+    avaliableStorage: "9 GB",
+    phone: "1234567890",
+  },
+  {
+   
+    id: "5",
+    name: "Manish Yadav",
+    department: "Backend",
+    role: "Software engineer",
+    email: "manish@appolo.com",
+    storageUsed: "800MB",
+    manageStorage: "1 GB",
+    status: true,
+    avaliableStorage: "9 GB",
+    phone: "1234567890",
+  },
+  {
+   
+    id: "6",
+    name: "Prince Tiwari",
+    department: "Backend",
+    role: "Backend developer",
+    email: "prince@appolo.com",
+    storageUsed: "800MB",
+    manageStorage: "1 GB",
+    status: true,
+    avaliableStorage: "9 GB",
+    phone: "1234567890",
+  },
+  {
+    
+    id: "7",
+    name: "Dheeraj",
+    department: "Frontend",
+    role: "Senior Frontend Developer",
+    email: "dheeraj@appolo.com",
+    storageUsed: "800MB",
+    manageStorage: "1 GB",
+    status: true,
+    avaliableStorage: "9 GB",
+    phone: "1234567890",
+  },
+  {
+  
+    id: "8",
+    name: "Satyam Aggarwal",
+    department: "Frontend",
+    role: "Senior Frontend Developer",
+    email: "satyam@appolo.com",
+    storageUsed: "800MB",
+    manageStorage: "1 GB",
+    status: true,
+    avaliableStorage: "9 GB",
+    phone: "1234567890",
+  },
+  {
+    
+    id: "9",
+    name: "Shivangi Dhavan",
+    department: "Backend",
+    role: "Software Engineer",
+    email: "shivangi@appolo.com",
+    storageUsed: "800MB",
+    manageStorage: "1 GB",
+    status: true,
+    avaliableStorage: "9 GB",
+    phone: "1234567890",
+  },
+  {
+    
+    id: "10",
+    name: "Arpita Shukla ",
+    department: "devops",
+    role: "Senior Devops Engineer",
+    email: "arpita@appolo.com",
+    storageUsed: "800MB",
+    manageStorage: "1 GB",
+    status: true,
+    avaliableStorage: "9 GB",
+    phone: "1234567890",
+  },
+
 ];
 
 const statusColors = {
@@ -178,6 +303,17 @@ const IOSSwitch = styled((props) => (
   },
 }));
 
+const Transition = React.forwardRef(function Transition(props, ref) {
+  return (
+    <Slide
+      direction="right"
+      ref={ref}
+      {...props}
+     
+    />
+  );
+});
+
 export default function UserTable() {
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(10);
@@ -186,13 +322,14 @@ export default function UserTable() {
   const [checked, setChecked] = useState(false);
   const [rowsData, setRowsData] = useState(rows);
   const [deleteUser, setDeleteUser] = useState(false);
-  const [rowData, setRowData] = useState();
+  const [rowData, setRowData] = useState([]);
   const [selectAllData, setSelectAllData] = useState(false);
   const [hoveredRow, setHoveredRow] = useState(null);
   const [migrationDialog, setMigrationDialog] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editData, setEditData] = useState({});
   const [Storage, setStorage] = React.useState("");
+    const [loading, setLoading] = useState(true);
 
   const handleChangeStorage = (event) => {
     setStorage(event.target.value);
@@ -272,20 +409,21 @@ export default function UserTable() {
     setDeleteUser(true);
   };
 
-  const handleStatusToggle = (rowId) => {
-    setRowData((prev) =>
-      prev.map((d) =>
-        d.name === rowId.name ? { ...d, isActive: !d.isActive } : d
-      )
-    );
-    toast({
-      open: true,
-      message: `Department "${rowId.name}" ${
-        !rowId.isActive ? "activated" : "deactivated"
-      }`,
-      severity: "success",
-    });
-  };
+const handleStatusToggle = (userName) => {
+  setRowsData((prev) =>
+    prev.map((user) =>
+      user.name === userName ? { ...user, status: !user.status } : user
+    )
+  );
+
+  const updatedUser = rowsData.find((user) => user.name === userName);
+  toast.success(
+    `User "${updatedUser?.name}" has been ${
+      updatedUser?.status ? "deactivated" : "activated"
+    }`
+  );
+};
+
 
   const handleCreateUser = () => {
     setCreateUser(true);
@@ -304,13 +442,7 @@ export default function UserTable() {
     setPage(0);
   };
 
-  // const handleSelectAllClick = (event) => {
-  //   if (event.target.checked) {
-  //     setSelectAllData(true); // Open the dialog
-  //   } else {
-  //     setSelected([]); // Deselect all
-  //   }
-  // };
+ 
 
   const handleSelectAllClick = (event) => {
     if (event.target.checked) {
@@ -362,6 +494,18 @@ export default function UserTable() {
   };
 
   const isSelected = (id) => selected.indexOf(id) !== -1;
+   useEffect(() => {
+      const timer = setTimeout(() => setLoading(false), 300);
+      return () => clearTimeout(timer);
+    }, []);
+
+    if (loading) {
+      return (
+        <LoaderWrapper>
+          <CustomSpinner />
+        </LoaderWrapper>
+      );
+    }
 
   return (
     <Box
@@ -373,9 +517,27 @@ export default function UserTable() {
         padding: "15px",
       }}
     >
+
       <Paper
         elevation={24}
-        sx={{ width: "100%", overflow: "hidden", borderRadius: "20px" }}
+        sx={{
+          width: "100%",
+          overflow: "hidden",
+          borderRadius: "20px",
+          animation: "slideInFromLeft 0.3s ease-in-out forwards",
+          opacity: 0, // Start with opacity 0
+          transform: "translateX(-50px)", // Start from left
+          "@keyframes slideInFromLeft": {
+            "0%": {
+              opacity: 0,
+              transform: "translateX(-50px)",
+            },
+            "100%": {
+              opacity: 1,
+              transform: "translateX(0)",
+            }
+          }
+        }} className="PaperUI"
       >
         <TableContainer sx={{ maxHeight: "83vh", height: "83vh" }}>
           <Table stickyHeader>
@@ -384,15 +546,7 @@ export default function UserTable() {
                 sx={{ boxShadow: "0 -2px 8px 0 rgba(0, 0, 0, 0.2) !important" }}
               >
                 <TableCell padding="checkbox">
-                  {/* <Checkbox
-                  indeterminate={
-                    selected.length > 0 && selected.length < rows.length
-                  }
-                  checked={
-                    rowsData.length > 0 && selected.length === rowsData.length
-                  }
-                  onChange={handleSelectAllClick}
-                /> */}
+                 
                   <Checkbox
                     indeterminate={
                       selected.length > 0 && selected.length < rows.length
@@ -406,14 +560,14 @@ export default function UserTable() {
                 <TableCell align="center">Department</TableCell>
                 <TableCell align="center">Role</TableCell>
                 <TableCell align="center">User email</TableCell>
-                <TableCell align="center">Storage used</TableCell>
-                <TableCell align="center">Manage storage</TableCell>
-                <TableCell align="center">Active license</TableCell>
+                <TableCell align="center" sx={{ whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden", maxWidth: 140 }}>Storage used</TableCell>
+                <TableCell align="center" sx={{ whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden", maxWidth: 140 }}>Manage storage</TableCell>
+                <TableCell align="center" sx={{ whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden", maxWidth: 140 }}>Active license</TableCell>
                 <TableCell align="center">Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {rows
+              {rowsData
                 .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                 .map((row, index) => {
                   const isItemSelected = isSelected(row.id);
@@ -428,17 +582,12 @@ export default function UserTable() {
                     >
                       <TableCell padding="checkbox">
                         <Checkbox
-                          sx={{ padding: "10px 10px 10px 10px !important" }}
+                          sx={{ padding: "1px 1px 1px 1px !important" }}
                           checked={isItemSelected}
                           onChange={() => handleClick(row)}
                         />
                       </TableCell>
-                      {/* <TableCell
-                        align="center"
-                        sx={{ padding: "10px 10px 10px 10px !important" }}
-                      >
-                        {row.userName}
-                      </TableCell> */}
+                     
                       <TableCell
                         align="center"
                         sx={{ padding: "10px 10px 10px 10px !important" }}
@@ -480,7 +629,7 @@ export default function UserTable() {
                         <FormControl sx={{ m: 0, minWidth: 120 }} size="small">
                           <Select
                             id="demo-select-small"
-                            value={Storage}
+                            value={Storage || ""} // Ensure Storage is not undefined
                             defaultValue="10GB"
                             onChange={handleChangeStorage}
                             displayEmpty
@@ -491,9 +640,8 @@ export default function UserTable() {
                               },
                             }}
                           >
-                            <MenuItem value="">
-                              <em>10GB</em>
-                            </MenuItem>
+                            <MenuItem value="">10GB</MenuItem>
+                            <MenuItem value="">10GB</MenuItem>
                             <MenuItem value={10}>20GB</MenuItem>
                             <MenuItem value={20}>40GB</MenuItem>
                             <MenuItem value={30}>60GB</MenuItem>
@@ -506,50 +654,15 @@ export default function UserTable() {
                             control={
                               <IOSSwitch
                                 checked={row.status}
-                                onChange={() => handleStatusToggle(row)}
+                                onChange={() => {
+                                  console.log("Switch clicked:", row); // confirm this runs
+                                  handleStatusToggle(row.name);
+                                }}
                               />
                             }
                           />
                         </Tooltip>
-                        {/* <Tooltip title={row.status ? "Active" : "Inactive"}>
-                          <Switch
-                            size="small"
-                            checked={row.status}
-                            onChange={() => handleStatusToggle(row)}
-                            sx={{
-                              "& .MuiSwitch-switchBase": {
-                                "&.Mui-checked": {
-                                  // When active/checked
-                                  color: "#2e7d32", // Green color
-                                  "& + .MuiSwitch-track": {
-                                    backgroundColor: "#4caf50", // Green track
-                                    opacity: 0.5,
-                                  },
-                                },
-                                "&.Mui-disabled": {
-                                  "& + .MuiSwitch-track": {
-                                    opacity: 0.5,
-                                  },
-                                },
-                              },
-                              "& .MuiSwitch-switchBase.Mui-checked:hover": {
-                                backgroundColor: "rgba(46, 125, 50, 0.08)", // Green hover effect
-                              },
-                              // When inactive/unchecked
-                              "& .MuiSwitch-switchBase:not(.Mui-checked)": {
-                                color: "#d32f2f", // Red color
-                                "& + .MuiSwitch-track": {
-                                  backgroundColor: "#ef5350", // Red track
-                                  opacity: 0.5,
-                                },
-                              },
-                              "& .MuiSwitch-switchBase:not(.Mui-checked):hover":
-                                {
-                                  backgroundColor: "rgba(211, 47, 47, 0.08)", // Red hover effect
-                                },
-                            }}
-                          />
-                        </Tooltip> */}
+
                       </TableCell>
                       <TableCell
                         align="center"
@@ -558,23 +671,24 @@ export default function UserTable() {
                           padding: "10px 10px 10px 10px !important",
                         }}
                       >
-                        {hoveredRow === row.id && (
-                          <>
-                            <IconButton
-                              size="small"
-                              onClick={(e) => handleEdit(e, row)}
-                            >
-                              <Edit />
-                            </IconButton>
-                            <IconButton
-                              size="small"
-                              color="error"
-                              onClick={handleDelete}
-                            >
-                              <Delete />
-                            </IconButton>
-                          </>
-                        )}
+                       
+                        <>
+                          <IconButton
+                            size="small"
+                            onClick={(e) => handleEdit(e, row)}
+                          >
+                            <Edit />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={handleDelete}
+                          >
+                            <Delete />
+                          </IconButton>
+                        </>
+                       
+                        {/* )} */}
                       </TableCell>
                     </TableRow>
                   );
@@ -913,7 +1027,23 @@ export default function UserTable() {
           open={createUser}
           onClose={() => setCreateUser(false)}
           fullWidth
+          keepMounted
+          TransitionComponent={Transition}
+          aria-describedby="alert-dialog-slide-description"
           maxWidth="md"
+          sx={{ animation: "slideInFromLeft 0.2s ease-in-out forwards",
+            opacity: 0, // Start with opacity 0
+            transform: "translateX(-50px)", // Start from left
+            "@keyframes slideInFromLeft": {
+              "0%": {
+                opacity: 0,
+                transform: "translateX(-50px)",
+              },
+              "100%": {
+                opacity: 1,
+                transform: "translateX(0)",
+              },
+            },}}
         >
           <CreateUser handleClose={() => setCreateUser(false)} />
         </Dialog>
@@ -923,6 +1053,19 @@ export default function UserTable() {
           open={editDialogOpen}
           onClose={() => setEditDialogOpen(false)}
           maxWidth="sm"
+          sx={{animation: "slideInFromLeft 0.2s ease-in-out forwards",
+            opacity: 0, // Start with opacity 0
+            transform: "translateX(-50px)", // Start from left
+            "@keyframes slideInFromLeft": {
+              "0%": {
+                opacity: 0,
+                transform: "translateX(-50px)",
+              },
+              "100%": {
+                opacity: 1,
+                transform: "translateX(0)",
+              },
+            },}}
         >
           <DialogTitle
             sx={{
@@ -932,12 +1075,14 @@ export default function UserTable() {
               justifyContent: "space-between",
               alignItems: "center",
               p: 1,
+              backgroundColor:"primary.main"
             }}
           >
             <Typography
               variant="h6"
               sx={{
                 fontFamily: '"Be Vietnam", sans-serif',
+                color:"#ffff"
               }}
             >
               EDIT USER
@@ -946,15 +1091,15 @@ export default function UserTable() {
               onClick={() => setEditDialogOpen(false)}
               size="small"
               sx={{
-                color: "error.main",
+                color: "#ffff",
                 border: "1px solid",
-                borderColor: "error.light",
+                borderColor: "#ffff",
                 bgcolor: "error.lighter",
                 borderRadius: "50%",
                 position: "relative",
                 "&:hover": {
-                  color: "error.dark",
-                  borderColor: "error.main",
+                  color: "#ffff",
+                  borderColor: "#ffff",
                   bgcolor: "error.lighter",
                   transform: "rotate(180deg)",
                 },
@@ -969,21 +1114,10 @@ export default function UserTable() {
               />
             </IconButton>
           </DialogTitle>
-          <DialogContent dividers>
+          <DialogContent dividers >
             {/* First row */}
             <Grid container spacing={2}>
-              <Grid item xs={4}>
-                <TextField
-                  size="small"
-                  name="userName"
-                  label="Username"
-                  type="text"
-                  fullWidth
-                  variant="outlined"
-                  value={editData.userName || ""}
-                  // onChange={handleInputChange}
-                />
-              </Grid>
+             
               <Grid item xs={4}>
                 <TextField
                   size="small"
@@ -993,7 +1127,7 @@ export default function UserTable() {
                   fullWidth
                   variant="outlined"
                   value={editData.name || ""}
-                  // onChange={handleInputChange}
+                  
                 />
               </Grid>
               <Grid item xs={4}>
@@ -1005,7 +1139,7 @@ export default function UserTable() {
                   fullWidth
                   variant="outlined"
                   value={editData.department || ""}
-                  // onChange={handleInputChange}
+                  
                 />
               </Grid>
               <Grid item xs={6}>
@@ -1017,7 +1151,7 @@ export default function UserTable() {
                   fullWidth
                   variant="outlined"
                   value={editData.role || ""}
-                  // onChange={handleInputChange}
+                  
                 />
               </Grid>
               <Grid item xs={6}>
@@ -1050,8 +1184,7 @@ export default function UserTable() {
                   type="tel"
                   variant="outlined"
                   value={editData.phone || ""}
-                  // onChange={handleInputChange}
-                  // sx={{ width: "40%" }}
+            
                 />
               </Grid>
               <Grid item xs={6}>
@@ -1063,16 +1196,14 @@ export default function UserTable() {
                   fullWidth
                   variant="outlined"
                   value={editData.storageUsed || ""}
-                  // onChange={handleInputChange}
+               
                 />
               </Grid>
             </Grid>
           </DialogContent>
 
           <DialogActions>
-            {/* <Button onClick={() => setEditDialogOpen(false)} color="inherit">
-              Cancel
-            </Button> */}
+          
             <Button
               // onClick={saveEditedUser}
               variant="contained"

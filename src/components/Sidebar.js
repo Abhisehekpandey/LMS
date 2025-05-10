@@ -53,12 +53,16 @@ const StyledDrawer = styled(Drawer)(({ theme, open }) => ({
     width: open ? 250 : 65,
     boxSizing: "border-box",
     transition: theme.transitions.create(["width", "margin", "padding"], {
-      easing: theme.transitions.easing.easeInOut,
-      duration: theme.transitions.duration.standard,
+      easing: theme.transitions.easing.sharp,
+      duration: open
+        ? theme.transitions.duration.enteringScreen
+        : theme.transitions.duration.leavingScreen,
     }),
-    backgroundColor: "rgba(255, 255, 255, 0.05)", // <-- light transparent white
-    backdropFilter: "blur(10px)", // <-- gives frosted glass effect
-    WebkitBackdropFilter: "blur(10px)", // <-- for Safari
+    backgroundColor: "rgba(255, 255, 255, 0.60)",
+    // 👈 opacity thodi zyada (0.05 → 0.15 ya 0.2)
+    backdropFilter: "blur(4px)", // blur bhi thoda kam kar diya
+    WebkitBackdropFilter: "blur(4px)",
+
     backdropFilter: "blur(8px)",
     color: "#424242",
     borderRight: "1px solid rgba(0, 0, 0, 0.08)",
@@ -110,11 +114,11 @@ const Sidebar = () => {
   const location = useLocation();
 
   const menuItems = React.useMemo(() => [
-    { path: "/company-dashboard", icon: <DashboardIcon />, text: "Dashboard" },
     { path: "/angelbot", icon: <TimelineIcon />, text: "AngelBot" },
-    { path: "/department", icon: <DepartmentRolesIcon />, text: "Department" },
     { path: "/user", icon: <UserIcon />, text: "User" },
+    { path: "/department", icon: <DepartmentRolesIcon />, text: "Department" },
     { path: "/ldap-config", icon: <LDAPIcon />, text: "LDAP Settings" },
+    { path: "/company-dashboard", icon: <DashboardIcon />, text: "Dashboard" },
   ], []); // Empty dependency array means this only runs once
 
   const handleMouseEnter = () => {
@@ -136,23 +140,6 @@ const Sidebar = () => {
     setOpen(newLock);
   };
 
-  // const username = sessionStorage.getItem('AdminName');
-
-  // const getUserAvatar = () => {
-  //   if (username) {
-  //     return username
-  //       .split(' ') // Split the name into an array of words
-  //       .map((word) => word.charAt(0).toUpperCase()) // Get the first letter of each word and convert to uppercase
-  //       .join('');
-  //   }
-  //   if (user?.displayName) {
-  //     return user.displayName.charAt(0).toUpperCase();
-  //   }
-  //   if (user?.email) {
-  //     return user.email.charAt(0).toUpperCase();
-  //   }
-  //   return 'U'; // Default letter if no username, displayName, or email is found
-  // };
 
   return (
     <StyledDrawer
@@ -163,14 +150,12 @@ const Sidebar = () => {
       onMouseLeave={handleMouseLeave}
     >
       <Box
-        // onClick={handleClick}
+
         sx={{
           // pl: "3px",
           display: "flex",
           alignItems: "center",
-          // cursor: 'pointer',
-          // height: 52, // Add fixed height to prevent layout shift
-          // borderBottom: "1px solid rgba(0,0,0,0.05)",
+
           mb: 1, // Add margin bottom
         }}
         className="user-info-view"
@@ -181,7 +166,7 @@ const Sidebar = () => {
             alignItems: "center",
             height: 52,
             px: 1.2,
-            borderBottom: "1px solid rgba(0,0,0,0.05)",
+            // borderBottom: "1px solid rgba(0,0,0,0.05)",
             mb: 1,
             transition: "padding 0.3s ease",
           }}
@@ -238,19 +223,7 @@ const Sidebar = () => {
               Administrator
             </Box>
           </Box>
-          {/* <Box
-            sx={{
-              width: open ? "auto" : 0,
-              overflow: "hidden",
-              display: "flex",
-              alignItems: "center",
-              ml: open ? 0.8 : 0,
-              opacity: open ? 1 : 0,
-              transition: "all 0.3s ease",
-            }}
-          >
-            <LogoText component="span">Access Arc</LogoText>
-          </Box> */}
+
         </Box>
 
       </Box>
@@ -283,7 +256,7 @@ const Sidebar = () => {
                     primary={item.text}
                     sx={{
                       opacity: open ? 1 : 0,
-                      transition: "opacity 0.18s ease",
+                      transition: "opacity 0.3s ease, margin 0.3s ease",
                       marginRight: "4px",
                       "& .MuiListItemText-primary": {
                         fontSize: "0.875rem",

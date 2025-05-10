@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import PropTypes from "prop-types";
 import {
   Box,
@@ -27,6 +27,10 @@ import {
   Tooltip,
   FormControlLabel,
 } from "@mui/material";
+import { Card, CardContent } from "@mui/material";
+import { CircularProgress,  keyframes} from '@mui/material';
+
+
 import { styled } from "@mui/material/styles";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
@@ -57,8 +61,11 @@ import {
 } from "@mui/icons-material";
 
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
+import Drawer from "@mui/material/Drawer";
+
 import { PersonAdd as PersonAddIcon } from "@mui/icons-material";
 import { ManageAccounts as ManageAccountsIcon } from "@mui/icons-material";
+import ClickAwayListener from "@mui/material/ClickAwayListener";
 
 // Add this import with other imports
 import AddBusinessIcon from "@mui/icons-material/AddBusiness";
@@ -131,17 +138,46 @@ const IOSSwitch = styled((props) => (
   },
 }));
 
+// Fade-in animation
+const fadeIn = keyframes`
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+`;
+
+// Styled overlay
+const LoaderWrapper = styled(Box)(({ theme }) => ({
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  width: '100vw',
+  height: '100vh',
+  background: 'rgba(255, 255, 255, 0.75)',
+  backdropFilter: 'blur(5px)',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  zIndex: 1300,
+  animation: `${fadeIn} 0.5s ease-in-out`,
+}));
+
+// Styled CircularProgress
+const CustomSpinner = styled(CircularProgress)(({ theme }) => ({
+  color: theme.palette.primary.main,
+  width: '80px !important',
+  height: '80px !important',
+  thickness: 3,
+}));
+
 function Department({ departments, setDepartments, onThemeToggle }) {
-  // Add pagination state
   const [page, setPage] = useState(0);
-  // const [rowsPerPage] = useState(9);
-  const [rowsPerPage, setRowsPerPage] = useState(10); // Default to 25 rows
+
+  const [rowsPerPage, setRowsPerPage] = useState(9); // Default to 25 rows
 
   const [openRows, setOpenRows] = useState({});
 
-  // Add sorting state
   const [orderBy, setOrderBy] = useState("name");
   const [order, setOrder] = useState("asc");
+  const [loading, setLoading] = useState(true);
 
   // Add after other state declarations
   const [snackbar, setSnackbar] = useState({
@@ -157,7 +193,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     displayName: "",
     initialRole: "",
     storage: "50GB", // Default storage value
-    reportingManager: "", // Add this field
+
     departmentModerator: "", // Add this line
     submitted: false,
   });
@@ -182,6 +218,23 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     roleIndex: null,
     value: "",
   });
+
+  const storageOptions = [
+    "0GB",
+    "25GB",
+    "50GB",
+    "75GB",
+    "100GB",
+    "150GB",
+    "200GB",
+  ];
+
+  const handleStorageChange = (name, newStorage) => {
+    const updated = departments.map((dept) =>
+      dept.name === name ? { ...dept, storage: newStorage } : dept
+    );
+    setDepartments(updated);
+  };
 
   // Add these at the top of your component with other state declarations
   const [selected, setSelected] = useState([]);
@@ -253,35 +306,35 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0); // Reset to first page when changing rows per page
   };
-  // Add these new handler functions
-  const handleEditRole = (deptIndex, roleIndex, currentRole) => {
+
+  const handleEditRole = (deptName, roleIndex, currentRole) => {
     setEditingRole({
-      departmentIndex: deptIndex,
+      departmentName: deptName,
       roleIndex: roleIndex,
       value: currentRole,
     });
     setEditRoleDialog(true);
   };
 
-  const handleDeleteRole = (deptIndex, roleIndex) => {
-    const department = sortedDepartments[deptIndex];
-    if (department.roles.length <= 1) {
-      setSnackbar({
-        open: true,
-        message:
-          "Cannot delete the last role. Department must have at least one role.",
-        severity: "error",
-      });
-      return;
-    }
+  const handleDeleteRole = (deptName, roleIndex) => {
+    setDepartments((prevDepartments) => {
+      return prevDepartments.map((dept) => {
+        if (dept.name !== deptName) return dept;
 
-    setDepartments((prev) =>
-      prev.map((dept, idx) =>
-        idx === deptIndex
-          ? { ...dept, roles: dept.roles.filter((_, i) => i !== roleIndex) }
-          : dept
-      )
-    );
+        if (dept.roles.length <= 1) {
+          setSnackbar({
+            open: true,
+            message:
+              "Cannot delete the last role. Department must have at least one role.",
+            severity: "error",
+          });
+          return dept;
+        }
+
+        const updatedRoles = dept.roles.filter((_, i) => i !== roleIndex);
+        return { ...dept, roles: updatedRoles };
+      });
+    });
 
     setSnackbar({
       open: true,
@@ -301,8 +354,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     }
 
     setDepartments((prev) =>
-      prev.map((dept, idx) =>
-        idx === editingRole.departmentIndex
+      prev.map((dept) =>
+        dept.name === editingRole.departmentName
           ? {
               ...dept,
               roles: dept.roles.map((role, i) =>
@@ -321,7 +374,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     });
   };
 
-  // Add handleSnackbarClose function
   const handleSnackbarClose = (event, reason) => {
     if (reason === "clickaway") return;
     setSnackbar((prev) => ({ ...prev, open: false }));
@@ -749,9 +801,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     if (
       !newDepartment.name ||
       !newDepartment.displayName ||
-      !newDepartment.initialRole ||
+      // !newDepartment.initialRole ||
       !newDepartment.storage ||
-      !newDepartment.reportingManager ||
+      // !newDepartment.reportingManager ||
       !newDepartment.departmentModerator
     ) {
       setSnackbar({
@@ -774,9 +826,11 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     const newDeptWithRole = {
       name: newDepartment.name,
       displayName: newDepartment.displayName,
-      roles: [newDepartment.initialRole],
+      // roles: [newDepartment.initialRole],
+      roles: newDepartment.initialRole ? [newDepartment.initialRole] : [],
+
       storage: newDepartment.storage,
-      reportingManager: newDepartment.reportingManager,
+      // reportingManager: newDepartment.reportingManager,
       departmentModerator: newDepartment.departmentModerator,
       userCount: 0, // Initialize user count
       isActive: true, // Initialize as active
@@ -797,7 +851,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         displayName: "",
         initialRole: "",
         storage: "50GB",
-        reportingManager: "",
+        // reportingManager: "",
         submitted: false,
       });
 
@@ -1003,6 +1057,41 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       });
     }
   };
+  // useEffect(() => {
+  //   // Simulate API call delay or loading state
+  //   const timer = setTimeout(() => {
+  //     setLoading(false);
+  //   }, 1500); // 1.5 seconds
+
+  //   return () => clearTimeout(timer);
+  // }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 300);
+    return () => clearTimeout(timer);
+  }, []);
+
+
+  // if (loading) {
+  //   return (
+  //     <Box
+  //       display="flex"
+  //       justifyContent="center"
+  //       alignItems="center"
+  //       height="100vh"
+  //     >
+  //       <CircularProgress />
+  //     </Box>
+  //   );
+  // }
+
+  if (loading) {
+    return (
+      <LoaderWrapper>
+        <CustomSpinner />
+      </LoaderWrapper>
+    );
+  }
 
   return (
     <Box
@@ -1019,6 +1108,19 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         bgcolor: "#f5f5f5", // Whitesmoke background for the main container
         borderRadius: "20px",
         boxShadow: "2px 1px 11px 5px rgba(0, 0, 0, 0.2)!important",
+        animation: "slideInFromLeft 0.3s ease-in-out forwards",
+        opacity: 0, // Start with opacity 0
+        transform: "translateX(-50px)", // Start from left
+        "@keyframes slideInFromLeft": {
+          "0%": {
+            opacity: 0,
+            transform: "translateX(-50px)",
+          },
+          "100%": {
+            opacity: 1,
+            transform: "translateX(0)",
+          },
+        },
       }}
     >
       <TableContainer
@@ -1065,7 +1167,10 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             <TableRow
               sx={{ boxShadow: "0 -2px 8px 0 rgba(0, 0, 0, 0.2) !important" }}
             >
-              <TableCell padding="checkbox" sx={{ width: "48px" }}>
+              <TableCell
+                padding="checkbox"
+                sx={{ width: "48px", textAlign: "center" }}
+              >
                 <Checkbox
                   color="primary"
                   indeterminate={
@@ -1091,6 +1196,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                   height: "40px",
                   fontWeight: "bold",
                   color: "#444",
+                  // textAlign: "center",
                 }}
               >
                 <TableSortLabel
@@ -1108,8 +1214,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                   <Typography
                     variant="body1"
                     sx={{
-                      fontWeight: "700 !important",
-                      fontSize: "14px",
+                      fontWeight: "bold !important",
+                      fontSize: "15px",
+                      letterSpacing: "-0.01em",
                     }}
                   >
                     Department
@@ -1142,8 +1249,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                   <Typography
                     variant="body1"
                     sx={{
-                      fontWeight: "700 !important",
-                      fontSize: "14px",
+                      fontWeight: "bold !important",
+                      fontSize: "15px",
+                      letterSpacing: "-0.01em",
                     }}
                   >
                     Short name
@@ -1179,8 +1287,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     variant="body1"
                     sx={{
                       // ...commonTextStyle,
-                      fontWeight: "700 !important",
-                      fontSize: "14px",
+                      fontWeight: "bold !important",
+                      fontSize: "15px",
+                      letterSpacing: "-0.01em",
                     }}
                   >
                     Department Moderator
@@ -1190,7 +1299,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
               <TableCell
                 sx={{
-                  // ...commonTextStyle,
                   width: "150px",
                   padding: "2px 8px",
                   height: "32px",
@@ -1201,10 +1309,10 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               >
                 <Typography
                   variant="body1"
-                  // fontWeight="bold"
                   sx={{
-                    fontWeight: "700 !important",
-                    fontSize: "14px",
+                    fontWeight: "bold !important",
+                    fontSize: "15px",
+                    letterSpacing: "-0.01em",
                   }}
                 >
                   Storage
@@ -1213,7 +1321,28 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
               <TableCell
                 sx={{
-                  // ...commonTextStyle,
+                  width: "150px",
+                  padding: "2px 8px",
+                  height: "32px",
+                  fontWeight: "bold",
+                  color: "#444",
+                  textAlign: "center",
+                }}
+              >
+                <Typography
+                  variant="body1"
+                  sx={{
+                    fontWeight: "bold !important",
+                    fontSize: "15px",
+                    letterSpacing: "-0.01em",
+                  }}
+                >
+                  Manage Storage
+                </Typography>
+              </TableCell>
+
+              <TableCell
+                sx={{
                   width: "150px",
                   padding: "2px 8px",
                   height: "32px",
@@ -1238,11 +1367,12 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     variant="body1"
                     sx={{
                       // ...commonTextStyle,
-                      fontWeight: "700 !important",
-                      fontSize: "14px",
+                      fontWeight: "bold !important",
+                      fontSize: "15px",
+                      letterSpacing: "-0.01em",
                     }}
                   >
-                    No. of roles
+                    Number of Role
                   </Typography>
                 </TableSortLabel>
               </TableCell>
@@ -1263,8 +1393,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                   variant="body1"
                   // fontWeight="bold"
                   sx={{
-                    fontWeight: "700 !important",
-                    fontSize: "14px",
+                    fontWeight: "bold !important",
+                    fontSize: "15px",
+                    letterSpacing: "-0.01em",
                   }}
                 >
                   Actions
@@ -1296,6 +1427,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                           width: "48px",
                           padding: "2px 8px",
                           height: "32px",
+                          textAlign: "center",
                         }}
                       >
                         <Checkbox
@@ -1330,7 +1462,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                       </TableCell>
                       <TableCell
                         sx={{
-                          // ...commonTextStyle,
                           textAlign: "center",
                           padding: "2px 8px",
                         }}
@@ -1338,34 +1469,86 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                         {dept.storage}
                       </TableCell>
 
-                      <TableCell sx={{ padding: "2px 8px" }}>
+                      <TableCell
+                        sx={{
+                          textAlign: "center",
+                          padding: "2px 8px",
+                        }}
+                      >
+                        <Select
+                          value={dept.storage}
+                          onChange={(e) =>
+                            handleStorageChange(dept.name, e.target.value)
+                          }
+                          sx={{
+                            width: "100px",
+                            height: "30px",
+                            borderRadius: "28px",
+                          }}
+                        >
+                          {storageOptions.map((option) => (
+                            <MenuItem key={option} value={option}>
+                              {option}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </TableCell>
+
+                      <TableCell
+                        sx={{ padding: "2px 8px", textAlign: "center" }}
+                      >
                         <Box
                           sx={{
                             display: "flex",
                             alignItems: "center",
                             gap: 1,
                             justifyContent: "center",
-                            cursor: "pointer",
-                            "&:hover": {
-                              "& .MuiSvgIcon-root": {
+                          }}
+                        >
+                          <Typography variant="body2">
+                            {dept.roles?.length || 0}
+                          </Typography>
+
+                          <IconButton
+                            size="small"
+                            onClick={() => handleRowToggle(index)}
+                            sx={{
+                              padding: "2px",
+                              color: "#64748b",
+                              "&:hover": {
                                 color: "primary.main",
                               },
-                            },
-                          }}
-                          onClick={() => handleRowToggle(index)}
-                        >
-                          {dept.roles.length}{" "}
-                          {/* Display roles count instead of userCount */}
-                          <KeyboardArrowDownIcon
-                            sx={{
-                              fontSize: "1.1rem",
-                              color: "#64748b",
-                              transition: "transform 0.2s ease-in-out",
-                              transform: openRows[index]
-                                ? "rotate(-180deg)"
-                                : "rotate(0)",
                             }}
-                          />
+                          >
+                            <KeyboardArrowDownIcon
+                              sx={{
+                                fontSize: "1.1rem",
+                                transition: "transform 0.2s ease-in-out",
+                                transform: openRows[index]
+                                  ? "rotate(-180deg)"
+                                  : "rotate(0)",
+                              }}
+                            />
+                          </IconButton>
+
+                          <Tooltip title="Add Role">
+                            <IconButton
+                              size="small"
+                              onClick={() => {
+                                setSelectedDepartment(dept);
+                                setShowAddRoleDialog(true);
+                              }}
+                              sx={{
+                                padding: "2px",
+                                color: "primary.main",
+                                "&:hover": {
+                                  backgroundColor: "primary.lighter",
+                                },
+                              }}
+                            >
+                              <AddCircleOutlineIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
                         </Box>
                       </TableCell>
 
@@ -1439,146 +1622,166 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                         }}
                         colSpan={6}
                       >
-                        <Collapse
-                          in={openRows[index]}
-                          timeout="auto"
-                          unmountOnExit
+                        <ClickAwayListener
+                          onClickAway={() =>
+                            setOpenRows((prev) => ({ ...prev, [index]: false }))
+                          }
                         >
-                          <Box
-                            sx={{
-                              position: "absolute",
-                              left: "75%", // Center horizontally within the cell
-                              transform: "translateX(-50%)", // Center adjust
-                              width: "250px",
-                              backgroundColor: "#ffff",
-                              borderRadius: "8px",
-                              border: "1px solid #e2e8f0",
-                              boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-                              zIndex: 3,
-                              marginTop: "4px", // Small gap from the count
-                            }}
+                          <Collapse
+                            in={openRows[index]}
+                            timeout="auto"
+                            unmountOnExit
                           >
-                            <Table size="small" aria-label="roles">
-                              <TableHead>
-                                <TableRow>
-                                  <TableCell
-                                    sx={{
-                                      backgroundColor: "#f1f5f9",
-                                      fontWeight: "600 !important",
-                                      color: "#475569",
-                                      fontSize: "0.75rem",
-                                      borderBottom: "1px solid #e2e8f0",
-                                      padding: "8px 12px",
-                                      // ...commonTextStyle,
-                                    }}
-                                  >
-                                    Role Name
-                                  </TableCell>
-                                  <TableCell
-                                    align="right"
-                                    sx={{
-                                      backgroundColor: "#f1f5f9",
-                                      fontWeight: "600 !important",
-                                      color: "#475569",
-                                      fontSize: "0.75rem",
-                                      borderBottom: "1px solid #e2e8f0",
-                                      padding: "8px 12px",
-                                      width: "60px",
-                                      // ...commonTextStyle,
-                                    }}
-                                  >
-                                    Actions
-                                  </TableCell>
-                                </TableRow>
-                              </TableHead>
-                              <TableBody>
-                                {dept.roles.map((role, roleIndex) => (
-                                  <TableRow
-                                    key={roleIndex}
-                                    sx={{
-                                      "&:hover": {
-                                        backgroundColor: "rgba(0, 0, 0, 0.02)",
-                                      },
-                                      "& td": {
-                                        borderBottom:
-                                          roleIndex === dept.roles.length - 1
-                                            ? "none"
-                                            : "1px solid #e2e8f0",
-                                      },
-                                    }}
-                                  >
+                            <Box
+                              sx={{
+                                position: "absolute",
+                                left: "75%", // Center horizontally within the cell
+                                transform: "translateX(-50%)", // Center adjust
+                                width: "250px",
+                                backgroundColor: "#ffff",
+                                borderRadius: "8px",
+                                border: "1px solid #e2e8f0",
+                                boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                                zIndex: 3,
+                                marginTop: "4px", // Small gap from the count
+                              }}
+                            >
+                              <Table size="small" aria-label="roles">
+                                <TableHead>
+                                  <TableRow>
                                     <TableCell
                                       sx={{
-                                        // ...commonTextStyle,
-                                        padding: "6px 12px",
+                                        backgroundColor: "#f1f5f9",
+                                        fontWeight: "600 !important",
+                                        color: "#475569",
                                         fontSize: "0.75rem",
-                                        color: "#334155",
+                                        borderBottom: "1px solid #e2e8f0",
+                                        padding: "8px 12px",
+                                        // ...commonTextStyle,
                                       }}
                                     >
-                                      {role}
+                                      Role Name
                                     </TableCell>
                                     <TableCell
                                       align="right"
                                       sx={{
-                                        padding: "4px 8px",
+                                        backgroundColor: "#f1f5f9",
+                                        fontWeight: "600 !important",
+                                        color: "#475569",
+                                        fontSize: "0.75rem",
+                                        borderBottom: "1px solid #e2e8f0",
+                                        padding: "8px 12px",
+                                        width: "60px",
                                       }}
                                     >
-                                      <Box
-                                        sx={{
-                                          display: "flex",
-                                          gap: 0.5,
-                                          justifyContent: "flex-end",
-                                        }}
-                                      >
-                                        <IconButton
-                                          size="small"
-                                          onClick={() =>
-                                            handleEditRole(
-                                              index,
-                                              roleIndex,
-                                              role
-                                            )
-                                          }
-                                          sx={{
-                                            padding: "2px",
-                                            color: "primary.main",
-                                            "&:hover": {
-                                              backgroundColor:
-                                                "primary.lighter",
-                                            },
-                                          }}
-                                          title="Edit Role"
-                                        >
-                                          <EditIcon
-                                            sx={{ fontSize: "0.875rem" }}
-                                          />
-                                        </IconButton>
-                                        <IconButton
-                                          size="small"
-                                          onClick={() =>
-                                            handleDeleteRole(index, roleIndex)
-                                          }
-                                          sx={{
-                                            padding: "2px",
-                                            color: "error.main",
-                                            "&:hover": {
-                                              backgroundColor: "error.lighter",
-                                            },
-                                          }}
-                                          title="Delete Role"
-                                        >
-                                          <DeleteIcon
-                                            sx={{ fontSize: "0.875rem" }}
-                                          />
-                                        </IconButton>
-                                      </Box>
+                                      Actions
                                     </TableCell>
                                   </TableRow>
-                                ))}
-                              </TableBody>
-                            </Table>
-                          </Box>
-                        </Collapse>
+                                </TableHead>
+                                <TableBody>
+                                  {dept.roles.map((role, roleIndex) => (
+                                    <TableRow
+                                      key={roleIndex}
+                                      sx={{
+                                        "&:hover": {
+                                          backgroundColor:
+                                            "rgba(0, 0, 0, 0.02)",
+                                        },
+                                        "& td": {
+                                          borderBottom:
+                                            roleIndex === dept.roles.length - 1
+                                              ? "none"
+                                              : "1px solid #e2e8f0",
+                                        },
+                                      }}
+                                    >
+                                      <TableCell
+                                        sx={{
+                                          // ...commonTextStyle,
+                                          padding: "6px 12px",
+                                          fontSize: "0.75rem",
+                                          color: "#334155",
+                                        }}
+                                      >
+                                        {role}
+                                      </TableCell>
+                                      <TableCell
+                                        align="right"
+                                        sx={{
+                                          padding: "4px 8px",
+                                        }}
+                                      >
+                                        <Box
+                                          sx={{
+                                            display: "flex",
+                                            gap: 0.5,
+                                            justifyContent: "flex-end",
+                                          }}
+                                        >
+                                          <IconButton
+                                            size="small"
+                                            // onClick={() =>
+                                            //   handleEditRole(
+                                            //     index,
+                                            //     roleIndex,
+                                            //     role
+                                            //   )
+                                            // }
+                                            onClick={() =>
+                                              handleEditRole(
+                                                dept.name,
+                                                roleIndex,
+                                                role
+                                              )
+                                            }
+                                            sx={{
+                                              padding: "2px",
+                                              color: "primary.main",
+                                              "&:hover": {
+                                                backgroundColor:
+                                                  "primary.lighter",
+                                              },
+                                            }}
+                                            title="Edit Role"
+                                          >
+                                            <EditIcon
+                                              sx={{ fontSize: "0.875rem" }}
+                                            />
+                                          </IconButton>
+                                          <IconButton
+                                            size="small"
+                                            // onClick={() =>
+                                            //   handleDeleteRole(index, roleIndex)
+                                            // }
+                                            onClick={() =>
+                                              handleDeleteRole(
+                                                dept.name,
+                                                roleIndex
+                                              )
+                                            }
+                                            sx={{
+                                              padding: "2px",
+                                              color: "error.main",
+                                              "&:hover": {
+                                                backgroundColor:
+                                                  "error.lighter",
+                                              },
+                                            }}
+                                            title="Delete Role"
+                                          >
+                                            <DeleteIcon
+                                              sx={{ fontSize: "0.875rem" }}
+                                            />
+                                          </IconButton>
+                                        </Box>
+                                      </TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </Box>
+                          </Collapse>
+                        </ClickAwayListener>
                       </TableCell>
                     </StyledTableRow>
                   </React.Fragment>
@@ -1602,13 +1805,13 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         }}
       >
         <TablePagination
+          rowsPerPageOptions={[9, 18, 27]}
           component="div"
-          count={departments?.length || 0}
+          count={departments?.length}
+          rowsPerPage={rowsPerPage}
           page={page}
           onPageChange={handleChangePage}
-          rowsPerPage={rowsPerPage}
           onRowsPerPageChange={handleChangeRowsPerPage}
-          rowsPerPageOptions={[9, 18, 27]}
         />
 
         <Box
@@ -1692,184 +1895,198 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         </Alert>
       </Snackbar>
 
-      <Dialog
+      <Drawer
+        anchor="left"
         open={showAddDepartment}
         onClose={() => setShowAddDepartment(false)}
-        maxWidth="sm"
         PaperProps={{
           sx: {
             borderRadius: "8px",
             boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+            position: "absolute",
+            top: "5%",
+            left: "35%",
+            // transform: "translate(-50%, -50%)",
+            m: 0,
+            height: "auto", // dynamic height
+            maxHeight: "95vh", // prevent it from overflowin
+            overflow: "hidden", // avoid extra scrollbars
+            animation: "slideInFromLeft 0.2s ease-in-out forwards",
+            opacity: 0, // Start with opacity 0
+            transform: "translateX(-50px)", // Start from left
+            "@keyframes slideInFromLeft": {
+              "0%": {
+                opacity: 0,
+                transform: "translateX(-50px)",
+              },
+              "100%": {
+                opacity: 1,
+                transform: "translateX(0)",
+              },
+            },
           },
         }}
       >
-        {/* <DialogTitle>Add New Department</DialogTitle> */}
-        <DialogTitle
-          sx={{
-            borderBottom: "1px solid #eee",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            p: 2,
-          }}
-        >
-          <Typography
-            variant="h6"
-            // sx={{
-            //   fontFamily: '"Be Vietnam", sans-serif',
-            // }}
-          >
-            New Department
-          </Typography>
-          <IconButton
-            onClick={() => setShowAddDepartment(false)}
-            size="small"
+        <Box sx={{ height: "70%", display: "flex", flexDirection: "column" }}>
+          <Box
             sx={{
-              color: "error.main",
-              width: 32,
-              height: 32,
-              border: "1px solid",
-              borderColor: "error.light",
-              bgcolor: "error.lighter",
-              borderRadius: "50%",
-              position: "relative",
-              "&:hover": {
-                color: "error.dark",
-                borderColor: "error.main",
-                bgcolor: "error.lighter",
-                transform: "rotate(180deg)",
-              },
-              transition: "transform 0.3s ease",
+              borderBottom: "1px solid #eee",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              p: 2,
+              
+              backgroundColor:"primary.main"
             }}
           >
-            <CloseIcon
+            <Typography variant="h6" sx={{color:"#ffff"}}>New Department</Typography>
+            <IconButton
+              onClick={() => setShowAddDepartment(false)}
+              size="small"
               sx={{
-                fontSize: "1.1rem",
-                transition: "transform 0.2s ease",
+                color: "#ffff",
+                width: 32,
+                height: 32,
+                border: "1px solid",
+                borderColor: "#ffff",
+                bgcolor: "error.lighter",
+                borderRadius: "50%",
+                position: "relative",
+                "&:hover": {
+                  // color: "error.dark",
+                  // borderColor: "error.main",
+                  // bgcolor: "error.lighter",
+                  transform: "rotate(180deg)",
+                },
+                transition: "transform 0.3s ease",
               }}
-            />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 2 }}>
-            <TextField
-              size="small"
-              label="Department Name"
-              value={newDepartment.name}
-              onChange={(e) =>
-                setNewDepartment((prev) => ({
-                  ...prev,
-                  name: e.target.value,
-                }))
-              }
-              fullWidth
-              required
-              error={!newDepartment.name && newDepartment.submitted}
-              helperText={
-                !newDepartment.name && newDepartment.submitted
-                  ? "Department name is required"
-                  : ""
-              }
-            />
-            <FormControl fullWidth size="small">
-              <InputLabel id="storage-label">Storage Allocation</InputLabel>
-              <Select
-                labelId="storage-label"
-                value={newDepartment.storage || "50GB"}
-                label="Storage Allocation"
-                onChange={(e) =>
-                  setNewDepartment((prev) => ({
-                    ...prev,
-                    storage: e.target.value,
-                  }))
-                }
-                required
-                error={!newDepartment.storage && newDepartment.submitted}
-              >
-                {[0, 25, 50, 75, 100, 150, 200].map((size) => (
-                  <MenuItem key={size} value={`${size}GB`}>
-                    {size} GB
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <TextField
-              size="small"
-              label="Short Name"
-              value={newDepartment.displayName}
-              onChange={(e) =>
-                setNewDepartment((prev) => ({
-                  ...prev,
-                  displayName: e.target.value.toUpperCase(),
-                }))
-              }
-              required
-              error={!newDepartment.displayName && newDepartment.submitted}
-              helperText={
-                !newDepartment.displayName && newDepartment.submitted
-                  ? "Display name is required"
-                  : "Short form"
-              }
-            />
-            <TextField
-              size="small"
-              label="Department Moderator"
-              value={newDepartment.departmentModerator}
-              onChange={(e) =>
-                setNewDepartment((prev) => ({
-                  ...prev,
-                  departmentModerator: e.target.value,
-                }))
-              }
-              required
-              error={
-                !newDepartment.departmentModerator && newDepartment.submitted
-              }
-              helperText={
-                !newDepartment.departmentModerator && newDepartment.submitted
-                  ? "Department Moderator is required"
-                  : ""
-              }
-              fullWidth
-            />
-            <TextField
-              size="small"
-              label="Initial Role"
-              value={newDepartment.initialRole}
-              onChange={(e) =>
-                setNewDepartment((prev) => ({
-                  ...prev,
-                  initialRole: e.target.value,
-                }))
-              }
-              required
-              error={!newDepartment.initialRole && newDepartment.submitted}
-              helperText={
-                !newDepartment.initialRole && newDepartment.submitted
-                  ? "At least one role is required"
-                  : ""
-              }
-            />
-            <TextField
-              size="small"
-              label="Reporting Manager"
-              value={newDepartment.reportingManager}
-              onChange={(e) =>
-                setNewDepartment((prev) => ({
-                  ...prev,
-                  reportingManager: e.target.value,
-                }))
-              }
-              required
-              error={!newDepartment.reportingManager && newDepartment.submitted}
-              helperText={
-                !newDepartment.reportingManager && newDepartment.submitted
-                  ? "Reporting Manager is required"
-                  : ""
-              }
-              fullWidth
-              sx={{ mt: 2 }}
-            />
+            >
+              <CloseIcon
+                sx={{ fontSize: "1.1rem", transition: "transform 0.2s ease" }}
+              />
+            </IconButton>
+          </Box>
+
+          <Box sx={{ p: 2, flex: 1, overflowY: "auto" }}>
+            <Box
+              sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}
+            >
+              {/* First Card - Grouped Text Fields */}
+              <Card elevation={2} sx={{ borderRadius: 2 }}>
+                <CardContent
+                  sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+                >
+                  {[
+                    {
+                      label: "Department Name",
+                      value: newDepartment.name,
+                      onChange: (e) =>
+                        setNewDepartment((prev) => ({
+                          ...prev,
+                          name: e.target.value,
+                        })),
+                      error: !newDepartment.name && newDepartment.submitted,
+                      helperText:
+                        !newDepartment.name && newDepartment.submitted
+                          ? "Department name is required"
+                          : "",
+                    },
+                    {
+                      label: "Short Name",
+                      value: newDepartment.displayName,
+                      onChange: (e) =>
+                        setNewDepartment((prev) => ({
+                          ...prev,
+                          displayName: e.target.value.toUpperCase(),
+                        })),
+                      error:
+                        !newDepartment.displayName && newDepartment.submitted,
+                      helperText:
+                        !newDepartment.displayName && newDepartment.submitted
+                          ? "Display name is required"
+                          : "Short form",
+                    },
+                    {
+                      label: "Department Moderator",
+                      value: newDepartment.departmentModerator,
+                      onChange: (e) =>
+                        setNewDepartment((prev) => ({
+                          ...prev,
+                          departmentModerator: e.target.value,
+                        })),
+                      error:
+                        !newDepartment.departmentModerator &&
+                        newDepartment.submitted,
+                      helperText:
+                        !newDepartment.departmentModerator &&
+                        newDepartment.submitted
+                          ? "Department Moderator is required"
+                          : "",
+                    },
+                    {
+                      label: "Initial Role",
+                      value: newDepartment.initialRole,
+                      onChange: (e) =>
+                        setNewDepartment((prev) => ({
+                          ...prev,
+                          initialRole: e.target.value,
+                        })),
+                      error:
+                        !newDepartment.initialRole && newDepartment.submitted,
+                      helperText:
+                        !newDepartment.initialRole && newDepartment.submitted
+                          ? "At least one role is required"
+                          : "",
+                    },
+                  ].map((field, index) => (
+                    <TextField
+                      key={index}
+                      fullWidth
+                      size="small"
+                      label={field.label}
+                      value={field.value}
+                      onChange={field.onChange}
+                      error={field.error}
+                      helperText={field.helperText}
+                      required
+                    />
+                  ))}
+                </CardContent>
+              </Card>
+
+              {/* Second Card - Storage Allocation */}
+              <Card elevation={2} sx={{ borderRadius: 2 }}>
+                <CardContent sx={{ p: 1.5 }}>
+                  <FormControl
+                    fullWidth
+                    size="small"
+                    error={!newDepartment.storage && newDepartment.submitted}
+                  >
+                    <InputLabel id="storage-label">
+                      Storage Allocation
+                    </InputLabel>
+                    <Select
+                      labelId="storage-label"
+                      value={newDepartment.storage || "50GB"}
+                      label="Storage Allocation"
+                      onChange={(e) =>
+                        setNewDepartment((prev) => ({
+                          ...prev,
+                          storage: e.target.value,
+                        }))
+                      }
+                      required
+                    >
+                      {[0, 25, 50, 75, 100, 150, 200].map((size) => (
+                        <MenuItem key={size} value={`${size}GB`}>
+                          {size} GB
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </CardContent>
+              </Card>
+            </Box>
           </Box>
 
           <Box
@@ -1878,27 +2095,25 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               justifyContent: "space-between",
               alignItems: "center",
               gap: 2,
-              mt: 3,
-              pt: 2,
+              p: 2,
               borderTop: "1px solid #eee",
-              width: "100%",
             }}
           >
             <Box sx={{ display: "flex", gap: 1 }}>
-              <Tooltip title="Download Template" componentsProps={{}}>
+              <Tooltip title="Download Template">
                 <IconButton
                   onClick={handleTemplateDownload}
                   size="small"
                   sx={{
-                    backgroundColor: "success.lighter",
+                    backgroundColor: "primary.lighter",
                     border: "1px solid",
-                    borderColor: "success.light",
-                    color: "success.main",
-                    width: 36,
+                    borderColor: "primary.light",
+                    color: "primary.main",
+                    px: 1,
                     height: 36,
                     borderRadius: "8px",
                     "&:hover": {
-                      backgroundColor: "success.100",
+                      backgroundColor: "primary.100",
                       transform: "translateY(-1px)",
                       boxShadow: "0 2px 8px rgba(46, 125, 50, 0.15)",
                     },
@@ -1906,31 +2121,34 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                   }}
                 >
                   <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                    <Typography variant="body2">Download Template</Typography>
                     <DownloadIcon sx={{ fontSize: 20 }} />
                   </Box>
                 </IconButton>
               </Tooltip>
+
               <Tooltip title="Bulk Upload" componentsProps={{}}>
                 <IconButton
                   onClick={() => fileInputRef.current?.click()}
                   size="small"
                   sx={{
-                    backgroundColor: "primary.lighter",
+                    backgroundColor: "primary.dark",
                     border: "1px solid",
                     borderColor: "primary.light",
-                    color: "primary.main",
-                    width: 36,
+                    color: "white",
+                    px: 1,
                     height: 36,
                     borderRadius: "8px",
                     "&:hover": {
-                      backgroundColor: "primary.100",
+                      backgroundColor: "primary.dark",
                       transform: "translateY(-1px)",
-                      boxShadow: "0 2px 8px rgba(25, 118, 210, 0.15)",
+                      // boxShadow: "0 2px 8px rgba(46, 125, 50, 0.15)",
                     },
                     transition: "all 0.2s ease",
                   }}
                 >
                   <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                    <Typography variant="body2">Bulk Upload</Typography>
                     <UploadFileIcon sx={{ fontSize: 20 }} />
                   </Box>
                 </IconButton>
@@ -1941,44 +2159,116 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               onClick={handleAddDepartment}
               variant="contained"
               sx={{
-                bgcolor: "primary.main",
+                background: "rgb(251, 68, 36)",
                 "&:hover": {
-                  bgcolor: "primary.dark",
+                  background: "rgb(251, 68, 36)",
                 },
                 px: 3,
                 py: 0.7,
-                // fontFamily: '"Be Vietnam", sans-serif',
               }}
             >
               Add
             </Button>
           </Box>
-        </DialogContent>
-      </Dialog>
+        </Box>
+      </Drawer>
 
-      <Dialog
+      <Drawer
+        anchor="left"
         open={showAddRoleDialog}
         onClose={() => {
           setShowAddRoleDialog(false);
           setNewRole("");
         }}
-        maxWidth="xs"
+        PaperProps={{
+          sx: {
+            borderRadius: "8px",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+            position: "absolute",
+            top: "30%",
+            left: "40%",
+            // transform: "translate(-50%, -50%)",
+            m: 0,
+            height: "auto", // dynamic height
+            maxHeight: "95vh", // prevent it from overflowin
+            overflow: "hidden", // avoid extra scrollbars
+            width: "350px",
+            animation: "slideInFromLeft 0.2s ease-in-out forwards",
+            opacity: 0, // Start with opacity 0
+            transform: "translateX(-50px)", // Start from left
+            "@keyframes slideInFromLeft": {
+              "0%": {
+                opacity: 0,
+                transform: "translateX(-50px)",
+              },
+              "100%": {
+                opacity: 1,
+                transform: "translateX(0)",
+              },
+            },
+          },
+        }}
       >
-        <DialogTitle>Add Role to {selectedDepartment?.name}</DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="New Role"
-            fullWidth
-            variant="outlined"
-            value={newRole}
-            onChange={(e) => setNewRole(e.target.value)}
+        <Box
+          sx={{
+            p: 2,
+            borderBottom: "1px solid #eee",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            backgroundColor:"primary.main"
+          }}
+        >
+          <Typography variant="h6"  sx={{color:"#ffff"}}>
+            Add Role to {selectedDepartment?.name}
+          </Typography>
+          <IconButton
             size="small"
-            sx={{ mt: 2 }}
-          />
-        </DialogContent>
-        <DialogActions>
+            onClick={() => {
+              setShowAddRoleDialog(false);
+              setNewRole("");
+            }}
+            sx={{
+              color: "#ffff",
+              border: "1px solid",
+              borderColor: "#ffff",
+              bgcolor: "error.lighter",
+              "&:hover": {
+                // bgcolor: "error.light",
+                transform: "rotate(180deg)",
+              },
+              transition: "all 0.3s ease",
+              borderRadius: "50%",
+            }}
+          >
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </Box>
+
+        <Box sx={{ p: 2, flexGrow: 1 }}>
+          <Card elevation={1} sx={{ borderRadius: 2 }}>
+            <CardContent>
+              <TextField
+                autoFocus
+                fullWidth
+                size="small"
+                label="New Role"
+                value={newRole}
+                onChange={(e) => setNewRole(e.target.value)}
+              />
+            </CardContent>
+          </Card>
+        </Box>
+
+        <Box
+          sx={{
+            p: 2,
+            display: "flex",
+            justifyContent: "flex-end",
+            gap: 1,
+            borderTop: "1px solid #eee",
+          }}
+        >
           <Button
             onClick={() => {
               setShowAddRoleDialog(false);
@@ -1987,50 +2277,125 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           >
             Cancel
           </Button>
-          <Button onClick={handleAddRole} color="primary" variant="contained">
+          <Button onClick={handleAddRole} variant="contained" color="primary" sx={{ background: "rgb(251, 68, 36)",}}>
             Add
           </Button>
-        </DialogActions>
-      </Dialog>
+        </Box>
+      </Drawer>
 
-      <Dialog
+      <Drawer
+        anchor="left"
         open={editDialogOpen}
         onClose={() => setEditDialogOpen(false)}
-        maxWidth="sm"
+        PaperProps={{
+          sx: {
+            borderRadius: "8px",
+            // boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+            position: "absolute",
+            top: "30%",
+            left: "40%",
+            transform: "translate(-50%, -50%)",
+            m: 0,
+            height: "auto", // dynamic height
+            maxHeight: "95vh", // prevent it from overflowin
+            overflow: "hidden", // avoid extra scrollbars
+            width: "450px",
+            padding: "10px",
+            animation: "slideInFromLeft 0.2s ease-in-out forwards",
+            opacity: 0, // Start with opacity 0
+            transform: "translateX(-50px)", // Start from left
+            "@keyframes slideInFromLeft": {
+              "0%": {
+                opacity: 0,
+                transform: "translateX(-50px)",
+              },
+              "100%": {
+                opacity: 1,
+                transform: "translateX(0)",
+              },
+            },
+          },
+        }}
       >
-        <DialogTitle>Edit Department</DialogTitle>
-        <DialogContent>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 2 }}>
-            <TextField
-              size="small"
-              label="Department Name"
-              value={editedDepartment?.name || ""}
-              onChange={(e) =>
-                setEditedDepartment((prev) => ({
-                  ...prev,
-                  name: e.target.value,
-                }))
-              }
-              fullWidth
-              required
-            />
-            <TextField
-              size="small"
-              label="Display Name"
-              value={editedDepartment?.displayName || ""}
-              onChange={(e) =>
-                setEditedDepartment((prev) => ({
-                  ...prev,
-                  displayName: e.target.value.toUpperCase(),
-                }))
-              }
-              required
-            />
-          </Box>
-        </DialogContent>
-        <DialogActions>
+  
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            backgroundColor:"primary.main",
+          // borderRadius:"20px",
+            margin: 0,
+            padding:1
+            
+          }}
+        >
+          <Typography variant="h6" sx={{color:"#ffff"}}>
+            Edit Department
+          </Typography>
+          <IconButton
+            onClick={() => setEditDialogOpen(false)}
+            sx={{
+              color: "#ffff",
+              border: "1px solid",
+              borderColor: "#ffff",
+              bgcolor: "error.lighter",
+              "&:hover": {
+                // bgcolor: "error.light",
+                transform: "rotate(180deg)",
+              },
+              transition: "all 0.3s ease",
+              borderRadius: "50%",
+              size: "small"
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </Box>
+
+        {/* Form Fields */}
+        <Card elevation={1} sx={{ borderRadius: 2 }}>
+          <CardContent>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              <TextField
+                size="small"
+                label="Department Name"
+                fullWidth
+                required
+                value={editedDepartment?.name || ""}
+                onChange={(e) =>
+                  setEditedDepartment((prev) => ({
+                    ...prev,
+                    name: e.target.value,
+                  }))
+                }
+              />
+              <TextField
+                size="small"
+                label="Display Name"
+                fullWidth
+                required
+                value={editedDepartment?.displayName || ""}
+                onChange={(e) =>
+                  setEditedDepartment((prev) => ({
+                    ...prev,
+                    displayName: e.target.value.toUpperCase(),
+                  }))
+                }
+              />
+            </Box>
+          </CardContent>
+        </Card>
+
+        {/* Action Buttons */}
+        <Box
+          sx={{ display: "flex", justifyContent: "flex-end", gap: 1, mt: 3 }}
+        >
           <Button onClick={() => setEditDialogOpen(false)}>Cancel</Button>
           <Button
+          sx={{ background: "rgb(251, 68, 36)",}}
+            variant="contained"
+            color="primary"
             onClick={() => {
               setDepartments((prev) =>
                 prev.map((d) =>
@@ -2046,12 +2411,11 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 severity: "success",
               });
             }}
-            color="primary"
           >
             Save
           </Button>
-        </DialogActions>
-      </Dialog>
+        </Box>
+      </Drawer>
 
       <Dialog
         open={deleteDialogOpen}

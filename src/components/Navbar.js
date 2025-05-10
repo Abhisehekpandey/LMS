@@ -53,14 +53,14 @@ const SearchWrapper = styled("div")({
   "&:hover": {
     backgroundColor: "rgba(246,249,254)",
 
-  minHeight: 40,
-  position: 'relative',
-  '& .searchRoot': {
-    position: { xs: 'absolute', sm: 'relative' },
-    right: { xs: 0, sm: 'auto' },
-    top: { xs: 0, sm: 'auto' },
+    minHeight: 40,
+    position: 'relative',
+    '& .searchRoot': {
+      position: { xs: 'absolute', sm: 'relative' },
+      right: { xs: 0, sm: 'auto' },
+      top: { xs: 0, sm: 'auto' },
 
-},
+    },
   },
   marginRight: "20px",
   marginLeft: "20px",
@@ -336,15 +336,6 @@ const Navbar = ({ onThemeToggle, onSearch, currentPage }) => {
 
           {formattedPath && (
             <>
-              {/* <Typography
-                sx={{
-                  fontSize: "1.1rem",
-                  fontWeight: 400,
-                  color: "rgba(255, 255, 255, 0.7)",
-                  mx: 0.5
-                }}
-              >
-              </Typography> */}
               <Box
                 sx={{
                   height: { xs: 56, sm: 60 },
@@ -362,11 +353,6 @@ const Navbar = ({ onThemeToggle, onSearch, currentPage }) => {
                 }}
                 className='app-logo'
               >
-                {/* <Logo fill={theme.palette.primary.main} /> */}
-                {/* <img
-        src={theme.palette.mode === 'dark' ? dark : pic}
-        style={{width: '9rem', maxWidth: '100%', height: 'auto'}}
-      /> */}
 
                 <div>
                   <Typography
@@ -397,23 +383,10 @@ const Navbar = ({ onThemeToggle, onSearch, currentPage }) => {
                     },
                   }}
                 >
-                  {/* <Kms fill={alpha(theme.palette.text.primary, 0.8)} /> */}
-                  <h1></h1>
-                  {/* <LogoText fill={alpha(theme.palette.text.primary, 0.8)} /> */}
+        
                 </Box>
               </Box>
 
-              {/* <Typography
-                sx={{
-                  fontSize: "1rem",
-                  fontWeight: 400,
-                  color: "rgba(0, 0, 0, 0.7)",
-                  fontFamily: '"Be Vietnam", sans-serif',
-                  marginLeft: "60px",
-                }}
-              >
-                {formattedPath}
-              </Typography> */}
             </>
           )}
         </Box>
@@ -426,53 +399,56 @@ const Navbar = ({ onThemeToggle, onSearch, currentPage }) => {
             maxWidth: "1000px",
           }}
         >
-          <SearchWrapper>
-            <SearchIconWrapper>
-              <SearchIcon sx={{ fontSize: "1.2rem", color: "inherit" }} />
-            </SearchIconWrapper>
+          {["/user", "/department"].includes(location.pathname) && (
+            <SearchWrapper>
+              <SearchIconWrapper>
+                <SearchIcon sx={{ fontSize: "1.2rem", color: "inherit" }} />
+              </SearchIconWrapper>
 
-            <StyledInputBase
-              placeholder={
-                currentPage === "departments"
-                  ? "Search departments, roles..."
-                  : "Search users, departments, roles..."
-              }
-              value={searchTerm}
-              onChange={handleSearchChange}
-              inputProps={{ "aria-label": "search" }}
-            />
+              <StyledInputBase
+                placeholder={
+                  currentPage === "departments"
+                    ? "Search departments, roles..."
+                    : "Search users, departments, roles..."
+                }
+                value={searchTerm}
+                onChange={handleSearchChange}
+                inputProps={{ "aria-label": "search" }}
+              />
 
-            <ClickAwayListener onClickAway={handleClickAway}>
-              <div>
-                {searchResults.length > 0 && searchAnchorEl && (
-                  <Popper
-                    open={true}
-                    anchorEl={searchAnchorEl}
-                    placement="bottom-start"
-                    style={{
-                      zIndex: 1301,
-                      width: searchAnchorEl ? searchAnchorEl.offsetWidth : 800,
-                      marginTop: 4,
-                    }}
-                  >
-                    <SearchResultWrapper elevation={3}>
-                      <List dense>
-                        {searchResults.map((result, index) => (
-                          <ListItem
-                            key={index}
-                            onClick={() => handleSearchResultClick(result)}
-                            button
-                          >
-                            {renderSearchResult(result)}
-                          </ListItem>
-                        ))}
-                      </List>
-                    </SearchResultWrapper>
-                  </Popper>
-                )}
-              </div>
-            </ClickAwayListener>
-          </SearchWrapper>
+              <ClickAwayListener onClickAway={handleClickAway}>
+                <div>
+                  {searchResults.length > 0 && searchAnchorEl && (
+                    <Popper
+                      open={true}
+                      anchorEl={searchAnchorEl}
+                      placement="bottom-start"
+                      style={{
+                        zIndex: 1301,
+                        width: searchAnchorEl ? searchAnchorEl.offsetWidth : 800,
+                        marginTop: 4,
+                      }}
+                    >
+                      <SearchResultWrapper elevation={3}>
+                        <List dense>
+                          {searchResults.map((result, index) => (
+                            <ListItem
+                              key={index}
+                              onClick={() => handleSearchResultClick(result)}
+                              button
+                            >
+                              {renderSearchResult(result)}
+                            </ListItem>
+                          ))}
+                        </List>
+                      </SearchResultWrapper>
+                    </Popper>
+                  )}
+                </div>
+              </ClickAwayListener>
+            </SearchWrapper>
+          )}
+
 
           <Box sx={{ flexGrow: 1 }} />
 
@@ -504,17 +480,6 @@ const Navbar = ({ onThemeToggle, onSearch, currentPage }) => {
               </IconButton>
             </Tooltip>
 
-            {/* <Tooltip title="Change Language" arrow>
-            <IconButton
-              onClick={handleLanguageClick}
-              size="small"
-              // sx={{ color: 'text.secondary' }}
-              sx={{ color: "rgba(0, 0, 0, 0.6)" }}
-            >
-              <LanguageIcon sx={{ fontSize: "1.2rem" }} />
-            </IconButton>
-          </Tooltip> */}
-
             <Tooltip title="Logout" arrow>
               <IconButton
                 onClick={handleLogout}
@@ -540,34 +505,6 @@ const Navbar = ({ onThemeToggle, onSearch, currentPage }) => {
               </IconButton>
             </Tooltip>
           </Box>
-
-          {/* <Menu
-          anchorEl={anchorEl}
-          open={Boolean(anchorEl)}
-          onClose={handleLanguageClose}
-          PaperProps={{
-            sx: {
-              mt: 1.5,
-              fontFamily: '"Be Vietnam", sans-serif', 
-              "& .MuiMenuItem-root": {
-                fontSize: "0.875rem",
-                minHeight: "32px",
-              },
-            },
-          }}
-          transformOrigin={{ horizontal: "right", vertical: "top" }}
-          anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
-        >
-          <MenuItem dense onClick={() => handleLanguageChange("English")}>
-            English
-          </MenuItem>
-          <MenuItem dense onClick={() => handleLanguageChange("Spanish")}>
-            Spanish
-          </MenuItem>
-          <MenuItem dense onClick={() => handleLanguageChange("French")}>
-            French
-          </MenuItem>
-        </Menu> */}
         </Box>
       </StyledToolbar>
     </StyledAppBar>

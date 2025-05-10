@@ -17,23 +17,15 @@ import './App.css'
 
 function App() {
     const [darkMode, setDarkMode] = useState(false);
-    // const [departments, setDepartments] = useState([
-    //     { name: 'Engineering', displayName: 'ENG', roles: ['Developer', 'Tech Lead', 'Software Architect'] },
-    //     { name: 'Marketing', displayName: 'MKT', roles: ['Marketing Manager', 'Content Writer', 'SEO Specialist'] },
-    //     { name: 'Sales', displayName: 'SLS', roles: ['Sales Rep', 'Sales Manager', 'Account Executive'] },
-    //     { name: 'HR', displayName: 'HRM', roles: ['HR Manager', 'Recruiter', 'HR Assistant'] },
-    //     { name: 'Finance', displayName: 'FIN', roles: ['Accountant', 'Financial Analyst', 'Controller'] },
-    //     { name: 'IT', displayName: 'ITS', roles: ['System Admin', 'Support Engineer', 'Network Engineer'] },
-    //     { name: 'Operations', displayName: 'OPS', roles: ['Operations Manager', 'Project Manager', 'Business Analyst'] }
-    // ]);
+   
     const [departments, setDepartments] = useState([
-        { name: 'Engineering', displayName: 'ENG', roles: ['Developer', 'Tech Lead', 'Software Architect'], storage: '100GB' },
-        { name: 'Marketing', displayName: 'MKT', roles: ['Marketing Manager', 'Content Writer', 'SEO Specialist'], storage: '50GB' },
-        { name: 'Sales', displayName: 'SLS', roles: ['Sales Rep', 'Sales Manager', 'Account Executive'], storage: '50GB' },
-        { name: 'HR', displayName: 'HRM', roles: ['HR Manager', 'Recruiter', 'HR Assistant'], storage: '30GB' },
-        { name: 'Finance', displayName: 'FIN', roles: ['Accountant', 'Financial Analyst', 'Controller'], storage: '40GB' },
-        { name: 'IT', displayName: 'ITS', roles: ['System Admin', 'Support Engineer', 'Network Engineer'], storage: '200GB' },
-        { name: 'Operations', displayName: 'OPS', roles: ['Operations Manager', 'Project Manager', 'Business Analyst'], storage: '75GB' }
+        { name: 'Engineering', displayName: 'ENG',departmentModerator:"Abhishek", roles: ['Developer', 'Tech Lead', 'Software Architect'], storage: '100GB' },
+        { name: 'Marketing', displayName: 'MKT',departmentModerator:"Kunal", roles: ['Marketing Manager', 'Content Writer', 'SEO Specialist'], storage: '50GB' },
+        { name: 'Sales', displayName: 'SLS',departmentModerator:"Pratibha", roles: ['Sales Rep', 'Sales Manager', 'Account Executive'], storage: '50GB' },
+        { name: 'Human Resource', displayName: 'HR',departmentModerator:"Satyam", roles: ['HR Manager', 'Recruiter', 'HR Assistant'], storage: '50GB' },
+        { name: 'Finance', displayName: 'FIN',departmentModerator:"Ankit", roles: ['Accountant', 'Financial Analyst', 'Controller'], storage: '100GB' },
+        { name: 'Information Technology', displayName: 'ITS',departmentModerator:"Keshav", roles: ['System Admin', 'Support Engineer', 'Network Engineer'], storage: '200GB' },
+        { name: 'Operations', displayName: 'OPS',departmentModerator:"Shivam", roles: ['Operations Manager', 'Project Manager', 'Business Analyst'], storage: '75GB' }
     ]);
     const theme = createTheme({
         palette: {
