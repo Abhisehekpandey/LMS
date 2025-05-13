@@ -28,6 +28,7 @@ import LogoutIcon from "@mui/icons-material/Logout";
 import { useNavigate } from "react-router-dom";
 import debounce from "lodash/debounce";
 
+
 const StyledAppBar = styled(AppBar)(({ theme }) => ({
   backgroundColor: "white", // Match sidebar color
   color: "#424242",
@@ -113,7 +114,8 @@ const SearchResultWrapper = styled(Paper)(({ theme }) => ({
   },
 }));
 
-const Navbar = ({ onThemeToggle, onSearch, currentPage }) => {
+const Navbar = ({ onThemeToggle, onSearch, currentPage, }) => {
+  
   const location = useLocation();
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState(null);
@@ -457,7 +459,6 @@ const Navbar = ({ onThemeToggle, onSearch, currentPage }) => {
               <IconButton
                 onClick={onThemeToggle}
                 size="medium"
-                // sx={{ color: 'text.secondary' }}
                 sx={{
                   borderRadius: '50%',
                   width: 40,
@@ -474,7 +475,6 @@ const Navbar = ({ onThemeToggle, onSearch, currentPage }) => {
                       alpha(theme.palette.text.secondary, 0.25),
                   },
                 }}
-              // sx={{ color: "rgba(0, 0, 0, 0.6)", backgroundColor: "rgba(246,249,254)" }}
               >
                 <Brightness4Icon sx={{ fontSize: "1.2rem" }} />
               </IconButton>

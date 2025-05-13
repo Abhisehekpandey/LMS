@@ -14,6 +14,9 @@ import CompanyDashboard from './pages/CompanyDashboard';
 import ActivateAccount from './components/ActivateAccount';
 import Layout from './components/Layout';
 import './App.css'
+import UserTable from './pages/user/UserTable';
+
+
 
 function App() {
     const [darkMode, setDarkMode] = useState(false);

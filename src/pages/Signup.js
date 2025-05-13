@@ -1,52 +1,91 @@
 import React, { useState } from "react";
 import {
-  TextField,
-  Button,
-  Container,
-  Typography,
-  Link,
   Box,
-  Paper,
-  InputAdornment,
+  Button,
   IconButton,
-  FormHelperText,
+  InputAdornment,
+  Paper,
+  TextField,
+  Typography,
   useTheme,
+  Link,
 } from "@mui/material";
-import {
-  Person,
-  Email,
-  Lock,
-  Visibility,
-  VisibilityOff,
-} from "@mui/icons-material";
+import { Visibility, VisibilityOff, Email, Lock } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import backgroundImage from "../assets/Back.jpg.jpg";
+import { keyframes } from "@emotion/react";
+
+const floatAnimation = keyframes`
+  0% { background-position-y: 0px; }
+  50% { background-position-y: 20px; }
+  100% { background-position-y: 0px; }
+`;
 
 const Signup = () => {
   const theme = useTheme();
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
+    organization: "",
+    adminName: "",
+    domain: "",
+    emailPrefix: "",
     password: "",
+    confirmPassword: "",
   });
+
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
-  const navigate = useNavigate();
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const fullEmail =
+    formData.emailPrefix && formData.domain
+      ? `${formData.emailPrefix}@${formData.domain}`
+      : "";
 
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.name) newErrors.name = "Name is required";
-    if (!formData.email) {
-      newErrors.email = "Email is required";
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+    if (!formData.organization)
+      newErrors.organization = "Organization is required";
+    if (!formData.adminName) newErrors.adminName = "Admin name is required";
+    if (!formData.domain) {
+      newErrors.domain = "Domain is required";
+    } else if (!/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.domain)) {
+      newErrors.domain = "Invalid domain";
+    }
+
+    if (!formData.emailPrefix) {
+      newErrors.email = "Admin email prefix is required";
+    } else if (!/\S+@\S+\.\S+/.test(fullEmail)) {
       newErrors.email = "Invalid email address";
     }
+
     if (!formData.password) {
       newErrors.password = "Password is required";
     } else if (formData.password.length < 6) {
       newErrors.password = "Password must be at least 6 characters";
     }
+
+    if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = "Passwords do not match";
+    }
+
     return newErrors;
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+
+    if (errors[name]) {
+      setErrors((prev) => ({
+        ...prev,
+        [name]: "",
+      }));
+    }
   };
 
   const handleSignup = (e) => {
@@ -56,193 +95,295 @@ const Signup = () => {
       setErrors(validationErrors);
       return;
     }
-    sessionStorage.setItem("user", JSON.stringify(formData));
-    navigate("/login");
-  };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-    // Clear error when user types
-    if (errors[name]) {
-      setErrors((prev) => ({
-        ...prev,
-        [name]: "",
-      }));
-    }
+    // Store full email for backend submission
+    const finalData = {
+      ...formData,
+      email: fullEmail,
+    };
+
+    sessionStorage.setItem("user", JSON.stringify(finalData));
+    navigate("/login");
   };
 
   return (
     <Box
-      component={motion.div}
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
       sx={{
         minHeight: "100vh",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: "#f5f7fa",
-        padding: 3,
+        backgroundColor: "#eef2f7",
+        p: 2,
+        backgroundImage: `url(${backgroundImage})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+
+        backgroundRepeat: "no-repeat",
+        animation: `${floatAnimation} 3s ease-in-out infinite`,
       }}
     >
       <Paper
-        elevation={0}
+        elevation={3}
         sx={{
-          p: 4,
+          display: "flex",
+          flexDirection: { xs: "column", md: "row" },
+          borderRadius: 4,
+          overflow: "hidden",
           width: "100%",
-          maxWidth: 400,
-          borderRadius: 2,
-          boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+          maxWidth: 1000,
+          backgroundColor: "rgba(255, 255, 255, 0.6)", // Make background transparent
+          boxShadow: "none", // Ensure no shadow
         }}
       >
         <Box
-          component={motion.div}
-          initial={{ scale: 0.9 }}
-          animate={{ scale: 1 }}
-          transition={{ duration: 0.3 }}
-          sx={{ textAlign: "center", mb: 4 }}
-        >
-          <Typography
-            variant="h4"
-            component="h1"
-            sx={{
-              fontWeight: 700,
-              color: theme.palette.primary.main,
-              mb: 1,
-            }}
-          >
-            Access Arc
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Create your account
-          </Typography>
-        </Box>
-
-        <form onSubmit={handleSignup}>
-          <TextField
-            fullWidth
-            label="Name"
-            name="name"
-            variant="outlined"
-            margin="normal"
-            value={formData.name}
-            onChange={handleChange}
-            error={!!errors.name}
-            helperText={errors.name}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Person color="action" />
-                </InputAdornment>
-              ),
-            }}
-            sx={{
-              "& .MuiOutlinedInput-root": {
-                "&:hover fieldset": {
-                  borderColor: theme.palette.primary.main,
-                },
-              },
-            }}
-          />
-
-          <TextField
-            fullWidth
-            label="Email"
-            name="email"
-            type="email"
-            variant="outlined"
-            margin="normal"
-            value={formData.email}
-            onChange={handleChange}
-            error={!!errors.email}
-            helperText={errors.email}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Email color="action" />
-                </InputAdornment>
-              ),
-            }}
-          />
-
-          <TextField
-            fullWidth
-            label="Password"
-            name="password"
-            type={showPassword ? "text" : "password"}
-            variant="outlined"
-            margin="normal"
-            value={formData.password}
-            onChange={handleChange}
-            error={!!errors.password}
-            helperText={errors.password}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Lock color="action" />
-                </InputAdornment>
-              ),
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton
-                    onClick={() => setShowPassword(!showPassword)}
-                    edge="end"
-                  >
-                    {showPassword ? <VisibilityOff /> : <Visibility />}
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
-          />
-
-          <Button
-            component={motion.button}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            type="submit"
-            variant="contained"
-            fullWidth
-            sx={{
-              mt: 3,
-              mb: 2,
-              py: 1.5,
-              fontSize: "1rem",
-              fontWeight: 600,
-              textTransform: "none",
-              borderRadius: 2,
-            }}
-          >
-            Sign Up
-          </Button>
-        </form>
-
-        <Typography
-          variant="body2"
-          align="center"
           sx={{
-            mt: 2,
-            color: "text.secondary",
+            flex: 1,
+            p: 4,
+            backgroundColor: "rgba(255, 255, 255, 0.2)", // Light transparent layer
+            backdropFilter: "blur(2px)", // Blur effect
+            WebkitBackdropFilter: "blur(2px)", // Safari support
+            border: "1px solid rgba(255, 255, 255, 0.3)", // Optional subtle border
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
           }}
         >
-          Already have an account?{" "}
-          <Link
-            component={motion.a}
-            whileHover={{ color: theme.palette.primary.dark }}
-            onClick={() => navigate("/login")}
-            sx={{
-              cursor: "pointer",
-              textDecoration: "none",
-              fontWeight: 600,
-            }}
+          <Box maxWidth={400} textAlign="left">
+            <Typography
+              variant="h3"
+              sx={{
+                fontSize: "2.75rem",
+                fontWeight: 900,
+                letterSpacing: "-1px",
+                lineHeight: 1.2,
+              }}
+            >
+              <Box component="span" sx={{ color: "#1e293b" }}>
+                Team
+              </Box>
+              <Box component="span" sx={{ color: "#ff4b5c", fontWeight: 900 }}>
+                Sync
+              </Box>
+              <Box
+                component="span"
+                sx={{ color: "#9333ea", fontWeight: 900, pl: 1 }}
+              >
+                ×
+              </Box>
+            </Typography>
+
+            <Typography
+              variant="h6"
+              sx={{
+                mt: 1,
+                fontWeight: 600,
+                color: "#374151",
+                fontSize: "1.25rem",
+                position: "relative",
+                display: "inline-block",
+                pb: 0.5,
+              }}
+            >
+              Access Arc
+              <Box
+                component="span"
+                sx={{
+                  display: "block",
+                  height: "2px",
+                  width: "100%",
+                  backgroundColor: "#d1d5db",
+                  position: "absolute",
+                  bottom: 0,
+                  left: 0,
+                }}
+              />
+            </Typography>
+
+            <Typography
+              variant="body1"
+              sx={{
+                mt: 3,
+                fontSize: "0.95rem",
+                fontWeight: 400,
+                color: "#4b5563",
+                lineHeight: 1.6,
+                maxWidth: "90%",
+              }}
+            >
+              AccessArc is a robust license management system designed to
+              streamline and curate your company software privileges. It ensures
+              efficient allocation and monitoring of licenses, optimizing usage
+              and compliance. With AccessArc, you gain full control over your
+              software assets, reducing costs and enhancing operational
+              efficiency.
+            </Typography>
+          </Box>
+        </Box>
+
+        <Box
+          sx={{
+            flex: 1,
+            p: 4,
+            backgroundColor: "rgba(255, 255, 255, 0.2)", // Light transparent layer
+            backdropFilter: "blur(10px)", // Blur effect
+            WebkitBackdropFilter: "blur(10px)", // Safari support
+            border: "1px solid rgba(255, 255, 255, 0.3)", // Optional subtle border
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Box
+            component="form"
+            onSubmit={handleSignup}
+            sx={{ width: "100%", maxWidth: 400 }}
           >
-            Login
-          </Link>
-        </Typography>
+            <Typography variant="h5" align="center" fontWeight={600} mb={3}>
+              Signup Organization
+            </Typography>
+
+            <Box display="flex" gap={2} mb={2}>
+              <TextField
+                fullWidth
+                label="Organization Name"
+                name="organization"
+                value={formData.organization}
+                onChange={handleChange}
+                error={!!errors.organization}
+                helperText={errors.organization}
+              />
+              <TextField
+                fullWidth
+                label="Admin Name"
+                name="adminName"
+                value={formData.adminName}
+                onChange={handleChange}
+                error={!!errors.adminName}
+                helperText={errors.adminName}
+              />
+            </Box>
+
+            <TextField
+              fullWidth
+              label="Domain"
+              name="domain"
+              margin="normal"
+              value={formData.domain}
+              onChange={handleChange}
+              error={!!errors.domain}
+              helperText={errors.domain}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">@</InputAdornment>
+                ),
+              }}
+            />
+
+            <TextField
+              fullWidth
+              label="Admin Email"
+              name="emailPrefix"
+              margin="normal"
+              value={formData.emailPrefix}
+              onChange={handleChange}
+              error={!!errors.email}
+              helperText={errors.email}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Email />
+                  </InputAdornment>
+                ),
+                endAdornment: formData.domain && (
+                  <InputAdornment position="end" sx={{ fontWeight: 600 }}>
+                    @{formData.domain}
+                  </InputAdornment>
+                ),
+              }}
+            />
+
+            <TextField
+              fullWidth
+              label="Password"
+              name="password"
+              type={showPassword ? "text" : "password"}
+              margin="normal"
+              value={formData.password}
+              onChange={handleChange}
+              error={!!errors.password}
+              helperText={errors.password}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Lock />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShowPassword(!showPassword)}
+                      edge="end"
+                    >
+                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
+
+            <TextField
+              fullWidth
+              label="Confirm Password"
+              name="confirmPassword"
+              type={showConfirmPassword ? "text" : "password"}
+              margin="normal"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              error={!!errors.confirmPassword}
+              helperText={errors.confirmPassword}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
+                      edge="end"
+                    >
+                      {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
+
+            <Button
+              type="submit"
+              variant="contained"
+              fullWidth
+              sx={{
+                py: 1.5,
+                mt: 2,
+                textTransform: "none",
+                fontWeight: 600,
+                borderRadius: 2,
+              }}
+            >
+              Signup
+            </Button>
+
+            <Typography variant="body2" align="center" sx={{ mt: 2 }}>
+              Already have account?{" "}
+              <Link
+                onClick={() => navigate("/login")}
+                sx={{ cursor: "pointer", fontWeight: 600 }}
+              >
+                Sign in here
+              </Link>
+            </Typography>
+          </Box>
+        </Box>
       </Paper>
     </Box>
   );
