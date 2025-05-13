@@ -1,4 +1,11 @@
-import { Add, ArrowDownward, ArrowUpward, Dashboard, Group, Warning } from "@mui/icons-material";
+import {
+  Add,
+  ArrowDownward,
+  ArrowUpward,
+  Dashboard,
+  Group,
+  Warning,
+} from "@mui/icons-material";
 import {
   alpha,
   Box,
@@ -19,12 +26,18 @@ import {
   Typography,
   FormControl,
   Select,
-  MenuItem
+  MenuItem,
 } from "@mui/material";
 import React, { useEffect, useState } from "react";
-import { CircularProgress, keyframes, styled } from '@mui/material';
+import { CircularProgress, keyframes, styled } from "@mui/material";
 import ReactECharts from "echarts-for-react";
-import { ArrowDropUp, ArrowDropDown, SortByAlpha, FilterList } from '@mui/icons-material';
+import {
+  ArrowDropUp,
+  ArrowDropDown,
+  SortByAlpha,
+  FilterList,
+} from "@mui/icons-material";
+import { ArrowBack, ArrowForward } from "@mui/icons-material";
 
 const fadeIn = keyframes`
   from { opacity: 0; transform: scale(0.95); }
@@ -33,16 +46,16 @@ const fadeIn = keyframes`
 
 // Styled overlay
 const LoaderWrapper = styled(Box)(({ theme }) => ({
-  position: 'fixed',
+  position: "fixed",
   top: 0,
   left: 0,
-  width: '100vw',
-  height: '100vh',
-  background: 'rgba(255, 255, 255, 0.75)',
-  backdropFilter: 'blur(5px)',
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
+  width: "100vw",
+  height: "100vh",
+  background: "rgba(255, 255, 255, 0.75)",
+  backdropFilter: "blur(5px)",
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
   zIndex: 1300,
   animation: `${fadeIn} 0.5s ease-in-out`,
 }));
@@ -50,8 +63,8 @@ const LoaderWrapper = styled(Box)(({ theme }) => ({
 // Styled CircularProgress
 const CustomSpinner = styled(CircularProgress)(({ theme }) => ({
   color: theme.palette.primary.main,
-  width: '60px !important',
-  height: '80px !important',
+  width: "60px !important",
+  height: "80px !important",
   thickness: 2,
 }));
 const chartColors = {
@@ -77,7 +90,7 @@ const commonPaperStyles = {
 const getProgressBarColor = (percentage) => {
   if (percentage == 100) {
     // return "";
-    return "#FF7F50"
+    return "#FF7F50";
   } else if (percentage > 30) {
     return "#4caf50";
   } else {
@@ -101,6 +114,15 @@ const AngelBot = () => {
     { value: 484, name: "Department", color: "#5470C6" },
   ];
 
+  const [licenses] = useState([
+    { id: 1, name: "License A", expiryDate: "2025-12-31" },
+    { id: 2, name: "License B", expiryDate: "2025-08-01" },
+    { id: 3, name: "License C", expiryDate: "2025-06-10" }, // this is soonest
+  ]);
+
+  const [nextExpiringLicense, setNextExpiringLicense] = useState("");
+  const [currentLicenseIndex, setCurrentLicenseIndex] = useState(0);
+
   const [storageStatusData, setStorageStatusData] = useState(defaultStatusData);
   const [storageDistributionData, setStorageDistributionData] = useState(
     defaultDistributionData
@@ -123,29 +145,44 @@ const AngelBot = () => {
     { id: 6, name: "manish", storageUsed: 150, storageAllocated: 200 },
     { id: 7, name: "prince", storageUsed: 50, storageAllocated: 200 },
     { id: 8, name: "kunal", storageUsed: 50, storageAllocated: 50 },
-
   ]);
 
+  const [deptSortOption, setDeptSortOption] = useState("high");
+  const [getSortedDepartments, setSortedDepartments] = useState([
+    { id: 1, name: "IT", storage: 100, storageAllocated: 200 },
+    { id: 2, name: "Engineering", storage: 200, storageAllocated: 300 },
+    { id: 3, name: "Operations", storage: 150, storageAllocated: 200 },
+    { id: 14, name: "Marketing", storage: 50, storageAllocated: 100 },
+    { id: 145, name: "Sales", storage: 120, storageAllocated: 200 },
+    { id: 17, name: "Finance", storage: 150, storageAllocated: 250 },
+    { id: 18, name: "HR", storage: 150, storageAllocated: 200 },
+  ]);
+
+  const [storageTab, setStorageTab] = useState("status"); // "status" or "distribution"
+
   useEffect(() => {
-    const calculateRemainingDays = () => {
-      const today = new Date();
-      const diffTime = licenseExpiryDate - today;
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const today = new Date();
+    const currentLicense = licenses[currentLicenseIndex];
 
-      if (diffDays <= -10) {
-        setShowBlockWarning(true);
-      }
+    if (!currentLicense) return;
 
-      if (diffDays <= 0) {
-        setNegativeCount(Math.abs(diffDays));
-        setRemainingDays(0);
-      } else {
-        setRemainingDays(diffDays);
-      }
-    };
+    const expiryDate = new Date(currentLicense.expiryDate);
+    const diffTime = expiryDate - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    calculateRemainingDays();
-  }, [licenseExpiryDate]);
+    if (diffDays <= -10) {
+      setShowBlockWarning(true);
+    }
+
+    if (diffDays <= 0) {
+      setNegativeCount(Math.abs(diffDays));
+      setRemainingDays(0);
+    } else {
+      setRemainingDays(diffDays);
+    }
+
+    setNextExpiringLicense(currentLicense.name);
+  }, [licenses, currentLicenseIndex]);
 
   const getRemainingDays = () => remainingDays;
 
@@ -223,6 +260,35 @@ const AngelBot = () => {
     setSortedStorageUsers(sortedUsers);
   };
 
+  const sortDepartments = (sortOption) => {
+    let sortedDepartments = [...getSortedDepartments];
+
+    switch (sortOption) {
+      case "high":
+        sortedDepartments.sort(
+          (a, b) =>
+            b.storage / b.storageAllocated - a.storage / a.storageAllocated
+        );
+        break;
+      case "low":
+        sortedDepartments.sort(
+          (a, b) =>
+            a.storage / a.storageAllocated - b.storage / b.storageAllocated
+        );
+        break;
+      case "az":
+        sortedDepartments.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case "za":
+        sortedDepartments.sort((a, b) => b.name.localeCompare(a.name));
+        break;
+      default:
+        break;
+    }
+
+    setSortedDepartments(sortedDepartments);
+  };
+
   const data = [
     { value: 500, name: "Active", color: "#91CC75" }, // 500 MB
     { value: 580, name: "Inactive", color: "#EE6666" }, // 580 MB
@@ -248,7 +314,7 @@ const AngelBot = () => {
       left: "left",
       formatter: function (name) {
         const item = data.find((d) => d.name === name);
-        return `${name} ${(item.value)}`;
+        return `${name} ${item.value}`;
       },
     },
     series: [
@@ -445,27 +511,6 @@ const AngelBot = () => {
     setBackButton(false);
   };
 
-  // const getSortedStorageUsers = [
-  //   { id: 1, name: "User1", storageUsed: 200, storageAllocated: 200 },
-  //   { id: 1, name: "User2", storageUsed: 250, storageAllocated: 300 },
-  //   { id: 1, name: "User3", storageUsed: 150, storageAllocated: 200 },
-  //   { id: 1, name: "User4", storageUsed: 30, storageAllocated: 100 },
-  //   { id: 1, name: "User5", storageUsed: 40, storageAllocated: 200 },
-  //   { id: 1, name: "User6", storageUsed: 150, storageAllocated: 250 },
-  //   { id: 1, name: "User7", storageUsed: 150, storageAllocated: 200 },
-  //   { id: 1, name: "User8", storageUsed: 300, storageAllocated: 500 },
-  // ];
-
-  const getSortedDepartments = [
-    { id: 1, name: "IT", storage: 100, storageAllocated: 200 },
-    { id: 2, name: "Engineering", storage: 200, storageAllocated: 300 },
-    { id: 3, name: "Operations", storage: 150, storageAllocated: 200 },
-    { id: 14, name: "Marketing", storage: 50, storageAllocated: 100 },
-    { id: 145, name: "Sales", storage: 120, storageAllocated: 200 },
-    { id: 17, name: "Finance", storage: 150, storageAllocated: 250 },
-    { id: 18, name: "HR", storage: 150, storageAllocated: 200 },
-  ];
-
   const handleUserRowsPerPageChange = (event) => {
     setUserRowsPerPage(parseInt(event.target.value, 10));
     setUserPage(0);
@@ -487,6 +532,99 @@ const AngelBot = () => {
     const timer = setTimeout(() => setLoading(false), 300);
     return () => clearTimeout(timer);
   }, []);
+
+  const LicenseCountdownBox = React.memo(
+    ({
+      licenses,
+      currentLicenseIndex,
+      setCurrentLicenseIndex,
+      remainingDays,
+      nextExpiringLicense,
+      chartColors,
+    }) => {
+      return (
+        <Box
+          sx={{
+            mt: 3,
+            position: "relative",
+            display: "flex",
+            justifyContent: "center",
+          }}
+        >
+          <Box
+            sx={{
+              gap: 0.5,
+              padding: "8px 16px",
+              borderRadius: 2,
+              boxShadow: `0 0 8px ${alpha(chartColors.error, 0.2)}`,
+              backgroundColor: alpha(chartColors.error, 0.1),
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              minWidth: 200,
+            }}
+          >
+            <Typography
+              variant="body2"
+              sx={{ color: chartColors.error, fontWeight: 500 }}
+            >
+              {remainingDays <= 30
+                ? `Renewal By: ${nextExpiringLicense}`
+                : `License Validity: ${nextExpiringLicense}`}
+            </Typography>
+
+            <Typography
+              variant="h4"
+              sx={{
+                color: chartColors.error,
+                fontWeight: 700,
+                lineHeight: 1,
+                fontSize: "2rem",
+              }}
+            >
+              {remainingDays}
+            </Typography>
+
+            <Typography
+              sx={{
+                color: chartColors.error,
+                fontWeight: 700,
+                lineHeight: 1,
+                fontSize: "1rem",
+              }}
+            >
+              Days
+            </Typography>
+          </Box>
+
+          <IconButton
+            size="small"
+            sx={{ position: "absolute", left: 0, bottom: 0 }}
+            onClick={() =>
+              setCurrentLicenseIndex((prev) =>
+                prev === 0 ? licenses.length - 1 : prev - 1
+              )
+            }
+          >
+            <ArrowBack sx={{ color: chartColors.error }} />
+          </IconButton>
+
+          <IconButton
+            size="small"
+            sx={{ position: "absolute", right: 0, bottom: 0 }}
+            onClick={() =>
+              setCurrentLicenseIndex((prev) =>
+                prev === licenses.length - 1 ? 0 : prev + 1
+              )
+            }
+          >
+            <ArrowForward sx={{ color: chartColors.error }} />
+          </IconButton>
+        </Box>
+      );
+    }
+  );
+
   if (loading) {
     return (
       <LoaderWrapper>
@@ -498,27 +636,21 @@ const AngelBot = () => {
     <Box className="child-container">
       <div className="child">
         <Box
-          sx={
-            {
-              // display: "grid",
-              // position: "relative",
-              // // height: "100vh",
-              // backgroundColor: "#f5f7fa",
-              animation: "slideInFromLeft 0.3s ease-in-out forwards",
-              opacity: 0, // Start with opacity 0
-              transform: "translateX(-50px)", // Start from left
-              "@keyframes slideInFromLeft": {
-                "0%": {
-                  opacity: 0,
-                  transform: "translateX(-50px)",
-                },
-                "100%": {
-                  opacity: 1,
-                  transform: "translateX(0)",
-                }
-              }
-            }
-          }
+          sx={{
+            animation: "slideInFromLeft 0.3s ease-in-out forwards",
+            opacity: 0, // Start with opacity 0
+            transform: "translateX(-50px)", // Start from left
+            "@keyframes slideInFromLeft": {
+              "0%": {
+                opacity: 0,
+                transform: "translateX(-50px)",
+              },
+              "100%": {
+                opacity: 1,
+                transform: "translateX(0)",
+              },
+            },
+          }}
         >
           <Grid
             container
@@ -572,108 +704,6 @@ const AngelBot = () => {
                       }}
                     />
                   </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      // flexDirection: "row-reverse",
-                    }}
-                  >
-                    <div>
-                      {backButton && (
-                        <Button
-                          sx={{
-                            right: 0,
-                            backgroundColor: "#3f51b5",
-                            color: "#fff",
-                            "&:hover": {
-                              backgroundColor: "#3f51b5",
-                              color: "#fff",
-                            },
-                          }}
-                          onClick={() => handleBack(false)}
-                        >
-                          Back
-                        </Button>
-                      )}
-                    </div>
-                    <IconButton
-                      sx={{
-                        // right: 0,
-                        backgroundColor: "#3f51b5",
-                        "&hover": {
-                          backgroundColor: "#3f51b5",
-                          color: "#fff",
-                        },
-                      }}
-                      size="medium"
-                    >
-                      <Add sx={{ color: "#fff" }} />
-                    </IconButton>
-                  </div>
-                </CardContent>
-              </Card>
-            </Grid>
-            <Grid item xs={4}>
-              <Card
-                sx={{
-                  p: 1,
-                  borderRadius: 3,
-                  boxShadow: 3,
-                  height: "100%",
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "space-between",
-                }}
-              >
-                <CardHeader
-                  sx={{ padding: "0px !important" }}
-                  title={
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "10px",
-                        justifyContent: "flex-start",
-                      }}
-                    >
-                      <Group color="primary" />
-                      <Typography variant="h6"> Storage Status</Typography>
-                    </div>
-                  }
-                />
-                <CardContent
-                  sx={{
-                    mb: "auto",
-                    pb: "0 !important",
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <div>
-                    <ReactECharts
-                      option={storageStatus}
-                      style={{ height: 300, width: "100%" }}
-                    />
-                  </div>
-                  <div
-                    style={{ display: "flex", flexDirection: "row-reverse" }}
-                  >
-                    <Fab
-                      size="small"
-                      sx={{
-                        right: 0,
-                        backgroundColor: "#3f51b5",
-                        "&hover": {
-                          backgroundColor: "#3f51b5",
-                          color: "#fff",
-                        },
-                      }}
-                    >
-                      <Add sx={{ color: "#fff" }} />
-                    </Fab>
-                  </div>
                 </CardContent>
               </Card>
             </Grid>
@@ -697,15 +727,46 @@ const AngelBot = () => {
                       style={{
                         display: "flex",
                         alignItems: "center",
-                        gap: "10px",
-                        justifyContent: "flex-start",
+                        justifyContent: "space-between",
                       }}
                     >
-                      <Group color="primary" />
-                      <Typography variant="h6">Storage Distribution</Typography>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "10px",
+                        }}
+                      >
+                        <Group color="primary" />
+                        <Typography variant="h6">Storage</Typography>
+                      </div>
+                      <div>
+                        <Button
+                          size="small"
+                          variant={
+                            storageTab === "status" ? "contained" : "outlined"
+                          }
+                          onClick={() => setStorageTab("status")}
+                          sx={{ mr: 1 }}
+                        >
+                          Storage Status
+                        </Button>
+                        <Button
+                          size="small"
+                          variant={
+                            storageTab === "distribution"
+                              ? "contained"
+                              : "outlined"
+                          }
+                          onClick={() => setStorageTab("distribution")}
+                        >
+                          Storage Distribution
+                        </Button>
+                      </div>
                     </div>
                   }
                 />
+
                 <CardContent
                   sx={{
                     mb: "auto",
@@ -717,99 +778,133 @@ const AngelBot = () => {
                 >
                   <div>
                     <ReactECharts
-                      option={storageDistribution}
+                      option={
+                        storageTab === "status"
+                          ? storageStatus
+                          : storageDistribution
+                      }
                       style={{ height: 300, width: "100%" }}
                     />
                   </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      marginTop: "-60px",
-                      flexDirection: "row-reverse",
-                    }}
-                  >
-                    <Box
+                  {selectedChart && (
+                    <Typography
+                      variant="subtitle2"
                       sx={{
-                        gap: 0.5,
-                        // backgroundColor: alpha(chartColors.error, 0.1),
-                        padding: "8px 16px",
-                        borderRadius: 2,
-                        cursor: "pointer",
-                        transition: "all 0.3s ease",
-                        // border: `1px solid ${alpha(chartColors.error, 0.2)}`,
-                        boxShadow: `0 0 8px ${alpha(chartColors.error, 0.2)}`,
-                        "&:hover": {
-                          backgroundColor: alpha(chartColors.error, 0.15),
-                          transform: "translateY(-1px)",
-                          boxShadow: `0 0 12px ${alpha(
-                            chartColors.error,
-                            0.3
-                          )}`,
-                        },
+                        color: "text.secondary",
+                        fontWeight: "bold",
+                        mb: 1,
                       }}
                     >
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          color: chartColors.error,
-                          fontWeight: 500,
-                        }}
-                      >
-                        {getRemainingDays() <= 30 ? "Renewal By" : "Validity"}
-                      </Typography>
-                      <Typography
-                        variant="h4"
-                        sx={{
-                          color: chartColors.error,
-                          fontWeight: 700,
-                          lineHeight: 1,
-                          fontSize: "2rem",
-                        }}
-                      >
-                        {getRemainingDays()}
-                      </Typography>
-                      <Typography
-                        sx={{
-                          color: chartColors.error,
-                          fontWeight: 700,
-                          lineHeight: 1,
-                          fontSize: "1rem",
-                        }}
-                      >
-                        Days
-                      </Typography>
-                    </Box>
-                    {getRemainingDays() === 0 && (
-                      <Box
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 1,
-                          backgroundColor: alpha(chartColors.error, 0.15),
-                          padding: "8px 12px",
+                      Showing data for: {selectedChart}
+                    </Typography>
+                  )}
+                </CardContent>
+              </Card>
+            </Grid>
+
+            <Grid item xs={4}>
+              <Card
+                sx={{
+                  p: 1,
+                  borderRadius: 3,
+                  boxShadow: 3,
+                  height: "100%",
+                  display: "flex",
+                  flexDirection: "column",
+                }}
+              >
+                <CardHeader
+                  sx={{ padding: "0px !important" }}
+                  title={
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "10px",
+                      }}
+                    >
+                      <Dashboard color="primary" />
+                      <Typography variant="h6">License Summary</Typography>
+                    </div>
+                  }
+                />
+                <CardContent
+                  sx={{
+                    flexGrow: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "center", // center vertically
+                    gap: 3,
+                  }}
+                >
+                  {/* Uploaded License */}
+                  <Box>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      Uploaded License (80/100)
+                    </Typography>
+                    <LinearProgress
+                      variant="determinate"
+                      value={80}
+                      sx={{
+                        height: 10,
+                        borderRadius: 2,
+                        backgroundColor: alpha("#1976d2", 0.12),
+                        "& .MuiLinearProgress-bar": {
+                          backgroundColor: "#1976d2",
                           borderRadius: 2,
-                          border: `1px solid ${alpha(chartColors.error, 0.3)}`,
-                        }}
-                      >
-                        <Warning sx={{ color: chartColors.error }} />
-                        <Box>
-                          <Typography
-                            variant="subtitle2"
-                            sx={{ color: chartColors.error, fontWeight: 600 }}
-                          >
-                            Account Block Warning
-                          </Typography>
-                          <Typography
-                            variant="body2"
-                            sx={{ color: chartColors.error }}
-                          >
-                            {`Grace Period: -${negativeCount} Days (Max: -10 Days)`}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    )}
-                    <BlockWarningDialog />
-                  </div>
+                        },
+                      }}
+                    />
+                  </Box>
+
+                  {/* Valid License */}
+                  <Box>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      Valid License (60/100)
+                    </Typography>
+                    <LinearProgress
+                      variant="determinate"
+                      value={60}
+                      sx={{
+                        height: 10,
+                        borderRadius: 2,
+                        backgroundColor: alpha("#4caf50", 0.12),
+                        "& .MuiLinearProgress-bar": {
+                          backgroundColor: "#4caf50",
+                          borderRadius: 2,
+                        },
+                      }}
+                    />
+                  </Box>
+
+                  {/* Expired License */}
+                  <Box>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      Expired License (20/100)
+                    </Typography>
+                    <LinearProgress
+                      variant="determinate"
+                      value={20}
+                      sx={{
+                        height: 10,
+                        borderRadius: 2,
+                        backgroundColor: alpha("#f44336", 0.12),
+                        "& .MuiLinearProgress-bar": {
+                          backgroundColor: "#f44336",
+                          borderRadius: 2,
+                        },
+                      }}
+                    />
+                  </Box>
+
+                  <LicenseCountdownBox
+                    licenses={licenses}
+                    currentLicenseIndex={currentLicenseIndex}
+                    setCurrentLicenseIndex={setCurrentLicenseIndex}
+                    remainingDays={remainingDays}
+                    nextExpiringLicense={nextExpiringLicense}
+                    chartColors={chartColors}
+                  />
                 </CardContent>
               </Card>
             </Grid>
@@ -832,10 +927,13 @@ const AngelBot = () => {
                 >
                   <Dashboard color="primary" />
                   <Typography variant="h6" color="primary">
-                    Top User Storage Usage
+                    Storage Used (By Users)
                   </Typography>
 
-                  <FormControl size="small" sx={{ display: "flex", marginLeft: "auto" }}>
+                  <FormControl
+                    size="small"
+                    sx={{ display: "flex", marginLeft: "auto" }}
+                  >
                     <Select
                       value={userSortOption}
                       onChange={(e) => {
@@ -851,14 +949,12 @@ const AngelBot = () => {
                               <>
                                 <FilterList />
                               </>
-
                             );
                           case "low":
                             return (
                               <>
                                 <ArrowDownward />
                               </>
-
                             );
                           case "az":
                             return (
@@ -872,7 +968,9 @@ const AngelBot = () => {
                             return (
                               // <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                               <>
-                                <SortByAlpha sx={{ transform: "rotate(180deg)" }} />
+                                <SortByAlpha
+                                  sx={{ transform: "rotate(180deg)" }}
+                                />
                               </>
                               // </div>
                             );
@@ -905,9 +1003,6 @@ const AngelBot = () => {
                       </MenuItem>
                     </Select>
                   </FormControl>
-
-
-
                 </Box>
 
                 <Box>
@@ -959,7 +1054,6 @@ const AngelBot = () => {
                         </Box>
                         <Box sx={{ flex: 1, mx: 2 }}>
                           <LinearProgress
-
                             variant="determinate"
                             value={
                               (user.storageUsed / user.storageAllocated) * 100
@@ -974,9 +1068,11 @@ const AngelBot = () => {
                                 ),
                               },
                               [`& .MuiLinearProgress-bar`]: {
-
                                 borderRadius: 3,
-                                backgroundColor: getProgressBarColor((user.storageUsed / user.storageAllocated) * 100),
+                                backgroundColor: getProgressBarColor(
+                                  (user.storageUsed / user.storageAllocated) *
+                                    100
+                                ),
                               },
                             }}
                           />
@@ -1008,9 +1104,9 @@ const AngelBot = () => {
                     sx={{
                       mt: 1,
                       ".MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows":
-                      {
-                        margin: 0,
-                      },
+                        {
+                          margin: 0,
+                        },
                     }}
                   />
                 </Box>
@@ -1028,9 +1124,63 @@ const AngelBot = () => {
                 >
                   <Dashboard color="primary" />
                   <Typography variant="h6" color="primary">
-                    Top Department Storage Usage
+                    Storage Used (By Departments)
                   </Typography>
-
+                  <FormControl
+                    size="small"
+                    sx={{ display: "flex", marginLeft: "auto" }}
+                  >
+                    <Select
+                      value={deptSortOption}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setDeptSortOption(value);
+                        sortDepartments(value);
+                      }}
+                      displayEmpty
+                      renderValue={(value) => {
+                        switch (value) {
+                          case "high":
+                            return (
+                              <>
+                                <FilterList />
+                              </>
+                            );
+                          case "low":
+                            return (
+                              <>
+                                <ArrowDownward />
+                              </>
+                            );
+                          case "az":
+                            return (
+                              <>
+                                <SortByAlpha />
+                              </>
+                            );
+                          case "za":
+                            return (
+                              <>
+                                <SortByAlpha
+                                  sx={{ transform: "rotate(180deg)" }}
+                                />
+                              </>
+                            );
+                          default:
+                            return null;
+                        }
+                      }}
+                    >
+                      <MenuItem value="high">
+                        High Usage <ArrowUpward />
+                      </MenuItem>
+                      <MenuItem value="low">
+                        Low Usage <ArrowDownward />
+                      </MenuItem>
+                      <MenuItem value="az">A-Z</MenuItem>
+                      <MenuItem value="za">Z-A</MenuItem>
+                    </Select>
+                  </FormControl>
                 </Box>
                 <Box>
                   {getSortedDepartments
@@ -1049,10 +1199,10 @@ const AngelBot = () => {
                           borderRadius: 1.5,
                           backgroundColor:
                             index % 2 === 0
-                              ? alpha(chartColors.warning, 0.02)
-                              : alpha(chartColors.warning, 0.06),
+                              ? alpha(chartColors.primary, 0.02)
+                              : alpha(chartColors.primary, 0.06),
                           "&:hover": {
-                            backgroundColor: alpha(chartColors.warning, 0.1),
+                            backgroundColor: alpha(chartColors.primary, 0.1),
                             transform: "translateY(-1px)",
                             transition: "all 0.2s ease-in-out",
                           },
@@ -1063,7 +1213,7 @@ const AngelBot = () => {
                             variant="body2"
                             sx={{
                               fontWeight: 600,
-                              color: chartColors.warning,
+                              color: chartColors.primary,
                               fontSize: "0.875rem",
                             }}
                           >
@@ -1076,26 +1226,27 @@ const AngelBot = () => {
                               fontSize: "0.75rem",
                             }}
                           >
-                            {`${dept.storage}GB`}
+                            {`${dept.storage}/${dept.storageAllocated}GB`}
                           </Typography>
                         </Box>
                         <Box sx={{ flex: 1, mx: 2 }}>
                           <LinearProgress
                             variant="determinate"
-                            value={(dept.storage / 200) * 100}
+                            value={(dept.storage / dept.storageAllocated) * 100}
                             sx={{
                               height: 10,
                               borderRadius: 2,
                               [`&.MuiLinearProgress-root`]: {
                                 backgroundColor: alpha(
-                                  chartColors.warning,
+                                  chartColors.primary,
                                   0.12
                                 ),
                               },
                               [`& .MuiLinearProgress-bar`]: {
-
                                 borderRadius: 3,
-                                backgroundColor: getProgressBarColor((dept.storage / 200) * 100),
+                                backgroundColor: getProgressBarColor(
+                                  (dept.storage / dept.storageAllocated) * 100
+                                ),
                               },
                             }}
                           />
@@ -1106,11 +1257,13 @@ const AngelBot = () => {
                             minWidth: 40,
                             textAlign: "right",
                             fontWeight: 600,
-                            color: chartColors.warning,
+                            color: chartColors.primary,
                             fontSize: "0.875rem",
                           }}
                         >
-                          {`${Math.round((dept.storage / 200) * 100)}%`}
+                          {`${Math.round(
+                            (dept.storage / dept.storageAllocated) * 100
+                          )}%`}
                         </Typography>
                       </Box>
                     ))}
@@ -1125,9 +1278,9 @@ const AngelBot = () => {
                     sx={{
                       mt: 1,
                       ".MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows":
-                      {
-                        margin: 0,
-                      },
+                        {
+                          margin: 0,
+                        },
                     }}
                   />
                 </Box>

@@ -198,11 +198,7 @@ const rows = [
 
 ];
 
-const statusColors = {
-  active: "#4caf50", // Green
-  inactive: "#f44336", // Red
-  pending: "#ff9800", // Orange
-};
+
 
 const IOSSwitch = styled((props) => (
   <Switch focusVisibleClassName=".Mui-focusVisible" disableRipple {...props} />
@@ -360,13 +356,12 @@ export default function UserTable() {
     setSelected([]); // Clear selection AFTER download
   };
 
-  // console.log(rowData)   //Table row data
-  // console.log(selected); //array
+ 
 
   const label = { inputProps: { "aria-label": "Switch demo" } };
 
   const handleDelete = (e, row) => {
-    // console.log(selected);
+   
     setDeleteUser(true);
   };
 
@@ -465,6 +460,10 @@ export default function UserTable() {
         <CustomSpinner />
       </LoaderWrapper>
     );
+  }
+
+  const handleClose=()=>{
+    setMigrationDialog(false)
   }
 
   return (
@@ -578,40 +577,39 @@ export default function UserTable() {
                       >
                         {row.storageUsed}
                       </TableCell>
+                     
                       <TableCell
-                        align="center"
-                        sx={{
-                          // textAlign: "center",
-                          padding: "2px 8px",
-                        }}
-                      >
-                        <FormControl sx={{ m: 0, minWidth: 120 }} size="small">
-                          <Select
-                            id="demo-select-small"
-                            value={Storage || ""} // Ensure Storage is not undefined
-                            defaultValue="10GB"
-                            onChange={handleChangeStorage}
-                            displayEmpty
-                            // sx={{
-                            //   borderRadius: "20px",
-                            //   ".MuiSelect-outlined": {
-                            //     height: "5px !important",
-                            //   },
-                            // }}
-                            sx={{
-                              width: "100px",
-                              height: "30px",
-                              borderRadius: "28px",
-                            }}
-                          >
-                            <MenuItem value="">10GB</MenuItem>
-                            <MenuItem value="">10GB</MenuItem>
-                            <MenuItem value={10}>20GB</MenuItem>
-                            <MenuItem value={20}>40GB</MenuItem>
-                            <MenuItem value={30}>60GB</MenuItem>
-                          </Select>
-                        </FormControl>
-                      </TableCell>
+  align="center"
+  sx={{
+    padding: "2px 8px",
+  }}
+>
+  <FormControl sx={{ m: 0, minWidth: 120 }} size="small">
+    <Select
+      id={`manage-storage-${row.id}`}
+      value={row.manageStorage || ""} // use row-specific value
+      onChange={(e) => {
+        const updated = rowsData.map((r) =>
+          r.id === row.id ? { ...r, manageStorage: e.target.value } : r
+        );
+        setRowsData(updated);
+      }}
+      displayEmpty
+      sx={{
+        width: "100px",
+        height: "30px",
+        borderRadius: "28px",
+      }}
+    >
+      <MenuItem value="1 GB">1 GB</MenuItem>
+      <MenuItem value="10 GB">10 GB</MenuItem>
+      <MenuItem value="20 GB">20 GB</MenuItem>
+      <MenuItem value="40 GB">40 GB</MenuItem>
+      <MenuItem value="60 GB">60 GB</MenuItem>
+    </Select>
+  </FormControl>
+</TableCell>
+
                       <TableCell align="center">
                         <Tooltip title={row.status ? "Active" : "Inactive"}>
                           <FormControlLabel
@@ -977,12 +975,13 @@ export default function UserTable() {
         {/* migration */}
         <Dialog
           open={migrationDialog}
-          onClose={() => setMigrationDialog(false)}
+          onClose={handleClose}
           fullWidth
         >
           <Migration
-            handleClos={() => setMigrationDialog(false)}
+            handleClos={handleClose}
             rowData={rowData}
+            rows={rows}
           />
         </Dialog>
 
