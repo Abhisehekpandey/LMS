@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Paper, Typography, Grid } from "@mui/material";
+import { Box, Paper, Typography, Grid, Divider, TextField } from "@mui/material";
 import { Bar } from "react-chartjs-2";
 import LicenseExpiryLegend from "../components/LicenseExpiryLegend";
 import {
@@ -10,6 +10,7 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
+import * as echarts from "echarts";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 import { Chart as ChartJS } from "chart.js/auto";
@@ -20,8 +21,9 @@ import SpeedDialAction from '@mui/material/SpeedDialAction';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import DownloadIcon from '@mui/icons-material/Download';
 import EditIcon from '@mui/icons-material/Edit';
+import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import { CircularProgress, keyframes, styled } from '@mui/material';
-
+import ReactEChart from "echarts-for-react"
 // Add this with your other imports
 
 // Add these imports for table functionality
@@ -48,6 +50,9 @@ import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { Snackbar, Alert, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import Papa from 'papaparse'; // You'll need to install this: npm install papaparse
 import { useRef } from "react";
+import { ArrowBackIos } from "@mui/icons-material";
+import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
+import EChartsReact from "echarts-for-react";
 
 ChartJS.register(
   CategoryScale,
@@ -121,6 +126,82 @@ const CompanyDashboard = ({ onThemeToggle }) => {
       }
     },
   ];
+  const ITEMS_PER_PAGE = 25;
+  const chartRef = useRef(null);
+  const chartInstance = useRef(null);
+
+  const [currentPage, setCurrentPage] = useState(0);
+  const [searchTerm, setSearchTerm] = useState("");
+  const fullData = useRef(
+    Array.from({ length: 5000 }, (_, i) => ({
+      name: `Company ${i + 1}`,
+      revenue: Math.floor(Math.random() * 10000),
+    }))
+  );
+  // Filtered data based on search
+  const filteredData = fullData.current.filter((item) =>
+    item.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
+
+  const getPaginatedData = () => {
+    const start = currentPage * ITEMS_PER_PAGE;
+    return filteredData.slice(start, start + ITEMS_PER_PAGE);
+  };
+  const renderChart = () => {
+    if (!chartRef.current) return;
+
+    const pageData = getPaginatedData();
+
+    const option = {
+      title: {
+        // text: searchTerm
+        //   ? `Search Results for "${searchTerm}"`
+        //   : `Companies ${currentPage * ITEMS_PER_PAGE + 1} - ${(currentPage + 1) * ITEMS_PER_PAGE
+        //   }`,
+        left: "center",
+      },
+      tooltip: {
+        trigger: "axis",
+      },
+      xAxis: {
+        type: "category",
+        data: pageData.map((item) => item.name),
+      },
+      yAxis: {
+        type: "value",
+      },
+      series: [
+        {
+          name: "Revenue",
+          type: "bar",
+          data: pageData.map((item) => item.revenue),
+        },
+      ],
+    };
+
+    if (!chartInstance.current && chartRef.current) {
+      chartInstance.current = echarts.init(chartRef.current);
+    }
+
+    chartInstance.current.setOption(option);
+  };
+
+  useEffect(() => {
+    if (!loading) {
+      renderChart();
+    }
+  }, [currentPage, searchTerm, loading]);
+
+
+  useEffect(() => {
+    return () => {
+      chartInstance.current?.dispose();
+      chartInstance.current = null;
+    };
+  }, []);
+
 
   const [companyData, setCompanyData] = useState({
     dataUsage: [
@@ -176,6 +257,19 @@ const CompanyDashboard = ({ onThemeToggle }) => {
         consumed: 45,
       },
     ],
+    licenseConsumption: [
+      {
+        company: "TechCorp (Enterprise)",
+        months: {
+          January: 15,
+          February: 20,
+          March: 10,
+          // Aur months ko add kar le
+        }
+      },
+      // Baaki companies ka data bhi yeh format mein
+    ]
+    ,
     licenseExpiration: [
       {
         company: "TechCorp (Enterprise)",
@@ -213,6 +307,7 @@ const CompanyDashboard = ({ onThemeToggle }) => {
       },
     },
   });
+
   // Add these state variables with your other states
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
@@ -358,6 +453,164 @@ const CompanyDashboard = ({ onThemeToggle }) => {
       open: false
     });
   };
+
+  // licenseExpirationStatus
+  const licenseExpirationStatus = {
+    legend: {
+      show: true,
+      left: "center"
+    },
+    xAxis: {
+      type: 'category',
+      data: ['Jan', 'Feb', 'March', 'April', 'May', 'June', 'July', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'],
+      axisLabel: {
+        interval: 0,   // har label dikhana
+        rotate: 0      // ghumana mana hai bhai
+      }
+    },
+    yAxis: {
+      type: 'value'
+    },
+    series: [
+      {
+        data: [120, 200, 150, 80, 70, 110, 130, 90, 70, 80, 47, 77], // Bar chart data
+        type: 'bar',
+        name: 'Other Data',
+        color: '#4CAF50', // Green color for the bars
+        label: {
+          show: true, // Enable showing the label
+          position: 'top', // Position the label above the point
+          color: 'black', // Color of the label (same as the line)
+          fontSize: 10, // Font size for the label
+          offset: [0, -10]
+        }
+      },
+      {
+        data: [90, 150, 100, 60, 40, 80, 110, 60, 40, 50, 30, 60], // Consumed licenses (line chart data)
+        type: 'line',
+        name: 'Consumed Licenses',
+        color: '#FF6B00', // Orange color for the line
+        smooth: true, // Smooth the line curve
+        lineStyle: {
+          width: 3 // Line thickness
+        },
+        label: {
+          show: true, // Enable showing the label
+          position: 'top', // Position the label above the point
+          color: 'black', // Color of the label (same as the line)
+          fontSize: 10, // Font size for the label
+          position: 'insideTop',
+          offset: [0, -10]
+        }
+      }
+    ]
+  };
+
+  function randomData() {
+    now = new Date(+now + oneDay);
+    value = value + Math.random() * 21 - 10;
+    return {
+      name: now.toString(),
+      value: [
+        [now.getFullYear(), now.getMonth() + 1, now.getDate()].join('/'),
+        Math.round(value)
+      ]
+    };
+  }
+  let data = [];
+  let now = new Date(1997, 9, 3);
+  let oneDay = 24 * 3600 * 1000;
+  let value = Math.random() * 1000;
+  for (var i = 0; i < 1000; i++) {
+    data.push(randomData());
+  }
+
+  const progressOption = {
+    tooltip: {
+      trigger: 'axis',
+      formatter: function (params) {
+        const param = params[0];
+        const date = new Date(param.name);
+        return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()} : ${param.value[1]} GB`;
+      },
+      axisPointer: {
+        animation: false
+      }
+    },
+    xAxis: {
+      type: 'time',
+      splitLine: {
+        show: false
+      }
+    },
+    yAxis: {
+      type: 'value',
+      name: 'Storage (GB)',
+      boundaryGap: [0, '100%'],
+      splitLine: {
+        show: false
+      }
+    },
+    series: [
+      {
+        name: 'Storage Growth',
+        type: 'line',
+        showSymbol: false,
+        smooth: true,
+        data: data, // This is the array generated below
+        lineStyle: {
+          color: '#4CAF50',
+          width: 3
+        },
+        areaStyle: {
+          color: 'rgba(76, 175, 80, 0.2)'
+        }
+      }
+    ]
+  };
+
+
+  // setInterval(function () {
+  //   for (var i = 0; i < 5; i++) {
+  //     data.shift();
+  //     data.push(randomData());
+  //   }
+  //   myChart.setOption({
+  //     series: [
+  //       {
+  //         data: data
+  //       }
+  //     ]
+  //   });
+  // }, 1000);
+  //companyOption
+  const companyOption = {
+
+    xAxis: {
+      type: 'category',
+
+      data: ["C1", "C2", "C3", "C4", "C5", "C6", "C7"]
+    },
+    yAxis: {
+      type: 'value',
+
+    },
+    series: [
+      {
+        data: [10, 20, 15, 8, 7, 11, 13],
+        type: 'bar',
+        label: {
+          show: true, // Enable showing the label
+          position: 'top', // Position the label above the point
+          color: 'black', // Color of the label (same as the line)
+          fontSize: 10, // Font size for the label
+          offset: [0, -10]
+        }
+      }
+    ]
+
+  }
+
   // Add this function to your component
   // Replace your existing handleFileUpload function with this improved version
   const handleFileUpload = (event) => {
@@ -666,9 +919,14 @@ CloudNet (Basic),C4,4,3,2,180,95,45`;
         const licenseData = companyData.licenseAllocation.find(l =>
           l.company === company.company
         );
-        const expiryData = companyData.licenseExpiration.find(e =>
-          e.shortName === shortName
-        );
+        const expiryData = (companyData.licenseExpiration || []).find(
+          (e) => e?.shortName === company.shortName
+        ) || {
+          daysLeft: 0,
+          shortName: company.shortName,
+          company: company.company,
+        };
+
 
         // Calculate percentages
         const storageUsedPercent = Math.round((company.consumed / company.actual) * 100);
@@ -865,9 +1123,9 @@ CloudNet (Basic),C4,4,3,2,180,95,45`;
     },
     // Update the licenseAllocation configuration
     licenseAllocation: {
-      labels: companyData.licenseAllocation.map(
-        (item, index) => `C${index + 1}`
-      ),
+      // labels: companyData.licenseAllocation.map(
+      //   (item, index) => `C${index + 1}`
+      // ),
       datasets: [
         {
           label: "Consumed (%)",
@@ -891,28 +1149,17 @@ CloudNet (Basic),C4,4,3,2,180,95,45`;
     },
     // Update the licenseExpiration config in chartConfigs
     // This is already in your code but ensure it's correctly set up
-    licenseExpiration: {
-      labels: companyData.licenseExpiration.map((item) => item.shortName),
-      datasets: [
-        {
-          label: "Days Until Expiry",
-          data: companyData.licenseExpiration.map((item) => item.daysLeft),
-          backgroundColor: companyData.licenseExpiration.map((item) => {
-            if (item.daysLeft < 0) {
-              return "#FF0000"; // Red for expired
-            } else if (item.daysLeft < 30) {
-              return "#FF6B00"; // Orange for immediate action
-            } else if (item.daysLeft < 45) {
-              return "#FFD700"; // Yellow for critical
-            } else {
-              return "#4CAF50"; // Green for good
-            }
-          }),
-          borderWidth: 0,
-          barPercentage: 0.9,
-          categoryPercentage: 0.9,
-        },
-      ],
+    licenseConsumption: {
+      labels: ["January", "February", "March", "April", "May"], // Yeh months dikhaye
+      datasets: companyData.licenseConsumption.map((company) => ({
+        label: company.company, // Company ka naam
+        data: Object.values(company.months), // Har month ka consumption data
+        backgroundColor: "#4CAF50", // Bar ka color
+        borderColor: "#388E3C", // Thoda dark border color
+        borderWidth: 1,
+        barPercentage: 0.9,
+        categoryPercentage: 0.9,
+      })),
     },
     costServer: {
       labels: ["Server 1 (10TB)", "Server 2 (20TB)"],
@@ -967,102 +1214,7 @@ CloudNet (Basic),C4,4,3,2,180,95,45`;
     },
   }), [companyData]); // Add companyData as a dependency
 
-  const stackedHorizontalOptions = {
-    indexAxis: "y",
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: "top",
-        labels: {
-          padding: 20,
-          font: { size: 12 },
-        },
-      },
-      // Disable datalabels for this chart specifically
-      datalabels: {
-        display: false, // This prevents labels from showing inside bars
-      },
-      tooltip: {
-        mode: "nearest",
-        intersect: true,
-        callbacks: {
-          title: function (context) {
-            const dataIndex = context[0].dataIndex;
-            return companyData.dataUsage[dataIndex].company;
-          },
-          label: function (context) {
-            const datasetLabel = context.dataset.label;
-            const dataIndex = context.dataIndex;
-            const dataPoint = companyData.dataUsage[dataIndex];
 
-            if (datasetLabel === "Sold Storage") {
-              const tbValue = Math.round(dataPoint.sold / 1024);
-              return `Sold: ${tbValue} TB`;
-            }
-
-            if (datasetLabel === "Actually Allocated") {
-              const allocatedTB = Math.round(dataPoint.actual / 1024);
-
-              return `Allocated: ${allocatedTB} TB `;
-            }
-
-            if (datasetLabel === "Consumed Storage") {
-              const consumedTB = Math.round(dataPoint.consumed / 1024);
-              const percentage = Math.round(
-                (dataPoint.consumed / dataPoint.actual) * 100
-              );
-              return `Consumed: ${consumedTB} TB (${percentage}% )`;
-            }
-          },
-        },
-      },
-    },
-    scales: {
-      x: {
-        stacked: true,
-        grid: {
-          display: false,
-        },
-        title: {
-          display: true,
-          text: "Storage Usage (TB)",
-          font: {
-            size: 14,
-            weight: "bold",
-          },
-        },
-        ticks: {
-          callback: function (value) {
-            const fixedValues = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-            return fixedValues.includes(value) ? `${value}` : "";
-          },
-          stepSize: 1,
-          font: {
-            size: 12,
-            weight: "bold",
-          },
-        },
-        min: 0,
-        max: 10,
-      },
-      y: {
-        stacked: true,
-        grid: {
-          display: false,
-        },
-        ticks: {
-          font: {
-            size: 12,
-            weight: "bold",
-          },
-          padding: 15, // Add padding between axis and labels
-
-        },
-
-      },
-    },
-  };
 
   const licenseChartOptions = {
     indexAxis: "y",
@@ -1071,10 +1223,7 @@ CloudNet (Basic),C4,4,3,2,180,95,45`;
     plugins: {
       legend: {
         position: "top",
-        labels: {
-          padding: 20,
-          font: { size: 12 },
-        },
+
       },
       tooltip: {
         mode: "nearest",
@@ -1152,152 +1301,7 @@ CloudNet (Basic),C4,4,3,2,180,95,45`;
       },
     },
   };
-  // Add after existing options configurations
 
-  // Update the licenseExpiryOptions to handle negative days
-  const licenseExpiryOptions = {
-    indexAxis: "y",
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: false, // Hide legend
-      },
-      tooltip: {
-        mode: "nearest",
-        intersect: true,
-        callbacks: {
-          title: function (context) {
-            const dataIndex = context[0].dataIndex;
-            return companyData.licenseExpiration[dataIndex].company;
-          },
-          label: function (context) {
-            const dataIndex = context.dataIndex;
-            const dataPoint = companyData.licenseExpiration[dataIndex];
-
-            let status;
-            if (dataPoint.daysLeft < 0) {
-              status = "EXPIRED";
-            } else if (dataPoint.daysLeft < 30) {
-              status = "IMMEDIATE ACTION REQUIRED";
-            } else if (dataPoint.daysLeft < 45) {
-              status = "CRITICAL";
-            } else {
-              status = "GOOD";
-            }
-
-            let daysText;
-            if (dataPoint.daysLeft < 0) {
-              daysText = `Expired ${Math.abs(dataPoint.daysLeft)} days ago`;
-            } else {
-              daysText = `${dataPoint.daysLeft} days remaining`;
-            }
-
-            return [`Status: ${status}`, daysText];
-          },
-        },
-      },
-      datalabels: {
-        align: function (context) {
-          const value = context.dataset.data[context.dataIndex];
-          // For negative values, position label in center or with more space
-          return value < 0 ? "center" : "start";
-        },
-        anchor: function (context) {
-          const value = context.dataset.data[context.dataIndex];
-          // For negative values, use 'center' anchor to ensure visibility
-          return value < 0 ? "center" : "center";
-        },
-        clamp: true,
-        color: "white",
-        font: {
-          weight: "bold",
-          size: 11, // Slightly smaller font for better fit
-        },
-        formatter: function (value, context) {
-          const shortName =
-            companyData.licenseExpiration[context.dataIndex].shortName;
-
-          // For negative values like C3, show just the code to save space
-          if (value < 0) {
-            return `${shortName}`; // Just show C3 without the days
-          }
-          return `${shortName}`;
-        },
-        padding: {
-          top: 4,
-          bottom: 4,
-          left: 8,
-          right: 8,
-        },
-        display: true, // Always display the labels
-      },
-    },
-    scales: {
-      x: {
-        position: "top", // Show days on top
-        display: true, // Show x-axis
-        grid: {
-          display: true, // Show vertical grid lines
-          color: function (context) {
-            // Make the zero line more prominent
-            return context.tick.value === 0
-              ? "rgba(0,0,0,0.3)"
-              : "rgba(0,0,0,0.1)";
-          },
-          lineWidth: function (context) {
-            // Make the zero line thicker
-            return context.tick.value === 0 ? 2 : 1;
-          },
-          drawBorder: false,
-          drawOnChartArea: true,
-          drawTicks: false,
-          tickLength: 0,
-          z: 1, // Ensure grid is behind bars
-        },
-        border: {
-          display: false,
-        },
-        ticks: {
-          font: {
-            size: 12,
-            weight: "bold",
-          },
-          callback: function (value) {
-            // Show ticks at specific intervals with more granularity
-            const showValues = [-30, -15, 0, 15, 30, 45, 60, 90, 180];
-            if (showValues.includes(value)) {
-              return value;
-            }
-            return "";
-          },
-          color: "#666",
-          padding: 10,
-        },
-        min: -30,
-        max: 180,
-        offset: false,
-      },
-      y: {
-        display: false, // Hide y-axis
-        grid: {
-          display: false,
-        },
-      },
-    },
-    layout: {
-      padding: {
-        left: 10,
-        right: 50, // Increased right padding to ensure labels fit
-        top: 30,
-        bottom: 10,
-      },
-    },
-    // Set a fixed height for each bar
-    barThickness: 30,
-  };
-  // Update the costServerOptions tooltip configuration
-  // Update the costServerOptions to show company labels inside bars and individual data on hover
   const costServerOptions = {
     responsive: true,
     maintainAspectRatio: false,
@@ -1595,25 +1599,80 @@ CloudNet (Basic),C4,4,3,2,180,95,45`;
 
           <Grid item xs={6} md={6} lg={6}>
             <Paper evaluation={24} sx={{ borderRadius: "20px" }} >
-              <Typography
-                variant="h6"
-                sx={{
-                  fontSize: '15px',
-                  fontWeight: "bold",
-                  color: "#2c3e50b3",
-                  borderBottom: "2px solid #e0e0e0",
-                  // paddingBottom: 1,
-                  textAlign: "center"
-                }}
-              >
-                Storage Usage Analysis
-              </Typography>
-              <Box sx={{ height: 300, position: "relative" }}>
-                <Bar
-                  options={stackedHorizontalOptions}
-                  data={chartConfigs.dataUsage}
+              <div style={{ display: "flex", padding: "6px", justifyContent: "space-between", alignItems: "center" }}>
+
+                <Typography
+                  variant="h6"
+                  sx={{
+                    fontSize: '15px',
+                    fontWeight: "bold",
+                    color: "#2c3e50b3",
+                    // borderBottom: "2px solid #e0e0e0",
+                    // paddingBottom: 1,
+                    textAlign: "center",
+                    // borderRadius: "6px"
+                  }}
+                >
+                  Storage Usage Analysis
+                </Typography>
+                <TextField
+                  type="text"
+                  size="small"
+                  placeholder="Search company..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  sx={{
+                    // borderRadius: "20px !important",
+                    width: "250px",
+                    fontSize: "1rem",
+                    ".MuiOutlinedInput-notchedOutline": {
+                      borderRadius: "20px !important"
+                    }
+                  }}
                 />
-              </Box>
+              </div>
+              <Divider />
+              <div>
+
+
+                <div
+                  ref={chartRef}
+                  style={{
+                    width: "100%",
+                    height: "400px",
+                    // marginBottom: "1rem",
+                  }}
+                />
+
+                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+
+                  {filteredData.length === 0 ? (
+                    <p style={{ textAlign: "center" }}>No matching companies found.</p>
+                  ) : (
+                    <div style={{ display: "flex", justifyContent: "center", gap: "1rem", alignItems: "center" }}>
+                      <Button
+                        onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 0))}
+                        disabled={currentPage === 0}
+                      >
+                        <ArrowBackIos />   Prev
+                      </Button>
+                      <span>
+                        Page {currentPage + 1} of {totalPages}
+                      </span>
+                      <Button
+                        onClick={() =>
+                          setCurrentPage((prev) =>
+                            Math.min(prev + 1, totalPages - 1)
+                          )
+                        }
+                        disabled={currentPage >= totalPages - 1}
+                      >
+                        Next <ArrowForwardIosIcon />
+                      </Button>
+                    </div>
+                  )}
+                </Box>
+              </div>
             </Paper>
           </Grid> <Grid item xs={6} md={6} lg={6}>
             <Paper evaluation={24} sx={{ borderRadius: "20px" }}>
@@ -1624,18 +1683,16 @@ CloudNet (Basic),C4,4,3,2,180,95,45`;
                   fontWeight: "bold",
                   color: "#2c3e50b3",
                   borderBottom: "2px solid #e0e0e0",
-                  // paddingBottom: 1,
-                  textAlign: "center",
-                  // borderRadius: "6px"
+                  padding: 1.8,
+                  // textAlign: "center",
+                  borderRadius: "6px"
                 }}
               >
-                License Allocation and Usage
+                Progress graph
               </Typography>
-              <Box sx={{ height: 300, position: "relative" }}>
-                <Bar
-                  options={licenseChartOptions}
-                  data={chartConfigs.licenseAllocation}
-                />
+              <Box sx={{ height: 440, position: "relative" }}>
+                <EChartsReact option={progressOption} sx={{ height: "100%", width: "100%" }}
+                  opts={{ height: 400 }} />
               </Box>
             </Paper>
           </Grid>
@@ -1659,10 +1716,7 @@ CloudNet (Basic),C4,4,3,2,180,95,45`;
 
 
               <Box sx={{ height: 300, position: "relative" }}>
-                <Bar
-                  options={licenseExpiryOptions}
-                  data={chartConfigs.licenseExpiration}
-                />
+                <ReactEChart option={licenseExpirationStatus} />
               </Box>
             </Paper>
           </Grid>
@@ -1683,10 +1737,7 @@ CloudNet (Basic),C4,4,3,2,180,95,45`;
                 Cost Server Storage Analysis
               </Typography>
               <Box sx={{ height: 300, position: "relative" }}>
-                <Bar
-                  options={costServerOptions}
-                  data={chartConfigs.costServer}
-                />
+                <EChartsReact option={companyOption} />
               </Box>
             </Paper>
           </Grid>
@@ -2025,9 +2076,13 @@ CloudNet (Basic),C4,4,3,2,180,95,45`;
                       // const licenseData = companyData.licenseAllocation[dataIndex];
 
                       // Safely find related data with fallbacks
-                      const licenseData = companyData.licenseAllocation.find(l =>
-                        l && l.company === company.company
-                      ) || { allocated: 0, consumed: 0 };
+                      const licenseData = (companyData.license || []).find(
+                        (e) => e?.shortName === company.shortName
+                      ) || {
+                        allocated: 1,
+                        consumed: 0,
+                      };
+
 
                       // const expiryData = companyData.licenseExpiration[dataIndex];
 

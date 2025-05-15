@@ -12,6 +12,7 @@ import {
 import { Email, Lock, Visibility, VisibilityOff } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import backgroundImage from "../assets/Back.jpg.jpg";
+import { loginUser } from "../api/authApi.";
 
 import { keyframes } from "@emotion/react";
 
@@ -26,6 +27,7 @@ const Login = () => {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
+  const [Loading,setLoading]=useState(false)
 
   const validateForm = () => {
     const newErrors = {};
@@ -40,7 +42,8 @@ const Login = () => {
     return newErrors;
   };
 
-  const handleLogin = (e) => {
+
+  const handleLogin = async (e) => {
     e.preventDefault();
     const validationErrors = validateForm();
     if (Object.keys(validationErrors).length > 0) {
@@ -48,17 +51,30 @@ const Login = () => {
       return;
     }
 
-    const storedUser = JSON.parse(sessionStorage.getItem("user"));
-    if (
-      storedUser &&
-      storedUser.email === formData.email &&
-      storedUser.password === formData.password
-    ) {
+    setLoading(true); // Set loading state before API call
+
+    try {
+      // Call the loginUser function from authApi.js
+      const data = await loginUser(formData.email, formData.password);
+      console.log(">>final",data)
+
+      // Assuming the response contains a JWT token
+      const { access_token } = data;
+    
+
+      // Save token in sessionStorage or localStorage
+      sessionStorage.setItem("authToken", access_token);
+
+      // Redirect to dashboard or home page after successful login
       navigate("/angelbot");
-    } else {
-      setErrors({ login: "Invalid email or password" });
+    } catch (error) {
+      console.error("Login failed:", error.message);
+      setErrors({ login: error.message });
+    } finally {
+      setLoading(false); // Reset loading state after API call
     }
   };
+
 
   const handleChange = (e) => {
     const { name, value } = e.target;

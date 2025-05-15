@@ -1,5 +1,6 @@
 // updated CreateUser component with collapsed cards for non-active users
 import { Add, Close, Download, Info, UploadFile } from "@mui/icons-material";
+import axios from "axios";
 import {
   Autocomplete,
   Box,
@@ -31,19 +32,46 @@ const CreateUser = ({ handleClose }) => {
   const [addDepartment, setAddDepartment] = useState(false);
   const [addRole, setAddRole] = useState(false);
   const [expandedIndex, setExpandedIndex] = useState(0);
+  const [newDepartment, setNewDepartment] = useState({
+    name: "",
+    moderator: "",
+    shortName: "",
+    storage: "",
+    initialRole: "",
+  });
+
   const lastFieldRef = useRef(null);
   const dispatch = useDispatch();
 
   useEffect(() => {
     if (lastFieldRef.current) {
-      lastFieldRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+      lastFieldRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
       lastFieldRef.current.querySelector("input")?.focus();
     }
   }, [expandedIndex]);
 
-  const storageOptions = ["10GB", "20GB", "25GB", "40GB", "50GB", "60GB", "100GB", "200GB", "500GB"];
+  const storageOptions = [
+    "10GB",
+    "20GB",
+    "25GB",
+    "40GB",
+    "50GB",
+    "60GB",
+    "100GB",
+    "200GB",
+    "500GB",
+  ];
   const storageAllocation = ["25GB", "50GB", "100GB", "200GB", "500GB"];
-  const departments = ["HR", "IT", "Finance", "Sales"];
+  // const departments = ["HR", "IT", "Finance", "Sales"];
+  const [departments, setDepartments] = useState([
+    "HR",
+    "IT",
+    "Finance",
+    "Sales",
+  ]);
   const rolesByDepartment = {
     HR: ["HR Manager", "Recruiter", "HR Assistant"],
     IT: ["Software Engineer", "System Admin", "IT Support"],
@@ -75,8 +103,14 @@ const CreateUser = ({ handleClose }) => {
     users: yup.array().of(
       yup.object().shape({
         name: yup.string().required("Full Name is required"),
-        email: yup.string().email("Enter a valid email").required("Email is required"),
-        phone: yup.string().matches(/^\d{10}$/, "Phone Number must be 10 digits").required("Phone Number is required"),
+        email: yup
+          .string()
+          .email("Enter a valid email")
+          .required("Email is required"),
+        phone: yup
+          .string()
+          .matches(/^\d{10}$/, "Phone Number must be 10 digits")
+          .required("Phone Number is required"),
       })
     ),
   });
@@ -94,14 +128,12 @@ const CreateUser = ({ handleClose }) => {
       {/* <DialogTitle>ADD NEW USERS</DialogTitle> */}
       <DialogTitle
         sx={{
-
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
           p: 1,
 
-          backgroundColor: "primary.main"
-
+          backgroundColor: "primary.main",
         }}
       >
         <Typography
@@ -110,7 +142,7 @@ const CreateUser = ({ handleClose }) => {
             alignItems: "center",
             display: "flex",
             fontFamily: '"Be Vietnam", sans-serif',
-            color: "#ffff"
+            color: "#ffff",
           }}
         >
           ADD NEW USER
@@ -129,7 +161,6 @@ const CreateUser = ({ handleClose }) => {
             borderRadius: "50%",
             position: "relative",
             "&:hover": {
-
               transform: "rotate(180deg)",
             },
             transition: "transform 0.3s ease",
@@ -145,7 +176,14 @@ const CreateUser = ({ handleClose }) => {
       </DialogTitle>
 
       <DialogContent dividers>
-        <div style={{ display: "flex", gap: "10px", marginLeft: "230px", marginBottom: "15px" }}>
+        <div
+          style={{
+            display: "flex",
+            gap: "10px",
+            marginLeft: "230px",
+            marginBottom: "15px",
+          }}
+        >
           <Button
             component="a"
             href="/templates/user_template.csv"
@@ -219,8 +257,12 @@ const CreateUser = ({ handleClose }) => {
                 {({ push, remove }) => (
                   <>
                     {formik.values.users.map((user, index) => {
-                      const roleOptions = user.department ? rolesByDepartment[user.department] || [] : [];
-                      const managerOptions = user.role ? reportingManagersByRole[user.role] || [] : [];
+                      const roleOptions = user.department
+                        ? rolesByDepartment[user.department] || []
+                        : [];
+                      const managerOptions = user.role
+                        ? reportingManagersByRole[user.role] || []
+                        : [];
                       const isExpanded = index === expandedIndex;
 
                       return (
@@ -228,7 +270,14 @@ const CreateUser = ({ handleClose }) => {
                           key={index}
                           ref={isExpanded ? lastFieldRef : null}
                           elevation={3}
-                          sx={{ padding: isExpanded ? 2 : 1, mb: 2, bgcolor: isExpanded ? 'background.paper' : 'grey.100', borderRadius: "20px" }}
+                          sx={{
+                            padding: isExpanded ? 2 : 1,
+                            mb: 2,
+                            bgcolor: isExpanded
+                              ? "background.paper"
+                              : "grey.100",
+                            borderRadius: "20px",
+                          }}
                           onClick={() => setExpandedIndex(index)}
                         >
                           {isExpanded ? (
@@ -240,8 +289,14 @@ const CreateUser = ({ handleClose }) => {
                                   name={`users[${index}].name`}
                                   value={user.name}
                                   onChange={formik.handleChange}
-                                  error={Boolean(formik.touched.users?.[index]?.name && formik.errors.users?.[index]?.name)}
-                                  helperText={formik.touched.users?.[index]?.name && formik.errors.users?.[index]?.name}
+                                  error={Boolean(
+                                    formik.touched.users?.[index]?.name &&
+                                      formik.errors.users?.[index]?.name
+                                  )}
+                                  helperText={
+                                    formik.touched.users?.[index]?.name &&
+                                    formik.errors.users?.[index]?.name
+                                  }
                                   fullWidth
                                   size="small"
                                 />
@@ -253,22 +308,33 @@ const CreateUser = ({ handleClose }) => {
                                   name={`users[${index}].email`}
                                   value={user.email}
                                   onChange={formik.handleChange}
-                                  error={Boolean(formik.touched.users?.[index]?.email && formik.errors.users?.[index]?.email)}
-                                  helperText={formik.touched.users?.[index]?.email && formik.errors.users?.[index]?.email}
+                                  error={Boolean(
+                                    formik.touched.users?.[index]?.email &&
+                                      formik.errors.users?.[index]?.email
+                                  )}
+                                  helperText={
+                                    formik.touched.users?.[index]?.email &&
+                                    formik.errors.users?.[index]?.email
+                                  }
                                   fullWidth
                                   size="small"
                                 />
                               </Grid>
                               <Grid item xs={4}>
-
                                 <TextField
                                   label="Phone Number"
                                   autoComplete="off"
                                   name={`users[${index}].phone`}
                                   value={user.phone}
                                   onChange={formik.handleChange}
-                                  error={Boolean(formik.touched.users?.[index]?.phone && formik.errors.users?.[index]?.phone)}
-                                  helperText={formik.touched.users?.[index]?.phone && formik.errors.users?.[index]?.phone}
+                                  error={Boolean(
+                                    formik.touched.users?.[index]?.phone &&
+                                      formik.errors.users?.[index]?.phone
+                                  )}
+                                  helperText={
+                                    formik.touched.users?.[index]?.phone &&
+                                    formik.errors.users?.[index]?.phone
+                                  }
                                   fullWidth
                                   size="small"
                                 />
@@ -277,9 +343,20 @@ const CreateUser = ({ handleClose }) => {
                                 <Autocomplete
                                   options={storageOptions}
                                   value={user.storage || ""}
-                                  onChange={(e, value) => formik.setFieldValue(`users[${index}].storage`, value)}
+                                  onChange={(e, value) =>
+                                    formik.setFieldValue(
+                                      `users[${index}].storage`,
+                                      value
+                                    )
+                                  }
                                   renderInput={(params) => (
-                                    <TextField {...params} autoComplete="off" label="Storage" size="small" fullWidth />
+                                    <TextField
+                                      {...params}
+                                      autoComplete="off"
+                                      label="Storage"
+                                      size="small"
+                                      fullWidth
+                                    />
                                   )}
                                 />
                               </Grid>
@@ -287,13 +364,32 @@ const CreateUser = ({ handleClose }) => {
                                 <Autocomplete
                                   options={departments}
                                   value={user.department || ""}
-                                  onChange={(e, value) => formik.setFieldValue(`users[${index}].department`, value)}
+                                  onChange={(e, value) =>
+                                    formik.setFieldValue(
+                                      `users[${index}].department`,
+                                      value
+                                    )
+                                  }
                                   renderInput={(params) => (
-                                    <TextField {...params} autoComplete="off" label="Department" size="small" fullWidth />
+                                    <TextField
+                                      {...params}
+                                      autoComplete="off"
+                                      label="Department"
+                                      size="small"
+                                      fullWidth
+                                    />
                                   )}
-                                  ListboxComponent={({ children, ...props }) => (
+                                  ListboxComponent={({
+                                    children,
+                                    ...props
+                                  }) => (
                                     <ul {...props}>
-                                      <li style={{ padding: "2px", borderTop: "1px solid #eee" }}>
+                                      <li
+                                        style={{
+                                          padding: "2px",
+                                          borderTop: "1px solid #eee",
+                                        }}
+                                      >
                                         <Button
                                           onClick={() => setAddDepartment(true)}
                                           color="primary"
@@ -314,13 +410,32 @@ const CreateUser = ({ handleClose }) => {
                                 <Autocomplete
                                   options={roleOptions}
                                   value={user.role || ""}
-                                  onChange={(e, value) => formik.setFieldValue(`users[${index}].role`, value)}
+                                  onChange={(e, value) =>
+                                    formik.setFieldValue(
+                                      `users[${index}].role`,
+                                      value
+                                    )
+                                  }
                                   renderInput={(params) => (
-                                    <TextField {...params} autoComplete="off" label="Role" size="small" fullWidth />
+                                    <TextField
+                                      {...params}
+                                      autoComplete="off"
+                                      label="Role"
+                                      size="small"
+                                      fullWidth
+                                    />
                                   )}
-                                  ListboxComponent={({ children, ...props }) => (
+                                  ListboxComponent={({
+                                    children,
+                                    ...props
+                                  }) => (
                                     <ul {...props}>
-                                      <li style={{ padding: "2px", borderTop: "1px solid #eee" }}>
+                                      <li
+                                        style={{
+                                          padding: "2px",
+                                          borderTop: "1px solid #eee",
+                                        }}
+                                      >
                                         <Button
                                           onClick={() => setAddRole(true)}
                                           color="primary"
@@ -338,27 +453,23 @@ const CreateUser = ({ handleClose }) => {
                                 />
                               </Grid>
                               <Grid item xs={4}>
-                                <Autocomplete
-                                  options={managerOptions}
-                                  value={user.reportingManager || ""}
-                                  onChange={(e, value) => formik.setFieldValue(`users[${index}].reportingManager`, value)}
-                                  renderInput={(params) => (
-                                    <TextField {...params} autoComplete="off" label="Reporting Manager" size="small" fullWidth />
-                                  )}
+                                <TextField
+                                  label="Reporting Manager"
+                                  autoComplete="off"
+                                  name={`users[${index}].reportingManager`}
+                                  value={user.reportingManager}
+                                  onChange={formik.handleChange}
+                                  fullWidth
+                                  size="small"
                                 />
                               </Grid>
-                              {/* <Grid item xs={12} >
-                                <IconButton
-                                  onClick={() => remove(index)}
-                                  disabled={formik.values.users.length === 1}
-                                  color="error"
-                                >
-                                  <Close />
-                                </IconButton>
-                              </Grid> */}
+
                               {formik.values.users.length > 1 && (
                                 <Grid item xs={12}>
-                                  <IconButton onClick={() => remove(index)} color="error">
+                                  <IconButton
+                                    onClick={() => remove(index)}
+                                    color="error"
+                                  >
                                     <Close />
                                   </IconButton>
                                 </Grid>
@@ -366,14 +477,15 @@ const CreateUser = ({ handleClose }) => {
                             </Grid>
                           ) : (
                             <Typography variant="body2">
-                              {user.name || "Unnamed User"} - {user.email || "No Email"}
+                              {user.name || "Unnamed User"} -{" "}
+                              {user.email || "No Email"}
                             </Typography>
                           )}
                         </Paper>
                       );
                     })}
 
-                    <div style={{ display: "flex", gap: "550px", }}>
+                    <div style={{ display: "flex", gap: "550px" }}>
                       <Button
                         variant="outlined"
                         startIcon={<Add />}
@@ -397,37 +509,42 @@ const CreateUser = ({ handleClose }) => {
                       <Button
                         type="submit"
                         variant="contained"
-                        sx={{ backgroundColor: "rgb(251, 68, 36)", color: "white" }}
+                        sx={{
+                          backgroundColor: "rgb(251, 68, 36)",
+                          color: "white",
+                        }}
                       >
                         ADD USERS
                       </Button>
                     </div>
-
                   </>
                 )}
               </FieldArray>
-
             </Form>
           )}
         </Formik>
       </DialogContent>
 
-      <Dialog open={addDepartment} onClose={() => setAddDepartment(false)} fullWidth sx={{
-        animation: "slideInFromLeft 0.2s ease-in-out forwards",
-        opacity: 0, // Start with opacity 0
-        transform: "translateX(-50px)", // Start from left
-        "@keyframes slideInFromLeft": {
-          "0%": {
-            opacity: 0,
-            transform: "translateX(-50px)",
+      <Dialog
+        open={addDepartment}
+        onClose={() => setAddDepartment(false)}
+        fullWidth
+        sx={{
+          animation: "slideInFromLeft 0.2s ease-in-out forwards",
+          opacity: 0, // Start with opacity 0
+          transform: "translateX(-50px)", // Start from left
+          "@keyframes slideInFromLeft": {
+            "0%": {
+              opacity: 0,
+              transform: "translateX(-50px)",
+            },
+            "100%": {
+              opacity: 1,
+              transform: "translateX(0)",
+            },
           },
-          "100%": {
-            opacity: 1,
-            transform: "translateX(0)",
-          },
-        },
-      }}>
-
+        }}
+      >
         <DialogTitle
           sx={{
             pb: 1,
@@ -436,14 +553,14 @@ const CreateUser = ({ handleClose }) => {
             justifyContent: "space-between",
             alignItems: "center",
             p: 1,
-            backgroundColor: "primary.main"
+            backgroundColor: "primary.main",
           }}
         >
           <Typography
             variant="h6"
             sx={{
               fontFamily: '"Be Vietnam", sans-serif',
-              color: "#ffff"
+              color: "#ffff",
             }}
           >
             ADD NEW DEPARTMENT
@@ -481,45 +598,139 @@ const CreateUser = ({ handleClose }) => {
         <DialogContent dividers padding="0 !important">
           <Grid container spacing={2}>
             <Grid item xs={6}>
-              <TextField fullWidth size="small" label="Department Name" />
+              {/* <TextField fullWidth size="small" label="Department Name" /> */}
+              <TextField
+                fullWidth
+                size="small"
+                label="Department Name"
+                value={newDepartment.name}
+                onChange={(e) =>
+                  setNewDepartment({ ...newDepartment, name: e.target.value })
+                }
+              />
             </Grid>
             <Grid item xs={6}>
-              <TextField fullWidth size="small" label="Department Moderator" />
+              {/* <TextField fullWidth size="small" label="Department Moderator" /> */}
+              <TextField
+                fullWidth
+                size="small"
+                label="Department Moderator"
+                value={newDepartment.moderator}
+                onChange={(e) =>
+                  setNewDepartment({
+                    ...newDepartment,
+                    moderator: e.target.value,
+                  })
+                }
+              />
             </Grid>
             <Grid item xs={4}>
-              <TextField fullWidth size="small" label="Short Name" />
+              {/* <TextField fullWidth size="small" label="Short Name" /> */}
+              <TextField
+                fullWidth
+                size="small"
+                label="Short Name"
+                value={newDepartment.shortName}
+                onChange={(e) =>
+                  setNewDepartment({
+                    ...newDepartment,
+                    shortName: e.target.value,
+                  })
+                }
+              />
             </Grid>
             <Grid item xs={4}>
-              <Autocomplete options={storageAllocation} renderInput={(params) => <TextField {...params} label="Storage" size="small" />} />
+              {/* <Autocomplete options={storageAllocation} renderInput={(params) => <TextField {...params} label="Storage" size="small" />} /> */}
+              <Autocomplete
+                options={storageAllocation}
+                value={newDepartment.storage}
+                onChange={(e, value) =>
+                  setNewDepartment({ ...newDepartment, storage: value })
+                }
+                renderInput={(params) => (
+                  <TextField {...params} label="Storage" size="small" />
+                )}
+              />
             </Grid>
             <Grid item xs={4}>
-              <TextField fullWidth size="small" label="Initial Role" />
+              {/* <TextField fullWidth size="small" label="Initial Role" /> */}
+              <TextField
+                fullWidth
+                size="small"
+                label="Initial Role"
+                value={newDepartment.initialRole}
+                onChange={(e) =>
+                  setNewDepartment({
+                    ...newDepartment,
+                    initialRole: e.target.value,
+                  })
+                }
+              />
             </Grid>
           </Grid>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setAddDepartment(false)} variant="contained" color="primary" sx={{ backgroundColor: "rgb(251, 68, 36)", }}>
+        
+          <Button
+            onClick={async () => {
+              try {
+                const payload = {
+                  ...newDepartment,
+                  initialRole: newDepartment.initialRole.trim() === "" ? null : newDepartment.initialRole,
+                };
+                const response = await axios.post(
+                  `${process.env.REACT_APP_API_BASE_URL}/api/departments`,
+                  payload
+                );
+                console.log("Department created:", response.data);
+
+                
+                setDepartments((prev) => [...prev, newDepartment.name]);
+
+                // Optional: Reset form state
+                setNewDepartment({
+                  name: "",
+                  moderator: "",
+                  shortName: "",
+                  storage: "",
+                  initialRole: "",
+                });
+
+                setAddDepartment(false);
+              } catch (error) {
+                console.error("Failed to create department:", error);
+              }
+            }}
+            variant="contained"
+            color="primary"
+            sx={{ backgroundColor: "rgb(251, 68, 36)" }}
+          >
             ADD DEPARTMENT
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* Add Role Dialog */}
-      <Dialog open={addRole} onClose={() => setAddRole(false)} fullWidth sx={{
-        animation: "slideInFromLeft 0.2s ease-in-out forwards",
-        opacity: 0, // Start with opacity 0
-        transform: "translateX(-50px)", // Start from left
-        "@keyframes slideInFromLeft": {
-          "0%": {
-            opacity: 0,
-            transform: "translateX(-50px)",
+      <Dialog
+        open={addRole}
+        onClose={() => setAddRole(false)}
+        fullWidth
+        sx={{
+          animation: "slideInFromLeft 0.2s ease-in-out forwards",
+          opacity: 0, // Start with opacity 0
+          transform: "translateX(-50px)", // Start from left
+          "@keyframes slideInFromLeft": {
+            "0%": {
+              opacity: 0,
+              transform: "translateX(-50px)",
+            },
+            "100%": {
+              opacity: 1,
+              transform: "translateX(0)",
+            },
           },
-          "100%": {
-            opacity: 1,
-            transform: "translateX(0)",
-          },
-        },
-      }}>
+        }}
+      >
         {/* <DialogTitle>ADD NEW ROLE</DialogTitle> */}
         <DialogTitle
           sx={{
@@ -529,14 +740,14 @@ const CreateUser = ({ handleClose }) => {
             justifyContent: "space-between",
             alignItems: "center",
             p: 1,
-            backgroundColor: "primary.main"
+            backgroundColor: "primary.main",
           }}
         >
           <Typography
             variant="h6"
             sx={{
               fontFamily: '"Be Vietnam", sans-serif',
-              color: "#ffff"
+              color: "#ffff",
             }}
           >
             ADD NEW ROLE
@@ -573,7 +784,12 @@ const CreateUser = ({ handleClose }) => {
           <TextField size="small" label="Role Name" />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setAddRole(false)} variant="contained" color="primary" sx={{ backgroundColor: "rgb(251, 68, 36)", }}>
+          <Button
+            onClick={() => setAddRole(false)}
+            variant="contained"
+            color="primary"
+            sx={{ backgroundColor: "rgb(251, 68, 36)" }}
+          >
             ADD ROLE
           </Button>
         </DialogActions>

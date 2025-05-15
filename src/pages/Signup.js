@@ -14,6 +14,7 @@ import { Visibility, VisibilityOff, Email, Lock } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import backgroundImage from "../assets/Back.jpg.jpg";
 import { keyframes } from "@emotion/react";
+import { signupUser } from "../api/authApi.";
 
 const floatAnimation = keyframes`
   0% { background-position-y: 0px; }
@@ -88,23 +89,33 @@ const Signup = () => {
     }
   };
 
-  const handleSignup = (e) => {
+  const handleSignup = async (e) => {
     e.preventDefault();
     const validationErrors = validateForm();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;
     }
-
-    // Store full email for backend submission
+  
     const finalData = {
-      ...formData,
-      email: fullEmail,
+      orgName: formData.organization,
+      adminName: formData.adminName,
+      adminEmail: `${formData.emailPrefix}@${formData.domain}`,
+      password: formData.password,
     };
-
-    sessionStorage.setItem("user", JSON.stringify(finalData));
-    navigate("/login");
+  
+    try {
+      const result = await signupUser(finalData);
+      console.log("Signup success:", result);
+  
+      // Redirect or show success message
+      navigate("/login");
+    } catch (error) {
+      console.error("Signup error:", error);
+      alert(error.message || "Signup failed");
+    }
   };
+  
 
   return (
     <Box
