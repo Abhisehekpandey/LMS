@@ -114,7 +114,7 @@ const rows = [
     storageUsed: "200MB",
     manageStorage: "1 GB",
     status: false,
-    avaliableStorage: "9 GB",
+
     phone: "1234567890",
   },
   {
@@ -127,7 +127,7 @@ const rows = [
     storageUsed: "200MB",
     manageStorage: "1 GB",
     status: false,
-    avaliableStorage: "9 GB",
+   
     phone: "9876543201",
   },
   {
@@ -140,7 +140,7 @@ const rows = [
     storageUsed: "800MB",
     manageStorage: "1 GB",
     status: true,
-    avaliableStorage: "9 GB",
+
     phone: "1234567890",
   },
   {
@@ -153,7 +153,7 @@ const rows = [
     storageUsed: "800MB",
     manageStorage: "1 GB",
     status: true,
-    avaliableStorage: "9 GB",
+    
     phone: "1234567890",
   },
   {
@@ -166,7 +166,7 @@ const rows = [
     storageUsed: "800MB",
     manageStorage: "1 GB",
     status: true,
-    avaliableStorage: "9 GB",
+   
     phone: "1234567890",
   },
   {
@@ -179,7 +179,7 @@ const rows = [
     storageUsed: "800MB",
     manageStorage: "1 GB",
     status: true,
-    avaliableStorage: "9 GB",
+    
     phone: "1234567890",
   },
   {
@@ -192,7 +192,7 @@ const rows = [
     storageUsed: "800MB",
     manageStorage: "1 GB",
     status: true,
-    avaliableStorage: "9 GB",
+    
     phone: "1234567890",
   },
 
