@@ -85,7 +85,7 @@ const CompanyDashboard = ({ onThemeToggle }) => {
   const [loading, setLoading] = useState(true);
   const [selectedResource, setSelectedResource] = useState("storage");
   const fileInputRef = useRef(null);
-  const ITEMS_PER_PAGE = 25;
+  const ITEMS_PER_PAGE = 1;
   const [currentPage, setCurrentPage] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
   const [companyData, setCompanyData] = useState({
@@ -260,6 +260,7 @@ const CompanyDashboard = ({ onThemeToggle }) => {
         data: labels,
         axisLabel: {
           interval: 0,
+          rotate: 20,
           formatter: (value) =>
             value.length > 10 ? value.match(/.{1,10}/g).join("\n") : value
         }
