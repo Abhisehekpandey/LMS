@@ -14,6 +14,7 @@ import { Chart as ChartJS } from "chart.js/auto";
 import ChartDataLabels from "chartjs-plugin-datalabels";
 import { CircularProgress, keyframes, styled } from '@mui/material';
 import ReactEChart from "echarts-for-react"
+
 // Add this with your other imports
 
 // Add these imports for table functionality
@@ -25,8 +26,9 @@ import {
 import { useState, useEffect, useMemo } from "react";
 import { useRef } from "react";
 import { ArrowBackIos } from "@mui/icons-material";
-import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import EChartsReact from "echarts-for-react";
+import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
+
 
 ChartJS.register(
   CategoryScale,
@@ -142,6 +144,19 @@ const CompanyDashboard = ({ onThemeToggle }) => {
         consumed: 45,
       },
     ],
+    licenseConsumption: [
+      {
+        company: "TechCorp (Enterprise)",
+        months: {
+          January: 15,
+          February: 20,
+          March: 10,
+          // Aur months ko add kar le
+        }
+      },
+      // Baaki companies ka data bhi yeh format mein
+    ]
+    ,
     licenseConsumption: [
       {
         company: "TechCorp (Enterprise)",

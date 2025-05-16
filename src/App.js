@@ -64,14 +64,7 @@ function App() {
                             </ProtectedRoute>
                         }
                     />
-                    <Route
-                        path="/role"
-                        element={
-                            <ProtectedRoute>
-                                <Role onThemeToggle={toggleTheme} departments={departments} /> {/* Pass the toggleTheme function */}
-                            </ProtectedRoute>
-                        }
-                    />
+                  
                     <Route path="/" element={<Navigate to="/signup" />} />
                     <Route path="/angelbot" element={<AngelBot onThemeToggle={toggleTheme} />} />
                     <Route path="/ldap-config" element={<LDAPConfig />}
