@@ -57,50 +57,8 @@ import CreateUser from "./CreateUser";
 import { toast } from "react-toastify";
 import { CircularProgress, keyframes } from '@mui/material';
 
-const CustomSwitch = styled(Switch)(({ theme, checked }) => ({
-  "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
-    backgroundColor: "blue",
-  },
-  "& .MuiSwitch-switchBase + .MuiSwitch-track": {
-    backgroundColor: "rgba(255, 165, 0, 0.5)",
-  },
-  "& .MuiSwitch-switchBase.Mui-checked .MuiSwitch-thumb": {
-    color: "blue",
-  },
-  "& .MuiSwitch-thumb": {
-    color: "orange",
-  },
-}));
 
 
-const fadeIn = keyframes`
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
-`;
-
-// Styled overlay
-const LoaderWrapper = styled(Box)(({ theme }) => ({
-  position: 'fixed',
-  top: 0,
-  left: 0,
-  width: '100vw',
-  height: '100vh',
-  background: 'rgba(255, 255, 255, 0.75)',
-  backdropFilter: 'blur(5px)',
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  zIndex: 1300,
-  animation: `${fadeIn} 0.5s ease-in-out`,
-}));
-
-// Styled CircularProgress
-const CustomSpinner = styled(CircularProgress)(({ theme }) => ({
-  color: theme.palette.primary.main,
-  width: '60px !important',
-  height: '80px !important',
-  thickness: 2,
-}));
 
 
 const rows = [
@@ -114,7 +72,7 @@ const rows = [
     storageUsed: "200MB",
     manageStorage: "1 GB",
     status: false,
-    avaliableStorage: "9 GB",
+
     phone: "1234567890",
   },
   {
@@ -127,7 +85,7 @@ const rows = [
     storageUsed: "200MB",
     manageStorage: "1 GB",
     status: false,
-    avaliableStorage: "9 GB",
+   
     phone: "9876543201",
   },
   {
@@ -140,7 +98,7 @@ const rows = [
     storageUsed: "800MB",
     manageStorage: "1 GB",
     status: true,
-    avaliableStorage: "9 GB",
+
     phone: "1234567890",
   },
   {
@@ -153,7 +111,7 @@ const rows = [
     storageUsed: "800MB",
     manageStorage: "1 GB",
     status: true,
-    avaliableStorage: "9 GB",
+    
     phone: "1234567890",
   },
   {
@@ -166,7 +124,7 @@ const rows = [
     storageUsed: "800MB",
     manageStorage: "1 GB",
     status: true,
-    avaliableStorage: "9 GB",
+   
     phone: "1234567890",
   },
   {
@@ -179,7 +137,7 @@ const rows = [
     storageUsed: "800MB",
     manageStorage: "1 GB",
     status: true,
-    avaliableStorage: "9 GB",
+    
     phone: "1234567890",
   },
   {
@@ -192,7 +150,7 @@ const rows = [
     storageUsed: "800MB",
     manageStorage: "1 GB",
     status: true,
-    avaliableStorage: "9 GB",
+    
     phone: "1234567890",
   },
 
@@ -286,7 +244,7 @@ export default function UserTable() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editData, setEditData] = useState({});
   const [Storage, setStorage] = React.useState("");
-  const [loading, setLoading] = useState(true);
+
 
   const handleChangeStorage = (event) => {
     setStorage(event.target.value);
@@ -449,18 +407,8 @@ export default function UserTable() {
   };
 
   const isSelected = (id) => selected.indexOf(id) !== -1;
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 300);
-    return () => clearTimeout(timer);
-  }, []);
 
-  if (loading) {
-    return (
-      <LoaderWrapper>
-        <CustomSpinner />
-      </LoaderWrapper>
-    );
-  }
+
 
   const handleClose=()=>{
     setMigrationDialog(false)

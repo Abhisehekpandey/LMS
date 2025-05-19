@@ -39,34 +39,8 @@ import {
 } from "@mui/icons-material";
 import { ArrowBack, ArrowForward } from "@mui/icons-material";
 
-const fadeIn = keyframes`
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
-`;
 
-// Styled overlay
-const LoaderWrapper = styled(Box)(({ theme }) => ({
-  position: "fixed",
-  top: 0,
-  left: 0,
-  width: "100vw",
-  height: "100vh",
-  background: "rgba(255, 255, 255, 0.75)",
-  backdropFilter: "blur(5px)",
-  display: "flex",
-  justifyContent: "center",
-  alignItems: "center",
-  zIndex: 1300,
-  animation: `${fadeIn} 0.5s ease-in-out`,
-}));
 
-// Styled CircularProgress
-const CustomSpinner = styled(CircularProgress)(({ theme }) => ({
-  color: theme.palette.primary.main,
-  width: "60px !important",
-  height: "80px !important",
-  thickness: 2,
-}));
 const chartColors = {
   primary: "#1976d2", // Main blue color
   success: "#42a5f5", // Lighter blue
@@ -102,7 +76,6 @@ const AngelBot = () => {
   const [negativeCount, setNegativeCount] = useState(0);
   const [remainingDays, setRemainingDays] = useState(0);
   const [showBlockWarning, setShowBlockWarning] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [licenseExpiryDate] = useState(new Date("2025-12-31")); // Replace with your actual expiry date
   const defaultStatusData = [
     { value: 500, name: "Used", color: "#91CC75" },
@@ -528,10 +501,6 @@ const AngelBot = () => {
     setDeptRowsPerPage(parseInt(event.target.value, 10));
     setDeptPage(0);
   };
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 300);
-    return () => clearTimeout(timer);
-  }, []);
 
   const LicenseCountdownBox = React.memo(
     ({
@@ -625,13 +594,7 @@ const AngelBot = () => {
     }
   );
 
-  if (loading) {
-    return (
-      <LoaderWrapper>
-        <CustomSpinner />
-      </LoaderWrapper>
-    );
-  }
+
   return (
     <Box className="child-container">
       <div className="child">

@@ -40,56 +40,22 @@ ChartJS.register(
   ChartDataLabels
 );
 
-const fadeIn = keyframes`
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
-`;
-
-// Styled overlay
-const LoaderWrapper = styled(Box)(({ theme }) => ({
-  position: 'fixed',
-  top: 0,
-  left: 0,
-  width: '100vw',
-  height: '100vh',
-  background: 'rgba(255, 255, 255, 0.85)',
-  backdropFilter: 'blur(8px)',
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  zIndex: 1300,
-  animation: `${fadeIn} 0.6s ease-in-out`,
-}));
-
-// Styled CircularProgress
-const CustomSpinner = styled(CircularProgress)(({ theme }) => ({
-  color: theme.palette.primary.main,
-  width: '70px !important',
-  height: '70px !important',
-  animation: `${pulse} 1.5s infinite`,
-}));
-const pulse = keyframes`
-  0% {
-    transform: scale(1); // Start at normal size
-    box-shadow: 0 0 0 0 rgba(25, 118, 210, 0.4); // Start with a faint blue glow
-  }
-  70% {
-    transform: scale(1.05); // Slightly enlarge the element
-    box-shadow: 0 0 0 15px rgba(25, 118, 210, 0); // Blue glow expands but fades out
-  }
-  100% {
-    transform: scale(1); // Back to original size
-    box-shadow: 0 0 0 0 rgba(25, 118, 210, 0); // Glow disappears
-  }
-`;
 const CompanyDashboard = ({ onThemeToggle }) => {
 
-  const [loading, setLoading] = useState(true);
   const [selectedResource, setSelectedResource] = useState("storage");
   const fileInputRef = useRef(null);
-  const ITEMS_PER_PAGE = 1;
+  const ITEMS_PER_PAGE = 10;
   const [currentPage, setCurrentPage] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCompany, setSelectedCompany] = useState(""); // For search
+  const [topCount, setTopCount] = useState(5); // default Top 5
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+  useEffect(() => {
+    setCurrentPage(0);
+  }, [searchTerm]);
+
   const [companyData, setCompanyData] = useState({
     dataUsage: [
       {
@@ -193,36 +159,23 @@ const CompanyDashboard = ({ onThemeToggle }) => {
       },
     ],
 
-    resourceUsage: [
-      {
-        shortName: "C1",
-        company: "TechCorp (Enterprise)",
-        storage: { allocated: 1024, consumed: 717 },
-        cpu: { allocated: 200, consumed: 150 },
-        ram: { allocated: 32, consumed: 24 }
+    resourceUsage: Array.from({ length: 50 }, (_, i) => ({
+      shortName: `C${i + 1}`,
+      company: `Company ${i + 1}`,
+      storage: {
+        allocated: Math.floor(Math.random() * 1000) + 500,
+        consumed: Math.floor(Math.random() * 500),
       },
-      {
-        shortName: "C2",
-        company: "InfoSys (Premium)",
-        storage: { allocated: 6144, consumed: 2048 },
-        cpu: { allocated: 180, consumed: 90 },
-        ram: { allocated: 48, consumed: 30 }
+      cpu: {
+        allocated: Math.floor(Math.random() * 200) + 50,
+        consumed: Math.floor(Math.random() * 100),
       },
-      {
-        shortName: "C3",
-        company: "DataTech (Standard)",
-        storage: { allocated: 4096, consumed: 1024 },
-        cpu: { allocated: 100, consumed: 50 },
-        ram: { allocated: 16, consumed: 12 }
-      },
-      {
-        shortName: "C4",
-        company: "CloudNet (Basic)",
-        storage: { allocated: 3072, consumed: 2048 },
-        cpu: { allocated: 120, consumed: 96 },
-        ram: { allocated: 24, consumed: 20 }
+      ram: {
+        allocated: Math.floor(Math.random() * 64) + 8,
+        consumed: Math.floor(Math.random() * 64),
       }
-    ]
+    }))
+
 
   });
   const [selectedYear, setSelectedYear] = useState(2025);
@@ -360,72 +313,169 @@ const CompanyDashboard = ({ onThemeToggle }) => {
       }
     ]
   };
-  const progressData = useMemo(() => {
+  const generateDummyProgressData = () => {
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
       "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    let sold = 5000, allocated = 4000, consumed = 3000;
+    return monthNames.map(month => {
+      sold += Math.random() * 500 - 250;      // random walk up/down
+      allocated += Math.random() * 400 - 200;
+      consumed += Math.random() * 300 - 150;
 
-    let value = 500 + Math.random() * 500; // base value changes slightly per year
-    const data = [];
+      return {
+        name: month,
+        sold: Math.round(sold),
+        allocated: Math.round(allocated),
+        consumed: Math.round(consumed),
+      };
+    });
+  };
 
-    for (let i = 0; i < 12; i++) {
-      value += Math.random() * 100 - 50; // monthly fluctuation
-      data.push({
-        name: monthNames[i],
-        value: [monthNames[i], Math.round(value)]
+  const progressData = useMemo(() => {
+    if (!selectedCompany) {
+      // No search = aggregate graph
+      // Just like your original setup
+
+      return generateDummyProgressData();
+
+
+    } else {
+      // Filter data for selected company
+      console.log('Searching for company:', selectedCompany);
+      const company = companyData.dataUsage.find(c =>
+        c.company.toLowerCase().includes(selectedCompany.toLowerCase())
+      );
+
+      console.log('Found company:', company);
+      console.log(companyData.dataUsage.map(c => c.company));
+
+      if (!company) {
+        console.log('No company found for:', selectedCompany);
+        return monthNames.map(month => ({
+          name: month,
+          sold: 0,
+          allocated: 0,
+          consumed: 0
+        }));
+      }
+
+
+      // Mock progress generation per company
+      let sold = company.sold;
+      let allocated = company.actual;
+      let consumed = company.consumed;
+
+      return monthNames.map((month) => {
+        sold += Math.random() * 100 - 50;
+        allocated += Math.random() * 80 - 40;
+        consumed += Math.random() * 60 - 30;
+
+        return {
+          name: month,
+          sold: Math.max(0, Math.round(sold)),
+          allocated: Math.max(0, Math.round(allocated)),
+          consumed: Math.max(0, Math.round(consumed)),
+        };
       });
     }
+  }, [selectedYear, selectedCompany]);
 
-    return data;
-  }, [selectedYear]); // 👈 depends on selectedYear
-  const progressOption = useMemo(() => ({
-    tooltip: {
-      trigger: 'axis',
-      formatter: function (params) {
-        const param = params[0];
-        return `${param.name} : ${param.value[1]} GB`;
+
+  const progressOption = useMemo(() => {
+
+
+    return {
+      tooltip: {
+        trigger: 'axis',
+        formatter: function (params) {
+          const index = params[0].dataIndex;
+          const curr = progressData[index];
+          const prev = progressData[index - 1] || {};
+
+          function formatLine(label, currVal, prevVal, color) {
+            const diff = currVal - (prevVal || 0);
+            const percent = prevVal ? ((diff / prevVal) * 100).toFixed(1) : '0.0';
+            const arrow = diff > 0 ? '🔼' : diff < 0 ? '🔽' : '➡️';
+            const sign = diff > 0 ? '+' : '';
+            return `<div>
+              <span style="color:${color}; font-weight:bold;">${label}:</span> 
+              ${currVal} GB (${arrow} ${sign}${percent}%)
+            </div>`;
+          }
+
+          return `
+            <strong>${curr.name}</strong><br/>
+            ${formatLine('Sold', curr.sold, prev.sold, '#1976d2')}
+            ${formatLine('Allocated', curr.allocated, prev.allocated, '#4caf50')}
+            ${formatLine('Consumed', curr.consumed, prev.consumed, '#ff9800')}
+          `;
+        }
       },
-      axisPointer: {
-        animation: false
-      }
-    },
-    xAxis: {
-      type: 'category', // 👈 key change here!
-      data: progressData.map(d => d.name),
-      axisLine: { show: true },
-      splitLine: { show: false }
-    },
-    yAxis: {
-      type: 'value',
-      name: 'Storage (GB)',
-      boundaryGap: [0, '100%'],
-      splitLine: { show: false }
-    },
-    series: [
-      {
-        name: 'Storage Growth',
-        type: 'line',
-        showSymbol: true,
-        smooth: true,
-        data: progressData.map(d => d.value),
-        lineStyle: { color: '#4CAF50', width: 3 },
-        areaStyle: { color: 'rgba(76, 175, 80, 0.2)' }
-      }
-    ]
-  }), [progressData]);
+      legend: {
+        data: ['Sold', 'Allocated', 'Consumed'],
+        top: 10
+      },
+      xAxis: {
+        type: 'category',
+        data: progressData.map(d => d.name)
+      },
+      yAxis: {
+        type: 'value',
+        name: 'Storage (GB)'
+      },
+      series: [
+        {
+          name: 'Sold',
+          type: 'line',
+          smooth: true,
+          data: progressData.map(d => d.sold),
+          lineStyle: { width: 3, color: '#1976d2' },
+          areaStyle: { color: 'rgba(25, 118, 210, 0.1)' },
+        },
+        {
+          name: 'Allocated',
+          type: 'line',
+          smooth: true,
+          data: progressData.map(d => d.allocated),
+          lineStyle: { width: 3, color: '#4caf50' },
+          areaStyle: { color: 'rgba(76, 175, 80, 0.1)' },
+        },
+        {
+          name: 'Consumed',
+          type: 'line',
+          smooth: true,
+          data: progressData.map(d => d.consumed),
+          lineStyle: { width: 3, color: '#ff9800' },
+          areaStyle: { color: 'rgba(255, 152, 0, 0.1)' },
+        }
+      ]
+    };
+  }, [progressData]);
+
+
 
   const getResourceBarChart = () => {
     const resource = selectedResource;
-    const data = companyData.resourceUsage;
-    const labels = data.map(item => item.shortName);
-    const allocated = data.map(item => item[resource].allocated);
-    const consumed = data.map(item => item[resource].consumed);
 
-    const consumedPercent = consumed.map((val, i) =>
-      ((val / (allocated[i] || 1)) * 100).toFixed(1)
-    );
+    const sortedData = [...companyData.resourceUsage]
+      .map((item) => {
+        const allocated = item[resource].allocated || 1; // avoid divide by zero
+        const consumed = item[resource].consumed;
+        const percentage = (consumed / allocated) * 100;
+        return {
+          ...item,
+          percentage: percentage.toFixed(1), // for display
+        };
+      })
+      .sort((a, b) => b.percentage - a.percentage) // ✅ sort by percentage
+      .slice(0, topCount); // top N
+
+    const labels = sortedData.map(item => item.shortName);
+    const allocated = sortedData.map(item => item[resource].allocated);
+    const consumed = sortedData.map(item => item[resource].consumed);
+    const consumedPercent = sortedData.map(item => item.percentage);
 
     return {
-
       tooltip: {
         trigger: "axis",
         formatter: function (params) {
@@ -459,17 +509,11 @@ const CompanyDashboard = ({ onThemeToggle }) => {
       ]
     };
   };
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 300);
-    return () => clearTimeout(timer);
-  }, []);
-  if (loading) {
-    return (
-      <LoaderWrapper>
-        <CustomSpinner />
-      </LoaderWrapper>
-    );
-  }
+
+
+
+
+
   return (
     <Box sx={{
       animation: "slideInFromLeft 0.3s ease-in-out forwards",
@@ -586,6 +630,8 @@ const CompanyDashboard = ({ onThemeToggle }) => {
                 >
                   Progress graph
                 </Typography>
+
+
                 <FormControl sx={{ m: 1 }} size="small">
                   <InputLabel id="year-select-label">Year</InputLabel>
                   <Select
@@ -602,6 +648,21 @@ const CompanyDashboard = ({ onThemeToggle }) => {
                     ))}
                   </Select>
                 </FormControl>
+                <TextField
+                  type="text"
+                  size="small"
+                  placeholder="Search company for progress..."
+                  value={selectedCompany}
+                  onChange={(e) => setSelectedCompany(e.target.value)}
+                  sx={{
+                    width: "250px",
+                    marginRight: "1pc",
+                    fontSize: "1rem",
+                    ".MuiOutlinedInput-notchedOutline": {
+                      borderRadius: "20px !important"
+                    }
+                  }}
+                />
 
               </div>
               <Divider />
@@ -657,6 +718,17 @@ const CompanyDashboard = ({ onThemeToggle }) => {
                   {`Top ${selectedResource.toUpperCase()} Consumers`}
                 </Typography>
                 <div>
+                  <FormControl size="small" sx={{ ml: 1, marginRight: "1pc" }}>
+                    <Select
+                      value={topCount}
+                      onChange={(e) => setTopCount(Number(e.target.value))}
+                    >
+                      <MenuItem value={5}>Top 5</MenuItem>
+                      <MenuItem value={10}>Top 10</MenuItem>
+                      <MenuItem value={20}>Top 20</MenuItem>
+                      <MenuItem value={companyData.resourceUsage.length}>All</MenuItem>
+                    </Select>
+                  </FormControl>
                   <FormControl size="small" >
                     {/* <InputLabel id="resource-select-label">Select Resource</InputLabel> */}
                     <Select
