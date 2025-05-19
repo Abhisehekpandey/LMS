@@ -680,7 +680,12 @@ const CreateUser = ({ handleClose }) => {
                 };
                 const response = await axios.post(
                   `${process.env.REACT_APP_API_BASE_URL}/api/departments`,
-                  payload
+                  payload,
+                  {
+                    headers: {
+                      Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+                    },
+                  }
                 );
                 console.log("Department created:", response.data);
 
