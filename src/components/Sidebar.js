@@ -113,6 +113,11 @@ const Sidebar = () => {
   const timeoutRef = useRef(null);
   const location = useLocation();
 
+  const user = JSON.parse(localStorage.getItem("user")) || {};
+const userName = user.name || "User";
+const userRole = user.role || "Role";
+const userInitial = user.initial || "U";
+
   const menuItems = React.useMemo(() => [
     { path: "/angelbot", icon: <TimelineIcon />, text: "AngelBot" },
     { path: "/user", icon: <UserIcon />, text: "User" },
@@ -180,7 +185,7 @@ const Sidebar = () => {
               background: "linear-gradient(135deg, #42a5f5, #1976d2)",
             }}
           >
-            S
+              {userInitial}
           </Avatar>
           <Box
             sx={{
@@ -209,7 +214,7 @@ const Sidebar = () => {
                 }}
                 component='span'
               >
-                Sumit
+                 {userName}
               </Box>
             </Box>
             <Box

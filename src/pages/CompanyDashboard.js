@@ -40,6 +40,7 @@ ChartJS.register(
   ChartDataLabels
 );
 
+
 const CompanyDashboard = ({ onThemeToggle }) => {
 
   const [selectedResource, setSelectedResource] = useState("storage");
@@ -51,6 +52,8 @@ const CompanyDashboard = ({ onThemeToggle }) => {
   const [topCount, setTopCount] = useState(5); // default Top 5
   const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const [selectedCompanyForLicense, setSelectedCompanyForLicense] = useState("");
+
 
   useEffect(() => {
     setCurrentPage(0);
@@ -87,7 +90,7 @@ const CompanyDashboard = ({ onThemeToggle }) => {
         actual: 3072, // 3TB in GB
         consumed: 2048, // 2TB in GB
       },
-    ],
+    ],  
     licenseAllocation: [
       {
         company: "TechCorp (Enterprise)",
@@ -117,47 +120,55 @@ const CompanyDashboard = ({ onThemeToggle }) => {
           January: 15,
           February: 20,
           March: 10,
-          // Aur months ko add kar le
+          April: 9,
+          May: 13,
+          June: 16,
+          July: 5,
+          August: 8,
+          September: 11,
+          October: 12,
+          November: 14,
+          December: 6
         }
-      },
-      // Baaki companies ka data bhi yeh format mein
-    ]
-    ,
-    licenseConsumption: [
-      {
-        company: "TechCorp (Enterprise)",
-        months: {
-          January: 15,
-          February: 20,
-          March: 10,
-          // Aur months ko add kar le
-        }
-      },
-      // Baaki companies ka data bhi yeh format mein
-    ]
-    ,
-    licenseExpiration: [
-      {
-        company: "TechCorp (Enterprise)",
-        shortName: "C1",
-        daysLeft: 25,
       },
       {
         company: "InfoSys (Premium)",
-        shortName: "C2",
-        daysLeft: 30,
-      },
-      {
-        company: "DataTech (Standard)",
-        shortName: "C3",
-        daysLeft: -180,
+        months: {
+          January: 10,
+          February: 12,
+          March: 8,
+          April: 11,
+          May: 9,
+          June: 14,
+          July: 7,
+          August: 5,
+          September: 6,
+          October: 10,
+          November: 12,
+          December: 4
+        }
       },
       {
         company: "CloudNet (Basic)",
-        shortName: "C4",
-        daysLeft: 180,
-      },
-    ],
+        months: {
+          January: 5,
+          February: 7,
+          March: 6,
+          April: 3,
+          May: 4,
+          June: 6,
+          July: 5,
+          August: 2,
+          September: 3,
+          October: 4,
+          November: 3,
+          December: 2
+        }
+      }
+    ]
+    ,
+
+
 
     resourceUsage: Array.from({ length: 50 }, (_, i) => ({
       shortName: `C${i + 1}`,
@@ -263,56 +274,95 @@ const CompanyDashboard = ({ onThemeToggle }) => {
     };
   }, [currentPage, searchTerm]);
   // licenseExpirationStatus
-  const licenseExpirationStatus = {
-    legend: {
-      show: true,
-      left: "center"
-    },
-    xAxis: {
-      type: 'category',
-      data: ['Jan', 'Feb', 'March', 'April', 'May', 'June', 'July', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'],
-      axisLabel: {
-        interval: 0,   // har label dikhana
-        rotate: 0      // ghumana mana hai bhai
+  const licenseExpirationStatus = useMemo(() => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
+    const fullMonthMap = {
+      Jan: "January",
+      Feb: "February",
+      Mar: "March",
+      Apr: "April",
+      May: "May",
+      Jun: "June",
+      Jul: "July",
+      Aug: "August",
+      Sept: "September",
+      Oct: "October",
+      Nov: "November",
+      Dec: "December",
+    };
+
+    let soldData = [120, 200, 150, 80, 70, 110, 130, 90, 70, 80, 47, 77];
+    let consumedData = [90, 150, 100, 60, 40, 80, 110, 60, 40, 50, 30, 60];
+
+    if (selectedCompanyForLicense.trim()) {
+      const search = selectedCompanyForLicense.trim().toLowerCase();
+      const company = companyData.licenseConsumption.find(c =>
+        c.company.toLowerCase().includes(search)
+      );
+
+      if (company) {
+        soldData = months.map(short => {
+          const full = fullMonthMap[short];
+          return company.months[full] ?? 0;
+        });
+        consumedData = soldData.map(val => Math.round(val * 0.7));
+      } else {
+        soldData = new Array(12).fill(0);
+        consumedData = new Array(12).fill(0);
       }
-    },
-    yAxis: {
-      type: 'value'
-    },
-    series: [
-      {
-        data: [120, 200, 150, 80, 70, 110, 130, 90, 70, 80, 47, 77], // Bar chart data
-        type: 'bar',
-        name: 'sold license',
-        color: '#1976d2', // blue color for the bars
-        label: {
-          show: true, // Enable showing the label
-          position: 'top', // Position the label above the point
-          color: 'black', // Color of the label (same as the line)
-          fontSize: 10, // Font size for the label
-          offset: [0, -10]
+    }
+
+
+    return {
+      legend: {
+        show: true,
+        left: "center"
+      },
+      xAxis: {
+        type: 'category',
+        data: months,
+        axisLabel: {
+          interval: 0,
+          rotate: 0
         }
       },
-      {
-        data: [90, 150, 100, 60, 40, 80, 110, 60, 40, 50, 30, 60], // Consumed licenses (line chart data)
-        type: 'line',
-        name: 'Consumed Licenses',
-        color: '#4CAF50', // Orange color for the line
-        smooth: true, // Smooth the line curve
-        lineStyle: {
-          width: 3 // Line thickness
+      yAxis: {
+        type: 'value'
+      },
+      series: [
+        {
+          data: soldData,
+          type: 'bar',
+          name: 'Sold License',
+          color: '#1976d2',
+          label: {
+            show: true,
+            position: 'top',
+            color: 'black',
+            fontSize: 10,
+            offset: [0, -10]
+          }
         },
-        label: {
-          show: true, // Enable showing the label
-          position: 'top', // Position the label above the point
-          color: 'black', // Color of the label (same as the line)
-          fontSize: 10, // Font size for the label
-          position: 'insideTop',
-          offset: [0, -10]
+        {
+          data: consumedData,
+          type: 'line',
+          name: 'Consumed Licenses',
+          color: '#4CAF50',
+          smooth: true,
+          lineStyle: { width: 3 },
+          label: {
+            show: true,
+            position: 'insideTop',
+            color: 'black',
+            fontSize: 10,
+            offset: [0, -10]
+          }
         }
-      }
-    ]
-  };
+      ]
+    };
+  }, [selectedCompanyForLicense, companyData.licenseConsumption]);
+
+
   const generateDummyProgressData = () => {
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
       "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -632,7 +682,7 @@ const CompanyDashboard = ({ onThemeToggle }) => {
                 </Typography>
 
 
-                <FormControl sx={{ m: 1 }} size="small">
+                <FormControl sx={{ m: 1, marginLeft: " 11pc" }} size="small" >
                   <InputLabel id="year-select-label">Year</InputLabel>
                   <Select
                     labelId="year-select-label"
@@ -676,22 +726,42 @@ const CompanyDashboard = ({ onThemeToggle }) => {
 
             <Paper elevation={10} sx={{ borderRadius: "20px" }}>
               <div style={{ padding: "6px" }}>
-                <Typography
-                  variant="h6"
-                  sx={{
-                    fontSize: '15px',
-                    fontWeight: "bold",
-                    color: "#2c3e50b3",
-                    // borderBottom: "2px solid #e0e0e0",
-                    // paddingBottom: 1,
-                    textAlign: "center",
-                    borderRadius: "6px",
-                    padding: '6px'
 
-                  }}
-                >
-                  License Analysis
-                </Typography>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontSize: '15px',
+                      fontWeight: "bold",
+                      color: "#2c3e50b3",
+                      // borderBottom: "2px solid #e0e0e0",
+                      // paddingBottom: 1,
+                      textAlign: "center",
+                      borderRadius: "6px",
+                      padding: '6px'
+
+                    }}
+                  >
+                    License Analysis
+                  </Typography>
+                  <TextField
+                    type="text"
+                    size="small"
+                    placeholder="Search company for license..."
+                    value={selectedCompanyForLicense}
+                    onChange={(e) => setSelectedCompanyForLicense(e.target.value)}
+                    sx={{
+                      width: "250px",
+                      marginRight: "1pc",
+                      fontSize: "1rem",
+                      ".MuiOutlinedInput-notchedOutline": {
+                        borderRadius: "20px !important"
+                      }
+                    }}
+                  />
+                </div>
+
+
               </div>
               <Divider />
               <Box sx={{ height: 306 }}>
@@ -715,7 +785,7 @@ const CompanyDashboard = ({ onThemeToggle }) => {
                     borderRadius: "6px"
                   }}
                 >
-                  {`Top ${selectedResource.toUpperCase()} Consumers`}
+                  {` ${selectedResource.toUpperCase()} Consumers`}
                 </Typography>
                 <div>
                   <FormControl size="small" sx={{ ml: 1, marginRight: "1pc" }}>

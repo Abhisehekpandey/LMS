@@ -22,6 +22,7 @@ export const signupUser = async (data) => {
 
 export const loginUser = async (username, password) => {
   try {
+
     // Send POST request to the backend login API
     const response = await axios.post(
       `${process.env.REACT_APP_API_BASE_URL}/public/users/login`,
@@ -37,6 +38,16 @@ export const loginUser = async (username, password) => {
         },
       }
     );
+     // 🔧 Extract name from username (before @)
+     const namePart = username.split("@")[0];
+     const displayName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
+ 
+     // ✅ Store derived info in localStorage
+     localStorage.setItem(
+       "user",
+       JSON.stringify({ name: displayName, initial: displayName.charAt(0), role: "Administrator" })
+     );
+    console.log(">>>>ress",response)
     return response.data;
   } catch (error) {
     // Handle error (e.g., invalid credentials)

@@ -6,7 +6,6 @@ import {
   List,
   ListItem,
   Box,
-  Divider,
   Button,
   Checkbox,
   DialogContent,
@@ -16,8 +15,9 @@ import {
   Avatar,
 } from "@mui/material";
 
-const Migration = ({ handleClos, rowData, rows }) => {
+const Migration = ({ handleClos, rowData, rows, onMigrationComplete }) => {
   const [selectedStorage, setSelectedStorage] = useState({});
+  const [selectedUser, setSelectedUser] = useState(null);
 
   const handleStorageCheckboxChange = (userId) => {
     setSelectedStorage((prev) => ({
@@ -35,7 +35,7 @@ const Migration = ({ handleClos, rowData, rows }) => {
   }, 0);
 
   const totalDataStorage = rowData.reduce((acc, curr) => {
-    const num = parseFloat(curr.storageUsed); // extracts 10 from "10GB"
+    const num = parseFloat(curr.storageUsed); // "300MB"
     return acc + (isNaN(num) ? 0 : num);
   }, 0);
 
@@ -45,14 +45,49 @@ const Migration = ({ handleClos, rowData, rows }) => {
     (user) => !rowData.some((selected) => selected.id === user.id)
   );
 
-  const requiredStorage = 10; // Example: Required is 10GB
+  const getAvailableStorageMB = (user) => {
+    const manage = parseFloat(user.manageStorage?.replace(/[^0-9.]/g, "")) || 0;
+    const used = parseFloat(user.storageUsed?.replace(/[^0-9.]/g, "")) || 0;
+    const isGB = user.manageStorage?.toLowerCase().includes("gb");
+    const manageMB = isGB ? manage * 1024 : manage;
+    return manageMB - used;
+  };
 
-  const [selectedUser, setSelectedUser] = useState(null);
+  const availableStorageMB = selectedUser ? getAvailableStorageMB(selectedUser) : 0;
+  const isError = selectedUser && totalDataStorage > availableStorageMB;
 
-  const getAvailable = (user) =>
-    parseFloat(user?.availableStorage?.replace("GB", "")) || 0;
+  const handleMigrate = () => {
+    if (!selectedUser) return;
 
-  const isError = selectedUser && getAvailable(selectedUser) < requiredStorage;
+    const updatedRows = rows.map((user) => {
+      // If target user: add totalDataStorage to storageUsed
+      if (user.id === selectedUser.id) {
+        const used = parseFloat(user.storageUsed?.replace(/[^0-9.]/g, "")) || 0;
+        const newUsed = used + totalDataStorage;
+        return {
+          ...user,
+          storageUsed: `${newUsed.toFixed(2)} MB`,
+        };
+      }
+
+      // If source user: reset storageUsed to 0
+      if (rowData.some((source) => source.id === user.id)) {
+        return {
+          ...user,
+          storageUsed: "0 MB",
+        };
+      }
+
+      // Everyone else: unchanged
+      return user;
+    });
+
+    const updatedTarget = updatedRows.find((u) => u.id === selectedUser.id);
+    setSelectedUser(updatedTarget); // update view
+    onMigrationComplete(updatedRows); // notify parent
+    setSelectedStorage({}); // reset checkbox
+    alert("Migration completed.");
+  };
 
   return (
     <Box>
@@ -74,7 +109,6 @@ const Migration = ({ handleClos, rowData, rows }) => {
           {rowData.map((row, index) => (
             <ListItem key={index}>
               <Box
-                key={index}
                 sx={{
                   p: 1,
                   border: "1px solid #e0e0e0",
@@ -114,7 +148,6 @@ const Migration = ({ handleClos, rowData, rows }) => {
                     checked={!!selectedStorage[row.id]}
                     onChange={() => handleStorageCheckboxChange(row.id)}
                   />
-
                   <Typography
                     variant="body2"
                     sx={{ fontSize: "0.813rem", color: "#666", mr: 1 }}
@@ -145,7 +178,7 @@ const Migration = ({ handleClos, rowData, rows }) => {
           <Autocomplete
             fullWidth
             options={userOptions}
-            getOptionLabel={(option) => option?.name || ""} // <-- use userName here
+            getOptionLabel={(option) => option?.name || ""}
             value={selectedUser}
             sx={{ width: "300px" }}
             onChange={(event, newValue) => setSelectedUser(newValue)}
@@ -156,57 +189,9 @@ const Migration = ({ handleClos, rowData, rows }) => {
                 </Avatar>
                 <Box>
                   <Typography variant="body2">{option.name}</Typography>
-
-                  {/* <Typography variant="caption" color="text.secondary">
-                    Available Storage:{" "}
-                    {(() => {
-                      const manage =
-                        parseFloat(
-                          option.manageStorage?.replace(/[^0-9.]/g, "")
-                        ) || 0;
-                      const used =
-                        parseFloat(
-                          option.storageUsed?.replace(/[^0-9.]/g, "")
-                        ) || 0;
-
-
-                      const isManageInGB = option.manageStorage
-                        ?.toLowerCase()
-                        .includes("gb");
-                      const isUsedInGB = option.storageUsed
-                        ?.toLowerCase()
-                        .includes("gb");
-
-                      
-                      const manageMB = isManageInGB ? manage * 1024 : manage;
-                      const usedMB = isUsedInGB ? used * 1024 : used;
-
-                    
-
-                      const available = manageMB - usedMB;
-
-                      return `${available.toFixed(2)} MB`;
-                    })()}
-                  </Typography> */}
-
-<Typography variant="caption" color="text.secondary">
-  Available Storage: {
-    (() => {
-      const manage = parseFloat(option.manageStorage?.replace(/[^0-9.]/g, "")) || 0;
-      const used = parseFloat(option.storageUsed?.replace(/[^0-9.]/g, "")) || 0;
-
-      const isManageInGB = option.manageStorage?.toLowerCase().includes("gb");
-
-      const manageMB = isManageInGB ? manage * 1024 : manage;
-      const usedMB = used; // already in MB
-
-      const available = manageMB - usedMB;
-
-      return `${available.toFixed(2)} MB`;
-    })()
-  }
-</Typography>
-
+                  <Typography variant="caption" color="text.secondary">
+                    Available Storage: {getAvailableStorageMB(option).toFixed(2)} MB
+                  </Typography>
                 </Box>
               </Box>
             )}
@@ -214,18 +199,25 @@ const Migration = ({ handleClos, rowData, rows }) => {
               <TextField
                 {...params}
                 fullWidth
-                sx={{ width: "300px" }} // also fixed typo: no space in "200px"
+                sx={{ width: "300px" }}
                 label="Select Target User"
               />
             )}
             isOptionEqualToValue={(option, value) => option.id === value.id}
           />
+          {isError && (
+            <Typography color="error" variant="body2" sx={{ mt: 1 }}>
+              Can't be migrated: not enough memory, please increase storage.
+            </Typography>
+          )}
         </Box>
         <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2 }}>
           <Button variant="text" onClick={handleClos}>
             Cancel
           </Button>
           <Button
+            onClick={handleMigrate}
+            disabled={!selectedUser || isError}
             sx={{
               backgroundColor: "rgb(251, 68, 36)",
               color: "white",
@@ -236,7 +228,6 @@ const Migration = ({ handleClos, rowData, rows }) => {
             }}
             variant="contained"
             color="primary"
-            disabled={!selectedUser} // disabled when no user selected
           >
             Migrate
           </Button>
@@ -247,3 +238,6 @@ const Migration = ({ handleClos, rowData, rows }) => {
 };
 
 export default Migration;
+
+
+

@@ -31,6 +31,12 @@ import {
 import React, { useEffect, useState } from "react";
 import { CircularProgress, keyframes, styled } from "@mui/material";
 import ReactECharts from "echarts-for-react";
+import { NotificationImportant } from "@mui/icons-material";
+import { WarningAmber } from "@mui/icons-material";
+import { Tooltip } from "@mui/material";
+
+
+
 import {
   ArrowDropUp,
   ArrowDropDown,
@@ -88,9 +94,10 @@ const AngelBot = () => {
   ];
 
   const [licenses] = useState([
-    { id: 1, name: "License A", expiryDate: "2025-12-31" },
+    { id: 1, name: "License A", expiryDate: "2025-05-10" },
     { id: 2, name: "License B", expiryDate: "2025-08-01" },
     { id: 3, name: "License C", expiryDate: "2025-06-10" }, // this is soonest
+    { id: 4, name: "License D", expiryDate: "2025-12-31" },
   ]);
 
   const [nextExpiringLicense, setNextExpiringLicense] = useState("");
@@ -132,6 +139,8 @@ const AngelBot = () => {
   ]);
 
   const [storageTab, setStorageTab] = useState("status"); // "status" or "distribution"
+  const [licenseFilter, setLicenseFilter] = useState("all");
+  
 
   useEffect(() => {
     const today = new Date();
@@ -273,6 +282,21 @@ const AngelBot = () => {
   const formatSize = (val) => {
     return val < 1024 ? `${val} MB` : `${(val / 1024).toFixed(1)}`;
   };
+
+  const getLicenseStatus = (expiryDate) => {
+    const today = new Date();
+    const expDate = new Date(expiryDate);
+    const diffDays = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
+  
+    if (diffDays < 0) return { status: "Expired", daysLeft: 0 };
+    if (diffDays <= 30) return { status: "Expiring Soon", daysLeft: diffDays };
+    return { status: "Active", daysLeft: diffDays };
+  };
+  const filteredLicenses = licenses.filter((license) => {
+    const { status } = getLicenseStatus(license.expiryDate);
+    if (licenseFilter === "all") return true;
+    return status.toLowerCase() === licenseFilter;
+  });
 
   const LicenseStatus = {
     tooltip: {
@@ -514,7 +538,7 @@ const AngelBot = () => {
       return (
         <Box
           sx={{
-            mt: 3,
+            mt: 2,
             position: "relative",
             display: "flex",
             justifyContent: "center",
@@ -523,7 +547,7 @@ const AngelBot = () => {
           <Box
             sx={{
               gap: 0.5,
-              padding: "8px 16px",
+              padding: "5px 5px",
               borderRadius: 2,
               boxShadow: `0 0 8px ${alpha(chartColors.error, 0.2)}`,
               backgroundColor: alpha(chartColors.error, 0.1),
@@ -798,68 +822,12 @@ const AngelBot = () => {
                     flexDirection: "column",
                     justifyContent: "center", // center vertically
                     gap: 3,
+                    padding:"0px",
+                    paddingBottom:"0px"
                   }}
                 >
-                  {/* Uploaded License */}
-                  <Box>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      Uploaded License (80/100)
-                    </Typography>
-                    <LinearProgress
-                      variant="determinate"
-                      value={80}
-                      sx={{
-                        height: 10,
-                        borderRadius: 2,
-                        backgroundColor: alpha("#1976d2", 0.12),
-                        "& .MuiLinearProgress-bar": {
-                          backgroundColor: "#1976d2",
-                          borderRadius: 2,
-                        },
-                      }}
-                    />
-                  </Box>
-
-                  {/* Valid License */}
-                  <Box>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      Valid License (60/100)
-                    </Typography>
-                    <LinearProgress
-                      variant="determinate"
-                      value={60}
-                      sx={{
-                        height: 10,
-                        borderRadius: 2,
-                        backgroundColor: alpha("#4caf50", 0.12),
-                        "& .MuiLinearProgress-bar": {
-                          backgroundColor: "#4caf50",
-                          borderRadius: 2,
-                        },
-                      }}
-                    />
-                  </Box>
-
-                  {/* Expired License */}
-                  <Box>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      Expired License (20/100)
-                    </Typography>
-                    <LinearProgress
-                      variant="determinate"
-                      value={20}
-                      sx={{
-                        height: 10,
-                        borderRadius: 2,
-                        backgroundColor: alpha("#f44336", 0.12),
-                        "& .MuiLinearProgress-bar": {
-                          backgroundColor: "#f44336",
-                          borderRadius: 2,
-                        },
-                      }}
-                    />
-                  </Box>
-
+         
+               
                   <LicenseCountdownBox
                     licenses={licenses}
                     currentLicenseIndex={currentLicenseIndex}
@@ -868,6 +836,106 @@ const AngelBot = () => {
                     nextExpiringLicense={nextExpiringLicense}
                     chartColors={chartColors}
                   />
+                
+
+<Box
+  sx={{
+    mt: 1,
+    border: "1px solid #e0e0e0",
+    borderRadius: 2,
+    maxHeight: 200,
+    overflowY: "auto",
+    "&::-webkit-scrollbar": {
+      width: "4px", // ⬅️ reduce scrollbar width here
+    },
+    "&::-webkit-scrollbar-thumb": {
+      backgroundColor: "#ccc", // customize thumb color
+      borderRadius: "4px",
+    },
+    "&::-webkit-scrollbar-track": {
+      backgroundColor: "#f5f5f5",
+    },
+  }}
+>
+
+ 
+  <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+  <thead>
+    <tr style={{ background: "#f5f5f5", position: "sticky", top: 0, zIndex: 1 }}>
+      <th style={{ padding: "8px", fontWeight: "600", fontSize: "0.9rem", textAlign: "left" }}>Name</th>
+      <th style={{ padding: "8px", fontWeight: "600", fontSize: "0.9rem", textAlign: "left" }}>Expiry Date</th>
+      <th style={{ padding: "8px", fontWeight: "600", fontSize: "0.9rem", textAlign: "left" }}>Status</th>
+      <th style={{ padding: "8px", fontWeight: "600", fontSize: "0.9rem", textAlign: "left" }}>Days Left</th>
+    
+      
+      <th style={{padding: "4px", fontWeight: "600", fontSize: "0.9rem", textAlign: "center"}}>
+  <div style={{display: "flex", justifyContent:"center", alignItems: "center", gap: "4px"}}>
+    Alert
+    <FormControl size="small" sx={{ width: "50px" }}>
+      <Select
+        value={licenseFilter}
+        onChange={(e) => setLicenseFilter(e.target.value)}
+        displayEmpty
+        renderValue={() => ""}
+        sx={{ fontSize: '0.75rem', minHeight: '20px' }}
+      >
+        <MenuItem value="all">All</MenuItem>
+        <MenuItem value="active">Active</MenuItem>
+        <MenuItem value="expired">Expired</MenuItem>
+        <MenuItem value="expiring soon">Expiring Soon</MenuItem>
+      </Select>
+    </FormControl>
+  </div>
+</th>
+    </tr>
+  </thead>
+  <tbody>
+    {filteredLicenses.map((license, index) => {
+      const { status, daysLeft } = getLicenseStatus(license.expiryDate);
+      const colorMap = {
+        Active: "#4caf50",
+        "Expiring Soon": "#ff9800",
+        Expired: "#f44336",
+      };
+
+      return (
+        <tr key={index} style={{ borderBottom: "1px solid #eee" }}>
+          <td style={{ padding: "8px", fontSize: "0.875rem" }}>{license.name}</td>
+          <td style={{ padding: "8px", fontSize: "0.875rem" }}>{license.expiryDate}</td>
+          <td
+            style={{
+              padding: "8px",
+              fontSize: "0.875rem",
+              color: colorMap[status],
+              fontWeight: 600,
+            }}
+          >
+            {status}
+          </td>
+          <td style={{ padding: "8px", fontSize: "0.875rem" }}>{daysLeft}</td>
+          <td style={{ padding: "8px", textAlign: "center" }}>
+            {status === "Expired" ? (
+              <Tooltip
+                title={`Your license \"${license.name}\" has expired. Please upgrade your plan.`}
+                arrow
+              >
+                <WarningAmber sx={{ color: "#f44336", cursor: "default" }} fontSize="small" />
+              </Tooltip>
+            ) : (
+              <Typography variant="caption" color="text.secondary">
+                —
+              </Typography>
+            )}
+          </td>
+        </tr>
+      );
+    })}
+  </tbody>
+</table>
+</Box>
+
+
+
                 </CardContent>
               </Card>
             </Grid>
@@ -1257,3 +1325,4 @@ const AngelBot = () => {
 };
 
 export default AngelBot;
+

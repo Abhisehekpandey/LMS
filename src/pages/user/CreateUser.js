@@ -291,7 +291,7 @@ const CreateUser = ({ handleClose }) => {
                                   onChange={formik.handleChange}
                                   error={Boolean(
                                     formik.touched.users?.[index]?.name &&
-                                      formik.errors.users?.[index]?.name
+                                    formik.errors.users?.[index]?.name
                                   )}
                                   helperText={
                                     formik.touched.users?.[index]?.name &&
@@ -310,7 +310,7 @@ const CreateUser = ({ handleClose }) => {
                                   onChange={formik.handleChange}
                                   error={Boolean(
                                     formik.touched.users?.[index]?.email &&
-                                      formik.errors.users?.[index]?.email
+                                    formik.errors.users?.[index]?.email
                                   )}
                                   helperText={
                                     formik.touched.users?.[index]?.email &&
@@ -329,7 +329,7 @@ const CreateUser = ({ handleClose }) => {
                                   onChange={formik.handleChange}
                                   error={Boolean(
                                     formik.touched.users?.[index]?.phone &&
-                                      formik.errors.users?.[index]?.phone
+                                    formik.errors.users?.[index]?.phone
                                   )}
                                   helperText={
                                     formik.touched.users?.[index]?.phone &&
@@ -670,7 +670,7 @@ const CreateUser = ({ handleClose }) => {
           </Grid>
         </DialogContent>
         <DialogActions>
-        
+
           <Button
             onClick={async () => {
               try {
@@ -679,12 +679,17 @@ const CreateUser = ({ handleClose }) => {
                   initialRole: newDepartment.initialRole.trim() === "" ? null : newDepartment.initialRole,
                 };
                 const response = await axios.post(
-                  `${process.env.REACT_APP_API_BASE_URL}/api/departments`,
-                  payload
+                  `${process.env.REACT_APP_API_BASE_URL}/departments`,
+                  payload,
+                  {
+                    headers: {
+                      Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+                    },
+                  }
                 );
                 console.log("Department created:", response.data);
 
-                
+
                 setDepartments((prev) => [...prev, newDepartment.name]);
 
                 // Optional: Reset form state

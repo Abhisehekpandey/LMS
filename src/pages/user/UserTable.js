@@ -69,7 +69,7 @@ const rows = [
     department: "Frontend",
     role: "Software Engineer",
     email: "kunal@appolo.com",
-    storageUsed: "200MB",
+    storageUsed: "200 MB",
     manageStorage: "1 GB",
     status: false,
 
@@ -82,7 +82,7 @@ const rows = [
     department: "Frontend",
     role: "Frontend Developer",
     email: "pratibha@appolo.com",
-    storageUsed: "200MB",
+    storageUsed: "200 MB",
     manageStorage: "1 GB",
     status: false,
    
@@ -95,7 +95,7 @@ const rows = [
     department: "Frontend",
     role: "Software Developer",
     email: "abhishek@appolo.com",
-    storageUsed: "800MB",
+    storageUsed: "800 MB",
     manageStorage: "1 GB",
     status: true,
 
@@ -108,7 +108,7 @@ const rows = [
     department: "Backend",
     role: "Manager",
     email: "dhruv@appolo.com",
-    storageUsed: "800MB",
+    storageUsed: "800 MB",
     manageStorage: "1 GB",
     status: true,
     
@@ -121,7 +121,7 @@ const rows = [
     department: "Backend",
     role: "Software engineer",
     email: "manish@appolo.com",
-    storageUsed: "800MB",
+    storageUsed: "800 MB",
     manageStorage: "1 GB",
     status: true,
    
@@ -134,7 +134,7 @@ const rows = [
     department: "Backend",
     role: "Backend developer",
     email: "prince@appolo.com",
-    storageUsed: "800MB",
+    storageUsed: "800 MB",
     manageStorage: "1 GB",
     status: true,
     
@@ -147,7 +147,7 @@ const rows = [
     department: "Frontend",
     role: "Senior Frontend Developer",
     email: "dheeraj@appolo.com",
-    storageUsed: "800MB",
+    storageUsed: "800 MB",
     manageStorage: "1 GB",
     status: true,
     
@@ -245,6 +245,11 @@ export default function UserTable() {
   const [editData, setEditData] = useState({});
   const [Storage, setStorage] = React.useState("");
 
+
+
+  const handleMigrationComplete = (updatedRows) => {
+    setRowsData(updatedRows);
+  };
 
   const handleChangeStorage = (event) => {
     setStorage(event.target.value);
@@ -563,7 +568,7 @@ export default function UserTable() {
                           <FormControlLabel
                             control={
                               <IOSSwitch
-                                // checked={row.status}
+                                checked={row.status}
                                 onChange={() => {
                                   console.log("Switch clicked:", row); // confirm this runs
                                   handleStatusToggle(row.name);
@@ -930,6 +935,7 @@ export default function UserTable() {
             handleClos={handleClose}
             rowData={rowData}
             rows={rows}
+            onMigrationComplete={handleMigrationComplete}
           />
         </Dialog>
 
