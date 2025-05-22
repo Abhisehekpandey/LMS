@@ -34,8 +34,10 @@ import ReactECharts from "echarts-for-react";
 import { NotificationImportant } from "@mui/icons-material";
 import { WarningAmber } from "@mui/icons-material";
 import { Tooltip } from "@mui/material";
-
-
+import { Fade } from "@mui/material";
+import {  useTheme, } from "@mui/material";
+import { License } from "@mui/icons-material"; // Optional icon
+import { VerifiedUser } from '@mui/icons-material';
 
 import {
   ArrowDropUp,
@@ -167,7 +169,6 @@ const AngelBot = () => {
 
   const [storageTab, setStorageTab] = useState("status"); // "status" or "distribution"
   const [licenseFilter, setLicenseFilter] = useState("all");
-  
 
   useEffect(() => {
     const today = new Date();
@@ -314,7 +315,7 @@ const AngelBot = () => {
     const today = new Date();
     const expDate = new Date(expiryDate);
     const diffDays = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
-  
+
     if (diffDays < 0) return { status: "Expired", daysLeft: 0 };
     if (diffDays <= 30) return { status: "Expiring Soon", daysLeft: diffDays };
     return { status: "Active", daysLeft: diffDays };
@@ -557,97 +558,143 @@ const AngelBot = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  const LicenseCountdownBox = React.memo(
-    ({
-      licenses,
-      currentLicenseIndex,
-      setCurrentLicenseIndex,
-      remainingDays,
-      nextExpiringLicense,
-      chartColors,
-    }) => {
-      return (
-        <Box
-          sx={{
-            mt: 2,
-            position: "relative",
-            display: "flex",
-            justifyContent: "center",
-          }}
-        >
-          <Box
-            sx={{
-              gap: 0.5,
-              padding: "5px 5px",
-              borderRadius: 2,
-              boxShadow: `0 0 8px ${alpha(chartColors.error, 0.2)}`,
-              backgroundColor: alpha(chartColors.error, 0.1),
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              minWidth: 200,
-            }}
-          >
-            <Typography
-              variant="body2"
-              sx={{ color: chartColors.error, fontWeight: 500 }}
-            >
-              {remainingDays <= 30
-                ? `Renewal By: ${nextExpiringLicense}`
-                : `License Validity: ${nextExpiringLicense}`}
-            </Typography>
+const LicenseCountdownBox = React.memo(({ licenses, chartColors }) => {
+  const [currentIndex, setCurrentIndex] = React.useState(0);
+  const [progress, setProgress] = React.useState(0);
+  const theme = useTheme();
 
-            <Typography
-              variant="h4"
+  // Auto switch and progress bar
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setProgress((old) => {
+        if (old >= 100) {
+          setCurrentIndex((prev) => (prev + 1) % licenses.length);
+          return 0;
+        }
+        return old + 5;
+      });
+    }, 150); // Smooth progress every 150ms (3s total)
+
+    return () => clearInterval(interval);
+  }, [licenses.length]);
+
+  return (
+    <Box
+      sx={{
+        mt: 2,
+        position: "relative",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        overflow: "hidden",
+        height: 140,
+      }}
+    >
+      <Box
+        sx={{
+          display: "flex",
+          transform: `translateX(-${currentIndex * 100}%)`,
+          transition: "transform 0.6s ease-in-out",
+          width: `${licenses.length * 100}%`,
+        }}
+      >
+        {licenses.map((license, i) => {
+          const { daysLeft } = getLicenseStatus(license.expiryDate);
+          const label =
+            daysLeft <= 30
+              ? `Renewal By: ${license.expiryDate}`
+              : `License Validity: ${license.expiryDate}`;
+
+          return (
+            <Box
+              key={i}
               sx={{
-                color: chartColors.error,
-                fontWeight: 700,
-                lineHeight: 1,
-                fontSize: "2rem",
+                flex: "0 0 100%",
+                display: "flex",
+                justifyContent: "center",
               }}
             >
-              {remainingDays}
-            </Typography>
+              <Box
+                sx={{
+                  padding: 2,
+                  borderRadius: 3,
+                  boxShadow: `0 2px 10px ${alpha(chartColors.error, 0.2)}`,
+                  backgroundColor: alpha(chartColors.error, 0.08),
+                  minWidth: 250,
+                  maxWidth: 300,
+                  width: "100%",
+                  textAlign: "center",
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  gap: 0.5,
+                }}
+              >
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    color: chartColors.error,
+                  }}
+                >
+                  {/* <License fontSize="small" /> */}
+                  <VerifiedUser fontSize="small" />
 
-            <Typography
-              sx={{
-                color: chartColors.error,
-                fontWeight: 700,
-                lineHeight: 1,
-                fontSize: "1rem",
-              }}
-            >
-              Days
-            </Typography>
-          </Box>
+                  <Typography
+                    variant="subtitle1"
+                    fontWeight={600}
+                    sx={{
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      maxWidth: "100%",
+                    }}
+                  >
+                    {license.name}
+                  </Typography>
+                </Box>
 
-          <IconButton
-            size="small"
-            sx={{ position: "absolute", left: 0, bottom: 0 }}
-            onClick={() =>
-              setCurrentLicenseIndex((prev) =>
-                prev === 0 ? licenses.length - 1 : prev - 1
-              )
-            }
-          >
-            <ArrowBack sx={{ color: chartColors.error }} />
-          </IconButton>
+                <Typography
+                  variant="body2"
+                  sx={{ color: chartColors.error, fontWeight: 500 }}
+                >
+                  {label}
+                </Typography>
 
-          <IconButton
-            size="small"
-            sx={{ position: "absolute", right: 0, bottom: 0 }}
-            onClick={() =>
-              setCurrentLicenseIndex((prev) =>
-                prev === licenses.length - 1 ? 0 : prev + 1
-              )
-            }
-          >
-            <ArrowForward sx={{ color: chartColors.error }} />
-          </IconButton>
-        </Box>
-      );
-    }
+                <Typography
+                  variant="h3"
+                  sx={{
+                    color: chartColors.error,
+                    fontWeight: 800,
+                    fontSize: "2.5rem",
+                    lineHeight: 1.2,
+                  }}
+                >
+                  {daysLeft}
+                </Typography>
+
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: chartColors.error,
+                    fontWeight: 600,
+                    fontSize: "0.85rem",
+                    letterSpacing: 1,
+                  }}
+                >
+                  DAYS LEFT
+                </Typography>
+              </Box>
+            </Box>
+          );
+        })}
+      </Box>
+    </Box>
   );
+});
+
 
   if (loading) {
     return (
@@ -705,7 +752,7 @@ const AngelBot = () => {
                       }}
                     >
                       <Group color="primary" />
-                      <Typography variant="h6">License Status</Typography>
+                      <Typography variant="h6">User Stats</Typography>
                     </div>
                   }
                 />
@@ -732,6 +779,8 @@ const AngelBot = () => {
               </Card>
             </Grid>
 
+           
+
             <Grid item xs={4}>
               <Card
                 sx={{
@@ -751,78 +800,111 @@ const AngelBot = () => {
                       style={{
                         display: "flex",
                         alignItems: "center",
-                        justifyContent: "space-between",
+                        gap: "10px",
+                        justifyContent: "flex-start",
                       }}
                     >
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "10px",
-                        }}
-                      >
-                        <Group color="primary" />
-                        <Typography variant="h6">Storage</Typography>
-                      </div>
-                      <div>
-                        <Button
-                          size="small"
-                          variant={
-                            storageTab === "status" ? "contained" : "outlined"
-                          }
-                          onClick={() => setStorageTab("status")}
-                          sx={{ mr: 1 }}
-                        >
-                          Storage Status
-                        </Button>
-                        <Button
-                          size="small"
-                          variant={
-                            storageTab === "distribution"
-                              ? "contained"
-                              : "outlined"
-                          }
-                          onClick={() => setStorageTab("distribution")}
-                        >
-                          Storage Distribution
-                        </Button>
-                      </div>
+                      <Group color="primary" />
+
+                      <Typography variant="h6">
+                        {storageTab === "status"
+                          ? "Storage Status"
+                          : "Storage Distribution"}
+                      </Typography>
                     </div>
                   }
                 />
 
+            
                 <CardContent
-                  sx={{
-                    mb: "auto",
-                    pb: "0 !important",
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <div>
-                    <ReactECharts
-                      option={
-                        storageTab === "status"
-                          ? storageStatus
-                          : storageDistribution
-                      }
-                      style={{ height: 300, width: "100%" }}
-                    />
-                  </div>
-                  {selectedChart && (
-                    <Typography
-                      variant="subtitle2"
-                      sx={{
-                        color: "text.secondary",
-                        fontWeight: "bold",
-                        mb: 1,
-                      }}
-                    >
-                      Showing data for: {selectedChart}
-                    </Typography>
-                  )}
-                </CardContent>
+  sx={{
+    mb: "auto",
+    pb: "0 !important",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+  }}
+>
+  <Box sx={{ width: "100%", height: 300, position: "relative" }}>
+    <Fade
+      in={storageTab === "status"}
+      timeout={500}
+      unmountOnExit
+      appear
+    >
+      <Box
+        sx={{
+          width: "100%",
+          height: "100%",
+          position: "absolute",
+          top: 0,
+          left: 0,
+        }}
+      >
+        <ReactECharts
+          option={storageStatus}
+          style={{ height: "100%", width: "100%" }}
+        />
+      </Box>
+    </Fade>
+
+    <Fade
+      in={storageTab === "distribution"}
+      timeout={500}
+      unmountOnExit
+      appear
+    >
+      <Box
+        sx={{
+          width: "100%",
+          height: "100%",
+          position: "absolute",
+          top: 0,
+          left: 0,
+        }}
+      >
+        <ReactECharts
+          option={storageDistribution}
+          style={{ height: "100%", width: "100%" }}
+        />
+      </Box>
+    </Fade>
+  </Box>
+
+  <IconButton
+    onClick={() =>
+      setStorageTab((prev) =>
+        prev === "status" ? "distribution" : "status"
+      )
+    }
+    sx={{
+      mt: 2,
+      border: "1px solid",
+      borderColor: "divider",
+      borderRadius: "50%",
+      backgroundColor: "background.paper",
+      "&:hover": {
+        backgroundColor: "action.hover",
+      },
+    }}
+  >
+    {storageTab === "status" ? <ArrowForward /> : <ArrowBack />}
+  </IconButton>
+
+  {selectedChart && (
+    <Typography
+      variant="subtitle2"
+      sx={{
+        color: "text.secondary",
+        fontWeight: "bold",
+        mt: 1,
+      }}
+    >
+      Showing data for: {selectedChart}
+    </Typography>
+  )}
+</CardContent>
+
               </Card>
             </Grid>
 
@@ -848,7 +930,7 @@ const AngelBot = () => {
                       }}
                     >
                       <Dashboard color="primary" />
-                      <Typography variant="h6">License Summary</Typography>
+                      <Typography variant="h6">License Stats</Typography>
                     </div>
                   }
                 />
@@ -859,12 +941,10 @@ const AngelBot = () => {
                     flexDirection: "column",
                     justifyContent: "center", // center vertically
                     gap: 3,
-                    padding:"0px",
-                    paddingBottom:"0px"
+                    padding: "0px",
+                    paddingBottom: "0px",
                   }}
                 >
-         
-               
                   <LicenseCountdownBox
                     licenses={licenses}
                     currentLicenseIndex={currentLicenseIndex}
@@ -873,106 +953,197 @@ const AngelBot = () => {
                     nextExpiringLicense={nextExpiringLicense}
                     chartColors={chartColors}
                   />
-                
 
-<Box
-  sx={{
-    mt: 1,
-    border: "1px solid #e0e0e0",
-    borderRadius: 2,
-    maxHeight: 200,
-    overflowY: "auto",
-    "&::-webkit-scrollbar": {
-      width: "4px", // ⬅️ reduce scrollbar width here
-    },
-    "&::-webkit-scrollbar-thumb": {
-      backgroundColor: "#ccc", // customize thumb color
-      borderRadius: "4px",
-    },
-    "&::-webkit-scrollbar-track": {
-      backgroundColor: "#f5f5f5",
-    },
-  }}
->
+                  <Box
+                    sx={{
+                      mt: 1,
+                      border: "1px solid #e0e0e0",
+                      borderRadius: 2,
+                      maxHeight: 200,
+                      overflowY: "auto",
+                      "&::-webkit-scrollbar": {
+                        width: "4px", // ⬅️ reduce scrollbar width here
+                      },
+                      "&::-webkit-scrollbar-thumb": {
+                        backgroundColor: "#ccc", // customize thumb color
+                        borderRadius: "4px",
+                      },
+                      "&::-webkit-scrollbar-track": {
+                        backgroundColor: "#f5f5f5",
+                      },
+                    }}
+                  >
+                    <table
+                      style={{
+                        width: "100%",
+                        borderCollapse: "collapse",
+                        tableLayout: "fixed",
+                      }}
+                    >
+                      <thead>
+                        <tr
+                          style={{
+                            background: "#f5f5f5",
+                            position: "sticky",
+                            top: 0,
+                            zIndex: 1,
+                          }}
+                        >
+                          <th
+                            style={{
+                              padding: "8px",
+                              fontWeight: "600",
+                              fontSize: "0.9rem",
+                              textAlign: "left",
+                            }}
+                          >
+                            Name
+                          </th>
+                          <th
+                            style={{
+                              padding: "8px",
+                              fontWeight: "600",
+                              fontSize: "0.9rem",
+                              textAlign: "left",
+                            }}
+                          >
+                            Expiry Date
+                          </th>
+                          <th
+                            style={{
+                              padding: "8px",
+                              fontWeight: "600",
+                              fontSize: "0.9rem",
+                              textAlign: "left",
+                            }}
+                          >
+                            Status
+                          </th>
+                          <th
+                            style={{
+                              padding: "8px",
+                              fontWeight: "600",
+                              fontSize: "0.9rem",
+                              textAlign: "left",
+                            }}
+                          >
+                            Days Left
+                          </th>
 
- 
-  <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
-  <thead>
-    <tr style={{ background: "#f5f5f5", position: "sticky", top: 0, zIndex: 1 }}>
-      <th style={{ padding: "8px", fontWeight: "600", fontSize: "0.9rem", textAlign: "left" }}>Name</th>
-      <th style={{ padding: "8px", fontWeight: "600", fontSize: "0.9rem", textAlign: "left" }}>Expiry Date</th>
-      <th style={{ padding: "8px", fontWeight: "600", fontSize: "0.9rem", textAlign: "left" }}>Status</th>
-      <th style={{ padding: "8px", fontWeight: "600", fontSize: "0.9rem", textAlign: "left" }}>Days Left</th>
-    
-      
-      <th style={{padding: "4px", fontWeight: "600", fontSize: "0.9rem", textAlign: "center"}}>
-  <div style={{display: "flex", justifyContent:"center", alignItems: "center", gap: "4px"}}>
-    Alert
-    <FormControl size="small" sx={{ width: "50px" }}>
-      <Select
-        value={licenseFilter}
-        onChange={(e) => setLicenseFilter(e.target.value)}
-        displayEmpty
-        renderValue={() => ""}
-        sx={{ fontSize: '0.75rem', minHeight: '20px' }}
-      >
-        <MenuItem value="all">All</MenuItem>
-        <MenuItem value="active">Active</MenuItem>
-        <MenuItem value="expired">Expired</MenuItem>
-        <MenuItem value="expiring soon">Expiring Soon</MenuItem>
-      </Select>
-    </FormControl>
-  </div>
-</th>
-    </tr>
-  </thead>
-  <tbody>
-    {filteredLicenses.map((license, index) => {
-      const { status, daysLeft } = getLicenseStatus(license.expiryDate);
-      const colorMap = {
-        Active: "#4caf50",
-        "Expiring Soon": "#ff9800",
-        Expired: "#f44336",
-      };
+                          <th
+                            style={{
+                              padding: "4px",
+                              fontWeight: "600",
+                              fontSize: "0.9rem",
+                              textAlign: "center",
+                            }}
+                          >
+                            <div
+                              style={{
+                                display: "flex",
+                                justifyContent: "center",
+                                alignItems: "center",
+                                gap: "4px",
+                              }}
+                            >
+                              Alert
+                              <FormControl size="small" sx={{ width: "50px" }}>
+                                <Select
+                                  value={licenseFilter}
+                                  onChange={(e) =>
+                                    setLicenseFilter(e.target.value)
+                                  }
+                                  displayEmpty
+                                  renderValue={() => ""}
+                                  sx={{
+                                    fontSize: "0.75rem",
+                                    minHeight: "20px",
+                                  }}
+                                >
+                                  <MenuItem value="all">All</MenuItem>
+                                  <MenuItem value="active">Active</MenuItem>
+                                  <MenuItem value="expired">Expired</MenuItem>
+                                  <MenuItem value="expiring soon">
+                                    Expiring Soon
+                                  </MenuItem>
+                                </Select>
+                              </FormControl>
+                            </div>
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredLicenses.map((license, index) => {
+                          const { status, daysLeft } = getLicenseStatus(
+                            license.expiryDate
+                          );
+                          const colorMap = {
+                            Active: "#4caf50",
+                            "Expiring Soon": "#ff9800",
+                            Expired: "#f44336",
+                          };
 
-      return (
-        <tr key={index} style={{ borderBottom: "1px solid #eee" }}>
-          <td style={{ padding: "8px", fontSize: "0.875rem" }}>{license.name}</td>
-          <td style={{ padding: "8px", fontSize: "0.875rem" }}>{license.expiryDate}</td>
-          <td
-            style={{
-              padding: "8px",
-              fontSize: "0.875rem",
-              color: colorMap[status],
-              fontWeight: 600,
-            }}
-          >
-            {status}
-          </td>
-          <td style={{ padding: "8px", fontSize: "0.875rem" }}>{daysLeft}</td>
-          <td style={{ padding: "8px", textAlign: "center" }}>
-            {status === "Expired" ? (
-              <Tooltip
-                title={`Your license \"${license.name}\" has expired. Please upgrade your plan.`}
-                arrow
-              >
-                <WarningAmber sx={{ color: "#f44336", cursor: "default" }} fontSize="small" />
-              </Tooltip>
-            ) : (
-              <Typography variant="caption" color="text.secondary">
-                —
-              </Typography>
-            )}
-          </td>
-        </tr>
-      );
-    })}
-  </tbody>
-</table>
-</Box>
-
-
-
+                          return (
+                            <tr
+                              key={index}
+                              style={{ borderBottom: "1px solid #eee" }}
+                            >
+                              <td
+                                style={{ padding: "8px", fontSize: "0.875rem" }}
+                              >
+                                {license.name}
+                              </td>
+                              <td
+                                style={{ padding: "8px", fontSize: "0.875rem" }}
+                              >
+                                {license.expiryDate}
+                              </td>
+                              <td
+                                style={{
+                                  padding: "8px",
+                                  fontSize: "0.875rem",
+                                  color: colorMap[status],
+                                  fontWeight: 600,
+                                }}
+                              >
+                                {status}
+                              </td>
+                              <td
+                                style={{ padding: "8px", fontSize: "0.875rem" }}
+                              >
+                                {daysLeft}
+                              </td>
+                              <td
+                                style={{ padding: "8px", textAlign: "center" }}
+                              >
+                                {status === "Expired" ? (
+                                  <Tooltip
+                                    title={`Your license \"${license.name}\" has expired. Please upgrade your plan.`}
+                                    arrow
+                                  >
+                                    <WarningAmber
+                                      sx={{
+                                        color: "#f44336",
+                                        cursor: "default",
+                                      }}
+                                      fontSize="small"
+                                    />
+                                  </Tooltip>
+                                ) : (
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                  >
+                                    —
+                                  </Typography>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </Box>
                 </CardContent>
               </Card>
             </Grid>
@@ -1362,4 +1533,3 @@ const AngelBot = () => {
 };
 
 export default AngelBot;
-
