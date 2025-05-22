@@ -25,6 +25,7 @@ import React, { useState, useRef, useEffect } from "react";
 import * as yup from "yup";
 import { createUserAction } from "../../redux/userSlice";
 import { useDispatch } from "react-redux";
+import { createDepartment } from "../../api/departmentService";
 
 const CreateUser = ({ handleClose }) => {
   const [bulkFile, setBulkFile] = useState(null);
@@ -33,11 +34,11 @@ const CreateUser = ({ handleClose }) => {
   const [addRole, setAddRole] = useState(false);
   const [expandedIndex, setExpandedIndex] = useState(0);
   const [newDepartment, setNewDepartment] = useState({
-    name: "",
-    moderator: "",
-    shortName: "",
+    deptName: "",
+    deptModerator: "",
+    deptDisplayName: "",
     storage: "",
-    initialRole: "",
+    role: "",
   });
 
   const lastFieldRef = useRef(null);
@@ -603,9 +604,12 @@ const CreateUser = ({ handleClose }) => {
                 fullWidth
                 size="small"
                 label="Department Name"
-                value={newDepartment.name}
+                value={newDepartment.deptName}
                 onChange={(e) =>
-                  setNewDepartment({ ...newDepartment, name: e.target.value })
+                  setNewDepartment({
+                    ...newDepartment,
+                    deptName: e.target.value,
+                  })
                 }
               />
             </Grid>
@@ -615,11 +619,11 @@ const CreateUser = ({ handleClose }) => {
                 fullWidth
                 size="small"
                 label="Department Moderator"
-                value={newDepartment.moderator}
+                value={newDepartment.deptModerator}
                 onChange={(e) =>
                   setNewDepartment({
                     ...newDepartment,
-                    moderator: e.target.value,
+                    deptModerator: e.target.value,
                   })
                 }
               />
@@ -630,11 +634,11 @@ const CreateUser = ({ handleClose }) => {
                 fullWidth
                 size="small"
                 label="Short Name"
-                value={newDepartment.shortName}
+                value={newDepartment.deptDisplayName}
                 onChange={(e) =>
                   setNewDepartment({
                     ...newDepartment,
-                    shortName: e.target.value,
+                    deptDisplayName: e.target.value,
                   })
                 }
               />
@@ -658,11 +662,11 @@ const CreateUser = ({ handleClose }) => {
                 fullWidth
                 size="small"
                 label="Initial Role"
-                value={newDepartment.initialRole}
+                value={newDepartment.role}
                 onChange={(e) =>
                   setNewDepartment({
                     ...newDepartment,
-                    initialRole: e.target.value,
+                    role: e.target.value,
                   })
                 }
               />
@@ -670,37 +674,28 @@ const CreateUser = ({ handleClose }) => {
           </Grid>
         </DialogContent>
         <DialogActions>
-
           <Button
             onClick={async () => {
               try {
                 const payload = {
                   ...newDepartment,
-                  initialRole: newDepartment.initialRole.trim() === "" ? null : newDepartment.initialRole,
+                  role:
+                    newDepartment.role.trim() === ""
+                      ? null
+                      : newDepartment.role,
                 };
-                const response = await axios.post(
-                  `${process.env.REACT_APP_API_BASE_URL}/departments`,
-                  payload,
-                  {
-                    headers: {
-                      Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
-                    },
-                  }
-                );
-                console.log("Department created:", response.data);
+                const createdDept = await createDepartment(payload);
 
+                console.log("Department created:", createdDept);
+                setDepartments((prev) => [...prev, newDepartment.deptName]);
 
-                setDepartments((prev) => [...prev, newDepartment.name]);
-
-                // Optional: Reset form state
                 setNewDepartment({
-                  name: "",
-                  moderator: "",
-                  shortName: "",
+                  deptName: "",
+                  deptModerator: "",
+                  deptDisplayName: "",
                   storage: "",
-                  initialRole: "",
+                  role: "",
                 });
-
                 setAddDepartment(false);
               } catch (error) {
                 console.error("Failed to create department:", error);

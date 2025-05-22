@@ -23,7 +23,7 @@ export const signupUser = async (data) => {
 export const loginUser = async (username, password) => {
   try {
 
-    // Send POST request to the backend login API
+   
     const response = await axios.post(
       `${process.env.REACT_APP_API_BASE_URL}/public/users/login`,
       {
