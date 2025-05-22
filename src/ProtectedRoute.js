@@ -2,14 +2,15 @@ import React from 'react';
 import { Navigate } from 'react-router-dom';
 
 const ProtectedRoute = ({ children }) => {
-    const user = JSON.parse(sessionStorage.getItem('user'));
+    const token = sessionStorage.getItem('authToken');
 
-    // Check if user is authenticated
-    if (!user) {
-        return <Navigate to="/login" />; // Redirect to login if not authenticated
+    // Check if token exists
+    if (!token) {
+        return <Navigate to="/login" replace />;
     }
 
-    return children; // Render children if authenticated
+    return children;
 };
 
 export default ProtectedRoute;
+

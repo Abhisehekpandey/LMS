@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useEffect } from 'react';
 import {
   Box,
   TextField,
@@ -22,8 +23,11 @@ import InfoIcon from '@mui/icons-material/Info';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
+import { CircularProgress, keyframes, styled } from '@mui/material';
+
 
 const LDAPConfig = ({ onThemeToggle }) => {
+
   const [config, setConfig] = useState({
     connectionUrl: '',
     bindDN: '',
@@ -81,8 +85,22 @@ const LDAPConfig = ({ onThemeToggle }) => {
         }}
       > */}
       {/* <Box sx={{ p: 0, marginLeft: "0px", overflow: "hidden", }}> */}
-      <Paper elevation={24} sx={{ p: 0, height: '90vh', borderRadius: '20px'}}>
-        <Box sx={{ display: 'flex', alignItems: 'center', }}>
+      <Paper elevation={24} sx={{
+        p: 0, height: '90vh', borderRadius: '20px', animation: "slideInFromLeft 0.3s ease-in-out forwards",
+        opacity: 0, // Start with opacity 0
+        transform: "translateX(-50px)", // Start from left
+        "@keyframes slideInFromLeft": {
+          "0%": {
+            opacity: 0,
+            transform: "translateX(-50px)",
+          },
+          "100%": {
+            opacity: 1,
+            transform: "translateX(0)",
+          }
+        }
+      }}>
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <Typography variant="h6" sx={{ fontWeight: 'bold', ml: 1 }}>
             LDAP Configuration
           </Typography>
