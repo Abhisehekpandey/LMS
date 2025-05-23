@@ -741,19 +741,34 @@ const CompanyDashboard = ({ onThemeToggle }) => {
               </div>
               <Divider />
 
-
               <Box sx={{ height: 435, position: "relative" }}>
-
-                <EChartsReact option={progressOption} sx={{ height: "100%", width: "100%" }}
-                  opts={{ height: 400 }} />
                 {selectedCompany && (
-                  <Typography variant="subtitle2" sx={{ textAlign: 'center' }}>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{
+                      textAlign: 'center',
+                      pt: 1,
+                      fontSize: "0.85rem",
+                      color: "#333"
+                    }}
+                  >
                     Showing data for: <strong>{selectedCompany}</strong>
                   </Typography>
                 )}
+
+                <EChartsReact
+                  option={progressOption}
+                  sx={{ height: "100%", width: "100%" }}
+                  opts={{ height: 400 }}
+                />
               </Box>
 
+
+
+
+
             </Paper>
+
           </Grid>
           <Grid item xs={6} md={6} lg={6}>
 

@@ -36,9 +36,10 @@ import ReactECharts from "echarts-for-react";
 import { WarningAmber } from "@mui/icons-material";
 import { Tooltip } from "@mui/material";
 import { Fade } from "@mui/material";
-import { useTheme, } from "@mui/material";
+import { useTheme } from "@mui/material";
+import { License } from "@mui/icons-material"; // Optional icon
+import { VerifiedUser } from "@mui/icons-material";
 
-import { VerifiedUser } from '@mui/icons-material';
 
 import {
 
@@ -80,6 +81,31 @@ const getProgressBarColor = (percentage) => {
   }
 };
 
+const userStatusMap = {
+  abhishek: "Active",
+  pratibha: "Inactive",
+  ankit: "Pending",
+  satyam: "Active",
+  abhimanyu: "Pending",
+  manish: "Inactive",
+  prince: "Pending",
+  kunal: "Active",
+};
+const headerCellStyle = {
+  padding: "6px 10px",
+  fontWeight: 600,
+  fontSize: "0.8rem",
+  textAlign: "left",
+  color: "#ffff",
+};
+
+const rowCellStyle = {
+  padding: "6px 10px",
+  fontSize: "0.8rem",
+  color: "#555",
+  textAlign: "left",
+};
+
 const AngelBot = () => {
   const [negativeCount, setNegativeCount] = useState(0);
   const [remainingDays, setRemainingDays] = useState(0);
@@ -87,7 +113,8 @@ const AngelBot = () => {
   const [loading, setLoading] = useState(true);
   const [licenseExpiryDate] = useState(new Date("2025-12-31")); // Replace with your actual expiry date
   const [addLicenseDialogOpen, setAddLicenseDialogOpen] = useState(false);
-const [newLicense, setNewLicense] = useState({ name: "", expiryDate: "" });
+  const [newLicense, setNewLicense] = useState({ name: "", expiryDate: "" });
+  const [filteredUsers, setFilteredUsers] = useState(null);
 
   const defaultStatusData = [
     { value: 500, name: "Used", color: "#91CC75" },
@@ -173,7 +200,7 @@ const [newLicense, setNewLicense] = useState({ name: "", expiryDate: "" });
 
 
 
- 
+
 
   const sortUsers = (sortOption) => {
     let sortedUsers = [...getSortedStorageUsers];
@@ -331,11 +358,15 @@ const [newLicense, setNewLicense] = useState({ name: "", expiryDate: "" });
         type: "pie",
         radius: "75%",
         center: ["50%", "50%"],
+
         label: {
           position: "inside",
           fontSize: 13,
-          formatter: "{d}%", // Shows percent inside each slice
+          formatter: (params) => {
+            return params.percent > 0 ? `${params.percent}%` : "";
+          },
         },
+
         data: storageStatusData.map((item) => ({
           value: item?.value,
           name: item.name,
@@ -375,11 +406,15 @@ const [newLicense, setNewLicense] = useState({ name: "", expiryDate: "" });
         type: "pie",
         radius: "75%",
         center: ["50%", "50%"],
+
         label: {
           position: "inside",
           fontSize: 13,
-          formatter: "{d}%", // Shows percent inside each slice
+          formatter: (params) => {
+            return params.percent > 0 ? `${params.percent}%` : "";
+          },
         },
+
         data: storageDistributionData.map((item) => ({
           value: item?.value,
           name: item.name,
@@ -400,27 +435,21 @@ const [newLicense, setNewLicense] = useState({ name: "", expiryDate: "" });
   const handleChartClick = (params) => {
     const name = params.name;
 
-    if (selectedChart === name) {
-      // Already selected -> reset to default
-      setStorageStatusData(defaultStatusData);
-      setStorageDistributionData(defaultDistributionData);
-      setSelectedChart(null);
-      setBackButton(false);
-      return;
-    }
+    if (selectedChart === name) return; // No toggle
 
     // Chart config
     const chartConfig = {
       Pending: {
         storageStatusData: [
-          { value: 10000, name: "Used", color: "#91CC75" },
-          { value: 15000, name: "Available", color: "#FAC858" },
+          { value: 0, name: "Used", color: "#91CC75" },
+          { value: 100, name: "Available", color: "#FAC858" },
         ],
         storageDistributionData: [
-          { value: 12400, name: "User", color: "#91CC75" },
-          { value: 20000, name: "Department", color: "#FAC858" },
+          { value: 0, name: "User", color: "#91CC75" },
+          { value: 100, name: "Department", color: "#FAC858" },
         ],
       },
+
       Active: {
         storageStatusData: [
           { value: 100, name: "Used", color: "#91CC75" },
@@ -460,10 +489,29 @@ const [newLicense, setNewLicense] = useState({ name: "", expiryDate: "" });
       setStorageDistributionData(config.storageDistributionData);
       setSelectedChart(name);
       setBackButton(true);
+
+      // 👇 Add this line to filter users
+      const users = getSortedStorageUsers.filter(
+        (user) => userStatusMap[user.name] === name
+      );
+      setFilteredUsers(users);
     }
   };
 
- 
+  // const handleBack = () => {
+  //   setStorageStatusData(defaultStatusData);
+  //   setStorageDistributionData(defaultDistributionData);
+  //   setSelectedChart(null);
+  //   setBackButton(false);
+  // };
+
+  const handleBack = () => {
+    setStorageStatusData(defaultStatusData);
+    setStorageDistributionData(defaultDistributionData);
+    setSelectedChart(null);
+    setFilteredUsers(null); // 👈 reset the list
+    setBackButton(false);
+  };
 
   const handleUserRowsPerPageChange = (event) => {
     setUserRowsPerPage(parseInt(event.target.value, 10));
@@ -486,6 +534,7 @@ const [newLicense, setNewLicense] = useState({ name: "", expiryDate: "" });
   const LicenseCountdownBox = React.memo(({ licenses, chartColors }) => {
     const [currentIndex, setCurrentIndex] = React.useState(0);
     const [progress, setProgress] = React.useState(0);
+    const theme = useTheme();
 
     // Auto switch and progress bar
     React.useEffect(() => {
@@ -599,28 +648,25 @@ const [newLicense, setNewLicense] = useState({ name: "", expiryDate: "" });
                     {daysLeft}
                   </Typography>
 
-                <Typography
-                  variant="caption"
-                  sx={{
-                    color: chartColors.error,
-                    fontWeight: 600,
-                    fontSize: "0.85rem",
-                    letterSpacing: 1,
-                  }}
-                >
-                  DAYS LEFT
-                </Typography>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: chartColors.error,
+                      fontWeight: 600,
+                      fontSize: "0.85rem",
+                      letterSpacing: 1,
+                    }}
+                  >
+                    DAYS LEFT
+                  </Typography>
+                </Box>
               </Box>
-            </Box>
-          );
-        })}
+            );
+          })}
+        </Box>
       </Box>
-    </Box>
-  );
-});
-
-
-
+    );
+  });
 
 
   return (
@@ -694,12 +740,120 @@ const [newLicense, setNewLicense] = useState({ name: "", expiryDate: "" });
                         click: handleChartClick,
                       }}
                     />
+                    {selectedChart && filteredUsers && (
+                      <Box sx={{ mt: 2 }}>
+                        <Typography variant="subtitle2" fontWeight={600} mb={1}>
+                          {selectedChart} Users
+                        </Typography>
+
+                        <Paper
+                          elevation={0}
+                          sx={{
+                            maxHeight: 250,
+                            overflowY: "auto",
+                            border: "1px solid #e0e0e0",
+                            borderRadius: 1,
+                            "&::-webkit-scrollbar": {
+                              width: "6px",
+                            },
+                            "&::-webkit-scrollbar-thumb": {
+                              backgroundColor: "#bbb",
+                              borderRadius: "4px",
+                            },
+                          }}
+                        >
+                          <table
+                            style={{
+                              width: "100%",
+                              borderCollapse: "collapse",
+                            }}
+                          >
+                            <thead
+                              style={{
+                                backgroundColor: "#1976d2",
+                                color: "#ffff",
+                              }}
+                            >
+                              <tr
+                                style={{
+                                  position: "sticky",
+                                  top: 0,
+                                  zIndex: 1,
+                                }}
+                              >
+                                <th style={headerCellStyle}>Name</th>
+                                <th style={headerCellStyle}>Used</th>
+                                <th style={headerCellStyle}>Allocated</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {filteredUsers.length === 0 ? (
+                                <tr>
+                                  <td
+                                    colSpan={3}
+                                    style={{
+                                      padding: "6px",
+                                      fontSize: "0.8rem",
+                                    }}
+                                  >
+                                    No users found.
+                                  </td>
+                                </tr>
+                              ) : (
+                                filteredUsers.map((user, index) => (
+                                  <tr
+                                    key={index}
+                                    style={{
+                                      borderBottom: "1px solid #f0f0f0",
+                                    }}
+                                  >
+                                    <td style={rowCellStyle}>{user.name}</td>
+                                    <td style={rowCellStyle}>
+                                      {user.storageUsed} GB
+                                    </td>
+                                    <td style={rowCellStyle}>
+                                      {user.storageAllocated} GB
+                                    </td>
+                                  </tr>
+                                ))
+                              )}
+                            </tbody>
+                          </table>
+                        </Paper>
+                      </Box>
+                    )}
                   </div>
                 </CardContent>
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    mt: 1,
+                  }}
+                >
+                  <Tooltip title="Add User" arrow>
+                    <IconButton
+                      color="primary"
+                      size="small"
+                      onClick={() => console.log("Add User clicked")}
+                      sx={{
+                        backgroundColor: (theme) => theme.palette.primary.light,
+                        color: (theme) => theme.palette.primary.contrastText,
+                        "&:hover": {
+                          backgroundColor: (theme) =>
+                            theme.palette.primary.main,
+                          boxShadow: 3,
+                        },
+                        borderRadius: 2,
+                        transition: "all 0.3s ease-in-out",
+                      }}
+                    >
+                      <Add />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
               </Card>
             </Grid>
-
-
 
             <Grid item xs={4}>
               <Card
@@ -735,7 +889,6 @@ const [newLicense, setNewLicense] = useState({ name: "", expiryDate: "" });
                   }
                 />
 
-
                 <CardContent
                   sx={{
                     mb: "auto",
@@ -745,7 +898,9 @@ const [newLicense, setNewLicense] = useState({ name: "", expiryDate: "" });
                     alignItems: "center",
                   }}
                 >
-                  <Box sx={{ width: "100%", height: 300, position: "relative" }}>
+                  <Box
+                    sx={{ width: "100%", height: 300, position: "relative" }}
+                  >
                     <Fade
                       in={storageTab === "status"}
                       timeout={500}
@@ -823,8 +978,25 @@ const [newLicense, setNewLicense] = useState({ name: "", expiryDate: "" });
                       Showing data for: {selectedChart}
                     </Typography>
                   )}
-                </CardContent>
 
+                  {selectedChart && (
+                    <Button
+                      size="small"
+                      onClick={handleBack}
+                      sx={{
+                        mt: 1,
+                        textTransform: "none",
+                        fontWeight: 600,
+                        color: "primary.main",
+                        "&:hover": {
+                          textDecoration: "underline",
+                        },
+                      }}
+                    >
+                      ← Back to Overview
+                    </Button>
+                  )}
+                </CardContent>
               </Card>
             </Grid>
 
@@ -839,47 +1011,49 @@ const [newLicense, setNewLicense] = useState({ name: "", expiryDate: "" });
                   flexDirection: "column",
                 }}
               >
-                {/* <CardHeader
+                <CardHeader
                   sx={{ padding: "0px !important" }}
                   title={
-                    <div
-                      style={{
+                    <Box
+                      sx={{
                         display: "flex",
                         alignItems: "center",
-                        gap: "10px",
+                        justifyContent: "space-between",
+                        gap: 1,
                       }}
                     >
-                      <Dashboard color="primary" />
-                      <Typography variant="h6">License Stats</Typography>
-                    </div>
-                  }
-                /> */}
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                      >
+                        <Dashboard color="primary" />
+                        <Typography variant="h6">License Stats</Typography>
+                      </Box>
 
-                <CardHeader
-  sx={{ padding: "0px !important" }}
-  title={
-    <Box
-      sx={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        gap: 1,
-      }}
-    >
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-        <Dashboard color="primary" />
-        <Typography variant="h6">License Stats</Typography>
-      </Box>
-      <IconButton
-        color="primary"
-        size="small"
-        onClick={() => setAddLicenseDialogOpen(true)}
-      >
-        <Add/>
-      </IconButton>
-    </Box>
-  }
-/>
+                      <Tooltip title="Add License" arrow>
+                        <IconButton
+                          color="primary"
+                          size="small"
+                          onClick={() => setAddLicenseDialogOpen(true)}
+                          sx={{
+                            backgroundColor: (theme) =>
+                              theme.palette.primary.light,
+                            color: (theme) =>
+                              theme.palette.primary.contrastText,
+                            "&:hover": {
+                              backgroundColor: (theme) =>
+                                theme.palette.primary.main,
+                              boxShadow: 3,
+                            },
+                            borderRadius: 2,
+                            transition: "all 0.3s ease-in-out",
+                          }}
+                        >
+                          <Add />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+                  }
+                />
 
                 <CardContent
                   sx={{
@@ -1276,6 +1450,33 @@ const [newLicense, setNewLicense] = useState({ name: "", expiryDate: "" });
                             (user.storageUsed / user.storageAllocated) * 100
                           )}%`}
                         </Typography>
+                        <Tooltip title="Increase Storage" arrow>
+                          <IconButton
+                            size="small"
+                            onClick={() =>
+                              console.log(`Increase storage for ${user.name}`)
+                            }
+                            sx={{
+                              ml: 1,
+                              width: 28,
+                              height: 28,
+                              padding: 0.5,
+                              backgroundColor: (theme) =>
+                                theme.palette.primary.light,
+                              color: (theme) =>
+                                theme.palette.primary.contrastText,
+                              "&:hover": {
+                                backgroundColor: (theme) =>
+                                  theme.palette.primary.main,
+                                boxShadow: 2,
+                              },
+                              borderRadius: 2,
+                              transition: "all 0.2s ease-in-out",
+                            }}
+                          >
+                            <Add fontSize="inherit" />
+                          </IconButton>
+                        </Tooltip>
                       </Box>
                     ))}
                   <TablePagination
@@ -1450,6 +1651,33 @@ const [newLicense, setNewLicense] = useState({ name: "", expiryDate: "" });
                             (dept.storage / dept.storageAllocated) * 100
                           )}%`}
                         </Typography>
+                        <Tooltip title="Increase Storage" arrow>
+                          <IconButton
+                            size="small"
+                            onClick={() =>
+                              console.log(`Increase storage for ${dept.name}`)
+                            }
+                            sx={{
+                              ml: 1,
+                              width: 28,
+                              height: 28,
+                              padding: 0.5,
+                              backgroundColor: (theme) =>
+                                theme.palette.primary.light,
+                              color: (theme) =>
+                                theme.palette.primary.contrastText,
+                              "&:hover": {
+                                backgroundColor: (theme) =>
+                                  theme.palette.primary.main,
+                                boxShadow: 2,
+                              },
+                              borderRadius: 2,
+                              transition: "all 0.2s ease-in-out",
+                            }}
+                          >
+                            <Add fontSize="inherit" />
+                          </IconButton>
+                        </Tooltip>
                       </Box>
                     ))}
                   <TablePagination
@@ -1474,41 +1702,67 @@ const [newLicense, setNewLicense] = useState({ name: "", expiryDate: "" });
           </Grid>
         </Box>
       </div>
-      <Dialog open={addLicenseDialogOpen} onClose={() => setAddLicenseDialogOpen(false)}>
-  <DialogTitle>Add New License</DialogTitle>
-  <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
-    <TextField
-      label="License Name"
-      fullWidth
-      value={newLicense.name}
-      onChange={(e) => setNewLicense({ ...newLicense, name: e.target.value })}
-    />
-    <TextField
-      label="Expiry Date"
-      type="date"
-      fullWidth
-      InputLabelProps={{ shrink: true }}
-      value={newLicense.expiryDate}
-      onChange={(e) => setNewLicense({ ...newLicense, expiryDate: e.target.value })}
-    />
-  </DialogContent>
-  <DialogActions>
-    <Button onClick={() => setAddLicenseDialogOpen(false)}>Cancel</Button>
-    <Button
-      onClick={() => {
-        if (newLicense.name && newLicense.expiryDate) {
-          licenses.push({ ...newLicense, id: licenses.length + 1 });
-          setAddLicenseDialogOpen(false);
-          setNewLicense({ name: "", expiryDate: "" });
-        }
-      }}
-      variant="contained"
-    >
-      Add
-    </Button>
-  </DialogActions>
-</Dialog>
-
+      <Dialog
+        open={addLicenseDialogOpen}
+        onClose={() => setAddLicenseDialogOpen(false)}
+        sx={{
+          animation: "slideInFromLeft 0.2s ease-in-out forwards",
+          opacity: 0, // Start with opacity 0
+          transform: "translateX(-50px)", // Start from left
+          "@keyframes slideInFromLeft": {
+            "0%": {
+              opacity: 0,
+              transform: "translateX(-50px)",
+            },
+            "100%": {
+              opacity: 1,
+              transform: "translateX(0)",
+            },
+          },
+        }}
+      >
+        <DialogTitle sx={{ backgroundColor: "primary.main", color: "#ffff" }}>
+          Add New License
+        </DialogTitle>
+        <DialogContent
+          sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}
+        >
+          <TextField
+            label="License Name"
+            fullWidth
+            value={newLicense.name}
+            onChange={(e) =>
+              setNewLicense({ ...newLicense, name: e.target.value })
+            }
+          />
+          <TextField
+            label="Expiry Date"
+            type="date"
+            fullWidth
+            InputLabelProps={{ shrink: true }}
+            value={newLicense.expiryDate}
+            onChange={(e) =>
+              setNewLicense({ ...newLicense, expiryDate: e.target.value })
+            }
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setAddLicenseDialogOpen(false)}>Cancel</Button>
+          <Button
+            onClick={() => {
+              if (newLicense.name && newLicense.expiryDate) {
+                licenses.push({ ...newLicense, id: licenses.length + 1 });
+                setAddLicenseDialogOpen(false);
+                setNewLicense({ name: "", expiryDate: "" });
+              }
+            }}
+            sx={{ background: "rgb(251, 68, 36)" }}
+            variant="contained"
+          >
+            Add
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
