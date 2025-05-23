@@ -5,7 +5,7 @@ import axios from "axios";
 export const createDepartment = async (payload) => {
   try {
     const response = await axios.post(
-      `${process.env.REACT_APP_API_BASE_URL}/departments`,
+      `/tenants/departments`,
       payload,
       {
         headers: {

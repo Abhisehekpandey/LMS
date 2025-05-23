@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Box,
   Paper,
@@ -14,7 +14,7 @@ import {
   Select,
   MenuItem,
   TextField,
-  InputAdornment,
+  
   Divider,
   Switch,
   Tooltip,
@@ -26,36 +26,31 @@ import {
   Grid,
   DialogActions,
   Typography,
-  alpha,
-  Autocomplete,
+  
   FormControl,
-  InputLabel,
+ 
   FormControlLabel,
   Slide,
 } from "@mui/material";
 import {
-  Search,
+  
   Edit,
   Delete,
   Add,
-  Settings,
-  Dashboard,
-  People,
-  Storage,
+  
   FileDownload,
   WifiProtectedSetup,
   PowerSettingsNew,
   Block,
   Close,
-  Filter,
-  FilterList,
+  
 } from "@mui/icons-material";
 import styles from "./user.module.css";
 import DeleteUser from "./DeleteUser";
 import Migration from "./Migration";
 import CreateUser from "./CreateUser";
 import { toast } from "react-toastify";
-import { CircularProgress, keyframes } from '@mui/material';
+
 
 
 
@@ -234,7 +229,7 @@ export default function UserTable() {
   const [rowsPerPage, setRowsPerPage] = React.useState(10);
   const [selected, setSelected] = useState([]);
   const [createUser, setCreateUser] = useState(false);
-  const [checked, setChecked] = useState(false);
+  
   const [rowsData, setRowsData] = useState(rows);
   const [deleteUser, setDeleteUser] = useState(false);
   const [rowData, setRowData] = useState([]);
@@ -243,7 +238,7 @@ export default function UserTable() {
   const [migrationDialog, setMigrationDialog] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editData, setEditData] = useState({});
-  const [Storage, setStorage] = React.useState("");
+  
 
 
 
@@ -251,9 +246,7 @@ export default function UserTable() {
     setRowsData(updatedRows);
   };
 
-  const handleChangeStorage = (event) => {
-    setStorage(event.target.value);
-  };
+ 
 
   const handleEdit = (e, row) => {
     console.log(row);
@@ -273,7 +266,7 @@ export default function UserTable() {
     setRowsData(updated);
   };
 
-  const options = ["10GB", "20GB"];
+  
 
   const handleBulkDownload = () => {
     let dataToDownload = [];
@@ -321,7 +314,7 @@ export default function UserTable() {
 
  
 
-  const label = { inputProps: { "aria-label": "Switch demo" } };
+  
 
   const handleDelete = (e, row) => {
    
@@ -347,9 +340,7 @@ export default function UserTable() {
     setCreateUser(true);
   };
 
-  const handleChange = (event) => {
-    setChecked(event.target.checked);
-  };
+ 
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);

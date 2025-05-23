@@ -1,9 +1,8 @@
 // updated CreateUser component with collapsed cards for non-active users
-import { Add, Close, Download, Info, UploadFile } from "@mui/icons-material";
+import { Add, Close, Download, UploadFile } from "@mui/icons-material";
 import axios from "axios";
 import {
   Autocomplete,
-  Box,
   Button,
   Card,
   Collapse,

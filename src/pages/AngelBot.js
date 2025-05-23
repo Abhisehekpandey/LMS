@@ -1,5 +1,4 @@
 import {
-  Add,
   ArrowDownward,
   ArrowUpward,
   Dashboard,
@@ -17,7 +16,6 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  Fab,
   Grid,
   IconButton,
   LinearProgress,
@@ -29,19 +27,18 @@ import {
   MenuItem,
 } from "@mui/material";
 import React, { useEffect, useState } from "react";
-import { CircularProgress, keyframes, styled } from "@mui/material";
+
 import ReactECharts from "echarts-for-react";
-import { NotificationImportant } from "@mui/icons-material";
+
 import { WarningAmber } from "@mui/icons-material";
 import { Tooltip } from "@mui/material";
 import { Fade } from "@mui/material";
-import {  useTheme, } from "@mui/material";
-import { License } from "@mui/icons-material"; // Optional icon
+import { useTheme, } from "@mui/material";
+
 import { VerifiedUser } from '@mui/icons-material';
 
 import {
-  ArrowDropUp,
-  ArrowDropDown,
+
   SortByAlpha,
   FilterList,
 } from "@mui/icons-material";
@@ -70,7 +67,7 @@ const commonPaperStyles = {
   },
 };
 const getProgressBarColor = (percentage) => {
-  if (percentage == 100) {
+  if (percentage === 100) {
     // return "";
     return "#FF7F50";
   } else if (percentage > 30) {
@@ -84,7 +81,6 @@ const AngelBot = () => {
   const [negativeCount, setNegativeCount] = useState(0);
   const [remainingDays, setRemainingDays] = useState(0);
   const [showBlockWarning, setShowBlockWarning] = useState(false);
-  const [licenseExpiryDate] = useState(new Date("2025-12-31")); // Replace with your actual expiry date
   const defaultStatusData = [
     { value: 500, name: "Used", color: "#91CC75" },
     { value: 484, name: "Available", color: "#5470C6" },
@@ -167,52 +163,9 @@ const AngelBot = () => {
     setNextExpiringLicense(currentLicense.name);
   }, [licenses, currentLicenseIndex]);
 
-  const getRemainingDays = () => remainingDays;
 
-  const BlockWarningDialog = () => (
-    <Dialog
-      open={showBlockWarning}
-      onClose={() => setShowBlockWarning(false)}
-      PaperProps={{
-        sx: {
-          borderRadius: 2,
-          minWidth: 350,
-        },
-      }}
-    >
-      <DialogTitle
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          gap: 1,
-          color: chartColors.error,
-        }}
-      >
-        <Warning color="error" />
-        Account Block Warning
-      </DialogTitle>
-      <DialogContent>
-        <Typography>
-          Your account has exceeded the grace period of 10 days after license
-          expiry. Please renew your license immediately to avoid service
-          interruption.
-        </Typography>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={() => setShowBlockWarning(false)}>Close</Button>
-        <Button
-          variant="contained"
-          color="error"
-          onClick={() => {
-            // Add your renewal logic here
-            setShowBlockWarning(false);
-          }}
-        >
-          Renew Now
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
+
+ 
 
   const sortUsers = (sortOption) => {
     let sortedUsers = [...getSortedStorageUsers];
@@ -502,12 +455,7 @@ const AngelBot = () => {
     }
   };
 
-  const handleBack = () => {
-    setStorageStatusData(defaultStatusData);
-    setStorageDistributionData(defaultDistributionData);
-    setSelectedChart(null);
-    setBackButton(false);
-  };
+ 
 
   const handleUserRowsPerPageChange = (event) => {
     setUserRowsPerPage(parseInt(event.target.value, 10));
@@ -527,142 +475,141 @@ const AngelBot = () => {
     setDeptPage(0);
   };
 
-const LicenseCountdownBox = React.memo(({ licenses, chartColors }) => {
-  const [currentIndex, setCurrentIndex] = React.useState(0);
-  const [progress, setProgress] = React.useState(0);
-  const theme = useTheme();
+  const LicenseCountdownBox = React.memo(({ licenses, chartColors }) => {
+    const [currentIndex, setCurrentIndex] = React.useState(0);
+    const [progress, setProgress] = React.useState(0);
 
-  // Auto switch and progress bar
-  React.useEffect(() => {
-    const interval = setInterval(() => {
-      setProgress((old) => {
-        if (old >= 100) {
-          setCurrentIndex((prev) => (prev + 1) % licenses.length);
-          return 0;
-        }
-        return old + 5;
-      });
-    }, 150); // Smooth progress every 150ms (3s total)
+    // Auto switch and progress bar
+    React.useEffect(() => {
+      const interval = setInterval(() => {
+        setProgress((old) => {
+          if (old >= 100) {
+            setCurrentIndex((prev) => (prev + 1) % licenses.length);
+            return 0;
+          }
+          return old + 5;
+        });
+      }, 150); // Smooth progress every 150ms (3s total)
 
-    return () => clearInterval(interval);
-  }, [licenses.length]);
+      return () => clearInterval(interval);
+    }, [licenses.length]);
 
-  return (
-    <Box
-      sx={{
-        mt: 2,
-        position: "relative",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        overflow: "hidden",
-        height: 140,
-      }}
-    >
+    return (
       <Box
         sx={{
+          mt: 2,
+          position: "relative",
           display: "flex",
-          transform: `translateX(-${currentIndex * 100}%)`,
-          transition: "transform 0.6s ease-in-out",
-          width: `${licenses.length * 100}%`,
+          justifyContent: "center",
+          alignItems: "center",
+          overflow: "hidden",
+          height: 140,
         }}
       >
-        {licenses.map((license, i) => {
-          const { daysLeft } = getLicenseStatus(license.expiryDate);
-          const label =
-            daysLeft <= 30
-              ? `Renewal By: ${license.expiryDate}`
-              : `License Validity: ${license.expiryDate}`;
+        <Box
+          sx={{
+            display: "flex",
+            transform: `translateX(-${currentIndex * 100}%)`,
+            transition: "transform 0.6s ease-in-out",
+            width: `${licenses.length * 100}%`,
+          }}
+        >
+          {licenses.map((license, i) => {
+            const { daysLeft } = getLicenseStatus(license.expiryDate);
+            const label =
+              daysLeft <= 30
+                ? `Renewal By: ${license.expiryDate}`
+                : `License Validity: ${license.expiryDate}`;
 
-          return (
-            <Box
-              key={i}
-              sx={{
-                flex: "0 0 100%",
-                display: "flex",
-                justifyContent: "center",
-              }}
-            >
+            return (
               <Box
+                key={i}
                 sx={{
-                  padding: 2,
-                  borderRadius: 3,
-                  boxShadow: `0 2px 10px ${alpha(chartColors.error, 0.2)}`,
-                  backgroundColor: alpha(chartColors.error, 0.08),
-                  minWidth: 250,
-                  maxWidth: 300,
-                  width: "100%",
-                  textAlign: "center",
+                  flex: "0 0 100%",
                   display: "flex",
-                  flexDirection: "column",
                   justifyContent: "center",
-                  alignItems: "center",
-                  gap: 0.5,
                 }}
               >
                 <Box
                   sx={{
+                    padding: 2,
+                    borderRadius: 3,
+                    boxShadow: `0 2px 10px ${alpha(chartColors.error, 0.2)}`,
+                    backgroundColor: alpha(chartColors.error, 0.08),
+                    minWidth: 250,
+                    maxWidth: 300,
+                    width: "100%",
+                    textAlign: "center",
                     display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "center",
                     alignItems: "center",
-                    gap: 1,
-                    color: chartColors.error,
+                    gap: 0.5,
                   }}
                 >
-                  {/* <License fontSize="small" /> */}
-                  <VerifiedUser fontSize="small" />
-
-                  <Typography
-                    variant="subtitle1"
-                    fontWeight={600}
+                  <Box
                     sx={{
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                      maxWidth: "100%",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                      color: chartColors.error,
                     }}
                   >
-                    {license.name}
+                    {/* <License fontSize="small" /> */}
+                    <VerifiedUser fontSize="small" />
+
+                    <Typography
+                      variant="subtitle1"
+                      fontWeight={600}
+                      sx={{
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        maxWidth: "100%",
+                      }}
+                    >
+                      {license.name}
+                    </Typography>
+                  </Box>
+
+                  <Typography
+                    variant="body2"
+                    sx={{ color: chartColors.error, fontWeight: 500 }}
+                  >
+                    {label}
+                  </Typography>
+
+                  <Typography
+                    variant="h3"
+                    sx={{
+                      color: chartColors.error,
+                      fontWeight: 800,
+                      fontSize: "2.5rem",
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    {daysLeft}
+                  </Typography>
+
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: chartColors.error,
+                      fontWeight: 600,
+                      fontSize: "0.85rem",
+                      letterSpacing: 1,
+                    }}
+                  >
+                    DAYS LEFT
                   </Typography>
                 </Box>
-
-                <Typography
-                  variant="body2"
-                  sx={{ color: chartColors.error, fontWeight: 500 }}
-                >
-                  {label}
-                </Typography>
-
-                <Typography
-                  variant="h3"
-                  sx={{
-                    color: chartColors.error,
-                    fontWeight: 800,
-                    fontSize: "2.5rem",
-                    lineHeight: 1.2,
-                  }}
-                >
-                  {daysLeft}
-                </Typography>
-
-                <Typography
-                  variant="caption"
-                  sx={{
-                    color: chartColors.error,
-                    fontWeight: 600,
-                    fontSize: "0.85rem",
-                    letterSpacing: 1,
-                  }}
-                >
-                  DAYS LEFT
-                </Typography>
               </Box>
-            </Box>
-          );
-        })}
+            );
+          })}
+        </Box>
       </Box>
-    </Box>
-  );
-});
+    );
+  });
 
 
 
@@ -742,7 +689,7 @@ const LicenseCountdownBox = React.memo(({ licenses, chartColors }) => {
               </Card>
             </Grid>
 
-           
+
 
             <Grid item xs={4}>
               <Card
@@ -778,95 +725,95 @@ const LicenseCountdownBox = React.memo(({ licenses, chartColors }) => {
                   }
                 />
 
-            
+
                 <CardContent
-  sx={{
-    mb: "auto",
-    pb: "0 !important",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-  }}
->
-  <Box sx={{ width: "100%", height: 300, position: "relative" }}>
-    <Fade
-      in={storageTab === "status"}
-      timeout={500}
-      unmountOnExit
-      appear
-    >
-      <Box
-        sx={{
-          width: "100%",
-          height: "100%",
-          position: "absolute",
-          top: 0,
-          left: 0,
-        }}
-      >
-        <ReactECharts
-          option={storageStatus}
-          style={{ height: "100%", width: "100%" }}
-        />
-      </Box>
-    </Fade>
+                  sx={{
+                    mb: "auto",
+                    pb: "0 !important",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                  }}
+                >
+                  <Box sx={{ width: "100%", height: 300, position: "relative" }}>
+                    <Fade
+                      in={storageTab === "status"}
+                      timeout={500}
+                      unmountOnExit
+                      appear
+                    >
+                      <Box
+                        sx={{
+                          width: "100%",
+                          height: "100%",
+                          position: "absolute",
+                          top: 0,
+                          left: 0,
+                        }}
+                      >
+                        <ReactECharts
+                          option={storageStatus}
+                          style={{ height: "100%", width: "100%" }}
+                        />
+                      </Box>
+                    </Fade>
 
-    <Fade
-      in={storageTab === "distribution"}
-      timeout={500}
-      unmountOnExit
-      appear
-    >
-      <Box
-        sx={{
-          width: "100%",
-          height: "100%",
-          position: "absolute",
-          top: 0,
-          left: 0,
-        }}
-      >
-        <ReactECharts
-          option={storageDistribution}
-          style={{ height: "100%", width: "100%" }}
-        />
-      </Box>
-    </Fade>
-  </Box>
+                    <Fade
+                      in={storageTab === "distribution"}
+                      timeout={500}
+                      unmountOnExit
+                      appear
+                    >
+                      <Box
+                        sx={{
+                          width: "100%",
+                          height: "100%",
+                          position: "absolute",
+                          top: 0,
+                          left: 0,
+                        }}
+                      >
+                        <ReactECharts
+                          option={storageDistribution}
+                          style={{ height: "100%", width: "100%" }}
+                        />
+                      </Box>
+                    </Fade>
+                  </Box>
 
-  <IconButton
-    onClick={() =>
-      setStorageTab((prev) =>
-        prev === "status" ? "distribution" : "status"
-      )
-    }
-    sx={{
-      mt: 2,
-      border: "1px solid",
-      borderColor: "divider",
-      borderRadius: "50%",
-      backgroundColor: "background.paper",
-      "&:hover": {
-        backgroundColor: "action.hover",
-      },
-    }}
-  >
-    {storageTab === "status" ? <ArrowForward /> : <ArrowBack />}
-  </IconButton>
+                  <IconButton
+                    onClick={() =>
+                      setStorageTab((prev) =>
+                        prev === "status" ? "distribution" : "status"
+                      )
+                    }
+                    sx={{
+                      mt: 2,
+                      border: "1px solid",
+                      borderColor: "divider",
+                      borderRadius: "50%",
+                      backgroundColor: "background.paper",
+                      "&:hover": {
+                        backgroundColor: "action.hover",
+                      },
+                    }}
+                  >
+                    {storageTab === "status" ? <ArrowForward /> : <ArrowBack />}
+                  </IconButton>
 
-  {selectedChart && (
-    <Typography
-      variant="subtitle2"
-      sx={{
-        color: "text.secondary",
-        fontWeight: "bold",
-        mt: 1,
-      }}
-    >
-      Showing data for: {selectedChart}
-    </Typography>
-  )}
-</CardContent>
+                  {selectedChart && (
+                    <Typography
+                      variant="subtitle2"
+                      sx={{
+                        color: "text.secondary",
+                        fontWeight: "bold",
+                        mt: 1,
+                      }}
+                    >
+                      Showing data for: {selectedChart}
+                    </Typography>
+                  )}
+                </CardContent>
 
               </Card>
             </Grid>
@@ -1131,7 +1078,6 @@ const LicenseCountdownBox = React.memo(({ licenses, chartColors }) => {
                   <Typography variant="h6" color="primary">
                     Storage Used (By Users)
                   </Typography>
-
                   <FormControl
                     size="small"
                     sx={{ display: "flex", marginLeft: "auto" }}
@@ -1273,7 +1219,7 @@ const LicenseCountdownBox = React.memo(({ licenses, chartColors }) => {
                                 borderRadius: 3,
                                 backgroundColor: getProgressBarColor(
                                   (user.storageUsed / user.storageAllocated) *
-                                    100
+                                  100
                                 ),
                               },
                             }}
@@ -1306,9 +1252,9 @@ const LicenseCountdownBox = React.memo(({ licenses, chartColors }) => {
                     sx={{
                       mt: 1,
                       ".MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows":
-                        {
-                          margin: 0,
-                        },
+                      {
+                        margin: 0,
+                      },
                     }}
                   />
                 </Box>
@@ -1480,9 +1426,9 @@ const LicenseCountdownBox = React.memo(({ licenses, chartColors }) => {
                     sx={{
                       mt: 1,
                       ".MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows":
-                        {
-                          margin: 0,
-                        },
+                      {
+                        margin: 0,
+                      },
                     }}
                   />
                 </Box>
