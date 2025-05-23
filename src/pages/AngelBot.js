@@ -26,6 +26,8 @@ import {
   Select,
   MenuItem,
 } from "@mui/material";
+import { TextField } from "@mui/material";
+
 import React, { useEffect, useState } from "react";
 
 import ReactECharts from "echarts-for-react";
@@ -81,6 +83,11 @@ const AngelBot = () => {
   const [negativeCount, setNegativeCount] = useState(0);
   const [remainingDays, setRemainingDays] = useState(0);
   const [showBlockWarning, setShowBlockWarning] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [licenseExpiryDate] = useState(new Date("2025-12-31")); // Replace with your actual expiry date
+  const [addLicenseDialogOpen, setAddLicenseDialogOpen] = useState(false);
+const [newLicense, setNewLicense] = useState({ name: "", expiryDate: "" });
+
   const defaultStatusData = [
     { value: 500, name: "Used", color: "#91CC75" },
     { value: 484, name: "Available", color: "#5470C6" },
@@ -591,25 +598,27 @@ const AngelBot = () => {
                     {daysLeft}
                   </Typography>
 
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      color: chartColors.error,
-                      fontWeight: 600,
-                      fontSize: "0.85rem",
-                      letterSpacing: 1,
-                    }}
-                  >
-                    DAYS LEFT
-                  </Typography>
-                </Box>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: chartColors.error,
+                    fontWeight: 600,
+                    fontSize: "0.85rem",
+                    letterSpacing: 1,
+                  }}
+                >
+                  DAYS LEFT
+                </Typography>
               </Box>
-            );
-          })}
-        </Box>
+            </Box>
+          );
+        })}
       </Box>
-    );
-  });
+    </Box>
+  );
+});
+
+
 
 
 
@@ -829,7 +838,7 @@ const AngelBot = () => {
                   flexDirection: "column",
                 }}
               >
-                <CardHeader
+                {/* <CardHeader
                   sx={{ padding: "0px !important" }}
                   title={
                     <div
@@ -843,7 +852,34 @@ const AngelBot = () => {
                       <Typography variant="h6">License Stats</Typography>
                     </div>
                   }
-                />
+                /> */}
+
+                <CardHeader
+  sx={{ padding: "0px !important" }}
+  title={
+    <Box
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 1,
+      }}
+    >
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <Dashboard color="primary" />
+        <Typography variant="h6">License Stats</Typography>
+      </Box>
+      <IconButton
+        color="primary"
+        size="small"
+        onClick={() => setAddLicenseDialogOpen(true)}
+      >
+        <Add />
+      </IconButton>
+    </Box>
+  }
+/>
+
                 <CardContent
                   sx={{
                     flexGrow: 1,
@@ -1437,6 +1473,41 @@ const AngelBot = () => {
           </Grid>
         </Box>
       </div>
+      <Dialog open={addLicenseDialogOpen} onClose={() => setAddLicenseDialogOpen(false)}>
+  <DialogTitle>Add New License</DialogTitle>
+  <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
+    <TextField
+      label="License Name"
+      fullWidth
+      value={newLicense.name}
+      onChange={(e) => setNewLicense({ ...newLicense, name: e.target.value })}
+    />
+    <TextField
+      label="Expiry Date"
+      type="date"
+      fullWidth
+      InputLabelProps={{ shrink: true }}
+      value={newLicense.expiryDate}
+      onChange={(e) => setNewLicense({ ...newLicense, expiryDate: e.target.value })}
+    />
+  </DialogContent>
+  <DialogActions>
+    <Button onClick={() => setAddLicenseDialogOpen(false)}>Cancel</Button>
+    <Button
+      onClick={() => {
+        if (newLicense.name && newLicense.expiryDate) {
+          licenses.push({ ...newLicense, id: licenses.length + 1 });
+          setAddLicenseDialogOpen(false);
+          setNewLicense({ name: "", expiryDate: "" });
+        }
+      }}
+      variant="contained"
+    >
+      Add
+    </Button>
+  </DialogActions>
+</Dialog>
+
     </Box>
   );
 };

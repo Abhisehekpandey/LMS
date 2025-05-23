@@ -5,7 +5,7 @@ import axios from "axios";
 export const createDepartment = async (payload) => {
   try {
     const response = await axios.post(
-      `/tenants/departments`,
+      `tenants/departments`,
       payload,
       {
         headers: {
