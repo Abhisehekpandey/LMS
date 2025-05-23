@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useEffect } from 'react';
 import {
   Box,
   TextField,
@@ -22,8 +23,39 @@ import InfoIcon from '@mui/icons-material/Info';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
+import { CircularProgress, keyframes, styled } from '@mui/material';
+
+const fadeIn = keyframes`
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+`;
+
+// Styled overlay
+const LoaderWrapper = styled(Box)(({ theme }) => ({
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  width: '100vw',
+  height: '100vh',
+  background: 'rgba(255, 255, 255, 0.75)',
+  backdropFilter: 'blur(5px)',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  zIndex: 1300,
+  animation: `${fadeIn} 0.5s ease-in-out`,
+}));
+
+// Styled CircularProgress
+const CustomSpinner = styled(CircularProgress)(({ theme }) => ({
+  color: theme.palette.primary.main,
+  width: '60px !important',
+  height: '80px !important',
+  thickness: 2,
+}));
 
 const LDAPConfig = ({ onThemeToggle }) => {
+  const [loading, setLoading] = useState(true);
   const [config, setConfig] = useState({
     connectionUrl: '',
     bindDN: '',
@@ -68,7 +100,17 @@ const LDAPConfig = ({ onThemeToggle }) => {
       usernameAttribute: '',
     });
   };
-
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 300);
+    return () => clearTimeout(timer);
+  }, []);
+  if (loading) {
+    return (
+      <LoaderWrapper>
+        <CustomSpinner />
+      </LoaderWrapper>
+    );
+  }
   return (
     <Box sx={{ display: "flex", padding: "14px", position: "relative", marginLeft: "65px", height: "100%", overflow: "hidden", backgroundColor: 'whitesmoke', }}>
       {/* <Box
@@ -81,8 +123,22 @@ const LDAPConfig = ({ onThemeToggle }) => {
         }}
       > */}
       {/* <Box sx={{ p: 0, marginLeft: "0px", overflow: "hidden", }}> */}
-      <Paper elevation={24} sx={{ p: 0, height: '90vh', borderRadius: '20px'}}>
-        <Box sx={{ display: 'flex', alignItems: 'center', }}>
+      <Paper elevation={24} sx={{
+        p: 0, height: '90vh', borderRadius: '20px', animation: "slideInFromLeft 0.3s ease-in-out forwards",
+        opacity: 0, // Start with opacity 0
+        transform: "translateX(-50px)", // Start from left
+        "@keyframes slideInFromLeft": {
+          "0%": {
+            opacity: 0,
+            transform: "translateX(-50px)",
+          },
+          "100%": {
+            opacity: 1,
+            transform: "translateX(0)",
+          }
+        }
+      }}>
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <Typography variant="h6" sx={{ fontWeight: 'bold', ml: 1 }}>
             LDAP Configuration
           </Typography>
