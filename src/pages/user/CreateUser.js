@@ -65,7 +65,7 @@ const CreateUser = ({ handleClose }) => {
     "200GB",
     "500GB",
   ];
-  const storageAllocation = ["0GB","1GB","5GB","25GB", "50GB", "100GB", "200GB", "500GB"];
+  const storageAllocation = ["0GB","1GB","2GB","3GB","5GB","25GB", "50GB", "100GB", "200GB", "500GB"];
   // const departments = ["HR", "IT", "Finance", "Sales"];
   const [departments, setDepartments] = useState([
     "HR",
