@@ -59,14 +59,14 @@ export const loginUser = async (username, password) => {
 
 export const checkDomainAvailability = async (emailDomain) => {
   try {
-    console.log(">>domain", emailDomain)
+    
     const response = await axios.get(
-      `${process.env.REACT_APP_API_BASE_URL}/public/domains`,
+      `/tenants/public/domains`,
       {
         params: { emailDomain },
       }
     );
-    console.log(">>>res", response.data.message)
+    
     return response.data.message;
   } catch (error) {
     console.error("Domain check failed:", error);

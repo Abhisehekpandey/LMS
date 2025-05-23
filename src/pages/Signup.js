@@ -496,10 +496,11 @@ const Signup = () => {
 
   const checkDomain = async (emailDomain) => {
     const fullDomain = `@${emailDomain.replace(/^@/, "")}`; // Ensure only one @
+   
     setCheckingDomain(true);
     try {
       const available = await checkDomainAvailability(fullDomain);
-      console.log(">>>ava",available)
+    
       setDomainAvailable(available);
     } catch (err) {
       console.error("Domain check error:", err);
