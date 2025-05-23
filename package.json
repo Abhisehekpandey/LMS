@@ -2,6 +2,7 @@
   "name": "my-app",
   "version": "0.1.0",
   "private": true,
+  "proxy": "http://gateway-test.apps.lab.ocp.lan",
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
     "@emotion/react": "^11.11.1",
@@ -36,8 +37,6 @@
     "xlsx": "^0.18.5",
     "yup": "^1.6.1"
   },
- 
-
   "scripts": {
     "start": "set HTTPS=false&&react-scripts start",
     "build": "react-scripts build",

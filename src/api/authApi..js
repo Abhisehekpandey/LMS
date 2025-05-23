@@ -4,7 +4,7 @@ export const signupUser = async (data) => {
   console.log(process.env.REACT_APP_API_BASE_URL)
   try {
     const response = await axios.post(
-      `${process.env.REACT_APP_API_BASE_URL}/public/register`,
+      `/tenants/public/register`,
       data,
       {
         headers: {
@@ -24,7 +24,7 @@ export const loginUser = async (username, password) => {
 
    
     const response = await axios.post(
-      `${process.env.REACT_APP_API_BASE_URL}/public/users/login`,
+      `/tenants/public/login`,
       {
         username,
         password,
@@ -33,7 +33,7 @@ export const loginUser = async (username, password) => {
         headers: {
           "Content-Type": "multipart/form-data",
           Accept: "*/*",
-          appName: "TeamSync",
+          // appName: "TeamSync",
         },
       }
     );
