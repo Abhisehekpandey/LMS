@@ -1,4 +1,5 @@
 import {
+  Add,
   ArrowDownward,
   ArrowUpward,
   Dashboard,
@@ -874,7 +875,7 @@ const [newLicense, setNewLicense] = useState({ name: "", expiryDate: "" });
         size="small"
         onClick={() => setAddLicenseDialogOpen(true)}
       >
-        <Add />
+        <Add/>
       </IconButton>
     </Box>
   }

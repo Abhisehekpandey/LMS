@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Paper, Typography, Grid, Divider, TextField } from "@mui/material";
+import { Box, Paper, Typography, Grid, Divider, TextField, Autocomplete } from "@mui/material";
 import { FormControl, InputLabel, MenuItem, Select } from "@mui/material";
 import {
   CategoryScale,
@@ -90,7 +90,7 @@ const CompanyDashboard = ({ onThemeToggle }) => {
         actual: 3072, // 3TB in GB
         consumed: 2048, // 2TB in GB
       },
-    ],  
+    ],
     licenseAllocation: [
       {
         company: "TechCorp (Enterprise)",
@@ -250,27 +250,28 @@ const CompanyDashboard = ({ onThemeToggle }) => {
       },
       series: [
         {
-          name: "Sold",
+          name: "Consumed",
           type: "bar",
-          stack: "total", // Stack the bars
-          data: sold,
-          itemStyle: { color: "#1976d2" }, // Blue
+          stack: "total",
+          data: consumed,
+          itemStyle: { color: "#ff9800" },
         },
         {
           name: "Allocated",
           type: "bar",
-          stack: "total", // Stack the bars
+          stack: "total",
           data: allocated,
-          itemStyle: { color: "#4caf50" }, // Green
+          itemStyle: { color: "#4caf50" },
         },
         {
-          name: "Consumed",
+          name: "Sold",
           type: "bar",
-          stack: "total", // Stack the bars
-          data: consumed,
-          itemStyle: { color: "#ff9800" }, // Orange
+          stack: "total",
+          data: sold,
+          itemStyle: { color: "#1976d2" },
         }
       ]
+
     };
   }, [currentPage, searchTerm]);
   // licenseExpirationStatus
@@ -294,7 +295,7 @@ const CompanyDashboard = ({ onThemeToggle }) => {
     let soldData = [120, 200, 150, 80, 70, 110, 130, 90, 70, 80, 47, 77];
     let consumedData = [90, 150, 100, 60, 40, 80, 110, 60, 40, 50, 30, 60];
 
-    if (selectedCompanyForLicense.trim()) {
+    if (selectedCompanyForLicense && selectedCompanyForLicense.trim()) {
       const search = selectedCompanyForLicense.trim().toLowerCase();
       const company = companyData.licenseConsumption.find(c =>
         c.company.toLowerCase().includes(search)
@@ -310,7 +311,19 @@ const CompanyDashboard = ({ onThemeToggle }) => {
         soldData = new Array(12).fill(0);
         consumedData = new Array(12).fill(0);
       }
+    } else {
+      // 🔥 Show all companies' license combined by month
+      soldData = months.map((short) => {
+        const full = fullMonthMap[short];
+        return companyData.licenseConsumption.reduce((sum, c) => {
+          return sum + (c.months[full] ?? 0);
+        }, 0);
+      });
+
+      consumedData = soldData.map(val => Math.round(val * 0.7));
     }
+
+
 
 
     return {
@@ -698,28 +711,48 @@ const CompanyDashboard = ({ onThemeToggle }) => {
                     ))}
                   </Select>
                 </FormControl>
-                <TextField
-                  type="text"
+                <Autocomplete
                   size="small"
-                  placeholder="Search company for progress..."
+                  options={companyData.dataUsage.map(c => c.company)}
                   value={selectedCompany}
-                  onChange={(e) => setSelectedCompany(e.target.value)}
-                  sx={{
-                    width: "250px",
-                    marginRight: "1pc",
-                    fontSize: "1rem",
-                    ".MuiOutlinedInput-notchedOutline": {
-                      borderRadius: "20px !important"
-                    }
-                  }}
+                  onChange={(event, newValue) => setSelectedCompany(newValue)}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Search company for progress..."
+                      placeholder="Type to search..."
+                      sx={{
+                        width: "250px",
+                        marginRight: "1pc",
+                        fontSize: "1rem",
+                        ".MuiOutlinedInput-notchedOutline": {
+                          borderRadius: "20px !important"
+                        }
+                      }}
+                    />
+                  )}
+                  filterOptions={(options, state) =>
+                    options.filter((option) =>
+                      option.toLowerCase().includes(state.inputValue.toLowerCase())
+                    )
+                  }
                 />
 
               </div>
               <Divider />
+
+
               <Box sx={{ height: 435, position: "relative" }}>
+
                 <EChartsReact option={progressOption} sx={{ height: "100%", width: "100%" }}
                   opts={{ height: 400 }} />
+                {selectedCompany && (
+                  <Typography variant="subtitle2" sx={{ textAlign: 'center' }}>
+                    Showing data for: <strong>{selectedCompany}</strong>
+                  </Typography>
+                )}
               </Box>
+
             </Paper>
           </Grid>
           <Grid item xs={6} md={6} lg={6}>
@@ -744,28 +777,51 @@ const CompanyDashboard = ({ onThemeToggle }) => {
                   >
                     License Analysis
                   </Typography>
-                  <TextField
-                    type="text"
+                  <Autocomplete
                     size="small"
-                    placeholder="Search company for license..."
+                    options={companyData.licenseConsumption.map(c => c.company)}
                     value={selectedCompanyForLicense}
-                    onChange={(e) => setSelectedCompanyForLicense(e.target.value)}
-                    sx={{
-                      width: "250px",
-                      marginRight: "1pc",
-                      fontSize: "1rem",
-                      ".MuiOutlinedInput-notchedOutline": {
-                        borderRadius: "20px !important"
-                      }
-                    }}
+                    onChange={(event, newValue) => setSelectedCompanyForLicense(newValue)}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Search company for license..."
+                        placeholder="Type to search..."
+                        sx={{
+                          width: "250px",
+                          marginRight: "1pc",
+                          fontSize: "1rem",
+                          ".MuiOutlinedInput-notchedOutline": {
+                            borderRadius: "20px !important"
+                          }
+                        }}
+                      />
+                    )}
+                    filterOptions={(options, state) =>
+                      options.filter((option) =>
+                        option.toLowerCase().includes(state.inputValue.toLowerCase())
+                      )
+                    }
                   />
+
                 </div>
 
 
               </div>
               <Divider />
+
+
               <Box sx={{ height: 306 }}>
+                <Typography
+                  variant="subtitle2"
+                  sx={{ textAlign: 'center', fontWeight: "bold" }}
+                >
+                  {selectedCompanyForLicense
+                    ? `Showing data for: ${selectedCompanyForLicense}`
+                    : "Showing combined data for all companies"}
+                </Typography>
                 <ReactEChart option={licenseExpirationStatus} />
+
               </Box>
             </Paper>
           </Grid>
