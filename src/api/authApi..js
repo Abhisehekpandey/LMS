@@ -74,3 +74,20 @@ export const checkDomainAvailability = async (emailDomain) => {
   }
 };
 
+
+
+
+export const resetPassword = async (newPassword) => {
+  const token = sessionStorage.getItem("authToken"); // or from URL param, depending on flow
+  const response = await axios.post(
+    "/tenants/reset-password", // adjust to your backend endpoint
+    { password: newPassword },
+    {
+      headers: {
+        Authorization: `Bearer ${token}`, // or pass token in body if it's a reset token
+      },
+    }
+  );
+  return response.data;
+};
+
