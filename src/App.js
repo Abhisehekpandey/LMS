@@ -121,11 +121,11 @@ function App() {
             }
           />
           <Route
-            path="/reset-password"
+            path="/set-password"
             element={
-              <ProtectedRoute>
+            //   <ProtectedRoute>
                 <ResetPassword />
-              </ProtectedRoute>
+            //   </ProtectedRoute>
             }
           />
 

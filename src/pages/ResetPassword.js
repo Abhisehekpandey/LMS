@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useSearchParams } from "react-router-dom"; // import this
 import {
   Box,
   Button,
@@ -26,6 +27,9 @@ const ResetPassword = () => {
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
 
+    const [searchParams] = useSearchParams();
+  const token = searchParams.get("token"); // <-- extract token from URL
+
   const validateForm = () => {
     const newErrors = {};
     if (!formData.newPassword) newErrors.newPassword = "New password is required";
@@ -36,36 +40,44 @@ const ResetPassword = () => {
     return newErrors;
   };
 
-//   const handleReset = (e) => {
-//     e.preventDefault();
-//     const validationErrors = validateForm();
-//     if (Object.keys(validationErrors).length > 0) {
-//       setErrors(validationErrors);
-//       return;
-//     }
 
-//     // Call reset password API here
-//     console.log("Reset password with:", formData);
-//     navigate("/login"); // Redirect after reset
-//   };
 
-const handleReset = async (e) => {
-  e.preventDefault();
-  const validationErrors = validateForm();
-  if (Object.keys(validationErrors).length > 0) {
-    setErrors(validationErrors);
-    return;
-  }
+// const handleReset = async (e) => {
+//   e.preventDefault();
+//   const validationErrors = validateForm();
+//   if (Object.keys(validationErrors).length > 0) {
+//     setErrors(validationErrors);
+//     return;
+//   }
 
-  try {
-    await resetPassword(formData.newPassword);
-    alert("Password reset successful!");
-    navigate("/login");
-  } catch (error) {
-    console.error("Reset failed:", error.message);
-    setErrors({ api: "Failed to reset password. Please try again." });
-  }
-};
+//   try {
+//     await resetPassword(formData.newPassword);
+//     alert("Password reset successful!");
+//     navigate("/login");
+//   } catch (error) {
+//     console.error("Reset failed:", error.message);
+//     setErrors({ api: "Failed to reset password. Please try again." });
+//   }
+// };
+ const handleReset = async (e) => {
+    e.preventDefault();
+    const validationErrors = validateForm();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+
+    try {
+      // pass both newPassword and token to resetPassword function
+      await resetPassword(formData.newPassword, token);
+      alert("Password reset successful!");
+      navigate("/login");
+    } catch (error) {
+      console.error("Reset failed:", error.message);
+      setErrors({ api: "Failed to reset password. Please try again." });
+    }
+  };
+
 
   const handleChange = (e) => {
     const { name, value } = e.target;

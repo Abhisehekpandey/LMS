@@ -78,16 +78,31 @@ export const checkDomainAvailability = async (emailDomain) => {
 
 
 
-export const resetPassword = async (newPassword) => {
-  const token = sessionStorage.getItem("authToken"); // or from URL param, depending on flow
+// export const resetPassword = async (newPassword) => {
+//   const token = sessionStorage.getItem("authToken"); // or from URL param, depending on flow
+//   const response = await axios.post(
+//     "/tenants/reset-password", // adjust to your backend endpoint
+//     { password: newPassword },
+//     {
+//       headers: {
+//         Authorization: `Bearer ${token}`, // or pass token in body if it's a reset token
+//       },
+//     }
+//   );
+//   return response.data;
+// };
+
+export const resetPassword = async (newPassword, resetToken) => {
+  if (!resetToken) throw new Error("Reset token is required");
+
+  // Usually reset token is sent in body, not as admin token in header
   const response = await axios.post(
-    "/tenants/reset-password", // adjust to your backend endpoint
-    { password: newPassword },
-    {
-      headers: {
-        Authorization: `Bearer ${token}`, // or pass token in body if it's a reset token
-      },
+    "/tenants/reset-password", // adjust endpoint if needed
+    { 
+      token: resetToken,       // <-- include token here
+      password: newPassword,   // <-- new password
     }
+    // No Authorization header needed here since user is not logged in
   );
   return response.data;
 };
