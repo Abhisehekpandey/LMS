@@ -21,16 +21,27 @@ import {
 } from "@mui/material";
 import { Formik, FieldArray, Form } from "formik";
 import React, { useState, useRef, useEffect } from "react";
+import Snackbar from "@mui/material/Snackbar";
+import MuiAlert from "@mui/material/Alert";
+
 import * as yup from "yup";
 import { createUserAction } from "../../redux/userSlice";
 import { useDispatch } from "react-redux";
-import { createDepartment } from "../../api/departmentService";
+import {
+  createDepartment,
+  getDepartments,
+  createRole,
+} from "../../api/departmentService";
+import { createUsers } from "../../api/userService";
 
 const CreateUser = ({ handleClose }) => {
   const [bulkFile, setBulkFile] = useState(null);
   const [fileName, setFileName] = useState("");
   const [addDepartment, setAddDepartment] = useState(false);
   const [addRole, setAddRole] = useState(false);
+  const [selectedDepartmentForRole, setSelectedDepartmentForRole] =
+    useState(null);
+  const [newRoleName, setNewRoleName] = useState("");
   const [expandedIndex, setExpandedIndex] = useState(0);
   const [newDepartment, setNewDepartment] = useState({
     deptName: "",
@@ -40,8 +51,36 @@ const CreateUser = ({ handleClose }) => {
     role: "",
   });
 
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarSeverity, setSnackbarSeverity] = useState("success"); // 'error' | 'info' | 'warning'
+
   const lastFieldRef = useRef(null);
   const dispatch = useDispatch();
+
+  const adminEmail = sessionStorage.getItem("adminEmail"); // You must save this during login!
+  const adminDomain = adminEmail?.split("@")[1]; // Extract domain
+
+  const handleUserEmailChange = (e, index, formik) => {
+    const { value } = e.target;
+
+    // Update the formik value
+    formik.setFieldValue(`users[${index}].email`, value);
+
+    // Immediate domain check
+    const adminEmail = sessionStorage.getItem("adminEmail");
+    const adminDomain = adminEmail?.split("@")[1];
+    const emailDomain = value.split("@")[1];
+
+    if (emailDomain && emailDomain !== adminDomain) {
+      formik.setFieldError(
+        `users[${index}].email`,
+        "Email domain must match admin domain"
+      );
+    } else {
+      formik.setFieldError(`users[${index}].email`, undefined); // Clear error
+    }
+  };
 
   useEffect(() => {
     if (lastFieldRef.current) {
@@ -54,6 +93,8 @@ const CreateUser = ({ handleClose }) => {
   }, [expandedIndex]);
 
   const storageOptions = [
+    "0GB",
+    "1GB",
     "10GB",
     "20GB",
     "25GB",
@@ -64,26 +105,20 @@ const CreateUser = ({ handleClose }) => {
     "200GB",
     "500GB",
   ];
-  const storageAllocation = ["0GB","1GB","2GB","3GB","5GB","25GB", "50GB", "100GB", "200GB", "500GB"];
-  // const departments = ["HR", "IT", "Finance", "Sales"];
-  const [departments, setDepartments] = useState([
-    "HR",
-    "IT",
-    "Finance",
-    "Sales",
-  ]);
-  const rolesByDepartment = {
-    HR: ["HR Manager", "Recruiter", "HR Assistant"],
-    IT: ["Software Engineer", "System Admin", "IT Support"],
-    Finance: ["Accountant", "Financial Analyst"],
-    Sales: ["Sales Manager", "Sales Executive", "Business Development"],
-  };
-  const reportingManagersByRole = {
-    "HR Manager": ["Alice", "Bob"],
-    "Software Engineer": ["Charlie", "David"],
-    Accountant: ["Eve", "Frank"],
-    "Sales Manager": ["George", "Helen"],
-  };
+  const storageAllocation = [
+    "0GB",
+    "1GB",
+    "2GB",
+    "3GB",
+    "5GB",
+    "25GB",
+    "50GB",
+    "100GB",
+    "200GB",
+    "500GB",
+  ];
+
+  const [departments, setDepartments] = useState([]);
 
   const initialValues = {
     users: [
@@ -103,10 +138,19 @@ const CreateUser = ({ handleClose }) => {
     users: yup.array().of(
       yup.object().shape({
         name: yup.string().required("Full Name is required"),
+
         email: yup
           .string()
           .email("Enter a valid email")
-          .required("Email is required"),
+          .required("Email is required")
+          .test(
+            "domain-match",
+            "Email domain must match admin domain",
+            function (value) {
+              const emailDomain = value?.split("@")[1];
+              return emailDomain === adminDomain;
+            }
+          ),
         phone: yup
           .string()
           .matches(/^\d{10}$/, "Phone Number must be 10 digits")
@@ -122,6 +166,41 @@ const CreateUser = ({ handleClose }) => {
       setFileName(file.name);
     }
   };
+
+  const addRoleToDepartment = async (deptName, roleName) => {
+    console.log(">>>deptName", deptName.deptName);
+    console.log(">>>role", roleName);
+
+    const payload = { department: deptName.deptName, role: roleName };
+    console.log("payyload", payload);
+
+    try {
+      const response = await createRole(payload); // your API function to add role
+      console.log("response2", response);
+      return response;
+    } catch (error) {
+      console.error("Error adding role:", error);
+      throw error;
+    }
+  };
+
+  useEffect(() => {
+    const loadDepartments = async () => {
+      try {
+        const res = await getDepartments();
+        console.log(">>>out", res);
+        setDepartments(res);
+      } catch (err) {
+        console.error("Error loading departments:", err);
+      }
+    };
+
+    loadDepartments();
+  }, []);
+
+  useEffect(() => {
+    console.log("Updated departments:", departments);
+  }, [departments]);
 
   return (
     <>
@@ -245,10 +324,38 @@ const CreateUser = ({ handleClose }) => {
         <Formik
           initialValues={initialValues}
           validationSchema={validationSchema}
-          onSubmit={(values) => {
-            console.log("Submitting multiple users:", values.users);
-            dispatch(createUserAction(values.users));
-            handleClose();
+          onSubmit={async (values, actions) => {
+            try {
+              const transformedUsers = values.users.map((user) => ({
+                name: user.name,
+                email: user.email,
+                deptName:
+                  typeof user.department === "object"
+                    ? user.department.deptName
+                    : user.department,
+                roleName:
+                  typeof user.role === "object"
+                    ? user.role.roleName
+                    : user.role,
+                phoneNumber: user.phone,
+                storage: user.storage,
+                reportingManager: user.reportingManager,
+              }));
+
+              await createUsers(transformedUsers);
+
+              setSnackbarMessage("Users created successfully!");
+              setSnackbarSeverity("success");
+              setSnackbarOpen(true);
+              handleClose();
+            } catch (error) {
+              setSnackbarMessage("Failed to create users. Please try again.");
+              setSnackbarSeverity("error");
+              setSnackbarOpen(true);
+              console.error("Failed to create users", error);
+            } finally {
+              actions.setSubmitting(false);
+            }
           }}
         >
           {(formik) => (
@@ -257,12 +364,23 @@ const CreateUser = ({ handleClose }) => {
                 {({ push, remove }) => (
                   <>
                     {formik.values.users.map((user, index) => {
-                      const roleOptions = user.department
-                        ? rolesByDepartment[user.department] || []
-                        : [];
-                      const managerOptions = user.role
-                        ? reportingManagersByRole[user.role] || []
-                        : [];
+                      console.log(">>user.department", user.department);
+
+                      const selectedDeptName =
+                        typeof user.department === "string"
+                          ? user.department
+                          : user.department?.deptName;
+
+                      console.log(">selectedDepartment", selectedDeptName);
+
+                      const selectedDept = departments.find(
+                        (dept) => dept.deptName === selectedDeptName
+                      );
+
+                      console.log(">>ss", selectedDept);
+
+                      const roleOptions = selectedDept?.roles || [];
+
                       const isExpanded = index === expandedIndex;
 
                       return (
@@ -307,13 +425,18 @@ const CreateUser = ({ handleClose }) => {
                                   autoComplete="off"
                                   name={`users[${index}].email`}
                                   value={user.email}
-                                  onChange={formik.handleChange}
+                                  onChange={(e) =>
+                                    handleUserEmailChange(e, index, formik)
+                                  } // 👈 use custom handler
+                                  onBlur={formik.handleBlur}
                                   error={Boolean(
+<<<<<<< HEAD
                                     formik.touched.users?.[index]?.email &&
+=======
+>>>>>>> 2c6d7b54eb9754a1a7eb90482be1b942c55be1bf
                                     formik.errors.users?.[index]?.email
                                   )}
                                   helperText={
-                                    formik.touched.users?.[index]?.email &&
                                     formik.errors.users?.[index]?.email
                                   }
                                   fullWidth
@@ -362,95 +485,143 @@ const CreateUser = ({ handleClose }) => {
                               </Grid>
                               <Grid item xs={3}>
                                 <Autocomplete
-                                  options={departments}
+                                  options={[
+                                    { isAddOption: true },
+                                    ...departments,
+                                  ]}
+                                  getOptionLabel={(option) =>
+                                    option.isAddOption
+                                      ? "Add New Department"
+                                      : option.deptName || ""
+                                  }
+                                  renderOption={(props, option) => (
+                                    <li
+                                      {...props}
+                                      style={{
+                                        fontStyle: option.isAddOption
+                                          ? "normal"
+                                          : "normal",
+                                        color: option.isAddOption
+                                          ? "#1976d2"
+                                          : "inherit",
+                                        fontWeight: option.isAddOption
+                                          ? 600
+                                          : "normal",
+                                        borderTop: option.isAddOption
+                                          ? "1px solid #eee"
+                                          : "none",
+                                        padding: "10px 16px",
+                                        backgroundColor: option.isAddOption
+                                          ? "#f9f9f9"
+                                          : "inherit",
+                                      }}
+                                    >
+                                      {option.isAddOption
+                                        ? "➕ Add New "
+                                        : option.deptName}
+                                    </li>
+                                  )}
                                   value={user.department || ""}
-                                  onChange={(e, value) =>
+                                  onChange={(e, value) => {
+                                    if (value?.isAddOption) {
+                                      setAddDepartment(true);
+                                      return;
+                                    }
                                     formik.setFieldValue(
                                       `users[${index}].department`,
                                       value
-                                    )
-                                  }
+                                    );
+                                    formik.setFieldValue(
+                                      `users[${index}].role`,
+                                      value?.role || ""
+                                    );
+                                  }}
                                   renderInput={(params) => (
                                     <TextField
                                       {...params}
-                                      autoComplete="off"
                                       label="Department"
-                                      size="small"
                                       fullWidth
+                                      size="small"
+                                      autoComplete="off"
                                     />
-                                  )}
-                                  ListboxComponent={({
-                                    children,
-                                    ...props
-                                  }) => (
-                                    <ul {...props}>
-                                      <li
-                                        style={{
-                                          padding: "2px",
-                                          borderTop: "1px solid #eee",
-                                        }}
-                                      >
-                                        <Button
-                                          onClick={() => setAddDepartment(true)}
-                                          color="primary"
-                                          variant="outlined"
-                                          size="small"
-                                          fullWidth
-                                          startIcon={<Add />}
-                                        >
-                                          Add New Department
-                                        </Button>
-                                      </li>
-                                      {children}
-                                    </ul>
                                   )}
                                 />
                               </Grid>
                               <Grid item xs={2}>
-                                <Autocomplete
-                                  options={roleOptions}
-                                  value={user.role || ""}
-                                  onChange={(e, value) =>
-                                    formik.setFieldValue(
-                                      `users[${index}].role`,
-                                      value
-                                    )
+                                <Tooltip
+                                  title={
+                                    !user.department
+                                      ? "Please select a department first"
+                                      : ""
                                   }
-                                  renderInput={(params) => (
-                                    <TextField
-                                      {...params}
-                                      autoComplete="off"
-                                      label="Role"
-                                      size="small"
-                                      fullWidth
-                                    />
-                                  )}
-                                  ListboxComponent={({
-                                    children,
-                                    ...props
-                                  }) => (
-                                    <ul {...props}>
-                                      <li
-                                        style={{
-                                          padding: "2px",
-                                          borderTop: "1px solid #eee",
-                                        }}
-                                      >
-                                        <Button
-                                          onClick={() => setAddRole(true)}
-                                          color="primary"
-                                          variant="outlined"
-                                          size="small"
-                                          fullWidth
-                                          startIcon={<Add />}
+                                  placement="top-start"
+                                  arrow
+                                >
+                                  <div>
+                                    <Autocomplete
+                                      disabled={!user.department}
+                                      options={[
+                                        { isAddOption: true },
+                                        ...roleOptions,
+                                      ]}
+                                      getOptionLabel={(option) =>
+                                        option.isAddOption
+                                          ? "Add New Role"
+                                          : option
+                                      }
+                                      renderOption={(props, option) => (
+                                        <li
+                                          {...props}
+                                          style={{
+                                            fontStyle: option.isAddOption
+                                              ? "normal"
+                                              : "normal",
+                                            color: option.isAddOption
+                                              ? "#1976d2"
+                                              : "inherit",
+                                            fontWeight: option.isAddOption
+                                              ? 600
+                                              : "normal",
+                                            borderTop: option.isAddOption
+                                              ? "1px solid #eee"
+                                              : "none",
+                                            padding: "10px 16px",
+                                            backgroundColor: option.isAddOption
+                                              ? "#f9f9f9"
+                                              : "inherit",
+                                          }}
                                         >
-                                          Add New Role
-                                        </Button>
-                                      </li>
-                                      {children}
-                                    </ul>
-                                  )}
-                                />
+                                          {option.isAddOption
+                                            ? "➕ Add New Role"
+                                            : option}
+                                        </li>
+                                      )}
+                                      value={user.role || ""}
+                                      onChange={(e, value) => {
+                                        if (value?.isAddOption) {
+                                          setSelectedDepartmentForRole(
+                                            user.department
+                                          );
+                                          setAddRole(true);
+                                          return;
+                                        }
+                                        formik.setFieldValue(
+                                          `users[${index}].role`,
+                                          value
+                                        );
+                                      }}
+                                      renderInput={(params) => (
+                                        <TextField
+                                          {...params}
+                                          label="Role"
+                                          fullWidth
+                                          size="small"
+                                          autoComplete="off"
+                                        />
+                                      )}
+                                    />
+                                  </div>
+                                </Tooltip>
                               </Grid>
                               <Grid item xs={4}>
                                 <TextField
@@ -578,9 +749,6 @@ const CreateUser = ({ handleClose }) => {
               borderRadius: "50%",
               position: "relative",
               "&:hover": {
-                // color: "error.dark",
-                // borderColor: "error.main",
-                // bgcolor: "error.lighter",
                 transform: "rotate(180deg)",
               },
               transition: "transform 0.3s ease",
@@ -598,7 +766,6 @@ const CreateUser = ({ handleClose }) => {
         <DialogContent dividers padding="0 !important">
           <Grid container spacing={2}>
             <Grid item xs={6}>
-              {/* <TextField fullWidth size="small" label="Department Name" /> */}
               <TextField
                 fullWidth
                 size="small"
@@ -613,7 +780,6 @@ const CreateUser = ({ handleClose }) => {
               />
             </Grid>
             <Grid item xs={6}>
-              {/* <TextField fullWidth size="small" label="Department Moderator" /> */}
               <TextField
                 fullWidth
                 size="small"
@@ -628,7 +794,6 @@ const CreateUser = ({ handleClose }) => {
               />
             </Grid>
             <Grid item xs={4}>
-              {/* <TextField fullWidth size="small" label="Short Name" /> */}
               <TextField
                 fullWidth
                 size="small"
@@ -643,7 +808,6 @@ const CreateUser = ({ handleClose }) => {
               />
             </Grid>
             <Grid item xs={4}>
-              {/* <Autocomplete options={storageAllocation} renderInput={(params) => <TextField {...params} label="Storage" size="small" />} /> */}
               <Autocomplete
                 options={storageAllocation}
                 value={newDepartment.storage}
@@ -686,7 +850,7 @@ const CreateUser = ({ handleClose }) => {
                 const createdDept = await createDepartment(payload);
 
                 console.log("Department created:", createdDept);
-                setDepartments((prev) => [...prev, newDepartment.deptName]);
+                setDepartments((prev) => [...prev, payload]);
 
                 setNewDepartment({
                   deptName: "",
@@ -780,11 +944,42 @@ const CreateUser = ({ handleClose }) => {
         </DialogTitle>
         {/* <DialogContent> */}
         <DialogContent dividers padding="0 !important">
-          <TextField size="small" label="Role Name" />
+          {/* <TextField size="small" label="Role Name" /> */}
+          <TextField
+            size="small"
+            label="Role Name"
+            value={newRoleName}
+            onChange={(e) => setNewRoleName(e.target.value)}
+          />
         </DialogContent>
         <DialogActions>
           <Button
-            onClick={() => setAddRole(false)}
+            onClick={async () => {
+              if (!newRoleName.trim()) return; // no empty roles
+
+              try {
+                const addedRole = await addRoleToDepartment(
+                  selectedDepartmentForRole,
+                  newRoleName.trim()
+                );
+                console.log(">>>selected", selectedDepartmentForRole.deptName);
+                console.log(">>>addedRole", addedRole[0]);
+                console.log(">>>departments1", departments);
+                setDepartments((prevDepartments) =>
+                  prevDepartments.map((dept) =>
+                    dept.deptName === selectedDepartmentForRole.deptName
+                      ? {
+                          ...dept,
+                          roles: [...(dept.roles || []), addedRole[0]],
+                        }
+                      : dept
+                  )
+                );
+                console.log(">>>departments222", departments);
+                setNewRoleName("");
+                setAddRole(false);
+              } catch (error) {}
+            }}
             variant="contained"
             color="primary"
             sx={{ backgroundColor: "rgb(251, 68, 36)" }}
@@ -793,6 +988,21 @@ const CreateUser = ({ handleClose }) => {
           </Button>
         </DialogActions>
       </Dialog>
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={4000}
+        onClose={() => setSnackbarOpen(false)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <MuiAlert
+          onClose={() => setSnackbarOpen(false)}
+          severity={snackbarSeverity}
+          sx={{ width: "100%" }}
+          variant="filled"
+        >
+          {snackbarMessage}
+        </MuiAlert>
+      </Snackbar>
     </>
   );
 };

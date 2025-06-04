@@ -64,6 +64,7 @@ const Login = () => {
 
       // Save token in sessionStorage or localStorage
       sessionStorage.setItem("authToken", access_token);
+      sessionStorage.setItem("adminEmail",formData.email)
       
 
       // Redirect to dashboard or home page after successful login
