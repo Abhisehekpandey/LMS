@@ -430,10 +430,7 @@ const CreateUser = ({ handleClose }) => {
                                   } // 👈 use custom handler
                                   onBlur={formik.handleBlur}
                                   error={Boolean(
-<<<<<<< HEAD
                                     formik.touched.users?.[index]?.email &&
-=======
->>>>>>> 2c6d7b54eb9754a1a7eb90482be1b942c55be1bf
                                     formik.errors.users?.[index]?.email
                                   )}
                                   helperText={
