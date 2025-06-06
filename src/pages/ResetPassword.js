@@ -42,43 +42,49 @@ const ResetPassword = () => {
 
 
 
-// const handleReset = async (e) => {
-//   e.preventDefault();
-//   const validationErrors = validateForm();
-//   if (Object.keys(validationErrors).length > 0) {
-//     setErrors(validationErrors);
-//     return;
-//   }
 
-//   try {
-//     await resetPassword(formData.newPassword);
-//     alert("Password reset successful!");
-//     navigate("/login");
-//   } catch (error) {
-//     console.error("Reset failed:", error.message);
-//     setErrors({ api: "Failed to reset password. Please try again." });
-//   }
-// };
- const handleReset = async (e) => {
-    e.preventDefault();
-    const validationErrors = validateForm();
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      return;
-    }
+//  const handleReset = async (e) => {
+//     e.preventDefault();
+//     const validationErrors = validateForm();
+//     if (Object.keys(validationErrors).length > 0) {
+//       setErrors(validationErrors);
+//       return;
+//     }
 
-    try {
-      // pass both newPassword and token to resetPassword function
-      await resetPassword(formData.newPassword, token);
-      alert("Password reset successful!");
-      // navigate("/login");
-      navigate("http://frontdms-test.apps.lab.ocp.lan/teamsync/home")
-    } 
-    catch (error) {
-      console.error("Reset failed:", error.message);
-      setErrors({ api: "Failed to reset password. Please try again." });
-    }
-  };
+//     try {
+//       // pass both newPassword and token to resetPassword function
+//       await resetPassword(formData.newPassword, token);
+//       alert("Password reset successful!");
+//       // navigate("/login");
+//       navigate("http://frontdms-test.apps.lab.ocp.lan/teamsync/home")
+//     } 
+//     catch (error) {
+//       console.error("Reset failed:", error.message);
+//       setErrors({ api: "Failed to reset password. Please try again." });
+//     }
+//   };
+
+const handleReset = async (e) => {
+  e.preventDefault();
+  const validationErrors = validateForm();
+  if (Object.keys(validationErrors).length > 0) {
+    setErrors(validationErrors);
+    return;
+  }
+
+  try {
+    await resetPassword(formData.newPassword, token);
+    alert("Password reset successful!");
+  } catch (error) {
+    console.error("Reset failed:", error.message);
+    setErrors({ api: "Failed to reset password. Please try again." });
+  } finally {
+    
+    window.location.href = "http://frontdms-test.apps.lab.ocp.lan/teamsync/home";
+    
+  }
+};
+
 
 
   const handleChange = (e) => {
