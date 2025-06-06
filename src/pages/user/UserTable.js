@@ -55,7 +55,8 @@
 // import Migration from "./Migration";
 // import CreateUser from "./CreateUser";
 // import { toast } from "react-toastify";
-// import { CircularProgress, keyframes } from '@mui/material';
+// import { CircularProgress, keyframes } from "@mui/material";
+// import { fetchUsers } from "../../api/userService";
 
 // const CustomSwitch = styled(Switch)(({ theme, checked }) => ({
 //   "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
@@ -72,7 +73,6 @@
 //   },
 // }));
 
-
 // const fadeIn = keyframes`
 //   from { opacity: 0; transform: scale(0.95); }
 //   to { opacity: 1; transform: scale(1); }
@@ -80,16 +80,16 @@
 
 // // Styled overlay
 // const LoaderWrapper = styled(Box)(({ theme }) => ({
-//   position: 'fixed',
+//   position: "fixed",
 //   top: 0,
 //   left: 0,
-//   width: '100vw',
-//   height: '100vh',
-//   background: 'rgba(255, 255, 255, 0.75)',
-//   backdropFilter: 'blur(5px)',
-//   display: 'flex',
-//   justifyContent: 'center',
-//   alignItems: 'center',
+//   width: "100vw",
+//   height: "100vh",
+//   background: "rgba(255, 255, 255, 0.75)",
+//   backdropFilter: "blur(5px)",
+//   display: "flex",
+//   justifyContent: "center",
+//   alignItems: "center",
 //   zIndex: 1300,
 //   animation: `${fadeIn} 0.5s ease-in-out`,
 // }));
@@ -97,15 +97,13 @@
 // // Styled CircularProgress
 // const CustomSpinner = styled(CircularProgress)(({ theme }) => ({
 //   color: theme.palette.primary.main,
-//   width: '60px !important',
-//   height: '80px !important',
+//   width: "60px !important",
+//   height: "80px !important",
 //   thickness: 2,
 // }));
 
-
 // const rows = [
 //   {
-
 //     id: "1",
 //     name: "kunal kamboj",
 //     department: "Frontend",
@@ -118,7 +116,6 @@
 //     phone: "1234567890",
 //   },
 //   {
-
 //     id: "2",
 //     name: "Pratibha thakur",
 //     department: "Frontend",
@@ -127,11 +124,10 @@
 //     storageUsed: "200 MB",
 //     manageStorage: "1 GB",
 //     status: false,
-   
+
 //     phone: "9876543201",
 //   },
 //   {
-
 //     id: "3",
 //     name: "Abhishek Panday",
 //     department: "Frontend",
@@ -144,7 +140,6 @@
 //     phone: "1234567890",
 //   },
 //   {
-
 //     id: "4",
 //     name: "Dhruv Sethi",
 //     department: "Backend",
@@ -153,11 +148,10 @@
 //     storageUsed: "800 MB",
 //     manageStorage: "1 GB",
 //     status: true,
-    
+
 //     phone: "1234567890",
 //   },
 //   {
-
 //     id: "5",
 //     name: "Manish Yadav",
 //     department: "Backend",
@@ -166,11 +160,10 @@
 //     storageUsed: "800 MB",
 //     manageStorage: "1 GB",
 //     status: true,
-   
+
 //     phone: "1234567890",
 //   },
 //   {
-
 //     id: "6",
 //     name: "Prince Tiwari",
 //     department: "Backend",
@@ -179,11 +172,10 @@
 //     storageUsed: "800 MB",
 //     manageStorage: "1 GB",
 //     status: true,
-    
+
 //     phone: "1234567890",
 //   },
 //   {
-
 //     id: "7",
 //     name: "Dheeraj",
 //     department: "Frontend",
@@ -192,13 +184,10 @@
 //     storageUsed: "800 MB",
 //     manageStorage: "1 GB",
 //     status: true,
-    
+
 //     phone: "1234567890",
 //   },
-
 // ];
-
-
 
 // const IOSSwitch = styled((props) => (
 //   <Switch focusVisibleClassName=".Mui-focusVisible" disableRipple {...props} />
@@ -261,14 +250,7 @@
 // }));
 
 // const Transition = React.forwardRef(function Transition(props, ref) {
-//   return (
-//     <Slide
-//       direction="right"
-//       ref={ref}
-//       {...props}
-
-//     />
-//   );
+//   return <Slide direction="right" ref={ref} {...props} />;
 // });
 
 // export default function UserTable() {
@@ -277,7 +259,9 @@
 //   const [selected, setSelected] = useState([]);
 //   const [createUser, setCreateUser] = useState(false);
 //   const [checked, setChecked] = useState(false);
-//   const [rowsData, setRowsData] = useState(rows);
+//   // const [rowsData, setRowsData] = useState(rows);
+//   const [rowsData, setRowsData] = useState([]);
+
 //   const [deleteUser, setDeleteUser] = useState(false);
 //   const [rowData, setRowData] = useState([]);
 //   const [selectAllData, setSelectAllData] = useState(false);
@@ -287,7 +271,6 @@
 //   const [editData, setEditData] = useState({});
 //   const [Storage, setStorage] = React.useState("");
 //   const [loading, setLoading] = useState(true);
-
 
 //   const handleMigrationComplete = (updatedRows) => {
 //     setRowsData(updatedRows);
@@ -361,29 +344,26 @@
 //     setSelected([]); // Clear selection AFTER download
 //   };
 
- 
-
 //   const label = { inputProps: { "aria-label": "Switch demo" } };
 
 //   const handleDelete = (e, row) => {
-   
 //     setDeleteUser(true);
 //   };
 
 //   const handleStatusToggle = (userName) => {
 //     setRowsData((prev) =>
 //       prev.map((user) =>
-//         user.name === userName ? { ...user, status: !user.status } : user
+//         user.name === userName ? { ...user, active: !user.active } : user
 //       )
 //     );
 
 //     const updatedUser = rowsData.find((user) => user.name === userName);
 //     toast.success(
-//       `User "${updatedUser?.name}" has been ${updatedUser?.status ? "deactivated" : "activated"
+//       `User "${updatedUser?.name}" has been ${
+//         updatedUser?.active ? "deactivated" : "activated"
 //       }`
 //     );
 //   };
-
 
 //   const handleCreateUser = () => {
 //     setCreateUser(true);
@@ -402,12 +382,11 @@
 //     setPage(0);
 //   };
 
-
-
 //   const handleSelectAllClick = (event) => {
 //     if (event.target.checked) {
 //       // Select all row ids
-//       const allIds = rows.map((row) => row.id);
+//       // const allIds = rows.map((row) => row.id);
+//       const allIds = rowsData.map((row) => row.id);
 //       // setSelected(allIds);
 
 //       // Get full data of selected rows
@@ -459,6 +438,26 @@
 //     return () => clearTimeout(timer);
 //   }, []);
 
+//   useEffect(() => {
+//     const loadUsers = async () => {
+//       try {
+//         const users = await fetchUsers();
+//         console.log("Fetched users:", users.content); // Add this line
+
+//         setRowsData(users.content);
+//       } catch (error) {
+//         console.error("Error loading users", error);
+//         // optionally show error toast
+//       } finally {
+//         setLoading(false);
+//       }
+//     };
+
+//     loadUsers();
+//   }, []);
+
+//   console.log(">>>rowssss", rowsData);
+
 //   if (loading) {
 //     return (
 //       <LoaderWrapper>
@@ -467,9 +466,9 @@
 //     );
 //   }
 
-//   const handleClose=()=>{
-//     setMigrationDialog(false)
-//   }
+//   const handleClose = () => {
+//     setMigrationDialog(false);
+//   };
 
 //   return (
 //     <Box
@@ -481,7 +480,6 @@
 //         padding: "15px",
 //       }}
 //     >
-
 //       <Paper
 //         elevation={24}
 //         sx={{
@@ -499,9 +497,10 @@
 //             "100%": {
 //               opacity: 1,
 //               transform: "translateX(0)",
-//             }
-//           }
-//         }} className="PaperUI"
+//             },
+//           },
+//         }}
+//         className="PaperUI"
 //       >
 //         <TableContainer sx={{ maxHeight: "83vh", height: "80vh" }}>
 //           <Table stickyHeader>
@@ -510,13 +509,16 @@
 //                 sx={{ boxShadow: "0 -2px 8px 0 rgba(0, 0, 0, 0.2) !important" }}
 //               >
 //                 <TableCell padding="checkbox">
-
 //                   <Checkbox
+//                     // indeterminate={
+//                     //   selected.length > 0 && selected.length < rows.length
+//                     // }
+//                     // checked={selected.length === rows.length}
+//                     // onChange={handleSelectAllClick}
+//                     checked={selected.length === rowsData.length}
 //                     indeterminate={
-//                       selected.length > 0 && selected.length < rows.length
+//                       selected.length > 0 && selected.length < rowsData.length
 //                     }
-//                     checked={selected.length === rows.length}
-//                     onChange={handleSelectAllClick}
 //                   />
 //                 </TableCell>
 //                 {/* <TableCell align="center">USER NAME</TableCell> */}
@@ -524,9 +526,39 @@
 //                 <TableCell align="center">Department</TableCell>
 //                 <TableCell align="center">Role</TableCell>
 //                 <TableCell align="center">User email</TableCell>
-//                 <TableCell align="center" sx={{ whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden", maxWidth: 140 }}>Storage used</TableCell>
-//                 <TableCell align="center" sx={{ whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden", maxWidth: 140 }}>Manage storage</TableCell>
-//                 <TableCell align="center" sx={{ whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden", maxWidth: 140 }}>Active license</TableCell>
+//                 <TableCell
+//                   align="center"
+//                   sx={{
+//                     whiteSpace: "nowrap",
+//                     textOverflow: "ellipsis",
+//                     overflow: "hidden",
+//                     maxWidth: 140,
+//                   }}
+//                 >
+//                   Storage used
+//                 </TableCell>
+//                 <TableCell
+//                   align="center"
+//                   sx={{
+//                     whiteSpace: "nowrap",
+//                     textOverflow: "ellipsis",
+//                     overflow: "hidden",
+//                     maxWidth: 140,
+//                   }}
+//                 >
+//                   Manage storage
+//                 </TableCell>
+//                 <TableCell
+//                   align="center"
+//                   sx={{
+//                     whiteSpace: "nowrap",
+//                     textOverflow: "ellipsis",
+//                     overflow: "hidden",
+//                     maxWidth: 140,
+//                   }}
+//                 >
+//                   Active license
+//                 </TableCell>
 //                 <TableCell align="center">Actions</TableCell>
 //               </TableRow>
 //             </TableHead>
@@ -562,13 +594,19 @@
 //                         align="center"
 //                         sx={{ padding: "10px 10px 10px 10px !important" }}
 //                       >
-//                         {row.department}
+//                         {/* {row.department} */}
+//                         {row.roles && row.roles.length > 0
+//                           ? row.roles[0].department?.deptName || "N/A"
+//                           : "N/A"}
 //                       </TableCell>
 //                       <TableCell
 //                         align="center"
 //                         sx={{ padding: "10px 10px 10px 10px !important" }}
 //                       >
-//                         {row.role}
+//                         {/* {row.role} */}
+//                         {row.roles && row.roles.length > 0
+//                           ? row.roles[0].roleName || "N/A"
+//                           : "N/A"}
 //                       </TableCell>
 //                       <TableCell
 //                         align="center"
@@ -582,45 +620,47 @@
 //                       >
 //                         {row.storageUsed}
 //                       </TableCell>
-                     
+
 //                       <TableCell
-//   align="center"
-//   sx={{
-//     padding: "2px 8px",
-//   }}
-// >
-//   <FormControl sx={{ m: 0, minWidth: 120 }} size="small">
-//     <Select
-//       id={`manage-storage-${row.id}`}
-//       value={row.manageStorage || ""} // use row-specific value
-//       onChange={(e) => {
-//         const updated = rowsData.map((r) =>
-//           r.id === row.id ? { ...r, manageStorage: e.target.value } : r
-//         );
-//         setRowsData(updated);
-//       }}
-//       displayEmpty
-//       sx={{
-//         width: "100px",
-//         height: "30px",
-//         borderRadius: "28px",
-//       }}
-//     >
-//       <MenuItem value="1 GB">1 GB</MenuItem>
-//       <MenuItem value="10 GB">10 GB</MenuItem>
-//       <MenuItem value="20 GB">20 GB</MenuItem>
-//       <MenuItem value="40 GB">40 GB</MenuItem>
-//       <MenuItem value="60 GB">60 GB</MenuItem>
-//     </Select>
-//   </FormControl>
-// </TableCell>
+//                         align="center"
+//                         sx={{
+//                           padding: "2px 8px",
+//                         }}
+//                       >
+//                         <FormControl sx={{ m: 0, minWidth: 120 }} size="small">
+//                           <Select
+//                             id={`manage-storage-${row.id}`}
+//                             value={row.manageStorage || ""} // use row-specific value
+//                             onChange={(e) => {
+//                               const updated = rowsData.map((r) =>
+//                                 r.id === row.id
+//                                   ? { ...r, manageStorage: e.target.value }
+//                                   : r
+//                               );
+//                               setRowsData(updated);
+//                             }}
+//                             displayEmpty
+//                             sx={{
+//                               width: "100px",
+//                               height: "30px",
+//                               borderRadius: "28px",
+//                             }}
+//                           >
+//                             <MenuItem value="1 GB">1 GB</MenuItem>
+//                             <MenuItem value="10 GB">10 GB</MenuItem>
+//                             <MenuItem value="20 GB">20 GB</MenuItem>
+//                             <MenuItem value="40 GB">40 GB</MenuItem>
+//                             <MenuItem value="60 GB">60 GB</MenuItem>
+//                           </Select>
+//                         </FormControl>
+//                       </TableCell>
 
 //                       <TableCell align="center">
-//                         <Tooltip title={row.status ? "Active" : "Inactive"}>
+//                         <Tooltip title={row.active ? "Active" : "Inactive"}>
 //                           <FormControlLabel
 //                             control={
 //                               <IOSSwitch
-//                                 checked={row.status}
+//                                 checked={row.active}
 //                                 onChange={() => {
 //                                   console.log("Switch clicked:", row); // confirm this runs
 //                                   handleStatusToggle(row.name);
@@ -629,7 +669,6 @@
 //                             }
 //                           />
 //                         </Tooltip>
-
 //                       </TableCell>
 //                       <TableCell
 //                         align="center"
@@ -638,7 +677,6 @@
 //                           padding: "10px 10px 10px 10px !important",
 //                         }}
 //                       >
-
 //                         <>
 //                           <IconButton
 //                             size="small"
@@ -668,7 +706,8 @@
 //           <TablePagination
 //             rowsPerPageOptions={[10, 30, 60, 100]}
 //             component="div"
-//             count={rows.length}
+//             // count={rows.length}
+//             count={rowsData.length}
 //             rowsPerPage={rowsPerPage}
 //             page={page}
 //             onPageChange={handleChangePage}
@@ -978,11 +1017,7 @@
 //         </Dialog>
 
 //         {/* migration */}
-//         <Dialog
-//           open={migrationDialog}
-//           onClose={handleClose}
-//           fullWidth
-//         >
+//         <Dialog open={migrationDialog} onClose={handleClose} fullWidth>
 //           <Migration
 //             handleClos={handleClose}
 //             rowData={rowData}
@@ -1048,14 +1083,14 @@
 //               justifyContent: "space-between",
 //               alignItems: "center",
 //               p: 1,
-//               backgroundColor: "primary.main"
+//               backgroundColor: "primary.main",
 //             }}
 //           >
 //             <Typography
 //               variant="h6"
 //               sx={{
 //                 fontFamily: '"Be Vietnam", sans-serif',
-//                 color: "#ffff"
+//                 color: "#ffff",
 //               }}
 //             >
 //               EDIT USER
@@ -1087,10 +1122,9 @@
 //               />
 //             </IconButton>
 //           </DialogTitle>
-//           <DialogContent dividers >
+//           <DialogContent dividers>
 //             {/* First row */}
 //             <Grid container spacing={2}>
-
 //               <Grid item xs={4}>
 //                 <TextField
 //                   size="small"
@@ -1100,7 +1134,6 @@
 //                   fullWidth
 //                   variant="outlined"
 //                   value={editData.name || ""}
-
 //                 />
 //               </Grid>
 //               <Grid item xs={4}>
@@ -1112,7 +1145,6 @@
 //                   fullWidth
 //                   variant="outlined"
 //                   value={editData.department || ""}
-
 //                 />
 //               </Grid>
 //               <Grid item xs={6}>
@@ -1124,7 +1156,6 @@
 //                   fullWidth
 //                   variant="outlined"
 //                   value={editData.role || ""}
-
 //                 />
 //               </Grid>
 //               <Grid item xs={6}>
@@ -1157,7 +1188,6 @@
 //                   type="tel"
 //                   variant="outlined"
 //                   value={editData.phone || ""}
-
 //                 />
 //               </Grid>
 //               <Grid item xs={6}>
@@ -1169,14 +1199,12 @@
 //                   fullWidth
 //                   variant="outlined"
 //                   value={editData.storageUsed || ""}
-
 //                 />
 //               </Grid>
 //             </Grid>
 //           </DialogContent>
 
 //           <DialogActions>
-
 //             <Button
 //               // onClick={saveEditedUser}
 //               variant="contained"
@@ -1199,11 +1227,6 @@
 //     </Box>
 //   );
 // }
-
-
-
-
-
 
 import React, { useState, useEffect } from "react";
 import {
@@ -1262,8 +1285,9 @@ import DeleteUser from "./DeleteUser";
 import Migration from "./Migration";
 import CreateUser from "./CreateUser";
 import { toast } from "react-toastify";
-import { CircularProgress, keyframes } from '@mui/material';
+import { CircularProgress, keyframes } from "@mui/material";
 import { fetchUsers } from "../../api/userService";
+import { toggleUserStatusByUsername } from "../../api/userService";
 
 const CustomSwitch = styled(Switch)(({ theme, checked }) => ({
   "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
@@ -1280,7 +1304,6 @@ const CustomSwitch = styled(Switch)(({ theme, checked }) => ({
   },
 }));
 
-
 const fadeIn = keyframes`
   from { opacity: 0; transform: scale(0.95); }
   to { opacity: 1; transform: scale(1); }
@@ -1288,16 +1311,16 @@ const fadeIn = keyframes`
 
 // Styled overlay
 const LoaderWrapper = styled(Box)(({ theme }) => ({
-  position: 'fixed',
+  position: "fixed",
   top: 0,
   left: 0,
-  width: '100vw',
-  height: '100vh',
-  background: 'rgba(255, 255, 255, 0.75)',
-  backdropFilter: 'blur(5px)',
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
+  width: "100vw",
+  height: "100vh",
+  background: "rgba(255, 255, 255, 0.75)",
+  backdropFilter: "blur(5px)",
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
   zIndex: 1300,
   animation: `${fadeIn} 0.5s ease-in-out`,
 }));
@@ -1305,15 +1328,13 @@ const LoaderWrapper = styled(Box)(({ theme }) => ({
 // Styled CircularProgress
 const CustomSpinner = styled(CircularProgress)(({ theme }) => ({
   color: theme.palette.primary.main,
-  width: '60px !important',
-  height: '80px !important',
+  width: "60px !important",
+  height: "80px !important",
   thickness: 2,
 }));
 
-
 const rows = [
   {
-
     id: "1",
     name: "kunal kamboj",
     department: "Frontend",
@@ -1326,7 +1347,6 @@ const rows = [
     phone: "1234567890",
   },
   {
-
     id: "2",
     name: "Pratibha thakur",
     department: "Frontend",
@@ -1335,11 +1355,10 @@ const rows = [
     storageUsed: "200 MB",
     manageStorage: "1 GB",
     status: false,
-   
+
     phone: "9876543201",
   },
   {
-
     id: "3",
     name: "Abhishek Panday",
     department: "Frontend",
@@ -1352,7 +1371,6 @@ const rows = [
     phone: "1234567890",
   },
   {
-
     id: "4",
     name: "Dhruv Sethi",
     department: "Backend",
@@ -1361,11 +1379,10 @@ const rows = [
     storageUsed: "800 MB",
     manageStorage: "1 GB",
     status: true,
-    
+
     phone: "1234567890",
   },
   {
-
     id: "5",
     name: "Manish Yadav",
     department: "Backend",
@@ -1374,11 +1391,10 @@ const rows = [
     storageUsed: "800 MB",
     manageStorage: "1 GB",
     status: true,
-   
+
     phone: "1234567890",
   },
   {
-
     id: "6",
     name: "Prince Tiwari",
     department: "Backend",
@@ -1387,11 +1403,10 @@ const rows = [
     storageUsed: "800 MB",
     manageStorage: "1 GB",
     status: true,
-    
+
     phone: "1234567890",
   },
   {
-
     id: "7",
     name: "Dheeraj",
     department: "Frontend",
@@ -1400,13 +1415,10 @@ const rows = [
     storageUsed: "800 MB",
     manageStorage: "1 GB",
     status: true,
-    
+
     phone: "1234567890",
   },
-
 ];
-
-
 
 const IOSSwitch = styled((props) => (
   <Switch focusVisibleClassName=".Mui-focusVisible" disableRipple {...props} />
@@ -1469,14 +1481,7 @@ const IOSSwitch = styled((props) => (
 }));
 
 const Transition = React.forwardRef(function Transition(props, ref) {
-  return (
-    <Slide
-      direction="right"
-      ref={ref}
-      {...props}
-
-    />
-  );
+  return <Slide direction="right" ref={ref} {...props} />;
 });
 
 export default function UserTable() {
@@ -1498,7 +1503,6 @@ export default function UserTable() {
   const [Storage, setStorage] = React.useState("");
   const [loading, setLoading] = useState(true);
 
-
   const handleMigrationComplete = (updatedRows) => {
     setRowsData(updatedRows);
   };
@@ -1518,11 +1522,36 @@ export default function UserTable() {
     setMigrationDialog(true);
   };
 
-  const handleActivateAll = () => {
-    const updated = rowsData.map((row) =>
-      selected.includes(row.id) ? { ...row, status: true } : row
-    );
-    setRowsData(updated);
+ 
+
+  const handleActivateAll = async () => {
+    const usersToActivate = rowsData
+      .filter((row) => selected.includes(row.id))
+      .map((user) => ({
+        username: user.name, // assumes email is used as username
+        active: true,
+      }));
+
+    if (usersToActivate.length === 0) {
+      toast.warn("No users selected for activation.");
+      return;
+    }
+
+    try {
+      await toggleUserStatusByUsername(usersToActivate, page); // page is already 0-indexed
+
+      // Update local state
+      setRowsData((prev) =>
+        prev.map((user) =>
+          selected.includes(user.id) ? { ...user, active: true } : user
+        )
+      );
+
+      toast.success("Selected users have been activated.");
+    } catch (error) {
+      console.error("Error activating users:", error);
+      toast.error("Failed to activate selected users.");
+    }
   };
 
   const options = ["10GB", "20GB"];
@@ -1571,29 +1600,43 @@ export default function UserTable() {
     setSelected([]); // Clear selection AFTER download
   };
 
- 
-
   const label = { inputProps: { "aria-label": "Switch demo" } };
 
   const handleDelete = (e, row) => {
-   
     setDeleteUser(true);
   };
 
-  const handleStatusToggle = (userName) => {
-    setRowsData((prev) =>
-      prev.map((user) =>
-        user.name === userName ? { ...user, active: !user.active } : user
-      )
-    );
+  const handleStatusToggle = async (username) => {
+    const user = rowsData.find((u) => u.name === username);
+    if (!user) return;
 
-    const updatedUser = rowsData.find((user) => user.name === userName);
-    toast.success(
-      `User "${updatedUser?.name}" has been ${updatedUser?.active ? "deactivated" : "activated"
-      }`
-    );
+    const newStatus = !user.active;
+
+    const requestPayload = [
+      {
+        username: username,
+        active: newStatus,
+      },
+    ];
+
+    try {
+      console.log(">>>>>>page", page);
+      await toggleUserStatusByUsername(requestPayload, page);
+
+      setRowsData((prev) =>
+        prev.map((u) => (u.name === username ? { ...u, active: newStatus } : u))
+      );
+
+      toast.success(
+        `User "${user.name}" has been ${
+          newStatus ? "activated" : "deactivated"
+        }`
+      );
+    } catch (error) {
+      console.error("Failed to toggle status", error);
+      toast.error("Failed to update user status.");
+    }
   };
-
 
   const handleCreateUser = () => {
     setCreateUser(true);
@@ -1612,8 +1655,6 @@ export default function UserTable() {
     setPage(0);
   };
 
-
-
   const handleSelectAllClick = (event) => {
     if (event.target.checked) {
       // Select all row ids
@@ -1622,7 +1663,8 @@ export default function UserTable() {
       // setSelected(allIds);
 
       // Get full data of selected rows
-      const selectedFullRows = rows.filter((r) => allIds.includes(r.id));
+      // const selectedFullRows = rows.filter((r) => allIds.includes(r.id));
+      const selectedFullRows = rowsData.filter((r) => allIds.includes(r.id));
       setRowData(selectedFullRows);
 
       // Set selectAllData flag
@@ -1632,7 +1674,7 @@ export default function UserTable() {
       setSelected([]); // Clear selected ids
 
       // Directly get the full data of rows that were selected
-      const selectedFullRows = rows.filter((r) => selected.includes(r.id));
+      const selectedFullRows = rowsData.filter((r) => selected.includes(r.id));
       setRowData(selectedFullRows); // Update row data with the selected rows
 
       // Set selectAllData flag to false
@@ -1671,22 +1713,24 @@ export default function UserTable() {
   }, []);
 
   useEffect(() => {
-  const loadUsers = async () => {
-    try {
-      const users = await fetchUsers();
-         console.log("Fetched users:", users.content); // Add this line
+    const loadUsers = async () => {
+      try {
+        const users = await fetchUsers();
+        console.log("Fetched users:", users.content); // Add this line
 
-      setRowsData(users.content);
-    } catch (error) {
-      console.error("Error loading users", error);
-      // optionally show error toast
-    } finally {
-      setLoading(false);
-    }
-  };
+        setRowsData(users.content);
+      } catch (error) {
+        console.error("Error loading users", error);
+        // optionally show error toast
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  loadUsers();
-}, []);
+    loadUsers();
+  }, []);
+
+  console.log(">>>rowssss", rowsData);
 
   if (loading) {
     return (
@@ -1696,11 +1740,9 @@ export default function UserTable() {
     );
   }
 
-  const handleClose=()=>{
-    setMigrationDialog(false)
-  }
-
-  
+  const handleClose = () => {
+    setMigrationDialog(false);
+  };
 
   return (
     <Box
@@ -1712,7 +1754,6 @@ export default function UserTable() {
         padding: "15px",
       }}
     >
-
       <Paper
         elevation={24}
         sx={{
@@ -1730,9 +1771,10 @@ export default function UserTable() {
             "100%": {
               opacity: 1,
               transform: "translateX(0)",
-            }
-          }
-        }} className="PaperUI"
+            },
+          },
+        }}
+        className="PaperUI"
       >
         <TableContainer sx={{ maxHeight: "83vh", height: "80vh" }}>
           <Table stickyHeader>
@@ -1741,12 +1783,11 @@ export default function UserTable() {
                 sx={{ boxShadow: "0 -2px 8px 0 rgba(0, 0, 0, 0.2) !important" }}
               >
                 <TableCell padding="checkbox">
-
                   <Checkbox
+                    checked={selected.length === rowsData.length}
                     indeterminate={
-                      selected.length > 0 && selected.length < rows.length
+                      selected.length > 0 && selected.length < rowsData.length
                     }
-                    checked={selected.length === rows.length}
                     onChange={handleSelectAllClick}
                   />
                 </TableCell>
@@ -1755,9 +1796,39 @@ export default function UserTable() {
                 <TableCell align="center">Department</TableCell>
                 <TableCell align="center">Role</TableCell>
                 <TableCell align="center">User email</TableCell>
-                <TableCell align="center" sx={{ whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden", maxWidth: 140 }}>Storage used</TableCell>
-                <TableCell align="center" sx={{ whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden", maxWidth: 140 }}>Manage storage</TableCell>
-                <TableCell align="center" sx={{ whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden", maxWidth: 140 }}>Active license</TableCell>
+                <TableCell
+                  align="center"
+                  sx={{
+                    whiteSpace: "nowrap",
+                    textOverflow: "ellipsis",
+                    overflow: "hidden",
+                    maxWidth: 140,
+                  }}
+                >
+                  Storage used
+                </TableCell>
+                <TableCell
+                  align="center"
+                  sx={{
+                    whiteSpace: "nowrap",
+                    textOverflow: "ellipsis",
+                    overflow: "hidden",
+                    maxWidth: 140,
+                  }}
+                >
+                  Manage storage
+                </TableCell>
+                <TableCell
+                  align="center"
+                  sx={{
+                    whiteSpace: "nowrap",
+                    textOverflow: "ellipsis",
+                    overflow: "hidden",
+                    maxWidth: 140,
+                  }}
+                >
+                  Active license
+                </TableCell>
                 <TableCell align="center">Actions</TableCell>
               </TableRow>
             </TableHead>
@@ -1793,13 +1864,19 @@ export default function UserTable() {
                         align="center"
                         sx={{ padding: "10px 10px 10px 10px !important" }}
                       >
-                        {row.department}
+                        {/* {row.department} */}
+                        {row.roles && row.roles.length > 0
+                          ? row.roles[0].department?.deptName || "N/A"
+                          : "N/A"}
                       </TableCell>
                       <TableCell
                         align="center"
                         sx={{ padding: "10px 10px 10px 10px !important" }}
                       >
-                        {row.role}
+                        {/* {row.role} */}
+                        {row.roles && row.roles.length > 0
+                          ? row.roles[0].roleName || "N/A"
+                          : "N/A"}
                       </TableCell>
                       <TableCell
                         align="center"
@@ -1811,9 +1888,60 @@ export default function UserTable() {
                         align="center"
                         sx={{ padding: "10px 10px 10px 10px !important" }}
                       >
-                        {row.storageUsed}
+                        {/* {row.storageUsed} */}
+                        {row.permissions?.displayStorage || "N/A"}
                       </TableCell>
-                     
+
+                      {/* <TableCell
+                        align="center"
+                        sx={{
+                          padding: "2px 8px",
+                        }}
+                      >
+                        <FormControl sx={{ m: 0, minWidth: 120 }} size="small">
+                          <Select
+                            id={`manage-storage-${row.id}`}
+                            value={
+                              row.permissions?.allowedStorageInBytesDisplay ||
+                              ""
+                            }
+                            onChange={(e) => {
+                              const updated = rowsData.map((r) =>
+                                r.id === row.id
+                                  ? {
+                                      ...r,
+                                      permissions: {
+                                        ...r.permissions,
+                                        allowedStorageInBytesDisplay:
+                                          e.target.value,
+                                      },
+                                    }
+                                  : r
+                              );
+                              setRowsData(updated);
+                            }}
+                            displayEmpty
+                            sx={{
+                              width: "100px",
+                              height: "30px",
+                              borderRadius: "28px",
+                            }}
+                          >
+                            
+                            <MenuItem value="" disabled>
+                              {row.permissions?.allowedStorageInBytesDisplay ||
+                                "Select"}
+                            </MenuItem>
+                            <MenuItem value="0 KB">0 KB</MenuItem>
+                            <MenuItem value="1.00 GB">1.00 GB</MenuItem>
+                            <MenuItem value="10.00 GB">10.00 GB</MenuItem>
+                            <MenuItem value="20.00 GB">20.00 GB</MenuItem>
+                            <MenuItem value="40.00 GB">40.00 GB</MenuItem>
+                            <MenuItem value="60.00 GB">60.00 GB</MenuItem>
+                          </Select>
+                        </FormControl>
+                      </TableCell> */}
+
                       <TableCell
   align="center"
   sx={{
@@ -1823,10 +1951,18 @@ export default function UserTable() {
   <FormControl sx={{ m: 0, minWidth: 120 }} size="small">
     <Select
       id={`manage-storage-${row.id}`}
-      value={row.manageStorage || ""} // use row-specific value
+      value={row.permissions?.allowedStorageInBytesDisplay || ""}
       onChange={(e) => {
         const updated = rowsData.map((r) =>
-          r.id === row.id ? { ...r, manageStorage: e.target.value } : r
+          r.id === row.id
+            ? {
+                ...r,
+                permissions: {
+                  ...r.permissions,
+                  allowedStorageInBytesDisplay: e.target.value,
+                },
+              }
+            : r
         );
         setRowsData(updated);
       }}
@@ -1837,14 +1973,28 @@ export default function UserTable() {
         borderRadius: "28px",
       }}
     >
-      <MenuItem value="1 GB">1 GB</MenuItem>
-      <MenuItem value="10 GB">10 GB</MenuItem>
-      <MenuItem value="20 GB">20 GB</MenuItem>
-      <MenuItem value="40 GB">40 GB</MenuItem>
-      <MenuItem value="60 GB">60 GB</MenuItem>
+      {(() => {
+        const predefinedOptions = [
+          "1.00 GB",
+          "10.00 GB",
+          "20.00 GB",
+          "40.00 GB",
+          "60.00 GB",
+        ];
+        const currentValue = row.permissions?.allowedStorageInBytesDisplay;
+        const allOptions = predefinedOptions.includes(currentValue)
+          ? predefinedOptions
+          : [currentValue, ...predefinedOptions];
+        return allOptions.map((opt) => (
+          <MenuItem key={opt} value={opt}>
+            {opt}
+          </MenuItem>
+        ));
+      })()}
     </Select>
   </FormControl>
 </TableCell>
+
 
                       <TableCell align="center">
                         <Tooltip title={row.active ? "Active" : "Inactive"}>
@@ -1860,7 +2010,6 @@ export default function UserTable() {
                             }
                           />
                         </Tooltip>
-
                       </TableCell>
                       <TableCell
                         align="center"
@@ -1869,7 +2018,6 @@ export default function UserTable() {
                           padding: "10px 10px 10px 10px !important",
                         }}
                       >
-
                         <>
                           <IconButton
                             size="small"
@@ -2172,7 +2320,7 @@ export default function UserTable() {
                   borderRadius: "4px",
                 }}
                 onClick={() => {
-                  const currentPageRows = rows
+                  const currentPageRows = rowsData
                     .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                     .map((n) => n.id);
                   setSelected(currentPageRows); // Select only the current page
@@ -2181,7 +2329,7 @@ export default function UserTable() {
               >
                 Select Current Page (
                 {
-                  rows.slice(
+                  rowsData.slice(
                     page * rowsPerPage,
                     page * rowsPerPage + rowsPerPage
                   ).length
@@ -2199,22 +2347,18 @@ export default function UserTable() {
                   borderRadius: "4px",
                 }}
                 onClick={() => {
-                  setSelected(rows.map((n) => n.id)); // Select all rows
+                  setSelected(rowsData.map((n) => n.id)); // Select all rows
                   setSelectAllData(false);
                 }}
               >
-                Select All Rows ({rows.length})
+                Select All Rows ({rowsData.length})
               </Button>
             </div>
           </DialogActions>
         </Dialog>
 
         {/* migration */}
-        <Dialog
-          open={migrationDialog}
-          onClose={handleClose}
-          fullWidth
-        >
+        <Dialog open={migrationDialog} onClose={handleClose} fullWidth>
           <Migration
             handleClos={handleClose}
             rowData={rowData}
@@ -2280,14 +2424,14 @@ export default function UserTable() {
               justifyContent: "space-between",
               alignItems: "center",
               p: 1,
-              backgroundColor: "primary.main"
+              backgroundColor: "primary.main",
             }}
           >
             <Typography
               variant="h6"
               sx={{
                 fontFamily: '"Be Vietnam", sans-serif',
-                color: "#ffff"
+                color: "#ffff",
               }}
             >
               EDIT USER
@@ -2319,10 +2463,9 @@ export default function UserTable() {
               />
             </IconButton>
           </DialogTitle>
-          <DialogContent dividers >
+          <DialogContent dividers>
             {/* First row */}
             <Grid container spacing={2}>
-
               <Grid item xs={4}>
                 <TextField
                   size="small"
@@ -2332,7 +2475,6 @@ export default function UserTable() {
                   fullWidth
                   variant="outlined"
                   value={editData.name || ""}
-
                 />
               </Grid>
               <Grid item xs={4}>
@@ -2344,7 +2486,6 @@ export default function UserTable() {
                   fullWidth
                   variant="outlined"
                   value={editData.department || ""}
-
                 />
               </Grid>
               <Grid item xs={6}>
@@ -2356,7 +2497,6 @@ export default function UserTable() {
                   fullWidth
                   variant="outlined"
                   value={editData.role || ""}
-
                 />
               </Grid>
               <Grid item xs={6}>
@@ -2389,7 +2529,6 @@ export default function UserTable() {
                   type="tel"
                   variant="outlined"
                   value={editData.phone || ""}
-
                 />
               </Grid>
               <Grid item xs={6}>
@@ -2401,14 +2540,12 @@ export default function UserTable() {
                   fullWidth
                   variant="outlined"
                   value={editData.storageUsed || ""}
-
                 />
               </Grid>
             </Grid>
           </DialogContent>
 
           <DialogActions>
-
             <Button
               // onClick={saveEditedUser}
               variant="contained"

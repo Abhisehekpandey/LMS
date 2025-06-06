@@ -33,9 +33,29 @@ export const fetchUsers = async () => {
         Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
       },
     });
+    console.log(">>>>userResponse",response)
     return response.data; // Assume it's an array of user objects
   } catch (error) {
     console.error("Failed to fetch users:", error);
+    throw error;
+  }
+};
+
+
+
+export const toggleUserStatusByUsername = async (users,pageNumber) => {
+   const token = sessionStorage.getItem("authToken"); // Adjust key if different
+    try {
+    const response = await axios.put(`/users/status`, users,
+       {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          pageNumber: pageNumber.toString(), // or just pageNumber if backend expects number
+        },
+      }
+    ); // Adjust endpoint if needed
+    return response.data;
+  } catch (error) {
     throw error;
   }
 };

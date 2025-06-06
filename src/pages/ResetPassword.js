@@ -71,8 +71,10 @@ const ResetPassword = () => {
       // pass both newPassword and token to resetPassword function
       await resetPassword(formData.newPassword, token);
       alert("Password reset successful!");
-      navigate("/login");
-    } catch (error) {
+      // navigate("/login");
+      navigate("http://frontdms-test.apps.lab.ocp.lan/teamsync/home")
+    } 
+    catch (error) {
       console.error("Reset failed:", error.message);
       setErrors({ api: "Failed to reset password. Please try again." });
     }
@@ -158,7 +160,7 @@ const ResetPassword = () => {
         >
           <Box component="form" onSubmit={handleReset} sx={{ width: "100%", maxWidth: 400 }}>
             <Typography variant="h5" align="center" fontWeight={600} mb={3}>
-              Reset Password
+              Set Password
             </Typography>
 
             <TextField
