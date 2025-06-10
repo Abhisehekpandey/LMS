@@ -159,23 +159,33 @@ const CompanyDashboard = ({ onThemeToggle }) => {
     ,
 
 
+resourceUsage: Array.from({ length: 50 }, (_, i) => {
+  const storageAllocated = Math.floor(Math.random() * 1000) + 500; // 500 - 1500
+  const storageConsumed = Math.floor(storageAllocated * Math.random());
 
-    resourceUsage: Array.from({ length: 50 }, (_, i) => ({
-      shortName: `C${i + 1}`,
-      company: `Company ${i + 1}`,
-      storage: {
-        allocated: Math.floor(Math.random() * 1000) + 500,
-        consumed: Math.floor(Math.random() * 500),
-      },
-      cpu: {
-        allocated: Math.floor(Math.random() * 200) + 50,
-        consumed: Math.floor(Math.random() * 100),
-      },
-      ram: {
-        allocated: Math.floor(Math.random() * 64) + 8,
-        consumed: Math.floor(Math.random() * 64),
-      }
-    }))
+  const cpuAllocated = Math.floor(Math.random() * 200) + 50; // 50 - 250
+  const cpuConsumed = Math.floor(cpuAllocated * Math.random());
+
+  const ramAllocated = Math.floor(Math.random() * 64) + 8; // 8 - 72 GB
+  const ramConsumed = Math.floor(ramAllocated * Math.random());
+
+  return {
+    shortName: `C${i + 1}`,
+    company: `Company ${i + 1}`,
+    storage: {
+      allocated: storageAllocated,
+      consumed: storageConsumed,
+    },
+    cpu: {
+      allocated: cpuAllocated,
+      consumed: cpuConsumed,
+    },
+    ram: {
+      allocated: ramAllocated,
+      consumed: ramConsumed,
+    }
+  };
+})
 
 
   });
@@ -223,7 +233,7 @@ const CompanyDashboard = ({ onThemeToggle }) => {
       },
       legend: {
         top: 10,
-        data: ["Sold", "Allocated", "Consumed"]
+        data: [ "Consumed","Sold", "Allocated"]
       },
       xAxis: {
         type: "category",
@@ -239,99 +249,106 @@ const CompanyDashboard = ({ onThemeToggle }) => {
         type: "value",
         name: "Storage (GB)"
       },
-      series: [
-        {
-          name: "Consumed",
-          type: "bar",
-          stack: "total",
-          data: consumed,
-          itemStyle: { color: "#ff9800" },
-        },
-        {
-          name: "Allocated",
-          type: "bar",
-          stack: "total",
-          data: allocated,
-          itemStyle: { color: "#4caf50" },
-        },
-        {
-          name: "Sold",
-          type: "bar",
-          stack: "total",
-          data: sold,
-          itemStyle: { color: "#1976d2" },
-        }
-      ]
+series: [
+  {
+    name: "Sold",
+    type: "bar",
+    barGap: "-100%", // overlap bars
+    barWidth: 40,
+    data: pageData.map(item => item.sold),
+    itemStyle: {
+      color: "#bbdefb", // light blue for base
+    },
+    z: 1
+  },
+  {
+    name: "Allocated",
+    type: "bar",
+    barGap: "-100%",
+    barWidth: 28,
+    data: pageData.map(item => item.actual),
+    itemStyle: {
+      color: "#64b5f6",
+    },
+    z: 2
+  },
+  {
+    name: "Consumed",
+    type: "bar",
+    barGap: "-100%",
+    barWidth: 16,
+    data: pageData.map(item => item.consumed),
+    itemStyle: {
+      color: "#ffb74d",
+    },
+    z: 3
+  }
+]
 
     };
   }, [currentPage, searchTerm]);
 
 
 
-  const licenseChartOption = {
-    tooltip: {
-      trigger: "axis",
-      axisPointer: { type: "shadow" },
-      formatter: function (params) {
-        const sold = params.find(p => p.seriesName === 'Sold');
-        const consumed = params.find(p => p.seriesName === 'Consumed');
-        return `
-          <strong>${sold.axisValue}</strong><br/>
-          🟦 Sold: ${sold.value}<br/>
-          🟧 Consumed: ${consumed.value}
-        `;
-      }
-    },
-    legend: {
-      top: 10,
-      data: ["Sold", "Consumed"]
-    },
-    xAxis: {
-      type: "category",
-      data: companyData.licenseAllocation.map((d) => d.company),
-      axisLabel: {
-        interval: 0,
-        rotate: 30,
-        formatter: (value) =>
-          value.length > 10 ? value.match(/.{1,10}/g).join("\n") : value
-      }
-    },
-    yAxis: {
-      type: "value",
-      name: "Licenses"
-    },
-    animationDuration: 800,
-    animationEasing: "cubicOut",
-
-    series: [
-      {
-        name: "Consumed",
-        type: "bar",
-        stack: "total", // 🔥 stack it
-        data: companyData.licenseAllocation.map((d) => d.consumed),
-      itemStyle: { color: "#ff9800" },
-      label: {
-        show: true,
-        position: "inside",
-        color: "#fff",
-        fontWeight: "bold"
-      }
+const licenseChartOption = {
+  tooltip: {
+    trigger: "axis",
+    axisPointer: { type: "shadow" },
+    formatter: function (params) {
+      const name = params[0].axisValue;
+      const sold = params.find(p => p.seriesName === 'Sold')?.value ?? 0;
+      const consumed = params.find(p => p.seriesName === 'Consumed')?.value ?? 0;
+      return `
+        <strong>${name}</strong><br/>
+        🔵 Sold: ${sold}<br/>
+        🟧 Consumed: ${consumed}
+      `;
+    }
+  },
+  legend: {
+    top: 10,
+    data: [ "Consumed","Sold"]
+  },
+  xAxis: {
+    type: "category",
+    data: companyData.licenseAllocation.map((d) => d.company),
+    axisLabel: {
+      interval: 0,
+      rotate: 30,
+      formatter: (value) =>
+        value.length > 10 ? value.match(/.{1,10}/g).join("\n") : value
+    }
+  },
+  yAxis: {
+    type: "value",
+    name: "Licenses"
+  },
+  series: [
+    {
+      name: "Sold",
+      type: "bar",
+      barGap: "-100%", // overlap
+      barWidth: 40,
+      data: companyData.licenseAllocation.map(d => d.sold),
+      itemStyle: {
+        color: "#bbdefb", // light blue
       },
-  {
-    name: "Sold",
-    type: "bar",
-    stack: "total", // 🔥 same stack
-    data: companyData.licenseAllocation.map((d) => d.sold - d.consumed), // 😮 trick: remaining part of the bar
-      itemStyle: { color: "#1976d2" },
-label: {
-  show: true,
-    position: "top",
-      color: "#1976d2",
-        fontWeight: "bold"
-}
-      }
-    ]
-  };
+      z: 1
+    },
+    {
+      name: "Consumed",
+      type: "bar",
+      barGap: "-100%", // fully overlay on sold
+      barWidth: 20,
+      data: companyData.licenseAllocation.map(d => d.consumed),
+      itemStyle: {
+        color: "#ffb74d", // same orange as storage
+      },
+      z: 2
+    }
+  ]
+};
+
 
 
 // licenseExpirationStatus
@@ -385,54 +402,45 @@ const licenseExpirationStatus = useMemo(() => {
 
 
 
+return {
+  legend: {
+    show: true,
+    left: "center"
+  },
+  xAxis: {
+    type: 'category',
+    data: months,
+    axisLabel: {
+      interval: 0,
+      rotate: 0
+    }
+  },
+  yAxis: {
+    type: 'value',
+    name: 'Licenses'
+  },
+  series: [
+    {
+      name: "Sold",
+      type: "bar",
+      barGap: "-100%",
+      barWidth: 40,
+      data: soldData,
+      itemStyle: { color: "#bbdefb" },
+      z: 1
+    },
+    {
+      name: "Consumed",
+      type: "bar",
+      barGap: "-100%",
+      barWidth: 20,
+      data: consumedData,
+      itemStyle: { color: "#ffb74d" },
+      z: 2
+    }
+  ]
+};
 
-  return {
-    legend: {
-      show: true,
-      left: "center"
-    },
-    xAxis: {
-      type: 'category',
-      data: months,
-      axisLabel: {
-        interval: 0,
-        rotate: 0
-      }
-    },
-    yAxis: {
-      type: 'value'
-    },
-    series: [
-      {
-        data: soldData,
-        type: 'bar',
-        name: 'Sold License',
-        color: '#1976d2',
-        label: {
-          show: true,
-          position: 'top',
-          color: 'black',
-          fontSize: 10,
-          offset: [0, -10]
-        }
-      },
-      {
-        data: consumedData,
-        type: 'line',
-        name: 'Consumed Licenses',
-        color: '#4CAF50',
-        smooth: true,
-        lineStyle: { width: 3 },
-        label: {
-          show: true,
-          position: 'insideTop',
-          color: 'black',
-          fontSize: 10,
-          offset: [0, -10]
-        }
-      }
-    ]
-  };
 }, [selectedCompanyForLicense, companyData.licenseConsumption]);
 
 
@@ -904,8 +912,8 @@ return (
                 sx={{ textAlign: 'center', fontWeight: "bold" }}
               >
                 {selectedCompanyForLicense
-                  ? `Showing data for: ${selectedCompanyForLicense}`
-                  : "Showing combined data for all companies"}
+                  ? `Showing licenses for: ${selectedCompanyForLicense}`
+                  : "Showing combined licenses for all companies"}
               </Typography>
               <ReactEChart option={licenseExpirationStatus} />
 
