@@ -134,6 +134,7 @@ const rowCellStyle = {
 };
 
 const AngelBot = () => {
+  const userTableRef = React.useRef(null);
   const [negativeCount, setNegativeCount] = useState(0);
   const [remainingDays, setRemainingDays] = useState(0);
   const [showBlockWarning, setShowBlockWarning] = useState(false);
@@ -179,11 +180,11 @@ const AngelBot = () => {
   const [getSortedStorageUsers, setSortedStorageUsers] = useState([
     { id: 1, name: "abhishek", storageUsed: 200, storageAllocated: 200 },
     { id: 2, name: "pratibha", storageUsed: 250, storageAllocated: 300 },
-    { id: 3, name: "ankit", storageUsed: 150, storageAllocated: 200 },
+    { id: 3, name: "ankit", storageUsed: 0, storageAllocated: 200 },
     { id: 4, name: "satyam", storageUsed: 150, storageAllocated: 200 },
-    { id: 5, name: "abhimanyu", storageUsed: 50, storageAllocated: 200 },
+    { id: 5, name: "abhimanyu", storageUsed: 0, storageAllocated: 200 },
     { id: 6, name: "manish", storageUsed: 150, storageAllocated: 200 },
-    { id: 7, name: "prince", storageUsed: 50, storageAllocated: 200 },
+    { id: 7, name: "prince", storageUsed: 0, storageAllocated: 200 },
     { id: 8, name: "kunal", storageUsed: 50, storageAllocated: 50 },
   ]);
 
@@ -334,7 +335,6 @@ const AngelBot = () => {
     { value: 500, name: "Active", color: "#91CC75" }, // 500 MB
     { value: 580, name: "Inactive", color: "#EE6666" }, // 580 MB
     { value: 1048, name: "Pending", color: "#5470C6" }, // 1.0 GB
-    { value: 484, name: "Available", color: "#FAC858" }, // 484 MB
   ];
 
   // Helper function to format value as MB or GB
@@ -540,17 +540,6 @@ const AngelBot = () => {
           { value: 150, name: "Department", color: "#FAC858" },
         ],
       },
-      Available: {
-        storageStatusData: [
-          { value: 100, name: "Used", color: "#91CC75" },
-          { value: 110, name: "Available", color: "#FAC858" },
-        ],
-        storageDistributionData: [
-          { value: 130, name: "User", color: "#91CC75" },
-          { value: 150, name: "Department", color: "#FAC858" },
-        ],
-      },
-      // ... add other chart options here
     };
 
     const config = chartConfig[name];
@@ -565,15 +554,16 @@ const AngelBot = () => {
         (user) => userStatusMap[user.name] === name
       );
       setFilteredUsers(users);
+
+      // Scroll to table
+      setTimeout(() => {
+        userTableRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }, 100);
     }
   };
-
-  // const handleBack = () => {
-  //   setStorageStatusData(defaultStatusData);
-  //   setStorageDistributionData(defaultDistributionData);
-  //   setSelectedChart(null);
-  //   setBackButton(false);
-  // };
 
   const handleBack = () => {
     setStorageStatusData(defaultStatusData);
@@ -820,88 +810,6 @@ const AngelBot = () => {
                         click: handleChartClick,
                       }}
                     />
-                    {selectedChart && filteredUsers && (
-                      <Box sx={{ mt: 2 }}>
-                        <Typography variant="subtitle2" fontWeight={600} mb={1}>
-                          {selectedChart} Users
-                        </Typography>
-
-                        <Paper
-                          elevation={0}
-                          sx={{
-                            maxHeight: 250,
-                            overflowY: "auto",
-                            border: "1px solid #e0e0e0",
-                            borderRadius: 1,
-                            "&::-webkit-scrollbar": {
-                              width: "6px",
-                            },
-                            "&::-webkit-scrollbar-thumb": {
-                              backgroundColor: "#bbb",
-                              borderRadius: "4px",
-                            },
-                          }}
-                        >
-                          <table
-                            style={{
-                              width: "100%",
-                              borderCollapse: "collapse",
-                            }}
-                          >
-                            <thead
-                              style={{
-                                backgroundColor: "#1976d2",
-                                color: "#ffff",
-                              }}
-                            >
-                              <tr
-                                style={{
-                                  position: "sticky",
-                                  top: 0,
-                                  zIndex: 1,
-                                }}
-                              >
-                                <th style={headerCellStyle}>Name</th>
-                                <th style={headerCellStyle}>Used</th>
-                                <th style={headerCellStyle}>Allocated</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {filteredUsers.length === 0 ? (
-                                <tr>
-                                  <td
-                                    colSpan={3}
-                                    style={{
-                                      padding: "6px",
-                                      fontSize: "0.8rem",
-                                    }}
-                                  >
-                                    No users found.
-                                  </td>
-                                </tr>
-                              ) : (
-                                filteredUsers.map((user, index) => (
-                                  <tr
-                                    key={index}
-                                    style={{
-                                      borderBottom: "1px solid #f0f0f0",
-                                    }}
-                                  >
-                                    <td style={rowCellStyle}>{user.name}</td>
-                                    <td style={rowCellStyle}>
-                                      {user.storageUsed} GB
-                                    </td>
-                                    <td style={rowCellStyle}>
-                                      {user.storageAllocated} GB
-                                    </td>
-                                  </tr>
-                                ))
-                              )}
-                            </tbody>
-                          </table>
-                        </Paper>
-                      </Box>
-                    )}
                   </div>
                 </CardContent>
                 <Box
@@ -1347,6 +1255,77 @@ const AngelBot = () => {
                   </Box>
                 </CardContent>
               </Card>
+            </Grid>
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                {selectedChart && filteredUsers && (
+                  <Paper
+                    ref={userTableRef}
+                    elevation={2}
+                    sx={{
+                      mt: 4,
+                      p: 2,
+                      borderRadius: 2,
+                      width: "100%",
+                      boxShadow: 3,
+                      border: "1px solid #e0e0e0",
+                    }}
+                  >
+                    <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+                      {selectedChart} Users
+                    </Typography>
+                    <Box sx={{ overflowX: "auto" }}>
+                      <table
+                        style={{
+                          width: "100%",
+                          borderCollapse: "collapse",
+                        }}
+                      >
+                        <thead
+                          style={{ backgroundColor: "#1976d2", color: "#fff" }}
+                        >
+                          <tr>
+                            <th style={headerCellStyle}>Name</th>
+                            <th style={headerCellStyle}>Used</th>
+                            <th style={headerCellStyle}>Allocated</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filteredUsers.length === 0 ? (
+                            <tr>
+                              <td
+                                colSpan={3}
+                                style={{ padding: "8px", fontSize: "0.875rem" }}
+                              >
+                                No users found.
+                              </td>
+                            </tr>
+                          ) : (
+                            filteredUsers.map((user, index) => (
+                              <tr
+                                key={index}
+                                style={{
+                                  borderBottom: "1px solid #f0f0f0",
+                                  backgroundColor:
+                                    index % 2 === 0 ? "#fafafa" : "#fff",
+                                }}
+                              >
+                                <td style={rowCellStyle}>{user.name}</td>
+                                <td style={rowCellStyle}>
+                                  {user.storageUsed} GB
+                                </td>
+                                <td style={rowCellStyle}>
+                                  {user.storageAllocated} GB
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </Box>
+                  </Paper>
+                )}
+              </Grid>
             </Grid>
           </Grid>
           <Grid container spacing={2}>

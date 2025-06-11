@@ -26,11 +26,12 @@ export const createUsers = async (users) => {
 
 
 
-export const fetchUsers = async () => {
+export const fetchUsers = async (page=0) => {
   try {
     const response = await axios.get(`/tenants/users`, {
       headers: {
         Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+          pageNumber: page.toString(), // send page number as header
       },
     });
     console.log(">>>>userResponse",response)
@@ -44,18 +45,40 @@ export const fetchUsers = async () => {
 
 
 export const toggleUserStatusByUsername = async (users,pageNumber) => {
+  console.log(">>>>>aaa",users)
+  console.log(">>>>bbb",pageNumber)
    const token = sessionStorage.getItem("authToken"); // Adjust key if different
+   const adminEmail=sessionStorage.getItem("adminEmail")
     try {
-    const response = await axios.put(`/users/status`, users,
+    const response = await axios.post(`/dms_service_LM/api/dms_admin_service/setUserData`, users,
        {
         headers: {
           Authorization: `Bearer ${token}`,
           pageNumber: pageNumber.toString(), // or just pageNumber if backend expects number
+          userName:adminEmail
         },
       }
     ); // Adjust endpoint if needed
     return response.data;
   } catch (error) {
+    throw error;
+  }
+};
+
+
+export const activateAll = async (users) => {
+    const token = sessionStorage.getItem("authToken"); // Adjust key if different
+  try {
+    const response = await axios.post("/users/status?appName=TeamSync", users,
+       {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    ); // ❌ no page param
+    return response.data;
+  } catch (error) {
+    console.error("Error activating users by ID:", error);
     throw error;
   }
 };

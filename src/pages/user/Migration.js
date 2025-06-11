@@ -16,8 +16,60 @@ import {
 } from "@mui/material";
 
 const Migration = ({ handleClos, rowData, rows, onMigrationComplete }) => {
+  console.log("rowData", rowData);
+  console.log("rrrr", rows);
   const [selectedStorage, setSelectedStorage] = useState({});
   const [selectedUser, setSelectedUser] = useState(null);
+
+  const label = { inputProps: { "aria-label": "Checkbox demo" } };
+
+  const selectedIds = rowData.map((u) => u.id);
+
+  const getAvailableStorageMB = (user) => {
+    const manage =
+      parseFloat(
+        user.permissions?.allowedStorageInBytesDisplay?.replace(/[^0-9.]/g, "")
+      ) || 0;
+    const used =
+      parseFloat(user.permissions?.displayStorage?.replace(/[^0-9.]/g, "")) ||
+      0;
+    const isGB = user.permissions?.allowedStorageInBytesDisplay
+      ?.toLowerCase()
+      .includes("gb");
+    const manageMB = isGB ? manage * 1024 : manage;
+    return manageMB - used;
+  };
+
+  const totalStorage = rows.reduce((acc, curr) => {
+    if (selectedStorage[curr.id]) {
+      const val = parseFloat(
+        curr.permissions?.allowedStorageInBytesDisplay?.replace(/[^0-9.]/g, "")
+      );
+      return acc + (isNaN(val) ? 0 : val);
+    }
+    return acc;
+  }, 0);
+
+  const totalDataStorage = rows.reduce((acc, curr) => {
+    if (selectedIds.includes(curr.id)) {
+      const val = parseFloat(
+        curr.permissions?.displayStorage?.replace(/[^0-9.]/g, "")
+      );
+      return acc + (isNaN(val) ? 0 : val);
+    }
+    return acc;
+  }, 0);
+  console.log("dataaaa", totalDataStorage);
+
+  const availableStorageMB = selectedUser
+    ? getAvailableStorageMB(selectedUser)
+    : 0;
+  // const isError = selectedUser && totalDataStorage > availableStorageMB;
+  const anyStorageSelected = Object.values(selectedStorage).some(Boolean);
+  const isError =
+    selectedUser &&
+    !anyStorageSelected &&
+    totalDataStorage > availableStorageMB;
 
   const handleStorageCheckboxChange = (userId) => {
     setSelectedStorage((prev) => ({
@@ -26,68 +78,94 @@ const Migration = ({ handleClos, rowData, rows, onMigrationComplete }) => {
     }));
   };
 
-  const totalStorage = rowData.reduce((acc, curr) => {
-    if (selectedStorage[curr.id]) {
-      const num = parseFloat(curr.manageStorage);
-      return acc + (isNaN(num) ? 0 : num);
-    }
-    return acc;
-  }, 0);
-
-  const totalDataStorage = rowData.reduce((acc, curr) => {
-    const num = parseFloat(curr.storageUsed); // "300MB"
-    return acc + (isNaN(num) ? 0 : num);
-  }, 0);
-
-  const label = { inputProps: { "aria-label": "Checkbox demo" } };
-
-  const userOptions = rows.filter(
-    (user) => !rowData.some((selected) => selected.id === user.id)
-  );
-
-  const getAvailableStorageMB = (user) => {
-    const manage = parseFloat(user.manageStorage?.replace(/[^0-9.]/g, "")) || 0;
-    const used = parseFloat(user.storageUsed?.replace(/[^0-9.]/g, "")) || 0;
-    const isGB = user.manageStorage?.toLowerCase().includes("gb");
-    const manageMB = isGB ? manage * 1024 : manage;
-    return manageMB - used;
-  };
-
-  const availableStorageMB = selectedUser ? getAvailableStorageMB(selectedUser) : 0;
-  const isError = selectedUser && totalDataStorage > availableStorageMB;
-
   const handleMigrate = () => {
     if (!selectedUser) return;
 
+    let dataToMigrate = 0;
+    let storageToMigrate = 0;
+
+    rows.forEach((user) => {
+      if (selectedIds.includes(user.id)) {
+        const data =
+          parseFloat(
+            user.permissions?.displayStorage?.replace(/[^0-9.]/g, "")
+          ) || 0;
+        dataToMigrate += data;
+
+        if (selectedStorage[user.id]) {
+          const storage =
+            parseFloat(
+              user.permissions?.allowedStorageInBytesDisplay?.replace(
+                /[^0-9.]/g,
+                ""
+              )
+            ) || 0;
+          const isGB = user.permissions?.allowedStorageInBytesDisplay
+            ?.toLowerCase()
+            .includes("gb");
+          storageToMigrate += isGB ? storage * 1024 : storage;
+        }
+      }
+    });
+
     const updatedRows = rows.map((user) => {
-      // If target user: add totalDataStorage to storageUsed
       if (user.id === selectedUser.id) {
-        const used = parseFloat(user.storageUsed?.replace(/[^0-9.]/g, "")) || 0;
-        const newUsed = used + totalDataStorage;
+        const currentUsed =
+          parseFloat(
+            user.permissions?.displayStorage?.replace(/[^0-9.]/g, "")
+          ) || 0;
+        const currentManage =
+          parseFloat(
+            user.permissions?.allowedStorageInBytesDisplay?.replace(
+              /[^0-9.]/g,
+              ""
+            )
+          ) || 0;
+        const isGB = user.permissions?.allowedStorageInBytesDisplay
+          ?.toLowerCase()
+          .includes("gb");
+        const manageInMB = isGB ? currentManage * 1024 : currentManage;
+
+        const newUsed = currentUsed + dataToMigrate;
+        const newManage = manageInMB + storageToMigrate;
+
+        const updatedManageDisplay =
+          newManage >= 1024
+            ? `${(newManage / 1024).toFixed(2)} GB`
+            : `${newManage.toFixed(2)} MB`;
+
         return {
           ...user,
-          storageUsed: `${newUsed.toFixed(2)} MB`,
+          permissions: {
+            ...user.permissions,
+            displayStorage: `${newUsed.toFixed(2)} MB`,
+            allowedStorageInBytesDisplay: updatedManageDisplay,
+          },
         };
       }
 
-      // If source user: reset storageUsed to 0
-      if (rowData.some((source) => source.id === user.id)) {
+      if (selectedIds.includes(user.id)) {
         return {
           ...user,
-          storageUsed: "0 MB",
+          permissions: {
+            ...user.permissions,
+            displayStorage: "0 MB",
+            allowedStorageInBytesDisplay: "0 MB",
+          },
         };
       }
 
-      // Everyone else: unchanged
       return user;
     });
 
     const updatedTarget = updatedRows.find((u) => u.id === selectedUser.id);
-    setSelectedUser(updatedTarget); // update view
-    onMigrationComplete(updatedRows); // notify parent
-    setSelectedStorage({}); // reset checkbox
+    setSelectedUser(updatedTarget);
+    onMigrationComplete(updatedRows);
+    setSelectedStorage({});
     alert("Migration completed.");
   };
+
+  const userOptions = rows.filter((user) => !selectedIds.includes(user.id));
 
   return (
     <Box>
@@ -95,75 +173,78 @@ const Migration = ({ handleClos, rowData, rows, onMigrationComplete }) => {
         <Box sx={{ p: 2, backgroundColor: "primary.main", borderRadius: 2 }}>
           <Box sx={{ display: "flex", justifyContent: "space-between" }}>
             <Typography variant="subtitle2" color="#ffff">
-              Total Data to Migrate: {totalDataStorage} MB
+              Total Data to Migrate: {totalDataStorage.toFixed(2)} MB
             </Typography>
             <Typography variant="subtitle2" color="#ffff">
-              Total Storage to Migrate: {totalStorage} GB
+              Total Storage to Migrate: {totalStorage.toFixed(2)} GB
             </Typography>
           </Box>
         </Box>
       </DialogTitle>
 
-      <DialogContent sx={{ padding: "0" }} dividers>
+      <DialogContent sx={{ padding: 0 }} dividers>
         <List>
-          {rowData.map((row, index) => (
-            <ListItem key={index}>
-              <Box
-                sx={{
-                  p: 1,
-                  border: "1px solid #e0e0e0",
-                  borderRadius: 1,
-                  backgroundColor: "#f8f9fa",
-                  display: "flex",
-                  alignItems: "center",
-                  width: "inherit",
-                  justifyContent: "space-between",
-                }}
-              >
-                <Typography
-                  variant="subtitle2"
-                  sx={{ color: "#1976d2", minWidth: "200px" }}
+          {rows
+            .filter((row) => selectedIds.includes(row.id))
+            .map((row) => (
+              <ListItem key={row.id}>
+                <Box
+                  sx={{
+                    p: 1,
+                    border: "1px solid #e0e0e0",
+                    borderRadius: 1,
+                    backgroundColor: "#f8f9fa",
+                    display: "flex",
+                    alignItems: "center",
+                    width: "inherit",
+                    justifyContent: "space-between",
+                  }}
                 >
-                  {row.userName}
-                </Typography>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ color: "#1976d2", minWidth: "200px" }}
+                  >
+                    {row.name}
+                  </Typography>
 
-                <Box sx={{ display: "flex", alignItems: "center" }}>
-                  <Checkbox {...label} disabled checked />
-                  <Typography
-                    variant="body2"
-                    sx={{ fontSize: "0.813rem", color: "#666", mr: 1 }}
-                  >
-                    Data
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{ color: "#2e7d32", fontWeight: 500 }}
-                  >
-                    {row.storageUsed}
-                  </Typography>
+                  <Box sx={{ display: "flex", alignItems: "center" }}>
+                    <Checkbox {...label} disabled checked />
+                    <Typography
+                      variant="body2"
+                      sx={{ fontSize: "0.813rem", color: "#666", mr: 1 }}
+                    >
+                      Data
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{ color: "#2e7d32", fontWeight: 500 }}
+                    >
+                      {row.permissions?.displayStorage || "0 MB"}
+                    </Typography>
+                  </Box>
+
+                  <Box sx={{ display: "flex", alignItems: "center" }}>
+                    <Checkbox
+                      {...label}
+                      checked={!!selectedStorage[row.id]}
+                      onChange={() => handleStorageCheckboxChange(row.id)}
+                    />
+                    <Typography
+                      variant="body2"
+                      sx={{ fontSize: "0.813rem", color: "#666", mr: 1 }}
+                    >
+                      Storage
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{ color: "#2e7d32", fontWeight: 500 }}
+                    >
+                      {row.permissions?.allowedStorageInBytesDisplay || "N/A"}
+                    </Typography>
+                  </Box>
                 </Box>
-                <Box sx={{ display: "flex", alignItems: "center" }}>
-                  <Checkbox
-                    {...label}
-                    checked={!!selectedStorage[row.id]}
-                    onChange={() => handleStorageCheckboxChange(row.id)}
-                  />
-                  <Typography
-                    variant="body2"
-                    sx={{ fontSize: "0.813rem", color: "#666", mr: 1 }}
-                  >
-                    Storage
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{ color: "#2e7d32", fontWeight: 500 }}
-                  >
-                    {row.manageStorage}
-                  </Typography>
-                </Box>
-              </Box>
-            </ListItem>
-          ))}
+              </ListItem>
+            ))}
         </List>
       </DialogContent>
 
@@ -190,7 +271,8 @@ const Migration = ({ handleClos, rowData, rows, onMigrationComplete }) => {
                 <Box>
                   <Typography variant="body2">{option.name}</Typography>
                   <Typography variant="caption" color="text.secondary">
-                    Available Storage: {getAvailableStorageMB(option).toFixed(2)} MB
+                    Available Storage:{" "}
+                    {getAvailableStorageMB(option).toFixed(2)} MB
                   </Typography>
                 </Box>
               </Box>
@@ -238,6 +320,3 @@ const Migration = ({ handleClos, rowData, rows, onMigrationComplete }) => {
 };
 
 export default Migration;
-
-
-

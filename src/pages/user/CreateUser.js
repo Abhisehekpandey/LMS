@@ -35,7 +35,7 @@ import {
 } from "../../api/departmentService";
 import { createUsers } from "../../api/userService";
 
-const CreateUser = ({ handleClose }) => {
+const CreateUser = ({ handleClose, onUserCreated, showSnackbar }) => {
   const [bulkFile, setBulkFile] = useState(null);
   const [fileName, setFileName] = useState("");
   const [addDepartment, setAddDepartment] = useState(false);
@@ -54,6 +54,7 @@ const CreateUser = ({ handleClose }) => {
 
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
+  console.log(">>>>>ssssss", snackbarMessage);
   const [snackbarSeverity, setSnackbarSeverity] = useState("success"); // 'error' | 'info' | 'warning'
 
   const lastFieldRef = useRef(null);
@@ -96,6 +97,8 @@ const CreateUser = ({ handleClose }) => {
   const storageOptions = [
     "0GB",
     "1GB",
+    "2GB",
+    "3GB",
     "10GB",
     "20GB",
     "25GB",
@@ -143,15 +146,7 @@ const CreateUser = ({ handleClose }) => {
         email: yup
           .string()
           .email("Enter a valid email")
-          .required("Email is required")
-          .test(
-            "domain-match",
-            "Email domain must match admin domain",
-            function (value) {
-              const emailDomain = value?.split("@")[1];
-              return emailDomain === adminDomain;
-            }
-          ),
+          .required("Email is required"),
         phone: yup
           .string()
           .matches(/^\d{10}$/, "Phone Number must be 10 digits")
@@ -339,16 +334,18 @@ const CreateUser = ({ handleClose }) => {
                     ? user.role.roleName
                     : user.role,
                 phoneNumber: user.phone,
-                storage: user.storage,
+                // storage: user.storage,
+                storage: user.storage?.trim() ? user.storage : null,
                 reportingManager: user.reportingManager,
               }));
 
               await createUsers(transformedUsers);
 
-              setSnackbarMessage("Users created successfully!");
-              setSnackbarSeverity("success");
-              setSnackbarOpen(true);
-              handleClose();
+              if (onUserCreated) onUserCreated();
+              if (showSnackbar)
+                showSnackbar("Users created successfully!", "success");
+
+              handleClose(); // Close after firing snackbar from parent
             } catch (error) {
               setSnackbarMessage("Failed to create users. Please try again.");
               setSnackbarSeverity("error");
@@ -425,19 +422,46 @@ const CreateUser = ({ handleClose }) => {
                                   label="Email"
                                   autoComplete="off"
                                   name={`users[${index}].email`}
-                                  value={user.email}
-                                  onChange={(e) =>
-                                    handleUserEmailChange(e, index, formik)
-                                  } // 👈 use custom handler
-                                  onBlur={formik.handleBlur}
+                                  value={user.email?.split("@")[0] || ""}
+                                  onChange={(e) => {
+                                    const emailPrefix = e.target.value;
+                                    const fullEmail = `${emailPrefix}@${adminDomain}`;
+                                    formik.setFieldValue(
+                                      `users[${index}].email`,
+                                      fullEmail
+                                    );
+
+                                    // Optional: validate domain match
+                                    const emailDomain = fullEmail.split("@")[1];
+                                    if (emailDomain !== adminDomain) {
+                                      formik.setFieldError(
+                                        `users[${index}].email`,
+                                        "Email domain must match admin domain"
+                                      );
+                                    } else {
+                                      formik.setFieldError(
+                                        `users[${index}].email`,
+                                        undefined
+                                      );
+                                    }
+                                  }}
                                   error={Boolean(
-                                    formik.errors.users?.[index]?.email
+                                    formik.touched.users?.[index]?.email &&
+                                      formik.errors.users?.[index]?.email
                                   )}
                                   helperText={
+                                    formik.touched.users?.[index]?.email &&
                                     formik.errors.users?.[index]?.email
                                   }
                                   fullWidth
                                   size="small"
+                                  InputProps={{
+                                    endAdornment: (
+                                      <InputAdornment position="end">
+                                        @{adminDomain}
+                                      </InputAdornment>
+                                    ),
+                                  }}
                                 />
                               </Grid>
                               <Grid item xs={4}>
@@ -645,8 +669,12 @@ const CreateUser = ({ handleClose }) => {
                             </Grid>
                           ) : (
                             <Typography variant="body2">
-                              {user.name || "Unnamed User"} -{" "}
-                              {user.email || "No Email"}
+                              <strong>{user.name || "Unnamed User"}</strong> —{" "}
+                              {user.email || "No Email"} |{" "}
+                              <strong>{user.storage || "No Storage"}</strong> |{" "}
+                              {typeof user.department === "object"
+                                ? user.department?.deptName
+                                : user.department || "No Department"}
                             </Typography>
                           )}
                         </Paper>
@@ -985,6 +1013,7 @@ const CreateUser = ({ handleClose }) => {
           </Button>
         </DialogActions>
       </Dialog>
+
       <Snackbar
         open={snackbarOpen}
         autoHideDuration={4000}
@@ -994,8 +1023,9 @@ const CreateUser = ({ handleClose }) => {
         <MuiAlert
           onClose={() => setSnackbarOpen(false)}
           severity={snackbarSeverity}
-          sx={{ width: "100%" }}
+          elevation={6}
           variant="filled"
+          sx={{ width: "100%" }}
         >
           {snackbarMessage}
         </MuiAlert>
