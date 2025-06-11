@@ -9,10 +9,10 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
-import * as echarts from "echarts";
+// import * as echarts from "echarts";
 import { Chart as ChartJS } from "chart.js/auto";
 import ChartDataLabels from "chartjs-plugin-datalabels";
-import { CircularProgress, keyframes, styled } from '@mui/material';
+// import { CircularProgress, keyframes, styled } from '@mui/material';
 import ReactEChart from "echarts-for-react"
 
 // Add this with your other imports
@@ -44,7 +44,7 @@ ChartJS.register(
 const CompanyDashboard = ({ onThemeToggle }) => {
 
   const [selectedResource, setSelectedResource] = useState("storage");
-  const fileInputRef = useRef(null);
+
   const ITEMS_PER_PAGE = 10;
   const [currentPage, setCurrentPage] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
@@ -222,9 +222,9 @@ resourceUsage: Array.from({ length: 50 }, (_, i) => {
     const pageData = getPaginatedData();
 
     const labels = pageData.map((item) => item.name);
-    const sold = pageData.map(item => item.sold);
-    const allocated = pageData.map(item => item.actual);
-    const consumed = pageData.map(item => item.consumed);
+    // const sold = pageData.map(item => item.sold);
+    // const allocated = pageData.map(item => item.actual);
+    // const consumed = pageData.map(item => item.consumed);
 
     return {
       tooltip: {
@@ -257,7 +257,7 @@ series: [
     barWidth: 40,
     data: pageData.map(item => item.sold),
     itemStyle: {
-      color: "#bbdefb", // light blue for base
+      color: "#42a5f5", // light blue for base
     },
     z: 1
   },
@@ -268,7 +268,7 @@ series: [
     barWidth: 28,
     data: pageData.map(item => item.actual),
     itemStyle: {
-      color: "#64b5f6",
+      color: "#0288d1",
     },
     z: 2
   },
@@ -279,7 +279,7 @@ series: [
     barWidth: 16,
     data: pageData.map(item => item.consumed),
     itemStyle: {
-      color: "#ffb74d",
+      color: "#ef5350",
     },
     z: 3
   }
@@ -403,6 +403,19 @@ const licenseExpirationStatus = useMemo(() => {
 
 
 return {
+    tooltip: {
+    trigger: "axis",
+    formatter: function (params) {
+      const month = params[0].axisValue;
+      const sold = params.find(p => p.seriesName === 'Sold')?.value ?? 0;
+      const consumed = params.find(p => p.seriesName === 'Consumed')?.value ?? 0;
+      return `
+        <strong>${month}</strong><br/>
+        🔵 Sold: ${sold} licenses<br/>
+        🔴 Consumed: ${consumed} licenses
+      `;
+    }
+  },
   legend: {
     show: true,
     left: "center"
@@ -419,26 +432,27 @@ return {
     type: 'value',
     name: 'Licenses'
   },
-  series: [
-    {
-      name: "Sold",
-      type: "bar",
-      barGap: "-100%",
-      barWidth: 40,
-      data: soldData,
-      itemStyle: { color: "#bbdefb" },
-      z: 1
-    },
-    {
-      name: "Consumed",
-      type: "bar",
-      barGap: "-100%",
-      barWidth: 20,
-      data: consumedData,
-      itemStyle: { color: "#ffb74d" },
-      z: 2
-    }
-  ]
+series: [
+  {
+    name: "Sold",
+    type: "bar",
+    barGap: "-100%",
+    barWidth: 40,
+    data: soldData,
+    itemStyle: { color: "#42a5f5" }, // 🌿 modern teal
+    z: 1
+  },
+  {
+    name: "Consumed",
+    type: "bar",
+    barGap: "-100%",
+    barWidth: 20,
+    data: consumedData,
+    itemStyle: { color: "#ef5350" }, // 💗 coral red
+    z: 2
+  }
+]
+
 };
 
 }, [selectedCompanyForLicense, companyData.licenseConsumption]);
