@@ -300,35 +300,7 @@ export default function UserTable() {
     setMigrationDialog(true);
   };
 
-  // const handleActivateAll = async () => {
-  //   const usersToActivate = rowsData
-  //     .filter((row) => selected.includes(row.id))
-  //     .map((user) => ({
-  //       username: user.name, // assumes email is used as username
-  //       active: true,
-  //     }));
-
-  //   if (usersToActivate.length === 0) {
-  //     toast.warn("No users selected for activation.");
-  //     return;
-  //   }
-
-  //   try {
-  //     await toggleUserStatusByUsername(usersToActivate, page); // page is already 0-indexed
-
-  //     // Update local state
-  //     setRowsData((prev) =>
-  //       prev.map((user) =>
-  //         selected.includes(user.id) ? { ...user, active: true } : user
-  //       )
-  //     );
-
-  //     toast.success("Selected users have been activated.");
-  //   } catch (error) {
-  //     console.error("Error activating users:", error);
-  //     toast.error("Failed to activate selected users.");
-  //   }
-  // };
+  
 
   const handleActivateAll = async () => {
   const usersToActivate = rowsData
@@ -570,13 +542,7 @@ export default function UserTable() {
 
   console.log(">>>rowssss", rowsData);
 
-  if (loading) {
-    return (
-      <LoaderWrapper>
-        <CustomSpinner />
-      </LoaderWrapper>
-    );
-  }
+ 
 
   const handleClose = () => {
     setMigrationDialog(false);

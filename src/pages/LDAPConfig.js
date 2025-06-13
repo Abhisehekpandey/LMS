@@ -104,13 +104,13 @@ const LDAPConfig = ({ onThemeToggle }) => {
     const timer = setTimeout(() => setLoading(false), 300);
     return () => clearTimeout(timer);
   }, []);
-  if (loading) {
-    return (
-      <LoaderWrapper>
-        <CustomSpinner />
-      </LoaderWrapper>
-    );
-  }
+  // if (loading) {
+  //   return (
+  //     <LoaderWrapper>
+  //       <CustomSpinner />
+  //     </LoaderWrapper>
+  //   );
+  // }
   return (
     <Box sx={{ display: "flex", padding: "14px", position: "relative", marginLeft: "65px", height: "100%", overflow: "hidden", backgroundColor: 'whitesmoke', }}>
       {/* <Box

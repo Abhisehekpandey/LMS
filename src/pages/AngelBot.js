@@ -732,13 +732,7 @@ const AngelBot = () => {
     );
   });
 
-  if (loading) {
-    return (
-      <LoaderWrapper>
-        <CustomSpinner />
-      </LoaderWrapper>
-    );
-  }
+ 
   return (
     <Box className="child-container">
       <div className="child">

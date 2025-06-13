@@ -1056,14 +1056,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       });
     }
   };
-  // useEffect(() => {
-  //   // Simulate API call delay or loading state
-  //   const timer = setTimeout(() => {
-  //     setLoading(false);
-  //   }, 1500); // 1.5 seconds
-
-  //   return () => clearTimeout(timer);
-  // }, []);
+ 
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 300);
@@ -1071,26 +1064,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
   }, []);
 
 
-  // if (loading) {
-  //   return (
-  //     <Box
-  //       display="flex"
-  //       justifyContent="center"
-  //       alignItems="center"
-  //       height="100vh"
-  //     >
-  //       <CircularProgress />
-  //     </Box>
-  //   );
-  // }
-
-  if (loading) {
-    return (
-      <LoaderWrapper>
-        <CustomSpinner />
-      </LoaderWrapper>
-    );
-  }
+  
 
   return (
     <Box
