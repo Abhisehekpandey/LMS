@@ -634,7 +634,7 @@ const getResourceBarChart = () => {
     },
     yAxis: {
       type: "value",
-      name: "%",
+      name: "%",  
       min: 0,
       max: 100
     },
@@ -856,12 +856,8 @@ return (
                 opts={{ height: 400 }}
               />
             </Box>
-
-
-
-
-
           </Paper>
+          
 
         </Grid>
         <Grid item xs={6} md={6} lg={6}>
