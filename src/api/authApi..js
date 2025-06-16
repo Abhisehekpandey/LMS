@@ -18,7 +18,7 @@ export const signupUser = async (data) => {
 export const loginUser = async (username, password) => {
   try {
     const response = await axios.post(
-      `/tenants/public/login`,
+      `${window.__ENV__.REACT_APP_ROUTE}/tenants/public/login`,
       {
         username,
         password,
