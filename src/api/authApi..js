@@ -3,7 +3,7 @@ import axios from "axios";
 export const signupUser = async (data) => {
   console.log(process.env.REACT_APP_API_BASE_URL);
   try {
-    const response = await axios.post(`/tenants/public/register`, data, {
+    const response = await axios.post(`${window.__ENV__.REACT_APP_ROUTE}/tenants/public/register`, data, {
       headers: {
         "Content-Type": "multipart/form-data",
         Accept: "*/*",
@@ -54,7 +54,7 @@ export const loginUser = async (username, password) => {
 
 export const checkDomainAvailability = async (emailDomain) => {
   try {
-    const response = await axios.get(`/tenants/public/domains`, {
+    const response = await axios.get(`${window.__ENV__.REACT_APP_ROUTE}/tenants/public/domains`, {
       params: { emailDomain },
     });
 
@@ -70,7 +70,7 @@ export const resetPassword = async (newPassword, resetToken) => {
   if (!resetToken) throw new Error("Reset token is required");
 
   const response = await axios.post(
-    "/tenants/public/setPassword", // your backend endpoint
+    `${window.__ENV__.REACT_APP_ROUTE}/tenants/public/setPassword`, // your backend endpoint
     {}, // no body, since data is in headers
     {
       headers: {

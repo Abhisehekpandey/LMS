@@ -5,7 +5,7 @@ import axios from "axios";
 export const createDepartment = async (payload) => {
   try {
     const response = await axios.post(
-      `tenants/departments`,
+      `${window.__ENV__.REACT_APP_ROUTE}/tenants/departments`,
       payload,
       {
         headers: {
@@ -26,7 +26,7 @@ export const createDepartment = async (payload) => {
 
 export const getDepartments = async () => {
   try {
-    const response = await axios.get(`tenants/departments`, {
+    const response = await axios.get(`${window.__ENV__.REACT_APP_ROUTE}/tenants/departments`, {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
