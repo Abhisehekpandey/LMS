@@ -55,7 +55,7 @@ export const createRole = async (payload) => {
     console.log(">>roesArray",rolesArray)
 
     const response = await axios.post(
-      `/tenants/departments/${department}/roles`,
+      `${window.__ENV__.REACT_APP_ROUTE}/tenants/departments/${department}/roles`,
       rolesArray, 
       {
         headers: {
