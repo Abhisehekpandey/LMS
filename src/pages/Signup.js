@@ -1,4 +1,6 @@
 import React, { useState, useRef } from "react";
+import Snackbar from "@mui/material/Snackbar";
+import MuiAlert from "@mui/material/Alert";
 import {
   Box,
   Button,
@@ -44,6 +46,32 @@ const Signup = () => {
   console.log(">>>>do",domainAvailable)
   const [checkingDomain, setCheckingDomain] = useState(false);
 
+  const [snackbar, setSnackbar] = useState({
+  open: false,
+  message: '',
+  severity: 'success', // 'success' | 'error'
+});
+
+const [passwordStrengthMsg, setPasswordStrengthMsg] = useState("");
+
+
+const getPasswordStrengthMessage = (password) => {
+  const strongPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^()[\]{}])[A-Za-z\d@$!%*?&#^()[\]{}]{8,}$/;
+
+  if (!password) return "";
+  if (!strongPattern.test(password)) {
+    return "Weak password: must include uppercase, lowercase, number, and special character, min 8 characters.";
+  }
+  return "Strong password.";
+};
+
+
+const handleSnackbarClose = () => {
+  setSnackbar((prev) => ({ ...prev, open: false }));
+};
+
+
+
   const fullEmail =
     formData.emailPrefix && formData.domain
       ? `${formData.emailPrefix}@${formData.domain}`
@@ -51,10 +79,17 @@ const Signup = () => {
 
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.organization)
+    if (!formData.organization.trim())
       newErrors.organization = "Organization is required";
-    if (!formData.adminName) newErrors.adminName = "Admin name is required";
-    if (!formData.domain) {
+    
+if (!formData.adminName.trim()) {
+  newErrors.adminName = "Admin name is required";
+} else if (!/^[a-zA-Z0-9@._-]+$/.test(formData.adminName)) {
+  newErrors.adminName = "Admin name can only contain letters, numbers, @, ., _, -";
+}
+
+
+    if (!formData.domain.trim()) {
       newErrors.domain = "Domain is required";
     } else if (!/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.domain)) {
       newErrors.domain = "Invalid domain";
@@ -63,13 +98,13 @@ const Signup = () => {
       newErrors.domain = "This domain is already registered";
     }
 
-    if (!formData.emailPrefix) {
+    if (!formData.emailPrefix.trim()) {
       newErrors.email = "Admin email prefix is required";
     } else if (!/\S+@\S+\.\S+/.test(fullEmail)) {
       newErrors.email = "Invalid email address";
     }
 
-    if (!formData.password) {
+    if (!formData.password.trim()) {
       newErrors.password = "Password is required";
     } else if (formData.password.length < 6) {
       newErrors.password = "Password must be at least 6 characters";
@@ -111,6 +146,10 @@ const Signup = () => {
         [name]: "",
       }));
     }
+    if (name === "password") {
+  const strengthMsg = getPasswordStrengthMessage(value);
+  setPasswordStrengthMsg(strengthMsg);
+}
 
     if (name === "domain") {
       setDomainAvailable("");
@@ -138,14 +177,37 @@ const Signup = () => {
       password: formData.password,
     };
 
+    // try {
+    //   const result = await signupUser(finalData);
+    //   console.log("Signup success:", result);
+    //   navigate("/login");
+    // } catch (error) {
+    //   console.error("Signup error:", error);
+    //   alert(error.message || "Signup failed");
+    // }
+
     try {
-      const result = await signupUser(finalData);
-      console.log("Signup success:", result);
-      navigate("/login");
-    } catch (error) {
-      console.error("Signup error:", error);
-      alert(error.message || "Signup failed");
-    }
+  const result = await signupUser(finalData);
+  console.log("Signup success:", result);
+
+  setSnackbar({
+    open: true,
+    message: "Signup successful! Redirecting to login...",
+    severity: "success",
+  });
+
+  setTimeout(() => {
+    navigate("/login");
+  }, 2000); // delay for showing message
+} catch (error) {
+  console.error("Signup error:", error);
+  setSnackbar({
+    open: true,
+    message: error.message || "Signup failed",
+    severity: "error",
+  });
+}
+
   };
 
   return (
@@ -292,6 +354,7 @@ const Signup = () => {
                 value={formData.organization}
                 onChange={handleChange}
                 error={!!errors.organization}
+                FormHelperTextProps={{ sx: { ml: 0 } }}
                 helperText={errors.organization}
               />
               <TextField
@@ -301,9 +364,12 @@ const Signup = () => {
                 value={formData.adminName}
                 onChange={handleChange}
                 error={!!errors.adminName}
+                FormHelperTextProps={{ sx: { ml: 0 } }}
                 helperText={errors.adminName}
               />
             </Box>
+            
+
 
             <TextField
               fullWidth
@@ -313,6 +379,7 @@ const Signup = () => {
               value={formData.domain}
               onChange={handleChange}
               error={!!errors.domain}
+              FormHelperTextProps={{ sx: { ml: 0 } }}
               helperText={errors.domain}
               InputProps={{
                 startAdornment: (
@@ -356,6 +423,7 @@ const Signup = () => {
               value={formData.emailPrefix}
               onChange={handleChange}
               error={!!errors.email}
+              FormHelperTextProps={{ sx: { ml: 0 } }}
               helperText={errors.email}
               InputProps={{
                 startAdornment: (
@@ -371,7 +439,7 @@ const Signup = () => {
               }}
             />
 
-            <TextField
+            {/* <TextField
               fullWidth
               label="Password"
               name="password"
@@ -380,6 +448,7 @@ const Signup = () => {
               value={formData.password}
               onChange={handleChange}
               error={!!errors.password}
+              FormHelperTextProps={{ sx: { ml: 0 } }}
               helperText={errors.password}
               InputProps={{
                 startAdornment: (
@@ -398,9 +467,52 @@ const Signup = () => {
                   </InputAdornment>
                 ),
               }}
-            />
-
+            /> */}
             <TextField
+  fullWidth
+  label="Password"
+  name="password"
+  type={showPassword ? "text" : "password"}
+  margin="normal"
+  value={formData.password}
+  onChange={handleChange}
+  error={!!errors.password}
+  helperText={errors.password}
+  FormHelperTextProps={{ sx: { ml: 0 } }}
+  InputProps={{
+    startAdornment: (
+      <InputAdornment position="start">
+        <Lock />
+      </InputAdornment>
+    ),
+    endAdornment: (
+      <InputAdornment position="end">
+        <IconButton
+          onClick={() => setShowPassword(!showPassword)}
+          edge="end"
+        >
+          {showPassword ? <VisibilityOff /> : <Visibility />}
+        </IconButton>
+      </InputAdornment>
+    ),
+  }}
+/>
+
+{formData.password && (
+  <Typography
+    variant="caption"
+     FormHelperTextProps={{ sx: { ml: 0 } }}
+    sx={{
+      color: passwordStrengthMsg.includes("Strong") ? "success.main" : "error.main",
+      ml: 1,
+    }}
+  >
+    {passwordStrengthMsg}
+  </Typography>
+)}
+
+
+            {/* <TextField
               fullWidth
               label="Confirm Password"
               name="confirmPassword"
@@ -409,6 +521,7 @@ const Signup = () => {
               value={formData.confirmPassword}
               onChange={handleChange}
               error={!!errors.confirmPassword}
+              FormHelperTextProps={{ sx: { ml: 0 } }}
               helperText={errors.confirmPassword}
               InputProps={{
                 endAdornment: (
@@ -424,7 +537,39 @@ const Signup = () => {
                   </InputAdornment>
                 ),
               }}
-            />
+            /> */}
+            <TextField
+  fullWidth
+  label="Confirm Password"
+  name="confirmPassword"
+  type={showConfirmPassword ? "text" : "password"}
+  margin="normal"
+  value={formData.confirmPassword}
+  onChange={handleChange}
+  error={!!errors.confirmPassword}
+  helperText={errors.confirmPassword}
+  FormHelperTextProps={{ sx: { ml: 0 } }}
+  InputProps={{
+    startAdornment: (
+      <InputAdornment position="start">
+        <Lock />
+      </InputAdornment>
+    ),
+    endAdornment: (
+      <InputAdornment position="end">
+        <IconButton
+          onClick={() =>
+            setShowConfirmPassword(!showConfirmPassword)
+          }
+          edge="end"
+        >
+          {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+        </IconButton>
+      </InputAdornment>
+    ),
+  }}
+/>
+
 
             <Button
               type="submit"
@@ -453,6 +598,22 @@ const Signup = () => {
           </Box>
         </Box>
       </Paper>
+      <Snackbar
+  open={snackbar.open}
+  autoHideDuration={4000}
+  onClose={handleSnackbarClose}
+  anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+>
+  <MuiAlert
+    elevation={6}
+    variant="filled"
+    onClose={handleSnackbarClose}
+    severity={snackbar.severity}
+  >
+    {snackbar.message}
+  </MuiAlert>
+</Snackbar>
+
     </Box>
   );
 };

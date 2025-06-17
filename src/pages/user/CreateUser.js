@@ -1,6 +1,10 @@
 // updated CreateUser component with collapsed cards for non-active users
 import { Add, Close, Download, Info, UploadFile } from "@mui/icons-material";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 import axios from "axios";
+import Papa from "papaparse";
+
 import {
   Autocomplete,
   Box,
@@ -56,12 +60,57 @@ const CreateUser = ({ handleClose, onUserCreated, showSnackbar }) => {
   const [snackbarMessage, setSnackbarMessage] = useState("");
   console.log(">>>>>ssssss", snackbarMessage);
   const [snackbarSeverity, setSnackbarSeverity] = useState("success"); // 'error' | 'info' | 'warning'
+  const [csvUsers, setCsvUsers] = useState([]);
 
   const lastFieldRef = useRef(null);
   const dispatch = useDispatch();
 
   const adminEmail = sessionStorage.getItem("adminEmail"); // You must save this during login!
   const adminDomain = adminEmail?.split("@")[1]; // Extract domain
+
+  const downloadExcelTemplate = () => {
+    const headers = [
+      "NAME",
+      "EMAIL",
+      "PHONE",
+      "STORAGE",
+      "ROLE",
+      "DEPARTMENT",
+      "REPORTINGMANAGER",
+    ];
+
+    const exampleRow = [
+      "abc",
+      "abc@costacloud.com",
+      "1234567890",
+      "10GB",
+      "software engineer",
+      "frontend",
+      "dhruv sethi",
+    ];
+
+    const worksheetData = [headers, exampleRow];
+
+    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+
+    // Style: Bold the first row (headers)
+    const headerStyle = {
+      font: { bold: true },
+    };
+
+    headers.forEach((_, colIndex) => {
+      const cellRef = XLSX.utils.encode_cell({ r: 0, c: colIndex });
+      if (!worksheet[cellRef]) return;
+      worksheet[cellRef].s = headerStyle;
+    });
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "UserTemplate");
+
+    const csvOutput = XLSX.utils.sheet_to_csv(worksheet);
+    const blob = new Blob([csvOutput], { type: "text/csv;charset=utf-8;" });
+    saveAs(blob, "USER_TEMPLATE.csv");
+  };
 
   const handleUserEmailChange = (e, index, formik) => {
     const { value } = e.target;
@@ -160,6 +209,61 @@ const CreateUser = ({ handleClose, onUserCreated, showSnackbar }) => {
     if (file) {
       setBulkFile(file);
       setFileName(file.name);
+
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        transformHeader: (header) => header.trim().toUpperCase(), // force match
+        complete: (results) => {
+          const headers = Object.keys(results.data[0] || {});
+          console.log("📢 Parsed Headers:", headers);
+
+          const requiredHeaders = [
+            "NAME",
+            "EMAIL",
+            "PHONE",
+            "STORAGE",
+            "ROLE",
+            "DEPARTMENT",
+            "REPORTINGMANAGER",
+          ];
+
+          const hasAllHeaders = requiredHeaders.every((h) =>
+            headers.includes(h)
+          );
+
+          if (!hasAllHeaders) {
+            showSnackbar(
+              "CSV headers are invalid. Please use the downloaded template.",
+              "error"
+            );
+            return;
+          }
+
+          // continue parsing safely
+          const cleanedUsers = results.data
+            .filter((row) => row["EMAIL"])
+            .map((row) => ({
+              name: row["NAME"]?.trim() || "",
+              email: row["EMAIL"]?.trim() || "",
+              phoneNumber: row["PHONE"]?.trim() || "",
+              storage: row["STORAGE"]?.trim() || null,
+              roleName: row["ROLE"]?.trim() || "",
+              deptName: row["DEPARTMENT"]?.trim() || "",
+              reportingManager: row["REPORTINGMANAGER"]?.trim() || "",
+            }));
+          console.log("CLEANED USERS:", cleanedUsers);
+
+          setCsvUsers(cleanedUsers);
+        },
+        error: (err) => {
+          console.error("CSV Parsing Error:", err);
+          showSnackbar(
+            "Failed to parse CSV. Please check the format.",
+            "error"
+          );
+        },
+      });
     }
   };
 
@@ -260,9 +364,7 @@ const CreateUser = ({ handleClose, onUserCreated, showSnackbar }) => {
           }}
         >
           <Button
-            component="a"
-            href="/templates/user_template.csv"
-            download
+            onClick={downloadExcelTemplate}
             sx={{
               backgroundColor: "primary.lighter",
               border: "1px solid",
@@ -280,6 +382,7 @@ const CreateUser = ({ handleClose, onUserCreated, showSnackbar }) => {
           >
             Download Template
           </Button>
+
           <Button
             sx={{
               // backgroundColor: "success.lighter",
@@ -302,6 +405,32 @@ const CreateUser = ({ handleClose, onUserCreated, showSnackbar }) => {
           >
             Bulk Upload
           </Button>
+          {csvUsers.length > 0 && (
+            <Button
+              variant="contained"
+              sx={{
+                backgroundColor: "rgb(251, 68, 36)",
+                color: "white",
+                borderRadius: "8px",
+              }}
+              onClick={async () => {
+                try {
+                  await createUsers(csvUsers);
+                  showSnackbar("Bulk users created successfully!", "success");
+                  setCsvUsers([]);
+                  setFileName("");
+                  setBulkFile(null);
+                  handleClose();
+                } catch (err) {
+                  console.error("Bulk user creation failed:", err);
+                  showSnackbar("Failed to create bulk users", "error");
+                }
+              }}
+            >
+              Submit Bulk Users
+            </Button>
+          )}
+
           <input
             id="bulk-upload-input"
             type="file"

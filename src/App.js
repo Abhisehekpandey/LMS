@@ -1,4 +1,3 @@
-// src/App.js
 import React, { useState } from "react";
 import {
   BrowserRouter as Router,
@@ -21,6 +20,7 @@ import Layout from "./components/Layout";
 import "./App.css";
 import UserTable from "./pages/user/UserTable";
 import ResetPassword from "./pages/ResetPassword";
+import ForgetPassword from "./pages/ForgetPassword";
 
 function App() {
   const [darkMode, setDarkMode] = useState(false);
@@ -76,75 +76,96 @@ function App() {
       storage: "75GB",
     },
   ]);
+
   const theme = createTheme({
     palette: {
-      mode: darkMode ? "dark" : "light", // Set theme mode based on darkMode state
+      mode: darkMode ? "dark" : "light",
     },
   });
 
   const toggleTheme = () => {
-    console.log(">>>>abhi>>>>");
-    setDarkMode((prevMode) => !prevMode); // Toggle the darkMode state
+    setDarkMode((prevMode) => !prevMode);
   };
 
   return (
-    // <ThemeProvider theme={theme}>
-    <Router>
-      <Layout>
+    <ThemeProvider theme={theme}>
+      <Router>
         <Routes>
+          {/* Public routes — without Layout */}
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/set-password" element={<ResetPassword />} />
+          <Route path="/forget-password" element={<ForgetPassword />} />
+
+          {/* Protected routes — with Layout */}
           <Route
             path="/user"
             element={
-              <ProtectedRoute>
-                <Dashboard
-                  onThemeToggle={toggleTheme}
-                  departments={departments}
-                  setDepartments={setDepartments}
-                />{" "}
-                {/* Pass the toggleTheme function */}
-              </ProtectedRoute>
+              <Layout>
+                <ProtectedRoute>
+                  <Dashboard
+                    onThemeToggle={toggleTheme}
+                    departments={departments}
+                    setDepartments={setDepartments}
+                  />
+                </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
             path="/department"
             element={
-              <ProtectedRoute>
-                <Department
-                  onThemeToggle={toggleTheme}
-                  departments={departments}
-                  setDepartments={setDepartments}
-                />{" "}
-                {/* Pass the toggleTheme function */}
-              </ProtectedRoute>
+              <Layout>
+                <ProtectedRoute>
+                  <Department
+                    onThemeToggle={toggleTheme}
+                    departments={departments}
+                    setDepartments={setDepartments}
+                  />
+                </ProtectedRoute>
+              </Layout>
             }
           />
           <Route
-            path="/set-password"
+            path="/angelbot"
             element={
-            //   <ProtectedRoute>
-                <ResetPassword />
-            //   </ProtectedRoute>
+              <Layout>
+                <AngelBot onThemeToggle={toggleTheme} />
+              </Layout>
+            }
+          />
+          <Route
+            path="/company-dashboard"
+            element={
+              <Layout>
+                <CompanyDashboard onThemeToggle={toggleTheme} />
+              </Layout>
+            }
+          />
+          <Route
+            path="/ldap-config"
+            element={
+              <Layout>
+                <LDAPConfig />
+              </Layout>
+            }
+          />
+          <Route
+            path="/activate/:token"
+            element={
+              <Layout>
+                <ActivateAccount />
+              </Layout>
             }
           />
 
+          {/* Redirect root to signup */}
           <Route path="/" element={<Navigate to="/signup" />} />
-          <Route
-            path="/angelbot"
-            element={<AngelBot onThemeToggle={toggleTheme} />}
-          />
-          <Route path="/ldap-config" element={<LDAPConfig />} />
-          <Route
-            path="/company-dashboard"
-            element={<CompanyDashboard onThemeToggle={toggleTheme} />}
-          />
-          <Route path="/activate/:token" element={<ActivateAccount />} />
         </Routes>
-      </Layout>
-    </Router>
-    // </ThemeProvider>
+      </Router>
+    </ThemeProvider>
   );
 }
 
 export default App;
+

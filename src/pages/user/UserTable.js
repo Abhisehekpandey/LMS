@@ -1208,7 +1208,11 @@ export default function UserTable() {
           {/* <CreateUser handleClose={() => setCreateUser(false)} /> */}
           <CreateUser
             handleClose={() => setCreateUser(false)}
-            onUserCreated={refetchUsers}
+            // onUserCreated={refetchUsers}
+            onUserCreated={(page, newUserEmails) => {
+  refetchUsers(page, newUserEmails);
+}}
+
             showSnackbar={(message, severity = "success") => {
               setSnackbarMessage(message);
               setSnackbarSeverity(severity);
@@ -1405,3 +1409,4 @@ export default function UserTable() {
     </Box>
   );
 }
+

@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import Snackbar from "@mui/material/Snackbar";
+import MuiAlert from "@mui/material/Alert";
 import {
   Box,
   Button,
@@ -27,11 +29,20 @@ const Login = () => {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
-  const [Loading,setLoading]=useState(false)
+  const [Loading, setLoading] = useState(false);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
+
+  const handleSnackbarClose = () => {
+    setSnackbar((prev) => ({ ...prev, open: false }));
+  };
 
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.email) {
+    if (!formData.email.trim()) {
       newErrors.email = "Email is required";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = "Invalid email address";
@@ -41,7 +52,6 @@ const Login = () => {
     }
     return newErrors;
   };
-
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -54,33 +64,36 @@ const Login = () => {
     setLoading(true); // Set loading state before API call
 
     try {
-      // Call the loginUser function from authApi.js
-      const data = await loginUser(formData.email, formData.password);
-      console.log(">>final",data)
-
-      // Assuming the response contains a JWT token
+      // const data = await loginUser(formData.email.trim(), formData.password);
+       const normalizedEmail = formData.email.trim().toLowerCase();
+  const data = await loginUser(normalizedEmail, formData.password);
       const { access_token } = data;
-    
 
-      // Save token in sessionStorage or localStorage
       sessionStorage.setItem("authToken", access_token);
-      sessionStorage.setItem("adminEmail",formData.email)
-      
+      sessionStorage.setItem("adminEmail", formData.email.trim());
 
-      // Redirect to dashboard or home page after successful login
-      navigate("/angelbot");
+      setSnackbar({
+        open: true,
+        message: "Login successful! Redirecting...",
+        severity: "success",
+      });
+
+      setTimeout(() => {
+        navigate("/angelbot");
+      }, 2000);
     } catch (error) {
-      console.error("Login failed:", error.message);
-      setErrors({ login: error.message });
-    } finally {
-      setLoading(false); // Reset loading state after API call
+      setSnackbar({
+        open: true,
+        message: error.message || "Login failed",
+        severity: "error",
+      });
     }
   };
 
-
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value.trimStart() }));
+
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
@@ -120,7 +133,7 @@ const Login = () => {
           width: "100%",
           maxWidth: 1000,
           // backgroundColor: "transparent", // Make background transparent
-            backgroundColor: "rgba(255, 255, 255, 0.6)",
+          backgroundColor: "rgba(255, 255, 255, 0.6)",
           boxShadow: "none", // Ensure no shadow
         }}
       >
@@ -240,6 +253,7 @@ const Login = () => {
               onChange={handleChange}
               margin="normal"
               error={!!errors.email}
+              FormHelperTextProps={{ sx: { ml: 0 } }}
               helperText={errors.email}
               InputProps={{
                 startAdornment: (
@@ -260,6 +274,7 @@ const Login = () => {
               margin="normal"
               error={!!errors.password}
               helperText={errors.password}
+              FormHelperTextProps={{ sx: { ml: 0 } }}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -281,7 +296,7 @@ const Login = () => {
 
             <Box sx={{ textAlign: "right", mt: 1 }}>
               <Link
-                href="#"
+                onClick={() => navigate("/forget-password")}
                 sx={{
                   fontSize: "0.9rem",
                   color: "#3b82f6",
@@ -323,6 +338,21 @@ const Login = () => {
           </Box>
         </Box>
       </Paper>
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <MuiAlert
+          elevation={6}
+          variant="filled"
+          onClose={handleSnackbarClose}
+          severity={snackbar.severity}
+        >
+          {snackbar.message}
+        </MuiAlert>
+      </Snackbar>
     </Box>
   );
 };
