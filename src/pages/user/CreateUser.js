@@ -39,7 +39,7 @@ import {
 } from "../../api/departmentService";
 import { createUsers } from "../../api/userService";
 
-const CreateUser = ({ handleClose, onUserCreated, showSnackbar }) => {
+const CreateUser = ({ handleClose, onUserCreated, showSnackbar, allUsers = []  }) => {
   const [bulkFile, setBulkFile] = useState(null);
   const [fileName, setFileName] = useState("");
   const [addDepartment, setAddDepartment] = useState(false);
@@ -934,7 +934,7 @@ const CreateUser = ({ handleClose, onUserCreated, showSnackbar }) => {
               />
             </Grid>
             <Grid item xs={6}>
-              <TextField
+              {/* <TextField
                 fullWidth
                 size="small"
                 label="Department Moderator"
@@ -945,7 +945,26 @@ const CreateUser = ({ handleClose, onUserCreated, showSnackbar }) => {
                     deptModerator: e.target.value,
                   })
                 }
-              />
+              /> */}
+              <Autocomplete
+  fullWidth
+  size="small"
+  options={allUsers}
+  getOptionLabel={(option) => option.name || ""}
+  value={
+    allUsers.find((user) => user.name === newDepartment.deptModerator) || null
+  }
+  onChange={(event, value) =>
+    setNewDepartment({
+      ...newDepartment,
+      deptModerator: value ? value.name : "",
+    })
+  }
+  renderInput={(params) => (
+    <TextField {...params} label="Department Moderator" />
+  )}
+/>
+
             </Grid>
             <Grid item xs={4}>
               <TextField

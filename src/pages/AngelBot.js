@@ -40,6 +40,7 @@ import { Fade } from "@mui/material";
 import { useTheme } from "@mui/material";
 import { License } from "@mui/icons-material"; // Optional icon
 import { VerifiedUser } from "@mui/icons-material";
+import { Snackbar, Alert } from "@mui/material"; // already likely imported
 
 import {
   ArrowDropUp,
@@ -154,11 +155,17 @@ const AngelBot = () => {
     { value: 484, name: "Department", color: "#5470C6" },
   ];
 
-  const [licenses] = useState([
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success", // or "error"
+  });
+  const [licenses, setLicenses] = useState([
     { id: 1, name: "License A", expiryDate: "2025-05-10" },
     { id: 2, name: "License B", expiryDate: "2025-08-01" },
-    { id: 3, name: "License C", expiryDate: "2025-06-10" }, // this is soonest
+    { id: 3, name: "License C", expiryDate: "2025-06-10" },
     { id: 4, name: "License D", expiryDate: "2025-12-31" },
+    { id: 5, name: "License E", expiryDate: "2025-07-05" },
   ]);
 
   const [nextExpiringLicense, setNextExpiringLicense] = useState("");
@@ -200,7 +207,8 @@ const AngelBot = () => {
   ]);
 
   const [storageTab, setStorageTab] = useState("status"); // "status" or "distribution"
-  const [licenseFilter, setLicenseFilter] = useState("all");
+  // const [licenseFilter, setLicenseFilter] = useState("all");
+  const [licenseFilter, setLicenseFilter] = useState("active");
 
   useEffect(() => {
     const today = new Date();
@@ -631,16 +639,20 @@ const AngelBot = () => {
           sx={{
             display: "flex",
             transform: `translateX(-${currentIndex * 100}%)`,
-            transition: "transform 0.6s ease-in-out",
+            transition: "transform 1s ease-in-out",
             width: `${licenses.length * 100}%`,
           }}
         >
           {licenses.map((license, i) => {
-            const { daysLeft } = getLicenseStatus(license.expiryDate);
-            const label =
-              daysLeft <= 30
-                ? `Renewal By: ${license.expiryDate}`
-                : `License Validity: ${license.expiryDate}`;
+            const { status, daysLeft } = getLicenseStatus(license.expiryDate);
+            const label = `${status} — ${license.expiryDate}`;
+
+            const { bg, color } =
+              status === "Expired"
+                ? { bg: alpha("#f44336", 0.1), color: "#f44336" }
+                : status === "Expiring Soon"
+                ? { bg: alpha("#ff9800", 0.1), color: "#ff9800" }
+                : { bg: alpha("#4caf50", 0.1), color: "#4caf50" };
 
             return (
               <Box
@@ -655,8 +667,8 @@ const AngelBot = () => {
                   sx={{
                     padding: 2,
                     borderRadius: 3,
-                    boxShadow: `0 2px 10px ${alpha(chartColors.error, 0.2)}`,
-                    backgroundColor: alpha(chartColors.error, 0.08),
+                    boxShadow: `0 2px 10px ${alpha(color, 0.3)}`,
+                    backgroundColor: bg,
                     minWidth: 250,
                     maxWidth: 300,
                     width: "100%",
@@ -673,7 +685,7 @@ const AngelBot = () => {
                       display: "flex",
                       alignItems: "center",
                       gap: 1,
-                      color: chartColors.error,
+                      color: color,
                     }}
                   >
                     {/* <License fontSize="small" /> */}
@@ -691,11 +703,27 @@ const AngelBot = () => {
                     >
                       {license.name}
                     </Typography>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color:
+                          status === "Expired"
+                            ? "#f44336"
+                            : status === "Expiring Soon"
+                            ? "#ff9800"
+                            : "#4caf50",
+                        fontWeight: 700,
+                        fontSize: "0.75rem",
+                        mt: 0.5,
+                      }}
+                    >
+                      {status}
+                    </Typography>
                   </Box>
 
                   <Typography
                     variant="body2"
-                    sx={{ color: chartColors.error, fontWeight: 500 }}
+                    sx={{ color: color, fontWeight: 500 }}
                   >
                     {label}
                   </Typography>
@@ -703,7 +731,7 @@ const AngelBot = () => {
                   <Typography
                     variant="h3"
                     sx={{
-                      color: chartColors.error,
+                      color: color,
                       fontWeight: 800,
                       fontSize: "2.5rem",
                       lineHeight: 1.2,
@@ -715,7 +743,7 @@ const AngelBot = () => {
                   <Typography
                     variant="caption"
                     sx={{
-                      color: chartColors.error,
+                      color: color,
                       fontWeight: 600,
                       fontSize: "0.85rem",
                       letterSpacing: 1,
@@ -732,7 +760,6 @@ const AngelBot = () => {
     );
   });
 
- 
   return (
     <Box className="child-container">
       <div className="child">
@@ -1012,26 +1039,86 @@ const AngelBot = () => {
                       </Box>
 
                       <Tooltip title="Add License" arrow>
-                        <IconButton
-                          color="primary"
-                          size="small"
-                          onClick={() => setAddLicenseDialogOpen(true)}
-                          sx={{
-                            backgroundColor: (theme) =>
-                              theme.palette.primary.light,
-                            color: (theme) =>
-                              theme.palette.primary.contrastText,
-                            "&:hover": {
-                              backgroundColor: (theme) =>
-                                theme.palette.primary.main,
-                              boxShadow: 3,
-                            },
-                            borderRadius: 2,
-                            transition: "all 0.3s ease-in-out",
+                        <input
+                          type="file"
+                          id="license-upload"
+                          accept=".json"
+                          style={{ display: "none" }}
+                          onChange={(e) => {
+                            const file = e.target.files[0];
+                            if (!file) return;
+
+                            if (file.type !== "application/json") {
+                              setSnackbar({
+                                open: true,
+                                message: "Only JSON files are allowed.",
+                                severity: "error",
+                              });
+                              return;
+                            }
+
+                            const reader = new FileReader();
+                            reader.onload = (event) => {
+                              try {
+                                const data = JSON.parse(event.target.result);
+
+                                if (!data.name || !data.expiryDate) {
+                                  setSnackbar({
+                                    open: true,
+                                    message:
+                                      "JSON must contain 'name' and 'expiryDate'.",
+                                    severity: "error",
+                                  });
+                                  return;
+                                }
+
+                                const newLicense = {
+                                  id: licenses.length + 1,
+                                  name: data.name,
+                                  expiryDate: data.expiryDate,
+                                };
+
+                                setLicenses((prev) => [...prev, newLicense]);
+                                setSnackbar({
+                                  open: true,
+                                  message: "License uploaded successfully.",
+                                  severity: "success",
+                                });
+                              } catch (err) {
+                                setSnackbar({
+                                  open: true,
+                                  message: "Invalid JSON file.",
+                                  severity: "error",
+                                });
+                              }
+                            };
+
+                            reader.readAsText(file);
                           }}
-                        >
-                          <Add />
-                        </IconButton>
+                        />
+
+                        <label htmlFor="license-upload">
+                          <IconButton
+                            component="span"
+                            color="primary"
+                            size="small"
+                            sx={{
+                              backgroundColor: (theme) =>
+                                theme.palette.primary.light,
+                              color: (theme) =>
+                                theme.palette.primary.contrastText,
+                              "&:hover": {
+                                backgroundColor: (theme) =>
+                                  theme.palette.primary.main,
+                                boxShadow: 3,
+                              },
+                              borderRadius: 2,
+                              transition: "all 0.3s ease-in-out",
+                            }}
+                          >
+                            <Add />
+                          </IconButton>
+                        </label>
                       </Tooltip>
                     </Box>
                   }
@@ -1189,7 +1276,23 @@ const AngelBot = () => {
                           return (
                             <tr
                               key={index}
-                              style={{ borderBottom: "1px solid #eee" }}
+                              onClick={() => {
+                                const originalIndex = licenses.findIndex(
+                                  (l) => l.id === license.id
+                                );
+                                if (originalIndex !== -1) {
+                                  setCurrentLicenseIndex(originalIndex);
+                                }
+                              }}
+                              style={{
+                                borderBottom: "1px solid #eee",
+                                cursor: "pointer",
+                                backgroundColor:
+                                  index === currentLicenseIndex
+                                    ? "rgba(25, 118, 210, 0.05)"
+                                    : "inherit",
+                                transition: "background-color 0.3s ease-in-out",
+                              }}
                             >
                               <td
                                 style={{ padding: "8px", fontSize: "0.875rem" }}
@@ -1817,6 +1920,20 @@ const AngelBot = () => {
           </Button>
         </DialogActions>
       </Dialog>
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          sx={{ width: "100%" }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

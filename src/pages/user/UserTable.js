@@ -434,11 +434,21 @@ export default function UserTable() {
     try {
       await toggleUserStatusByUsername(updatedRows, page); // send full payload
       setRowsData(updatedRows); // update state
-      toast.success(
-        `User "${user.name}" has been ${
-          newStatus ? "activated" : "deactivated"
-        }`
-      );
+      // toast.success(
+      //   `User "${user.name}" has been ${
+      //     newStatus ? "activated" : "deactivated"
+      //   }`
+      // );
+      let statusMessage = "";
+if (newStatus && !user.enabled) {
+  statusMessage = `User "${user.name}" is pending email verification`;
+} else if (newStatus && user.enabled) {
+  statusMessage = `User "${user.name}" has been activated`;
+} else {
+  statusMessage = `User "${user.name}" has been deactivated`;
+}
+toast.success(statusMessage);
+
     } catch (error) {
       console.error("Failed to update users", error);
       toast.error("Failed to update users.");
@@ -794,36 +804,34 @@ export default function UserTable() {
                     </TableCell>
 
                     <TableCell align="center">
+                     
                       <Tooltip
-                        title={
-                          !row.active &&
-                          (!row.permissions?.allowedStorageInBytesDisplay ||
-                            row.permissions?.allowedStorageInBytesDisplay ===
-                              "0 KB")
-                            ? "Please provide storage first"
-                            : row.active
-                            ? "Active"
-                            : "Inactive"
-                        }
-                      >
-                        <span>
-                          <FormControlLabel
-                            control={
-                              <IOSSwitch
-                                checked={row.active}
-                                onChange={() => handleStatusToggle(row.name)}
-                                disabled={
-                                  !row.active &&
-                                  (!row.permissions
-                                    ?.allowedStorageInBytesDisplay ||
-                                    row.permissions
-                                      ?.allowedStorageInBytesDisplay === "0 KB")
-                                }
-                              />
-                            }
-                          />
-                        </span>
-                      </Tooltip>
+  title={
+    (!row.active && !row.enabled)||(!row.active && row.enabled)
+      ? "Inactive"
+      : row.active && !row.enabled
+      ? "Pending"
+      : "Active"
+  }
+>
+  <span>
+    <FormControlLabel
+      control={
+        <IOSSwitch
+          checked={row.active && row.enabled}
+          onChange={() => handleStatusToggle(row.name)}
+          disabled={
+            !row.active &&
+            (!row.permissions?.allowedStorageInBytesDisplay ||
+              row.permissions?.allowedStorageInBytesDisplay === "0 KB")
+          }
+           
+        />
+      }
+    />
+  </span>
+</Tooltip>
+
                     </TableCell>
                     <TableCell
                       align="center"
@@ -1218,6 +1226,7 @@ export default function UserTable() {
               setSnackbarSeverity(severity);
               setSnackbarOpen(true);
             }}
+            allUsers={rowsData} // <-- pass all users here
           />
         </Dialog>
 

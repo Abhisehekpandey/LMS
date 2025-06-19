@@ -15,6 +15,7 @@ export const createUsers = async (users) => {
         },
       }
     );
+    console.log(">>>>>>rrrr",response)
     return response.data;
   } catch (error) {
     console.error("Error creating users:", error);

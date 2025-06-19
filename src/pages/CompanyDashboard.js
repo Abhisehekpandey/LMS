@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Box, Paper, Typography, Grid, Divider, TextField, Autocomplete } from "@mui/material";
 import { FormControl, InputLabel, MenuItem, Select } from "@mui/material";
@@ -257,7 +258,8 @@ series: [
     barWidth: 40,
     data: pageData.map(item => item.sold),
     itemStyle: {
-      color: "#42a5f5", // light blue for base
+      // color: "#003459", // light blue for base
+      color: "#ffe6a7",
     },
     z: 1
   },
@@ -268,7 +270,8 @@ series: [
     barWidth: 28,
     data: pageData.map(item => item.actual),
     itemStyle: {
-      color: "#0288d1",
+      // color: "#52b788",
+       color: "#ff7b54",
     },
     z: 2
   },
@@ -279,7 +282,7 @@ series: [
     barWidth: 16,
     data: pageData.map(item => item.consumed),
     itemStyle: {
-      color: "#ef5350",
+      color: "#3c096c",
     },
     z: 3
   }
@@ -299,9 +302,9 @@ const licenseChartOption = {
       const sold = params.find(p => p.seriesName === 'Sold')?.value ?? 0;
       const consumed = params.find(p => p.seriesName === 'Consumed')?.value ?? 0;
       return `
-        <strong>${name}</strong><br/>
-        🔵 Sold: ${sold}<br/>
-        🟧 Consumed: ${consumed}
+       <strong>${name}</strong><br/>
+  <span style="color: #42a5f5;">🔵 Sold: ${sold}</span><br/>
+  <span style="color: #ef5350;">🔴 Consumed: ${consumed}</span>
       `;
     }
   },
@@ -331,7 +334,7 @@ const licenseChartOption = {
       barWidth: 40,
       data: companyData.licenseAllocation.map(d => d.sold),
       itemStyle: {
-        color: "#bbdefb", // light blue
+        color: "#42a5f5", // light blue
       },
       z: 1
     },
@@ -342,7 +345,7 @@ const licenseChartOption = {
       barWidth: 20,
       data: companyData.licenseAllocation.map(d => d.consumed),
       itemStyle: {
-        color: "#ffb74d", // same orange as storage
+        color: "#ef5350", // same orange as storage
       },
       z: 2
     }
@@ -990,4 +993,3 @@ return (
 };
 
 export default CompanyDashboard;
-
