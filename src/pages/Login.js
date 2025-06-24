@@ -15,6 +15,7 @@ import { Email, Lock, Visibility, VisibilityOff } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import backgroundImage from "../assets/Back.jpg.jpg";
 import { loginUser } from "../api/authApi.";
+import { Link as RouterLink } from "react-router-dom";
 
 import { keyframes } from "@emotion/react";
 
@@ -65,8 +66,8 @@ const Login = () => {
 
     try {
       // const data = await loginUser(formData.email.trim(), formData.password);
-       const normalizedEmail = formData.email.trim().toLowerCase();
-  const data = await loginUser(normalizedEmail, formData.password);
+      const normalizedEmail = formData.email.trim().toLowerCase();
+      const data = await loginUser(normalizedEmail, formData.password);
       const { access_token } = data;
 
       sessionStorage.setItem("authToken", access_token);
@@ -296,7 +297,8 @@ const Login = () => {
 
             <Box sx={{ textAlign: "right", mt: 1 }}>
               <Link
-                onClick={() => navigate("/forget-password")}
+                component={RouterLink}
+                to="/forget-password"
                 sx={{
                   fontSize: "0.9rem",
                   color: "#3b82f6",
@@ -329,7 +331,8 @@ const Login = () => {
             <Typography variant="body2" align="center" sx={{ mt: 2 }}>
               Don’t have an account?{" "}
               <Link
-                onClick={() => navigate("/signup")}
+                component={RouterLink}
+                to="/signup"
                 sx={{ fontWeight: 600, cursor: "pointer", color: "#3b82f6" }}
               >
                 Signup

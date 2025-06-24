@@ -55,6 +55,7 @@ import styles from "./user.module.css";
 import DeleteUser from "./DeleteUser";
 import Migration from "./Migration";
 import CreateUser from "./CreateUser";
+import Department from "../Department";
 import { toast } from "react-toastify";
 import { CircularProgress, keyframes } from "@mui/material";
 import { activateAll, fetchUsers } from "../../api/userService";
@@ -300,38 +301,35 @@ export default function UserTable() {
     setMigrationDialog(true);
   };
 
-  
-
   const handleActivateAll = async () => {
-  const usersToActivate = rowsData
-    .filter((row) => selected.includes(row.id))
-    .map((user) => ({
-      id: user.id,
-      active: true,
-    }));
+    const usersToActivate = rowsData
+      .filter((row) => selected.includes(row.id))
+      .map((user) => ({
+        id: user.id,
+        active: true,
+      }));
 
-  if (usersToActivate.length === 0) {
-    toast.warn("No users selected for activation.");
-    return;
-  }
+    if (usersToActivate.length === 0) {
+      toast.warn("No users selected for activation.");
+      return;
+    }
 
-  try {
-    await activateAll(usersToActivate); // ✅ new API call
+    try {
+      await activateAll(usersToActivate); // ✅ new API call
 
-    // Update local state
-    setRowsData((prev) =>
-      prev.map((user) =>
-        selected.includes(user.id) ? { ...user, active: true } : user
-      )
-    );
+      // Update local state
+      setRowsData((prev) =>
+        prev.map((user) =>
+          selected.includes(user.id) ? { ...user, active: true } : user
+        )
+      );
 
-    toast.success("Selected users have been activated.");
-  } catch (error) {
-    console.error("Error activating users:", error);
-    toast.error("Failed to activate selected users.");
-  }
-};
-
+      toast.success("Selected users have been activated.");
+    } catch (error) {
+      console.error("Error activating users:", error);
+      toast.error("Failed to activate selected users.");
+    }
+  };
 
   const options = ["10GB", "20GB"];
 
@@ -440,15 +438,14 @@ export default function UserTable() {
       //   }`
       // );
       let statusMessage = "";
-if (newStatus && !user.enabled) {
-  statusMessage = `User "${user.name}" is pending email verification`;
-} else if (newStatus && user.enabled) {
-  statusMessage = `User "${user.name}" has been activated`;
-} else {
-  statusMessage = `User "${user.name}" has been deactivated`;
-}
-toast.success(statusMessage);
-
+      if (newStatus && !user.enabled) {
+        statusMessage = `User "${user.name}" is pending email verification`;
+      } else if (newStatus && user.enabled) {
+        statusMessage = `User "${user.name}" has been activated`;
+      } else {
+        statusMessage = `User "${user.name}" has been deactivated`;
+      }
+      toast.success(statusMessage);
     } catch (error) {
       console.error("Failed to update users", error);
       toast.error("Failed to update users.");
@@ -551,8 +548,6 @@ toast.success(statusMessage);
   }, [page, rowsPerPage]);
 
   console.log(">>>rowssss", rowsData);
-
- 
 
   const handleClose = () => {
     setMigrationDialog(false);
@@ -804,34 +799,38 @@ toast.success(statusMessage);
                     </TableCell>
 
                     <TableCell align="center">
-                     
                       <Tooltip
-  title={
-    (!row.active && !row.enabled)||(!row.active && row.enabled)
-      ? "Inactive"
-      : row.active && !row.enabled
-      ? "Pending"
-      : "Active"
-  }
->
-  <span>
-    <FormControlLabel
-      control={
-        <IOSSwitch
-          checked={row.active && row.enabled}
-          onChange={() => handleStatusToggle(row.name)}
-          disabled={
-            !row.active &&
-            (!row.permissions?.allowedStorageInBytesDisplay ||
-              row.permissions?.allowedStorageInBytesDisplay === "0 KB")
-          }
-           
-        />
-      }
-    />
-  </span>
-</Tooltip>
-
+                        title={
+                          row.active && !row.enabled
+                            ? "Pending (Email Not Verified)"
+                            : !row.active
+                            ? "Inactive (Provide Storage"
+                            : "Active"
+                        }
+                      >
+                        <span>
+                          <FormControlLabel
+                            control={
+                              <IOSSwitch
+                                checked={row.active && row.enabled}
+                                onChange={() => handleStatusToggle(row.name)}
+                                disabled={
+                                  // Disable if:
+                                  // 1. user is pending (active but not enabled), OR
+                                  // 2. storage is not provided
+                                  (row.active && !row.enabled) ||
+                                  (!row.active &&
+                                    (!row.permissions
+                                      ?.allowedStorageInBytesDisplay ||
+                                      row.permissions
+                                        ?.allowedStorageInBytesDisplay ===
+                                        "0 KB"))
+                                }
+                              />
+                            }
+                          />
+                        </span>
+                      </Tooltip>
                     </TableCell>
                     <TableCell
                       align="center"
@@ -1218,9 +1217,8 @@ toast.success(statusMessage);
             handleClose={() => setCreateUser(false)}
             // onUserCreated={refetchUsers}
             onUserCreated={(page, newUserEmails) => {
-  refetchUsers(page, newUserEmails);
-}}
-
+              refetchUsers(page, newUserEmails);
+            }}
             showSnackbar={(message, severity = "success") => {
               setSnackbarMessage(message);
               setSnackbarSeverity(severity);
@@ -1228,6 +1226,7 @@ toast.success(statusMessage);
             }}
             allUsers={rowsData} // <-- pass all users here
           />
+          {/* <Department allUsers={rowsData} /> */}
         </Dialog>
 
         {/* edit dialog */}
@@ -1418,4 +1417,3 @@ toast.success(statusMessage);
     </Box>
   );
 }
-

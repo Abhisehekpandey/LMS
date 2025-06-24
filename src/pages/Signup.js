@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
 import Snackbar from "@mui/material/Snackbar";
 import MuiAlert from "@mui/material/Alert";
+import { FormHelperText } from "@mui/material"; // make sure this is imported
 import {
   Box,
   Button,
@@ -43,34 +44,31 @@ const Signup = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [domainAvailable, setDomainAvailable] = useState("");
-  console.log(">>>>do",domainAvailable)
+  console.log(">>>>do", domainAvailable);
   const [checkingDomain, setCheckingDomain] = useState(false);
 
   const [snackbar, setSnackbar] = useState({
-  open: false,
-  message: '',
-  severity: 'success', // 'success' | 'error'
-});
+    open: false,
+    message: "",
+    severity: "success", // 'success' | 'error'
+  });
 
-const [passwordStrengthMsg, setPasswordStrengthMsg] = useState("");
+  const [passwordStrengthMsg, setPasswordStrengthMsg] = useState("");
 
+  const getPasswordStrengthMessage = (password) => {
+    const strongPattern =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^()[\]{}])[A-Za-z\d@$!%*?&#^()[\]{}]{8,}$/;
 
-const getPasswordStrengthMessage = (password) => {
-  const strongPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^()[\]{}])[A-Za-z\d@$!%*?&#^()[\]{}]{8,}$/;
+    if (!password) return "";
+    if (!strongPattern.test(password)) {
+      return "Weak password: must include uppercase, lowercase, number, and special character, min 8 characters.";
+    }
+    return "Strong password";
+  };
 
-  if (!password) return "";
-  if (!strongPattern.test(password)) {
-    return "Weak password: must include uppercase, lowercase, number, and special character, min 8 characters.";
-  }
-  return "Strong password.";
-};
-
-
-const handleSnackbarClose = () => {
-  setSnackbar((prev) => ({ ...prev, open: false }));
-};
-
-
+  const handleSnackbarClose = () => {
+    setSnackbar((prev) => ({ ...prev, open: false }));
+  };
 
   const fullEmail =
     formData.emailPrefix && formData.domain
@@ -79,15 +77,19 @@ const handleSnackbarClose = () => {
 
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.organization.trim())
+    if (!formData.organization.trim()) {
       newErrors.organization = "Organization is required";
-    
-if (!formData.adminName.trim()) {
-  newErrors.adminName = "Admin name is required";
-} else if (!/^[a-zA-Z0-9@._-]+$/.test(formData.adminName)) {
-  newErrors.adminName = "Admin name can only contain letters, numbers, @, ., _, -";
-}
+    } else if (!/^[a-zA-Z0-9@._-]+$/.test(formData.organization)) {
+      newErrors.organization =
+        "Organization name can only contain letters, numbers, @, ., _, -";
+    }
 
+    if (!formData.adminName.trim()) {
+      newErrors.adminName = "Admin name is required";
+    } else if (!/^[a-zA-Z0-9@._-]+$/.test(formData.adminName)) {
+      newErrors.adminName =
+        "Admin name can only contain letters, numbers, @, ., _, -";
+    }
 
     if (!formData.domain.trim()) {
       newErrors.domain = "Domain is required";
@@ -99,7 +101,7 @@ if (!formData.adminName.trim()) {
     }
 
     if (!formData.emailPrefix.trim()) {
-      newErrors.email = "Admin email prefix is required";
+      newErrors.email = "Admin email is required";
     } else if (!/\S+@\S+\.\S+/.test(fullEmail)) {
       newErrors.email = "Invalid email address";
     }
@@ -110,7 +112,9 @@ if (!formData.adminName.trim()) {
       newErrors.password = "Password must be at least 6 characters";
     }
 
-    if (formData.password !== formData.confirmPassword) {
+    if (!formData.confirmPassword.trim()) {
+      newErrors.confirmPassword = "Confirm password is required";
+    } else if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = "Passwords do not match";
     }
 
@@ -119,11 +123,11 @@ if (!formData.adminName.trim()) {
 
   const checkDomain = async (emailDomain) => {
     const fullDomain = `@${emailDomain.replace(/^@/, "")}`; // Ensure only one @
-   
+
     setCheckingDomain(true);
     try {
       const available = await checkDomainAvailability(fullDomain);
-    
+
       setDomainAvailable(available);
     } catch (err) {
       console.error("Domain check error:", err);
@@ -147,9 +151,9 @@ if (!formData.adminName.trim()) {
       }));
     }
     if (name === "password") {
-  const strengthMsg = getPasswordStrengthMessage(value);
-  setPasswordStrengthMsg(strengthMsg);
-}
+      const strengthMsg = getPasswordStrengthMessage(value);
+      setPasswordStrengthMsg(strengthMsg);
+    }
 
     if (name === "domain") {
       setDomainAvailable("");
@@ -177,37 +181,27 @@ if (!formData.adminName.trim()) {
       password: formData.password,
     };
 
-    // try {
-    //   const result = await signupUser(finalData);
-    //   console.log("Signup success:", result);
-    //   navigate("/login");
-    // } catch (error) {
-    //   console.error("Signup error:", error);
-    //   alert(error.message || "Signup failed");
-    // }
-
     try {
-  const result = await signupUser(finalData);
-  console.log("Signup success:", result);
+      const result = await signupUser(finalData);
+      console.log("Signup success:", result);
 
-  setSnackbar({
-    open: true,
-    message: "Signup successful! Redirecting to login...",
-    severity: "success",
-  });
+      setSnackbar({
+        open: true,
+        message: "Signup successful! Redirecting to login...",
+        severity: "success",
+      });
 
-  setTimeout(() => {
-    navigate("/login");
-  }, 2000); // delay for showing message
-} catch (error) {
-  console.error("Signup error:", error);
-  setSnackbar({
-    open: true,
-    message: error.message || "Signup failed",
-    severity: "error",
-  });
-}
-
+      setTimeout(() => {
+        navigate("/login");
+      }, 2000); // delay for showing message
+    } catch (error) {
+      console.error("Signup error:", error);
+      setSnackbar({
+        open: true,
+        message: error.message || "Signup failed",
+        severity: "error",
+      });
+    }
   };
 
   return (
@@ -368,8 +362,6 @@ if (!formData.adminName.trim()) {
                 helperText={errors.adminName}
               />
             </Box>
-            
-
 
             <TextField
               fullWidth
@@ -388,21 +380,18 @@ if (!formData.adminName.trim()) {
               }}
             />
 
-            {formData.domain && (
-              <Typography
-                variant="caption"
+            {formData.domain && domainAvailable && (
+              <FormHelperText
                 sx={{
-                  color:
-                    checkingDomain
-                      ? "text.secondary"
-                      : domainAvailable === "domain already registered"
-                      ? "error.main"
-                      : domainAvailable === "available"
-                      ? "success.main"
-                      : "text.secondary",
-                  ml: 1,
-                  mt: 0.5,
-                  display: "block",
+                  color: checkingDomain
+                    ? "text.secondary"
+                    : domainAvailable === "domain already registered"
+                    ? "error.main"
+                    : domainAvailable === "available"
+                    ? "success.main"
+                    : "text.secondary",
+                  ml: 0,
+                  mt: -1,
                 }}
               >
                 {checkingDomain
@@ -412,7 +401,7 @@ if (!formData.adminName.trim()) {
                   : domainAvailable === "available"
                   ? "Domain available"
                   : ""}
-              </Typography>
+              </FormHelperText>
             )}
 
             <TextField
@@ -439,7 +428,7 @@ if (!formData.adminName.trim()) {
               }}
             />
 
-            {/* <TextField
+            <TextField
               fullWidth
               label="Password"
               name="password"
@@ -448,8 +437,8 @@ if (!formData.adminName.trim()) {
               value={formData.password}
               onChange={handleChange}
               error={!!errors.password}
-              FormHelperTextProps={{ sx: { ml: 0 } }}
               helperText={errors.password}
+              FormHelperTextProps={{ sx: { ml: 0 } }}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -467,52 +456,23 @@ if (!formData.adminName.trim()) {
                   </InputAdornment>
                 ),
               }}
-            /> */}
+            />
+
+            {formData.password && passwordStrengthMsg && (
+              <FormHelperText
+                sx={{
+                  color: passwordStrengthMsg.includes("Strong")
+                    ? "success.main"
+                    : "error.main",
+                  ml: 0,
+                  mt: -1, // optional: to reduce space if needed
+                }}
+              >
+                {passwordStrengthMsg}
+              </FormHelperText>
+            )}
+
             <TextField
-  fullWidth
-  label="Password"
-  name="password"
-  type={showPassword ? "text" : "password"}
-  margin="normal"
-  value={formData.password}
-  onChange={handleChange}
-  error={!!errors.password}
-  helperText={errors.password}
-  FormHelperTextProps={{ sx: { ml: 0 } }}
-  InputProps={{
-    startAdornment: (
-      <InputAdornment position="start">
-        <Lock />
-      </InputAdornment>
-    ),
-    endAdornment: (
-      <InputAdornment position="end">
-        <IconButton
-          onClick={() => setShowPassword(!showPassword)}
-          edge="end"
-        >
-          {showPassword ? <VisibilityOff /> : <Visibility />}
-        </IconButton>
-      </InputAdornment>
-    ),
-  }}
-/>
-
-{formData.password && (
-  <Typography
-    variant="caption"
-     FormHelperTextProps={{ sx: { ml: 0 } }}
-    sx={{
-      color: passwordStrengthMsg.includes("Strong") ? "success.main" : "error.main",
-      ml: 1,
-    }}
-  >
-    {passwordStrengthMsg}
-  </Typography>
-)}
-
-
-            {/* <TextField
               fullWidth
               label="Confirm Password"
               name="confirmPassword"
@@ -521,9 +481,14 @@ if (!formData.adminName.trim()) {
               value={formData.confirmPassword}
               onChange={handleChange}
               error={!!errors.confirmPassword}
-              FormHelperTextProps={{ sx: { ml: 0 } }}
               helperText={errors.confirmPassword}
+              FormHelperTextProps={{ sx: { ml: 0 } }}
               InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Lock />
+                  </InputAdornment>
+                ),
                 endAdornment: (
                   <InputAdornment position="end">
                     <IconButton
@@ -537,39 +502,7 @@ if (!formData.adminName.trim()) {
                   </InputAdornment>
                 ),
               }}
-            /> */}
-            <TextField
-  fullWidth
-  label="Confirm Password"
-  name="confirmPassword"
-  type={showConfirmPassword ? "text" : "password"}
-  margin="normal"
-  value={formData.confirmPassword}
-  onChange={handleChange}
-  error={!!errors.confirmPassword}
-  helperText={errors.confirmPassword}
-  FormHelperTextProps={{ sx: { ml: 0 } }}
-  InputProps={{
-    startAdornment: (
-      <InputAdornment position="start">
-        <Lock />
-      </InputAdornment>
-    ),
-    endAdornment: (
-      <InputAdornment position="end">
-        <IconButton
-          onClick={() =>
-            setShowConfirmPassword(!showConfirmPassword)
-          }
-          edge="end"
-        >
-          {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
-        </IconButton>
-      </InputAdornment>
-    ),
-  }}
-/>
-
+            />
 
             <Button
               type="submit"
@@ -589,8 +522,17 @@ if (!formData.adminName.trim()) {
             <Typography variant="body2" align="center" sx={{ mt: 2 }}>
               Already have account?{" "}
               <Link
+                component="button"
                 onClick={() => navigate("/login")}
-                sx={{ cursor: "pointer", fontWeight: 600 }}
+                sx={{
+                  cursor: "pointer",
+                  fontWeight: 600,
+                  background: "none",
+                  border: "none",
+                  padding: 0,
+                  fontSize: "inherit",
+                  textAlign: "left",
+                }}
               >
                 Sign in here
               </Link>
@@ -599,24 +541,22 @@ if (!formData.adminName.trim()) {
         </Box>
       </Paper>
       <Snackbar
-  open={snackbar.open}
-  autoHideDuration={4000}
-  onClose={handleSnackbarClose}
-  anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
->
-  <MuiAlert
-    elevation={6}
-    variant="filled"
-    onClose={handleSnackbarClose}
-    severity={snackbar.severity}
-  >
-    {snackbar.message}
-  </MuiAlert>
-</Snackbar>
-
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <MuiAlert
+          elevation={6}
+          variant="filled"
+          onClose={handleSnackbarClose}
+          severity={snackbar.severity}
+        >
+          {snackbar.message}
+        </MuiAlert>
+      </Snackbar>
     </Box>
   );
 };
 
 export default Signup;
-

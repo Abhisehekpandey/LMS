@@ -15,6 +15,9 @@ import { Email, Lock, Visibility, VisibilityOff } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import backgroundImage from "../assets/Back.jpg.jpg";
 import { keyframes } from "@emotion/react";
+import { resetAdminPassword } from "../api/authApi.";
+import { Link as RouterLink } from "react-router-dom";
+
 
 const floatAnimation = keyframes`
   0% { background-position-y: 0px; }
@@ -44,22 +47,29 @@ const ForgetPassword = () => {
   };
 
   const validateForm = () => {
-    const newErrors = {};
-    if (!formData.email.trim()) {
-      newErrors.email = "Email is required";
-    } else if (!/\S+@\S+\.\S+/.test(formData.email.trim())) {
-      newErrors.email = "Invalid email format";
-    }
-    if (!formData.newPassword) {
-      newErrors.newPassword = "New password is required";
-    } else if (formData.newPassword.length < 6) {
-      newErrors.newPassword = "Password must be at least 6 characters";
-    }
-    if (formData.newPassword !== formData.confirmPassword) {
-      newErrors.confirmPassword = "Passwords do not match";
-    }
-    return newErrors;
-  };
+  const newErrors = {};
+
+  if (!formData.email.trim()) {
+    newErrors.email = "Email is required";
+  } else if (!/\S+@\S+\.\S+/.test(formData.email.trim())) {
+    newErrors.email = "Invalid email format";
+  }
+
+  if (!formData.newPassword) {
+    newErrors.newPassword = "New password is required";
+  } else if (formData.newPassword.length < 6) {
+    newErrors.newPassword = "Password must be at least 6 characters";
+  }
+
+  if (!formData.confirmPassword) {
+    newErrors.confirmPassword = "Confirm password is required";
+  } else if (formData.newPassword !== formData.confirmPassword) {
+    newErrors.confirmPassword = "Passwords do not match";
+  }
+
+  return newErrors;
+};
+
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -69,25 +79,40 @@ const ForgetPassword = () => {
     }
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const validationErrors = validateForm();
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      return;
-    }
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+  const validationErrors = validateForm();
+  if (Object.keys(validationErrors).length > 0) {
+    setErrors(validationErrors);
+    return;
+  }
 
-    // Call your API here for resetting password
+  try {
+    const response = await resetAdminPassword({
+      email: formData.email,
+      newPassword: formData.newPassword,
+    });
+
     setSnackbar({
       open: true,
-      message: "Password reset successfully!",
+      message: response.message || "Password reset successfully!",
       severity: "success",
     });
 
     setTimeout(() => {
       navigate("/login");
     }, 2000);
-  };
+  } catch (error) {
+    const message =
+      error.response?.data?.message || error.message || "Something went wrong";
+    setSnackbar({
+      open: true,
+      message,
+      severity: "error",
+    });
+  }
+};
+
 
   return (
     <Box
@@ -217,11 +242,13 @@ const ForgetPassword = () => {
           <Typography variant="body2" align="center" sx={{ mt: 2 }}>
             Back to{" "}
             <Link
-              onClick={() => navigate("/login")}
-              sx={{ fontWeight: 600, cursor: "pointer", color: "#3b82f6" }}
-            >
-              Login
-            </Link>
+  component={RouterLink}
+  to="/login"
+  sx={{ fontWeight: 600, color: "#3b82f6" }}
+>
+  Login
+</Link>
+
           </Typography>
         </Box>
 

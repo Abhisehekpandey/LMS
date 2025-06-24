@@ -39,7 +39,15 @@ import {
 } from "../../api/departmentService";
 import { createUsers } from "../../api/userService";
 
-const CreateUser = ({ handleClose, onUserCreated, showSnackbar, allUsers = []  }) => {
+const CreateUser = ({
+  handleClose,
+  onUserCreated,
+  showSnackbar,
+  allUsers = [],
+}) => {
+  const [bulkSuccessMessage, setBulkSuccessMessage] = useState("");
+  const [bulkWarningMessage, setBulkWarningMessage] = useState("");
+
   const [bulkFile, setBulkFile] = useState(null);
   const [fileName, setFileName] = useState("");
   const [addDepartment, setAddDepartment] = useState(false);
@@ -58,9 +66,13 @@ const CreateUser = ({ handleClose, onUserCreated, showSnackbar, allUsers = []  }
 
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
-  console.log(">>>>>ssssss", snackbarMessage);
+  console.log(">>>>>ssssss1", snackbarMessage);
   const [snackbarSeverity, setSnackbarSeverity] = useState("success"); // 'error' | 'info' | 'warning'
   const [csvUsers, setCsvUsers] = useState([]);
+  const [departmentSubmitted, setDepartmentSubmitted] = useState(false);
+  const [roleSubmitted, setRoleSubmitted] = useState(false);
+  const [duplicateDeptError, setDuplicateDeptError] = useState(false);
+
 
   const lastFieldRef = useRef(null);
   const dispatch = useDispatch();
@@ -110,27 +122,9 @@ const CreateUser = ({ handleClose, onUserCreated, showSnackbar, allUsers = []  }
     const csvOutput = XLSX.utils.sheet_to_csv(worksheet);
     const blob = new Blob([csvOutput], { type: "text/csv;charset=utf-8;" });
     saveAs(blob, "USER_TEMPLATE.csv");
-  };
 
-  const handleUserEmailChange = (e, index, formik) => {
-    const { value } = e.target;
-
-    // Update the formik value
-    formik.setFieldValue(`users[${index}].email`, value);
-
-    // Immediate domain check
-    const adminEmail = sessionStorage.getItem("adminEmail");
-    const adminDomain = adminEmail?.split("@")[1];
-    const emailDomain = value.split("@")[1];
-
-    if (emailDomain && emailDomain !== adminDomain) {
-      formik.setFieldError(
-        `users[${index}].email`,
-        "Email domain must match admin domain"
-      );
-    } else {
-      formik.setFieldError(`users[${index}].email`, undefined); // Clear error
-    }
+    // ✅ Show success snackbar
+    showSnackbar("Template downloaded successfully!", "success");
   };
 
   useEffect(() => {
@@ -198,8 +192,8 @@ const CreateUser = ({ handleClose, onUserCreated, showSnackbar, allUsers = []  }
           .required("Email is required"),
         phone: yup
           .string()
-          .matches(/^\d{10}$/, "Phone Number must be 10 digits")
-          .required("Phone Number is required"),
+          .required("Phone number is required")
+          .matches(/^\d{10}$/, "Phone number must be exactly 10 digits"),
       })
     ),
   });
@@ -289,7 +283,13 @@ const CreateUser = ({ handleClose, onUserCreated, showSnackbar, allUsers = []  }
       try {
         const res = await getDepartments();
         console.log(">>>out", res);
-        setDepartments(res);
+        // setDepartments(res);
+        const processedDepartments = res.map((dept) => ({
+          ...dept,
+          roles: (dept.roles || []).map((role) => role.roleName),
+        }));
+
+        setDepartments(processedDepartments);
       } catch (err) {
         console.error("Error loading departments:", err);
       }
@@ -415,12 +415,53 @@ const CreateUser = ({ handleClose, onUserCreated, showSnackbar, allUsers = []  }
               }}
               onClick={async () => {
                 try {
-                  await createUsers(csvUsers);
-                  showSnackbar("Bulk users created successfully!", "success");
+                  const response = await createUsers(csvUsers);
+                  const alreadyRegistered =
+                    response?.["Users already registered"] || [];
+
+                  const createdUsers = csvUsers.filter(
+                    (u) => !alreadyRegistered.includes(u.email?.toLowerCase())
+                  );
+                  const ignoredUsers = csvUsers.filter((u) =>
+                    alreadyRegistered.includes(u.email?.toLowerCase())
+                  );
+
+                  let closeAfter = 0;
+
+                  if (createdUsers.length > 0) {
+                    const createdNames = createdUsers
+                      .map((u) => u.name)
+                      .join(", ");
+                    setBulkSuccessMessage(
+                      `Users created successfully: ${createdNames}`
+                    );
+                    if (onUserCreated) onUserCreated();
+                    closeAfter = Math.max(closeAfter, 4000); // match autoHideDuration
+                  }
+
+                  if (ignoredUsers.length > 0) {
+                    const ignoredNames = ignoredUsers
+                      .map((u) => u.name)
+                      .join(", ");
+                    setBulkWarningMessage(
+                      `The following user(s) were ignored as their email already exists: ${ignoredNames}`
+                    );
+                    closeAfter = Math.max(closeAfter, 6000); // match autoHideDuration
+                  }
+
                   setCsvUsers([]);
                   setFileName("");
                   setBulkFile(null);
-                  handleClose();
+
+                  // ⏳ Delay closing until snackbars are shown
+                  if (closeAfter > 0) {
+                    setTimeout(() => {
+                     
+                      handleClose();
+                    }, closeAfter);
+                  } else {
+                    handleClose(); // fallback
+                  }
                 } catch (err) {
                   console.error("Bulk user creation failed:", err);
                   showSnackbar("Failed to create bulk users", "error");
@@ -463,18 +504,36 @@ const CreateUser = ({ handleClose, onUserCreated, showSnackbar, allUsers = []  }
                     ? user.role.roleName
                     : user.role,
                 phoneNumber: user.phone,
-                // storage: user.storage,
                 storage: user.storage?.trim() ? user.storage : null,
                 reportingManager: user.reportingManager,
               }));
 
-              await createUsers(transformedUsers);
+              const response = await createUsers(transformedUsers);
 
-              if (onUserCreated) onUserCreated();
-              if (showSnackbar)
-                showSnackbar("Users created successfully!", "success");
+              const alreadyRegistered =
+                response?.["Users already registered"] || [];
 
-              handleClose(); // Close after firing snackbar from parent
+              if (alreadyRegistered.length === 0) {
+                if (onUserCreated) onUserCreated();
+                if (showSnackbar)
+                  showSnackbar("Users created successfully!", "success");
+                handleClose();
+              } else {
+                // Field-level email error mapping
+                values.users.forEach((user, index) => {
+                  if (alreadyRegistered.includes(user.email)) {
+                    actions.setFieldError(
+                      `users[${index}].email`,
+                      "Email already exists"
+                    );
+                  }
+                });
+
+                const emails = alreadyRegistered.join(", ");
+                setSnackbarMessage(`Email(s) already exist: ${emails}`);
+                setSnackbarSeverity("error");
+                setSnackbarOpen(true);
+              }
             } catch (error) {
               setSnackbarMessage("Failed to create users. Please try again.");
               setSnackbarSeverity("error");
@@ -531,6 +590,7 @@ const CreateUser = ({ handleClose, onUserCreated, showSnackbar, allUsers = []  }
                                 <TextField
                                   autoComplete="off"
                                   label="Full Name"
+                                  FormHelperTextProps={{ sx: { ml: 0 } }}
                                   name={`users[${index}].name`}
                                   value={user.name}
                                   onChange={formik.handleChange}
@@ -552,15 +612,17 @@ const CreateUser = ({ handleClose, onUserCreated, showSnackbar, allUsers = []  }
                                   autoComplete="off"
                                   name={`users[${index}].email`}
                                   value={user.email?.split("@")[0] || ""}
+                                  FormHelperTextProps={{ sx: { ml: 0 } }}
                                   onChange={(e) => {
-                                    const emailPrefix = e.target.value;
+                                    const emailPrefix = e.target.value.trim();
                                     const fullEmail = `${emailPrefix}@${adminDomain}`;
+
                                     formik.setFieldValue(
                                       `users[${index}].email`,
                                       fullEmail
                                     );
 
-                                    // Optional: validate domain match
+                                    // Validate domain
                                     const emailDomain = fullEmail.split("@")[1];
                                     if (emailDomain !== adminDomain) {
                                       formik.setFieldError(
@@ -568,10 +630,16 @@ const CreateUser = ({ handleClose, onUserCreated, showSnackbar, allUsers = []  }
                                         "Email domain must match admin domain"
                                       );
                                     } else {
-                                      formik.setFieldError(
-                                        `users[${index}].email`,
-                                        undefined
-                                      );
+                                      // Clear domain error only (do not clear backend error like 'email already exists')
+                                      if (
+                                        formik.errors.users?.[index]?.email ===
+                                        "Email domain must match admin domain"
+                                      ) {
+                                        formik.setFieldError(
+                                          `users[${index}].email`,
+                                          undefined
+                                        );
+                                      }
                                     }
                                   }}
                                   error={Boolean(
@@ -596,10 +664,33 @@ const CreateUser = ({ handleClose, onUserCreated, showSnackbar, allUsers = []  }
                               <Grid item xs={4}>
                                 <TextField
                                   label="Phone Number"
-                                  autoComplete="off"
                                   name={`users[${index}].phone`}
-                                  value={user.phone}
-                                  onChange={formik.handleChange}
+                                  FormHelperTextProps={{ sx: { ml: 0 } }}
+                                  value={user.phone || ""}
+                                  onChange={(e) => {
+                                    const value = e.target.value.trim();
+
+                                    // Allow only digits
+                                    if (/^\d*$/.test(value)) {
+                                      formik.setFieldValue(
+                                        `users[${index}].phone`,
+                                        value
+                                      );
+
+                                      // Check for exact 10 digits when value is present
+                                      if (value && value.length !== 10) {
+                                        formik.setFieldError(
+                                          `users[${index}].phone`,
+                                          "Phone number must be exactly 10 digits"
+                                        );
+                                      } else {
+                                        formik.setFieldError(
+                                          `users[${index}].phone`,
+                                          undefined
+                                        );
+                                      }
+                                    }
+                                  }}
                                   error={Boolean(
                                     formik.touched.users?.[index]?.phone &&
                                       formik.errors.users?.[index]?.phone
@@ -610,6 +701,7 @@ const CreateUser = ({ handleClose, onUserCreated, showSnackbar, allUsers = []  }
                                   }
                                   fullWidth
                                   size="small"
+                                  inputProps={{ maxLength: 10 }} // Optional: Prevents more than 10 digits
                                 />
                               </Grid>
                               <Grid item xs={3}>
@@ -920,10 +1012,11 @@ const CreateUser = ({ handleClose, onUserCreated, showSnackbar, allUsers = []  }
         <DialogContent dividers padding="0 !important">
           <Grid container spacing={2}>
             <Grid item xs={6}>
-              <TextField
+              {/* <TextField
                 fullWidth
                 size="small"
                 label="Department Name"
+                FormHelperTextProps={{ sx: { ml: 0 } }}
                 value={newDepartment.deptName}
                 onChange={(e) =>
                   setNewDepartment({
@@ -931,52 +1024,90 @@ const CreateUser = ({ handleClose, onUserCreated, showSnackbar, allUsers = []  }
                     deptName: e.target.value,
                   })
                 }
-              />
-            </Grid>
-            <Grid item xs={6}>
-              {/* <TextField
-                fullWidth
-                size="small"
-                label="Department Moderator"
-                value={newDepartment.deptModerator}
-                onChange={(e) =>
-                  setNewDepartment({
-                    ...newDepartment,
-                    deptModerator: e.target.value,
-                  })
+                error={departmentSubmitted && !newDepartment.deptName}
+                helperText={
+                  departmentSubmitted && !newDepartment.deptName
+                    ? "Department Name is required"
+                    : ""
                 }
               /> */}
-              <Autocomplete
+              <TextField
   fullWidth
   size="small"
-  options={allUsers}
-  getOptionLabel={(option) => option.name || ""}
-  value={
-    allUsers.find((user) => user.name === newDepartment.deptModerator) || null
-  }
-  onChange={(event, value) =>
+  label="Department Name"
+  FormHelperTextProps={{ sx: { ml: 0 } }}
+  value={newDepartment.deptName}
+  onChange={(e) => {
     setNewDepartment({
       ...newDepartment,
-      deptModerator: value ? value.name : "",
-    })
+      deptName: e.target.value,
+    });
+    setDuplicateDeptError(false); // 👈 Clear error on change
+  }}
+  error={
+    (departmentSubmitted && !newDepartment.deptName) || duplicateDeptError
   }
-  renderInput={(params) => (
-    <TextField {...params} label="Department Moderator" />
-  )}
+  helperText={
+    departmentSubmitted && !newDepartment.deptName
+      ? "Department Name is required"
+      : duplicateDeptError
+      ? "Department with this name already exists"
+      : ""
+  }
 />
 
+            </Grid>
+            <Grid item xs={6}>
+              <Autocomplete
+                fullWidth
+                size="small"
+                FormHelperTextProps={{ sx: { ml: 0 } }}
+                options={allUsers}
+                getOptionLabel={(option) => option.name || ""}
+                value={
+                  allUsers.find(
+                    (user) => user.name === newDepartment.deptModerator
+                  ) || null
+                }
+                onChange={(event, value) =>
+                  setNewDepartment({
+                    ...newDepartment,
+                    deptModerator: value ? value.name : "",
+                  })
+                }
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Department Moderator"
+                    FormHelperTextProps={{ sx: { ml: 0 } }}
+                    error={departmentSubmitted && !newDepartment.deptModerator}
+                    helperText={
+                      departmentSubmitted && !newDepartment.deptModerator
+                        ? "Department Moderator is required"
+                        : ""
+                    }
+                  />
+                )}
+              />
             </Grid>
             <Grid item xs={4}>
               <TextField
                 fullWidth
                 size="small"
                 label="Short Name"
+                FormHelperTextProps={{ sx: { ml: 0 } }}
                 value={newDepartment.deptDisplayName}
                 onChange={(e) =>
                   setNewDepartment({
                     ...newDepartment,
                     deptDisplayName: e.target.value,
                   })
+                }
+                error={departmentSubmitted && !newDepartment.deptDisplayName}
+                helperText={
+                  departmentSubmitted && !newDepartment.deptDisplayName
+                    ? "Short Name is required"
+                    : ""
                 }
               />
             </Grid>
@@ -988,7 +1119,18 @@ const CreateUser = ({ handleClose, onUserCreated, showSnackbar, allUsers = []  }
                   setNewDepartment({ ...newDepartment, storage: value })
                 }
                 renderInput={(params) => (
-                  <TextField {...params} label="Storage" size="small" />
+                  <TextField
+                    {...params}
+                    label="Storage"
+                    FormHelperTextProps={{ sx: { ml: 0 } }}
+                    size="small"
+                    error={departmentSubmitted && !newDepartment.storage}
+                    helperText={
+                      departmentSubmitted && !newDepartment.storage
+                        ? "Storage is required"
+                        : ""
+                    }
+                  />
                 )}
               />
             </Grid>
@@ -1012,7 +1154,28 @@ const CreateUser = ({ handleClose, onUserCreated, showSnackbar, allUsers = []  }
         <DialogActions>
           <Button
             onClick={async () => {
+              setDepartmentSubmitted(true);
+
+              const { deptName, deptModerator, deptDisplayName, storage } =
+                newDepartment;
+
+              if (!deptName || !deptModerator || !deptDisplayName || !storage)
+                return;
               try {
+                if (
+                  !newDepartment.deptName.trim() ||
+                  !newDepartment.deptModerator.trim() ||
+                  !newDepartment.deptDisplayName.trim() ||
+                  !newDepartment.storage
+                ) {
+                  setSnackbarMessage(
+                    "Please fill all mandatory fields before creating department."
+                  );
+                  setSnackbarSeverity("warning");
+                  setSnackbarOpen(true);
+                  return;
+                }
+
                 const payload = {
                   ...newDepartment,
                   role:
@@ -1020,10 +1183,15 @@ const CreateUser = ({ handleClose, onUserCreated, showSnackbar, allUsers = []  }
                       ? null
                       : newDepartment.role,
                 };
+                console.log("pppppp", payload);
                 const createdDept = await createDepartment(payload);
 
                 console.log("Department created:", createdDept);
                 setDepartments((prev) => [...prev, payload]);
+
+                setSnackbarMessage("Department created successfully!");
+                setSnackbarSeverity("success");
+                setSnackbarOpen(true);
 
                 setNewDepartment({
                   deptName: "",
@@ -1034,7 +1202,13 @@ const CreateUser = ({ handleClose, onUserCreated, showSnackbar, allUsers = []  }
                 });
                 setAddDepartment(false);
               } catch (error) {
-                console.error("Failed to create department:", error);
+               
+                setSnackbarMessage(
+                  "Failed to create department(Department with this name already Exist). Please try another."
+                );
+                setSnackbarSeverity("error");
+                setSnackbarOpen(true);
+                 setDuplicateDeptError(true); // 👈 Trigger field-level error
               }
             }}
             variant="contained"
@@ -1118,41 +1292,93 @@ const CreateUser = ({ handleClose, onUserCreated, showSnackbar, allUsers = []  }
         {/* <DialogContent> */}
         <DialogContent dividers padding="0 !important">
           {/* <TextField size="small" label="Role Name" /> */}
-          <TextField
+          {/* <TextField
             size="small"
             label="Role Name"
             value={newRoleName}
             onChange={(e) => setNewRoleName(e.target.value)}
-          />
+          /> */}
+          <TextField
+  size="small"
+  label="Role Name"
+  FormHelperTextProps={{ sx: { ml: 0 } }}
+  value={newRoleName}
+  onChange={(e) => setNewRoleName(e.target.value)}
+  error={roleSubmitted && !newRoleName.trim()}
+  helperText={
+    roleSubmitted && !newRoleName.trim() ? "Role Name is required" : ""
+  }
+/>
+
         </DialogContent>
+
         <DialogActions>
           <Button
-            onClick={async () => {
-              if (!newRoleName.trim()) return; // no empty roles
+            // onClick={async () => {
+            //   if (!newRoleName.trim()) return; // no empty roles
 
-              try {
-                const addedRole = await addRoleToDepartment(
-                  selectedDepartmentForRole,
-                  newRoleName.trim()
-                );
-                console.log(">>>selected", selectedDepartmentForRole.deptName);
-                console.log(">>>addedRole", addedRole[0]);
-                console.log(">>>departments1", departments);
-                setDepartments((prevDepartments) =>
-                  prevDepartments.map((dept) =>
-                    dept.deptName === selectedDepartmentForRole.deptName
-                      ? {
-                          ...dept,
-                          roles: [...(dept.roles || []), addedRole[0]],
-                        }
-                      : dept
-                  )
-                );
-                console.log(">>>departments222", departments);
-                setNewRoleName("");
-                setAddRole(false);
-              } catch (error) {}
-            }}
+            //   try {
+            //     const addedRole = await addRoleToDepartment(
+            //       selectedDepartmentForRole,
+            //       newRoleName.trim()
+            //     );
+            //     console.log(">>>selected", selectedDepartmentForRole.deptName);
+            //     console.log(">>>addedRole", addedRole[0]);
+            //     console.log(">>>departments1", departments);
+            //     setDepartments((prevDepartments) =>
+            //       prevDepartments.map((dept) =>
+            //         dept.deptName === selectedDepartmentForRole.deptName
+            //           ? {
+            //               ...dept,
+            //               roles: [...(dept.roles || []), addedRole[0]],
+            //             }
+            //           : dept
+            //       )
+            //     );
+            //     console.log(">>>departments222", departments);
+            //     setNewRoleName("");
+            //     setAddRole(false);
+            //   } catch (error) {}
+            // }}
+            onClick={async () => {
+  setRoleSubmitted(true);
+
+  if (!newRoleName.trim()) return;
+
+  try {
+    const addedRole = await addRoleToDepartment(
+      selectedDepartmentForRole,
+      newRoleName.trim()
+    );
+
+    setDepartments((prevDepartments) =>
+      prevDepartments.map((dept) =>
+        dept.deptName === selectedDepartmentForRole.deptName
+          ? {
+              ...dept,
+              roles: [...(dept.roles || []), addedRole[0]],
+            }
+          : dept
+      )
+    );
+
+    setSnackbarMessage("Role added successfully!");
+    setSnackbarSeverity("success");
+    setSnackbarOpen(true);
+
+    setNewRoleName("");
+    setAddRole(false);
+    setRoleSubmitted(false);
+  } catch (error) {
+    console.error("Add role error:", error);
+    setSnackbarMessage(
+      "Failed to add role. Role might already exist or there was a server error."
+    );
+    setSnackbarSeverity("error");
+    setSnackbarOpen(true);
+  }
+}}
+
             variant="contained"
             color="primary"
             sx={{ backgroundColor: "rgb(251, 68, 36)" }}
@@ -1161,6 +1387,41 @@ const CreateUser = ({ handleClose, onUserCreated, showSnackbar, allUsers = []  }
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Snackbar
+        open={Boolean(bulkSuccessMessage)}
+        autoHideDuration={4000}
+        onClose={() => setBulkSuccessMessage("")}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        sx={{ mb: 8 }} // Push it up
+      >
+        <MuiAlert
+          onClose={() => setBulkSuccessMessage("")}
+          severity="success"
+          elevation={6}
+          variant="filled"
+          sx={{ width: "100%" }}
+        >
+          {bulkSuccessMessage}
+        </MuiAlert>
+      </Snackbar>
+
+      <Snackbar
+        open={Boolean(bulkWarningMessage)}
+        autoHideDuration={6000}
+        onClose={() => setBulkWarningMessage("")}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <MuiAlert
+          onClose={() => setBulkWarningMessage("")}
+          severity="warning"
+          elevation={6}
+          variant="filled"
+          sx={{ width: "100%" }}
+        >
+          {bulkWarningMessage}
+        </MuiAlert>
+      </Snackbar>
 
       <Snackbar
         open={snackbarOpen}

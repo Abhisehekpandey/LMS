@@ -27,9 +27,12 @@ import {
   Tooltip,
   FormControlLabel,
 } from "@mui/material";
+import { Autocomplete } from "@mui/material";
 import { Card, CardContent } from "@mui/material";
-import { CircularProgress, keyframes } from '@mui/material';
-
+import { CircularProgress, keyframes } from "@mui/material";
+import { getDepartments } from "../api/departmentService";
+import { createDepartment } from "../api/departmentService";
+import { createRole } from "../api/departmentService";
 
 import { styled } from "@mui/material/styles";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
@@ -77,6 +80,7 @@ import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import { Checkbox } from "@mui/material";
 import styles from "./department.module.css";
+import { fetchUsers } from "../api/userService";
 
 const IOSSwitch = styled((props) => (
   <Switch focusVisibleClassName=".Mui-focusVisible" disableRipple {...props} />
@@ -146,16 +150,16 @@ const fadeIn = keyframes`
 
 // Styled overlay
 const LoaderWrapper = styled(Box)(({ theme }) => ({
-  position: 'fixed',
+  position: "fixed",
   top: 0,
   left: 0,
-  width: '100vw',
-  height: '100vh',
-  background: 'rgba(255, 255, 255, 0.75)',
-  backdropFilter: 'blur(5px)',
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
+  width: "100vw",
+  height: "100vh",
+  background: "rgba(255, 255, 255, 0.75)",
+  backdropFilter: "blur(5px)",
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
   zIndex: 1300,
   animation: `${fadeIn} 0.5s ease-in-out`,
 }));
@@ -163,8 +167,8 @@ const LoaderWrapper = styled(Box)(({ theme }) => ({
 // Styled CircularProgress
 const CustomSpinner = styled(CircularProgress)(({ theme }) => ({
   color: theme.palette.primary.main,
-  width: '60px !important',
-  height: '80px !important',
+  width: "60px !important",
+  height: "80px !important",
   thickness: 2,
 }));
 
@@ -219,15 +223,28 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     value: "",
   });
 
-  const storageOptions = [
-    "0GB",
-    "25GB",
-    "50GB",
-    "75GB",
-    "100GB",
-    "150GB",
-    "200GB",
-  ];
+  const [allUsers, setAllUsers] = useState([]);
+  const [duplicateDepartmentError, setDuplicateDepartmentError] =
+    useState(false);
+
+  const getStorageOptions = (deptAllowedValue) => {
+    const baseOptions = [
+      "0GB",
+      "25GB",
+      "50GB",
+      "75GB",
+      "100GB",
+      "150GB",
+      "200GB",
+    ];
+
+    // Include dept value if not already in the list
+    if (deptAllowedValue && !baseOptions.includes(deptAllowedValue)) {
+      return [...baseOptions, deptAllowedValue];
+    }
+
+    return baseOptions;
+  };
 
   const handleStorageChange = (name, newStorage) => {
     const updated = departments.map((dept) =>
@@ -357,11 +374,11 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       prev.map((dept) =>
         dept.name === editingRole.departmentName
           ? {
-            ...dept,
-            roles: dept.roles.map((role, i) =>
-              i === editingRole.roleIndex ? editingRole.value : role
-            ),
-          }
+              ...dept,
+              roles: dept.roles.map((role, i) =>
+                i === editingRole.roleIndex ? editingRole.value : role
+              ),
+            }
           : dept
       )
     );
@@ -648,10 +665,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
           // Update state and localStorage
           setDepartments(updatedDepartmentsList);
-          localStorage.setItem(
-            "departments",
-            JSON.stringify(updatedDepartmentsList)
-          );
 
           let summaryMessages = [];
 
@@ -761,10 +774,12 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           : b.roles.length - a.roles.length;
       }
 
-      // ... existing sorting logic for other columns
+      const aVal = a[orderBy] || "";
+      const bVal = b[orderBy] || "";
+
       return order === "asc"
-        ? a[orderBy].localeCompare(b[orderBy])
-        : b[orderBy].localeCompare(a[orderBy]);
+        ? aVal.localeCompare(bVal)
+        : bVal.localeCompare(aVal);
     });
   }, [departments, filteredDepartments, order, orderBy]);
 
@@ -795,17 +810,13 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     transition: "background-color 0.2s ease",
   }));
 
-  const handleAddDepartment = () => {
+  const handleAddDepartment = async () => {
     setNewDepartment((prev) => ({ ...prev, submitted: true }));
 
-    if (
-      !newDepartment.name ||
-      !newDepartment.displayName ||
-      // !newDepartment.initialRole ||
-      !newDepartment.storage ||
-      // !newDepartment.reportingManager ||
-      !newDepartment.departmentModerator
-    ) {
+    const { name, displayName, departmentModerator, initialRole, storage } =
+      newDepartment;
+
+    if (!name || !displayName || !departmentModerator || !storage) {
       setSnackbar({
         open: true,
         message: "Please fill all required fields",
@@ -814,65 +825,67 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       return;
     }
 
-    if (departments.some((dept) => dept.name === newDepartment.name)) {
-      setSnackbar({
-        open: true,
-        message: "Department already exists",
-        severity: "error",
-      });
-      return;
-    }
-
-    const newDeptWithRole = {
-      name: newDepartment.name,
-      displayName: newDepartment.displayName,
-      // roles: [newDepartment.initialRole],
-      roles: newDepartment.initialRole ? [newDepartment.initialRole] : [],
-
-      storage: newDepartment.storage,
-      // reportingManager: newDepartment.reportingManager,
-      departmentModerator: newDepartment.departmentModerator,
-      userCount: 0, // Initialize user count
-      isActive: true, // Initialize as active
-      createdAt: new Date().toISOString(), // Add creation timestamp
+    const payload = {
+      deptName: name.trim(),
+      deptDisplayName: displayName.trim(),
+      deptModerator: departmentModerator.trim(),
+      storage: storage.trim(),
+      role: initialRole.trim(),
     };
 
-    const updatedDepartments = [...departments, newDeptWithRole];
-
     try {
-      // Update state and localStorage
-      setDepartments(updatedDepartments);
-      localStorage.setItem("departments", JSON.stringify(updatedDepartments));
+      const res = await createDepartment(payload);
 
-      // Reset form
+      // Add new department to the list (you might want to re-fetch from API instead)
+      setDepartments((prev) => [
+        ...prev,
+        {
+          name: res.deptName,
+          displayName: res.deptDisplayName,
+          departmentModerator: res.deptModerator,
+          storage: res.storage,
+          roles: [res.role],
+          isActive: true,
+          userCount: 0,
+          createdAt: new Date().toISOString(),
+        },
+      ]);
+
       setShowAddDepartment(false);
       setNewDepartment({
         name: "",
         displayName: "",
         initialRole: "",
         storage: "50GB",
-        // reportingManager: "",
+        departmentModerator: "",
         submitted: false,
       });
 
-      // Show success message
       setSnackbar({
         open: true,
-        message: `Department "${newDepartment.name}" added successfully with role "${newDepartment.initialRole}"!`,
+        message: `Department "${payload.deptName}" created successfully.`,
         severity: "success",
       });
     } catch (error) {
-      console.error("Error adding department:", error);
+      const errorMessage =
+        error?.response?.data?.message ||
+        "Failed to create department. Please try again.";
+      console.log("errrrrr", errorMessage);
+
+      if (errorMessage.includes("Failed")) {
+        console.log("hiiiiii");
+        setDuplicateDepartmentError(true);
+      }
+
       setSnackbar({
         open: true,
-        message: "Error adding department. Please try again.",
+        message: errorMessage,
         severity: "error",
       });
     }
   };
 
-  // Add new handler function
-  const handleAddRole = () => {
+  const handleAddRole = async () => {
     if (!newRole.trim()) {
       setSnackbar({
         open: true,
@@ -882,33 +895,48 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       return;
     }
 
-    if (selectedDepartment.roles.includes(newRole.trim())) {
+    try {
+      const payload = {
+        department: selectedDepartment.name.trim(),
+        role: newRole.trim(),
+      };
+
+      await createRole(payload); // API call
+
+      // 🔁 Re-fetch departments from backend
+      const updatedDepartments = await getDepartments();
+
+      const mapped = updatedDepartments.map((dept) => ({
+        name: dept.deptName,
+        displayName: dept.deptDisplayName,
+        departmentModerator:
+          dept.deptModerator || dept.permissions?.deptUsername || "",
+        storage: dept.permissions?.displayStorage || "0 GB",
+        allowedStorage:
+          dept.permissions?.allowedStorageInBytesDisplay || "0 GB",
+        roles: dept.roles?.map((r) => r.roleName) || [],
+        userCount: dept.numberOfUsers || 0,
+        isActive: dept.permissions?.active || false,
+        createdAt: dept.createdOn,
+      }));
+
+      setDepartments(mapped); // ✅ update UI
       setSnackbar({
         open: true,
-        message: "Role already exists in this department",
+        message: `Role "${newRole}" added successfully.`,
+        severity: "success",
+      });
+
+      setNewRole("");
+      setShowAddRoleDialog(false);
+    } catch (error) {
+      console.error("Failed to create role:", error);
+      setSnackbar({
+        open: true,
+        message: "Failed to create role. Please try again.",
         severity: "error",
       });
-      return;
     }
-
-    // Update departments state with new role
-    const updatedDepartments = departments.map((dept) =>
-      dept.name === selectedDepartment.name
-        ? { ...dept, roles: [...dept.roles, newRole.trim()] }
-        : dept
-    );
-
-    // Update state and localStorage
-    setDepartments(updatedDepartments);
-    localStorage.setItem("departments", JSON.stringify(updatedDepartments));
-
-    setSnackbar({
-      open: true,
-      message: `Role "${newRole}" added to department "${selectedDepartment.name}"`,
-      severity: "success",
-    });
-    setNewRole("");
-    setShowAddRoleDialog(false);
   };
 
   // Add after other handler functions
@@ -920,8 +948,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     );
     setSnackbar({
       open: true,
-      message: `Department "${dept.name}" ${!dept.isActive ? "activated" : "deactivated"
-        }`,
+      message: `Department "${dept.name}" ${
+        !dept.isActive ? "activated" : "deactivated"
+      }`,
       severity: "success",
     });
   };
@@ -1056,15 +1085,56 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       });
     }
   };
- 
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 300);
-    return () => clearTimeout(timer);
+    const fetchDepartments = async () => {
+      try {
+        setLoading(true);
+        const apiDepartments = await getDepartments();
+
+        // Map backend data to expected frontend format
+        const mapped = apiDepartments.map((dept) => ({
+          name: dept.deptName,
+          displayName: dept.deptDisplayName,
+          departmentModerator:
+            dept.deptModerator || dept.permissions?.deptUsername || "",
+          // storage: dept.permissions?.allowedStorageInBytesDisplay || "0 GB",
+          storage: dept.permissions?.displayStorage || "0 GB",
+          allowedStorage:
+            dept.permissions?.allowedStorageInBytesDisplay || "0 GB", // 🔥
+          roles: dept.roles?.map((r) => r.roleName) || [],
+          userCount: dept.numberOfUsers || 0,
+          isActive: dept.permissions?.active || false,
+          createdAt: dept.createdOn,
+        }));
+
+        setDepartments(mapped);
+      } catch (error) {
+        console.error("Error fetching departments:", error);
+        setSnackbar({
+          open: true,
+          message: "Failed to fetch departments",
+          severity: "error",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDepartments();
   }, []);
 
-
-  
+  useEffect(() => {
+    const fetchAllUsers = async () => {
+      try {
+        const res = await fetchUsers(0); // or your real API call
+        setAllUsers(res.content || []);
+      } catch (error) {
+        console.error("Failed to load users", error);
+      }
+    };
+    fetchAllUsers();
+  }, []);
 
   return (
     <Box
@@ -1449,7 +1519,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                         }}
                       >
                         <Select
-                          value={dept.storage}
+                          // value={dept.storage}
+                          value={dept.allowedStorage}
                           onChange={(e) =>
                             handleStorageChange(dept.name, e.target.value)
                           }
@@ -1459,11 +1530,13 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                             borderRadius: "28px",
                           }}
                         >
-                          {storageOptions.map((option) => (
-                            <MenuItem key={option} value={option}>
-                              {option}
-                            </MenuItem>
-                          ))}
+                          {getStorageOptions(dept.allowedStorage).map(
+                            (option) => (
+                              <MenuItem key={option} value={option}>
+                                {option}
+                              </MenuItem>
+                            )
+                          )}
                         </Select>
                       </TableCell>
 
@@ -1693,13 +1766,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                         >
                                           <IconButton
                                             size="small"
-                                            // onClick={() =>
-                                            //   handleEditRole(
-                                            //     index,
-                                            //     roleIndex,
-                                            //     role
-                                            //   )
-                                            // }
                                             onClick={() =>
                                               handleEditRole(
                                                 dept.name,
@@ -1909,10 +1975,12 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               alignItems: "center",
               p: 2,
 
-              backgroundColor: "primary.main"
+              backgroundColor: "primary.main",
             }}
           >
-            <Typography variant="h6" sx={{ color: "#ffff" }}>New Department</Typography>
+            <Typography variant="h6" sx={{ color: "#ffff" }}>
+              New Department
+            </Typography>
             <IconButton
               onClick={() => setShowAddDepartment(false)}
               size="small"
@@ -1953,19 +2021,27 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     {
                       label: "Department Name",
                       value: newDepartment.name,
-                      onChange: (e) =>
+
+                      onChange: (e) => {
                         setNewDepartment((prev) => ({
                           ...prev,
                           name: e.target.value,
-                        })),
-                      error: !newDepartment.name && newDepartment.submitted,
+                        }));
+                        setDuplicateDepartmentError(false); // reset on input
+                      },
+                      error:
+                        (!newDepartment.name && newDepartment.submitted) ||
+                        duplicateDepartmentError,
                       helperText:
                         !newDepartment.name && newDepartment.submitted
                           ? "Department name is required"
+                          : duplicateDepartmentError
+                          ? "Department with this name already exists"
                           : "",
                     },
                     {
                       label: "Short Name",
+
                       value: newDepartment.displayName,
                       onChange: (e) =>
                         setNewDepartment((prev) => ({
@@ -1992,10 +2068,11 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                         newDepartment.submitted,
                       helperText:
                         !newDepartment.departmentModerator &&
-                          newDepartment.submitted
+                        newDepartment.submitted
                           ? "Department Moderator is required"
                           : "",
                     },
+
                     {
                       label: "Initial Role",
                       value: newDepartment.initialRole,
@@ -2004,26 +2081,57 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                           ...prev,
                           initialRole: e.target.value,
                         })),
-                      error:
-                        !newDepartment.initialRole && newDepartment.submitted,
-                      helperText:
-                        !newDepartment.initialRole && newDepartment.submitted
-                          ? "At least one role is required"
-                          : "",
+                      error: false,
+                      helperText: "Optional: You can add roles later",
                     },
-                  ].map((field, index) => (
-                    <TextField
-                      key={index}
-                      fullWidth
-                      size="small"
-                      label={field.label}
-                      value={field.value}
-                      onChange={field.onChange}
-                      error={field.error}
-                      helperText={field.helperText}
-                      required
-                    />
-                  ))}
+                  ].map((field, index) => {
+                    if (field.label === "Department Moderator") {
+                      return (
+                        <Autocomplete
+                          key={index}
+                          size="small"
+                          fullWidth
+                          options={allUsers}
+                          getOptionLabel={(option) => option.name || ""}
+                          value={
+                            allUsers.find((u) => u.name === field.value) || null
+                          }
+                          onChange={(event, newValue) =>
+                            setNewDepartment((prev) => ({
+                              ...prev,
+                              departmentModerator: newValue?.name || "",
+                            }))
+                          }
+                          renderInput={(params) => (
+                            <TextField
+                              {...params}
+                              label="Department Moderator"
+                              FormHelperTextProps={{ sx: { ml: 0 } }}
+                              error={field.error}
+                              helperText={field.helperText}
+                              required
+                            />
+                          )}
+                        />
+                      );
+                    }
+
+                    // Default rendering for other fields
+                    return (
+                      <TextField
+                        key={index}
+                        fullWidth
+                        size="small"
+                        FormHelperTextProps={{ sx: { ml: 0 } }}
+                        label={field.label}
+                        value={field.value}
+                        onChange={field.onChange}
+                        error={field.error}
+                        helperText={field.helperText}
+                        required
+                      />
+                    );
+                  })}
                 </CardContent>
               </Card>
 
@@ -2189,7 +2297,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            backgroundColor: "primary.main"
+            backgroundColor: "primary.main",
           }}
         >
           <Typography variant="h6" sx={{ color: "#ffff" }}>
@@ -2250,7 +2358,12 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           >
             Cancel
           </Button>
-          <Button onClick={handleAddRole} variant="contained" color="primary" sx={{ background: "rgb(251, 68, 36)", }}>
+          <Button
+            onClick={handleAddRole}
+            variant="contained"
+            color="primary"
+            sx={{ background: "rgb(251, 68, 36)" }}
+          >
             Add
           </Button>
         </Box>
@@ -2290,7 +2403,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           },
         }}
       >
-
         <Box
           sx={{
             display: "flex",
@@ -2299,8 +2411,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             backgroundColor: "primary.main",
             // borderRadius:"20px",
             margin: 0,
-            padding: 1
-
+            padding: 1,
           }}
         >
           <Typography variant="h6" sx={{ color: "#ffff" }}>
@@ -2319,7 +2430,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               },
               transition: "all 0.3s ease",
               borderRadius: "50%",
-              size: "small"
+              size: "small",
             }}
           >
             <CloseIcon />
@@ -2366,7 +2477,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         >
           <Button onClick={() => setEditDialogOpen(false)}>Cancel</Button>
           <Button
-            sx={{ background: "rgb(251, 68, 36)", }}
+            sx={{ background: "rgb(251, 68, 36)" }}
             variant="contained"
             color="primary"
             onClick={() => {

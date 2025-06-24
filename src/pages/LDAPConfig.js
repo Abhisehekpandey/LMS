@@ -104,25 +104,10 @@ const LDAPConfig = ({ onThemeToggle }) => {
     const timer = setTimeout(() => setLoading(false), 300);
     return () => clearTimeout(timer);
   }, []);
-  // if (loading) {
-  //   return (
-  //     <LoaderWrapper>
-  //       <CustomSpinner />
-  //     </LoaderWrapper>
-  //   );
-  // }
+  
   return (
     <Box sx={{ display: "flex", padding: "14px", position: "relative", marginLeft: "65px", height: "100%", overflow: "hidden", backgroundColor: 'whitesmoke', }}>
-      {/* <Box
-        sx={{
-          borderRadius: "20px",
-          flexGrow: 1,
-          marginLeft: "48px",
-          transition: "margin-left 0.3s",
-          overflow: "hidden",
-        }}
-      > */}
-      {/* <Box sx={{ p: 0, marginLeft: "0px", overflow: "hidden", }}> */}
+     
       <Paper elevation={24} sx={{
         p: 0, height: '90vh', borderRadius: '20px', animation: "slideInFromLeft 0.3s ease-in-out forwards",
         opacity: 0, // Start with opacity 0

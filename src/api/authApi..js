@@ -47,8 +47,9 @@ export const loginUser = async (username, password) => {
     console.log(">>>>ress", response);
     return response.data;
   } catch (error) {
+    console.log(">>eeerror",error)
     // Handle error (e.g., invalid credentials)
-    throw new Error(error.response?.data?.message || "Login failed");
+    throw new Error(error.response?.data?.message || "Invalid Credentials check Email and Password ");
   }
 };
 
@@ -67,6 +68,8 @@ export const checkDomainAvailability = async (emailDomain) => {
 };
 
 export const resetPassword = async (newPassword, resetToken) => {
+  console.log("resetToken",resetToken)
+  
   if (!resetToken) throw new Error("Reset token is required");
 
   const response = await axios.post(
@@ -80,5 +83,15 @@ export const resetPassword = async (newPassword, resetToken) => {
     }
   );
 
+  return response.data;
+};
+
+
+
+export const resetAdminPassword = async ({ email, newPassword }) => {
+  const response = await axios.post('/api/auth/reset-password', {
+    email,
+    newPassword,
+  });
   return response.data;
 };

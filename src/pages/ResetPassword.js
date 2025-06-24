@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { useSearchParams } from "react-router-dom"; // import this
+import { Link } from "@mui/material";
+
 import {
   Box,
   Button,
@@ -26,19 +28,54 @@ const ResetPassword = () => {
   const [formData, setFormData] = useState({ newPassword: "", confirmPassword: "" });
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
+  const [passwordStrengthMsg, setPasswordStrengthMsg] = useState("");
 
     const [searchParams] = useSearchParams();
+    console.log("hiiiiii")
   const token = searchParams.get("token"); // <-- extract token from URL
+  console.log("tokennnn",token);
 
+  const getPasswordStrengthMessage = (password) => {
+  const strongPattern =
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^()[\]{}])[A-Za-z\d@$!%*?&#^()[\]{}]{8,}$/;
+
+  if (!password) return "";
+  if (!strongPattern.test(password)) {
+    return "Weak password: must include uppercase, lowercase, number, and special character, min 8 characters.";
+  }
+  return "Strong password";
+};
+
+  // const validateForm = () => {
+  //   const newErrors = {};
+  //   if (!formData.newPassword) newErrors.newPassword = "New password is required";
+  //   if (!formData.confirmPassword) newErrors.confirmPassword = "Please confirm your password";
+  //   if (formData.newPassword !== formData.confirmPassword) {
+  //     newErrors.confirmPassword = "Passwords do not match";
+  //   }
+  //   return newErrors;
+  // };
   const validateForm = () => {
-    const newErrors = {};
-    if (!formData.newPassword) newErrors.newPassword = "New password is required";
-    if (!formData.confirmPassword) newErrors.confirmPassword = "Please confirm your password";
-    if (formData.newPassword !== formData.confirmPassword) {
-      newErrors.confirmPassword = "Passwords do not match";
-    }
-    return newErrors;
-  };
+  const newErrors = {};
+  const strongPattern =
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^()[\]{}])[A-Za-z\d@$!%*?&#^()[\]{}]{8,}$/;
+
+  if (!formData.newPassword) {
+    newErrors.newPassword = "New password is required";
+  } else if (!strongPattern.test(formData.newPassword)) {
+    newErrors.newPassword =
+      "Password must include uppercase, lowercase, number, special character, and be at least 8 characters.";
+  }
+
+  if (!formData.confirmPassword) {
+    newErrors.confirmPassword = "Please confirm your password";
+  } else if (formData.newPassword !== formData.confirmPassword) {
+    newErrors.confirmPassword = "Passwords do not match";
+  }
+
+  return newErrors;
+};
+
 
 
 
@@ -77,7 +114,7 @@ const handleReset = async (e) => {
     alert("Password reset successful!");
   } catch (error) {
     console.error("Reset failed:", error.message);
-    setErrors({ api: "Failed to reset password. Please try again." });
+    setErrors({ api: "Failed to set password. Please try again." });
   } finally {
     
     window.location.href = "http://frontdms-test.apps.lab.ocp.lan/teamsync/home";
@@ -87,13 +124,27 @@ const handleReset = async (e) => {
 
 
 
+  // const handleChange = (e) => {
+  //   const { name, value } = e.target;
+  //   setFormData((prev) => ({ ...prev, [name]: value }));
+  //   if (errors[name]) {
+  //     setErrors((prev) => ({ ...prev, [name]: "" }));
+  //   }
+  // };
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: "" }));
-    }
-  };
+  const { name, value } = e.target;
+  setFormData((prev) => ({ ...prev, [name]: value }));
+
+  if (errors[name]) {
+    setErrors((prev) => ({ ...prev, [name]: "" }));
+  }
+
+  if (name === "newPassword") {
+    const strengthMsg = getPasswordStrengthMessage(value);
+    setPasswordStrengthMsg(strengthMsg);
+  }
+};
+
 
   return (
     <Box
@@ -143,7 +194,7 @@ const handleReset = async (e) => {
               <Box component="span" sx={{ color: "#ef4444" }}>Bot</Box>
             </Typography>
             <Typography variant="h6" sx={{ mt: 1, fontWeight: 600, color: "#374151" }}>
-              Reset Your Password
+              Set Your Password
             </Typography>
             <Typography variant="body1" sx={{ mt: 3, fontSize: "0.95rem", color: "#4b5563" }}>
               Enter and confirm your new password to regain access to your account.
@@ -173,6 +224,7 @@ const handleReset = async (e) => {
               fullWidth
               label="New Password"
               name="newPassword"
+               FormHelperTextProps={{ sx: { ml: 0 } }}
               type={showPassword ? "text" : "password"}
               value={formData.newPassword}
               onChange={handleChange}
@@ -194,11 +246,25 @@ const handleReset = async (e) => {
                 ),
               }}
             />
+            {formData.newPassword && passwordStrengthMsg && (
+  <Typography
+    variant="body2"
+    sx={{
+      color: passwordStrengthMsg.includes("Strong") ? "success.main" : "error.main",
+      ml: 0,
+      mt: -1,
+    }}
+  >
+    {passwordStrengthMsg}
+  </Typography>
+)}
+
 
             <TextField
               fullWidth
               label="Confirm New Password"
               name="confirmPassword"
+               FormHelperTextProps={{ sx: { ml: 0 } }}
               type={showPassword ? "text" : "password"}
               value={formData.confirmPassword}
               onChange={handleChange}
@@ -229,14 +295,21 @@ const handleReset = async (e) => {
                 boxShadow: "0 4px 12px rgba(59, 130, 246, 0.3)",
               }}
             >
-              Reset Password
+              Set Password
             </Button>
 
             <Typography variant="body2" align="center" sx={{ mt: 2 }}>
               Back to{" "}
-              <Box component="span" onClick={() => navigate("/login")} sx={{ fontWeight: 600, cursor: "pointer", color: "#3b82f6" }}>
+              {/* <Box component="span" onClick={() => navigate("/login")} sx={{ fontWeight: 600, cursor: "pointer", color: "#3b82f6" }}>
                 Login
-              </Box>
+              </Box> */}
+              <Link
+  component="button"
+  onClick={() => navigate("/login")}
+  sx={{ fontWeight: 600, color: "#3b82f6", cursor: "pointer" }}
+>
+  Login
+</Link>
             </Typography>
           </Box>
         </Box>
