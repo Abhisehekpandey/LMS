@@ -1,7 +1,6 @@
 // src/services/departmentService.js
 import axios from "axios";
 
-
 export const createDepartment = async (payload) => {
   try {
     const response = await axios.post(
@@ -21,57 +20,54 @@ export const createDepartment = async (payload) => {
   }
 };
 
-
-
-
-export const getDepartments = async () => {
+export const getDepartments = async (page = 0, pageSize = 10, search = "") => {
   try {
-    const response = await axios.get(`${window.__ENV__.REACT_APP_ROUTE}/tenants/departments`, {
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
-      },
-    });
-    console.log(">>>res11111",response.data.content)
-    return response.data.content
+    const response = await axios.get(
+      `${window.__ENV__.REACT_APP_ROUTE}/tenants/departments`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+        },
+        params: {
+          search, // Optional search param
+          pageNumber: page,
+          pageSize: pageSize,
+        },
+      }
+    );
+
+    console.log(">>> Department API response:", response.data);
+    return response.data;
   } catch (error) {
     console.error("Failed to fetch departments:", error);
     throw error;
   }
 };
 
-
-
-
-
 export const createRole = async (payload) => {
   try {
     const { department, role } = payload;
 
-    const rolesArray = [
-      { roleName: role } 
-    ];
+    const rolesArray = [{ roleName: role }];
 
-    console.log(">>roesArray",rolesArray)
+    console.log(">>roesArray", rolesArray);
 
     const response = await axios.post(
       `${window.__ENV__.REACT_APP_ROUTE}/tenants/departments/${department}/roles`,
-      rolesArray, 
+      rolesArray,
       {
         headers: {
           Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       }
     );
 
-          console.log("response",response.data.uniqueRoles)
-    return response.data.uniqueRoles 
-
+    console.log("response", response.data.uniqueRoles);
+    return response.data.uniqueRoles;
   } catch (error) {
-    console.error('createRole error:', error);
+    console.error("createRole error:", error);
     throw error;
   }
 };
-
-

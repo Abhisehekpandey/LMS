@@ -27,6 +27,8 @@ import {
   Tooltip,
   FormControlLabel,
 } from "@mui/material";
+import { FormHelperText } from "@mui/material";
+
 import { Autocomplete } from "@mui/material";
 import { Card, CardContent } from "@mui/material";
 import { CircularProgress, keyframes } from "@mui/material";
@@ -175,13 +177,14 @@ const CustomSpinner = styled(CircularProgress)(({ theme }) => ({
 function Department({ departments, setDepartments, onThemeToggle }) {
   const [page, setPage] = useState(0);
 
-  const [rowsPerPage, setRowsPerPage] = useState(9); // Default to 25 rows
+  const [rowsPerPage, setRowsPerPage] = useState(10); // Default to 25 rows
 
   const [openRows, setOpenRows] = useState({});
 
   const [orderBy, setOrderBy] = useState("name");
   const [order, setOrder] = useState("asc");
   const [loading, setLoading] = useState(true);
+  const [totalDepartments, setTotalDepartments] = useState(0);
 
   // Add after other state declarations
   const [snackbar, setSnackbar] = useState({
@@ -192,13 +195,13 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
   // Add these states after other state declarations
   const [showAddDepartment, setShowAddDepartment] = useState(false);
+
   const [newDepartment, setNewDepartment] = useState({
     name: "",
     displayName: "",
     initialRole: "",
-    storage: "50GB", // Default storage value
-
-    departmentModerator: "", // Add this line
+    storage: "", // <-- Make it blank to enforce validation
+    departmentModerator: "",
     submitted: false,
   });
 
@@ -852,11 +855,12 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       ]);
 
       setShowAddDepartment(false);
+
       setNewDepartment({
         name: "",
         displayName: "",
         initialRole: "",
-        storage: "50GB",
+        storage: "", // reset to empty
         departmentModerator: "",
         submitted: false,
       });
@@ -904,7 +908,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       await createRole(payload); // API call
 
       // 🔁 Re-fetch departments from backend
-      const updatedDepartments = await getDepartments();
+      // const updatedDepartments = await getDepartments(page,rowsPerPage);
+      const departmentData = await getDepartments(page, rowsPerPage);
+const updatedDepartments = departmentData.content || [];
 
       const mapped = updatedDepartments.map((dept) => ({
         name: dept.deptName,
@@ -921,6 +927,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       }));
 
       setDepartments(mapped); // ✅ update UI
+      setTotalDepartments(departmentData.totalElements || 0);
       setSnackbar({
         open: true,
         message: `Role "${newRole}" added successfully.`,
@@ -1090,7 +1097,13 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     const fetchDepartments = async () => {
       try {
         setLoading(true);
-        const apiDepartments = await getDepartments();
+        // const apiDepartments = await getDepartments();
+        console.log("ppppp",page)
+        const departmentData = await getDepartments(page,rowsPerPage);
+const apiDepartments = departmentData.content || [];
+console.log("apiDepartment",apiDepartments)
+
+setTotalDepartments(departmentData.totalElements || 0);
 
         // Map backend data to expected frontend format
         const mapped = apiDepartments.map((dept) => ({
@@ -1122,7 +1135,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     };
 
     fetchDepartments();
-  }, []);
+  }, [page,rowsPerPage]);
 
   useEffect(() => {
     const fetchAllUsers = async () => {
@@ -1447,9 +1460,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             </TableRow>
           </TableHead>
           <TableBody>
-            {sortedDepartments
-              ?.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-              .map((dept, index) => {
+            {sortedDepartments?.map((dept, index) => {
                 const isItemSelected = isSelected(dept.name);
                 return (
                   <React.Fragment key={index}>
@@ -1607,19 +1618,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                             gap: 0.5,
                           }}
                         >
-                          <Tooltip
-                            title={dept.isActive ? "Active" : "Inactive"}
-                          >
-                            <FormControlLabel
-                              control={
-                                <IOSSwitch
-                                  size="small"
-                                  checked={dept.isActive}
-                                  onChange={() => handleDepartmentToggle(dept)}
-                                />
-                              }
-                            />
-                          </Tooltip>
+                         
 
                           <IconButton
                             size="small"
@@ -1789,9 +1788,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                           </IconButton>
                                           <IconButton
                                             size="small"
-                                            // onClick={() =>
-                                            //   handleDeleteRole(index, roleIndex)
-                                            // }
                                             onClick={() =>
                                               handleDeleteRole(
                                                 dept.name,
@@ -1843,15 +1839,17 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           width: "100%",
         }}
       >
+       
         <TablePagination
-          rowsPerPageOptions={[9, 18, 27]}
-          component="div"
-          count={departments?.length}
-          rowsPerPage={rowsPerPage}
-          page={page}
-          onPageChange={handleChangePage}
-          onRowsPerPageChange={handleChangeRowsPerPage}
-        />
+  rowsPerPageOptions={[10, 20, 30]}
+  component="div"
+  count={totalDepartments}
+  rowsPerPage={rowsPerPage}
+  page={page}
+  onPageChange={handleChangePage}
+  onRowsPerPageChange={handleChangeRowsPerPage}
+/>
+
 
         <Box
           sx={{
@@ -2142,13 +2140,14 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     fullWidth
                     size="small"
                     error={!newDepartment.storage && newDepartment.submitted}
+                    FormHelperTextProps={{ sx: { ml: 0 } }} // ✅ Add here
                   >
                     <InputLabel id="storage-label">
                       Storage Allocation
                     </InputLabel>
                     <Select
                       labelId="storage-label"
-                      value={newDepartment.storage || "50GB"}
+                      value={newDepartment.storage}
                       label="Storage Allocation"
                       onChange={(e) =>
                         setNewDepartment((prev) => ({
@@ -2164,6 +2163,11 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                         </MenuItem>
                       ))}
                     </Select>
+                    <FormHelperText>
+                      {!newDepartment.storage && newDepartment.submitted
+                        ? "Storage allocation is required"
+                        : ""}
+                    </FormHelperText>
                   </FormControl>
                 </CardContent>
               </Card>
@@ -2551,3 +2555,4 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 }
 
 export default Department;
+

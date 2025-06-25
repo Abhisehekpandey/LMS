@@ -41,6 +41,7 @@ import { useTheme } from "@mui/material";
 import { License } from "@mui/icons-material"; // Optional icon
 import { VerifiedUser } from "@mui/icons-material";
 import { Snackbar, Alert } from "@mui/material"; // already likely imported
+import { fetchUsers } from "../api/userService";
 
 import {
   ArrowDropUp,
@@ -171,17 +172,31 @@ const AngelBot = () => {
   const [nextExpiringLicense, setNextExpiringLicense] = useState("");
   const [currentLicenseIndex, setCurrentLicenseIndex] = useState(0);
 
-  const [storageStatusData, setStorageStatusData] = useState(defaultStatusData);
-  const [storageDistributionData, setStorageDistributionData] = useState(
-    defaultDistributionData
+  const activeConfig = {
+    storageStatusData: [
+      { value: 100, name: "Used", color: "#91CC75" },
+      { value: 110, name: "Available", color: "#FAC858" },
+    ],
+    storageDistributionData: [
+      { value: 130, name: "User", color: "#91CC75" },
+      { value: 150, name: "Department", color: "#FAC858" },
+    ],
+  };
+
+  const [storageStatusData, setStorageStatusData] = useState(
+    activeConfig.storageStatusData
   );
+  const [storageDistributionData, setStorageDistributionData] = useState(
+    activeConfig.storageDistributionData
+  );
+
   const [userRowsPerPage, setUserRowsPerPage] = useState(7);
   const [userPage, setUserPage] = useState(0);
   const [deptPage, setDeptPage] = useState(0);
   const [deptRowsPerPage, setDeptRowsPerPage] = useState(7);
-  const [backButton, setBackButton] = useState(false);
-  const [selectedChart, setSelectedChart] = useState(null);
-  // const [userSortOption, setUserSortOption] = useState('highest');
+
+  const [selectedChart, setSelectedChart] = useState("Active"); // preselect Active
+  const [backButton, setBackButton] = useState(false); // hidden initially
 
   const [userSortOption, setUserSortOption] = useState("high"); // Default option
   const [getSortedStorageUsers, setSortedStorageUsers] = useState([
@@ -209,6 +224,53 @@ const AngelBot = () => {
   const [storageTab, setStorageTab] = useState("status"); // "status" or "distribution"
   // const [licenseFilter, setLicenseFilter] = useState("all");
   const [licenseFilter, setLicenseFilter] = useState("active");
+
+  const convertDisplayToGB = (value) => {
+  if (!value || typeof value !== "string") return 0;
+
+  const match = value.match(/([\d.]+)\s*(KB|MB|GB|B)/i);
+  if (!match) return 0;
+
+  const number = parseFloat(match[1]);
+  const unit = match[2].toUpperCase();
+
+  switch (unit) {
+    case "B":
+      return number / (1024 ** 3);
+    case "KB":
+      return number / (1024 ** 2);
+    case "MB":
+      return number / 1024;
+    case "GB":
+      return number;
+    default:
+      return 0;
+  }
+};
+
+
+   const convertDisplayToMB = (value) => {
+  if (!value || typeof value !== "string") return 0;
+
+  const match = value.match(/([\d.]+)\s*(KB|MB|GB|B)/i);
+  if (!match) return 0;
+
+  const number = parseFloat(match[1]);
+  const unit = match[2].toUpperCase();
+
+  switch (unit) {
+    case "B":
+      return number / (1024 * 1024);
+    case "KB":
+      return number / 1024;
+    case "MB":
+      return number;
+    case "GB":
+      return number * 1024;
+    default:
+      return 0;
+  }
+};
 
   useEffect(() => {
     const today = new Date();
@@ -339,17 +401,21 @@ const AngelBot = () => {
     setSortedDepartments(sortedDepartments);
   };
 
-  const data = [
-    { value: 500, name: "Active", color: "#91CC75" }, // 500 MB
-    { value: 580, name: "Inactive", color: "#EE6666" }, // 580 MB
-    { value: 1048, name: "Pending", color: "#5470C6" }, // 1.0 GB
-  ];
+ 
+  const [userStatsData, setUserStatsData] = useState([
+    { name: "Active", value: 0, color: "#91CC75" },
+    { name: "Inactive", value: 0, color: "#EE6666" },
+    { name: "Pending", value: 0, color: "#5470C6" },
+  ]);
 
   // Helper function to format value as MB or GB
   const formatSize = (val) => {
     return val < 1024 ? `${val} MB` : `${(val / 1024).toFixed(1)}`;
   };
-
+  
+  const formatSizeGB = (val) => {
+  return `${val.toFixed(2)} GB`;
+};
   const getLicenseStatus = (expiryDate) => {
     const today = new Date();
     const expDate = new Date(expiryDate);
@@ -377,8 +443,8 @@ const AngelBot = () => {
       orient: "horizontal",
       left: "left",
       formatter: function (name) {
-        const item = data.find((d) => d.name === name);
-        return `${name} ${item.value}`;
+        const item = userStatsData.find((d) => d.name === name);
+        return `${name} ${item?.value || 0}`;
       },
     },
     series: [
@@ -390,9 +456,9 @@ const AngelBot = () => {
         label: {
           position: "inside",
           fontSize: 13,
-          formatter: "{d}%", // Shows percent inside each slice
+          formatter: "{d}%",
         },
-        data: data.map((item) => ({
+        data: userStatsData.map((item) => ({
           value: item.value,
           name: item.name,
           itemStyle: { color: item.color },
@@ -409,10 +475,14 @@ const AngelBot = () => {
     ],
   };
 
-  // Helper function to format value as MB or GB
+
+
   const formatSizestorage = (val) => {
-    return val < 1024 ? `${val} ` : `${(val / 1024).toFixed(1)} `;
-  };
+  return val < 1024
+    ? `${val.toFixed(1)} MB`
+    : `${(val / 1024).toFixed(1)} GB`;
+};
+
 
   const storageStatus = {
     tooltip: {
@@ -465,18 +535,19 @@ const AngelBot = () => {
   const storageDistribution = {
     tooltip: {
       trigger: "item",
+     
       formatter: function (params) {
-        const valueFormatted = formatSizestorage(params.value);
-        return `${params.name}: ${valueFormatted} (${params.percent}%)`;
-      },
+  return `${params.name}: ${formatSizeGB(params.value)} (${params.percent}%)`;
+}
     },
     legend: {
       orient: "horizontal",
       left: "center",
+    
       formatter: function (name) {
-        const item = storageDistributionData.find((d) => d.name === name);
-        return `${name} (${formatSize(item.value)})`;
-      },
+  const item = storageDistributionData.find((d) => d.name === name);
+  return `${name} (${item ? formatSizeGB(item.value) : "0 GB"})`;
+}
     },
     series: [
       {
@@ -488,9 +559,10 @@ const AngelBot = () => {
         label: {
           position: "inside",
           fontSize: 13,
-          formatter: (params) => {
-            return params.percent > 0 ? `${params.percent}%` : "";
-          },
+         
+          formatter: function (params) {
+  return `${formatSizeGB(params.value)} (${params.percent}%)`;
+}
         },
 
         data: storageDistributionData.map((item) => ({
@@ -510,76 +582,89 @@ const AngelBot = () => {
     ],
   };
 
-  const handleChartClick = (params) => {
-    const name = params.name;
+  
 
-    if (selectedChart === name) return; // No toggle
 
-    // Chart config
-    const chartConfig = {
-      Pending: {
-        storageStatusData: [
-          { value: 0, name: "Used", color: "#91CC75" },
-          { value: 100, name: "Available", color: "#FAC858" },
-        ],
-        storageDistributionData: [
-          { value: 0, name: "User", color: "#91CC75" },
-          { value: 100, name: "Department", color: "#FAC858" },
-        ],
-      },
 
-      Active: {
-        storageStatusData: [
-          { value: 100, name: "Used", color: "#91CC75" },
-          { value: 110, name: "Available", color: "#FAC858" },
-        ],
-        storageDistributionData: [
-          { value: 130, name: "User", color: "#91CC75" },
-          { value: 150, name: "Department", color: "#FAC858" },
-        ],
-      },
-      Inactive: {
-        storageStatusData: [
-          { value: 100, name: "Used", color: "#91CC75" },
-          { value: 110, name: "Available", color: "#FAC858" },
-        ],
-        storageDistributionData: [
-          { value: 130, name: "User", color: "#91CC75" },
-          { value: 150, name: "Department", color: "#FAC858" },
-        ],
-      },
-    };
+const handleChartClick = (params) => {
+  const name = params.name;
 
-    const config = chartConfig[name];
-    if (config) {
-      setStorageStatusData(config.storageStatusData);
-      setStorageDistributionData(config.storageDistributionData);
-      setSelectedChart(name);
-      setBackButton(true);
+  if (selectedChart === name) return;
 
-      // 👇 Add this line to filter users
-      const users = getSortedStorageUsers.filter(
-        (user) => userStatusMap[user.name] === name
-      );
-      setFilteredUsers(users);
+  setSelectedChart(name);
+  setBackButton(name !== "Active");
 
-      // Scroll to table
-      setTimeout(() => {
-        userTableRef.current?.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        });
-      }, 100);
-    }
-  };
+  fetchUsers(0).then((response) => {
+    const allUsers = response?.content || [];
+
+    const filtered = allUsers.filter((user) => {
+      if (name === "Active") return user.active && user.enabled;
+      if (name === "Pending") return user.active && !user.enabled;
+      if (name === "Inactive") return !user.active;
+      return false;
+    });
+
+    setFilteredUsers(filtered);
+
+    // ✅ Calculate Used & Allocated based on parsed display values
+    let usedStorage = 0;
+    let totalAllocated = 0;
+
+    filtered.forEach((user) => {
+      const used = convertDisplayToMB(user.permissions?.displayStorage);
+      const allowed = convertDisplayToMB(user.permissions?.allowedStorageInBytesDisplay);
+      usedStorage += used;
+      totalAllocated += allowed;
+    });
+
+    const availableStorage = Math.max(totalAllocated - usedStorage, 0);
+
+    console.log("Used:", usedStorage.toFixed(2), "Allocated:", totalAllocated.toFixed(2), "Available:", availableStorage.toFixed(2));
+
+    setStorageStatusData([
+      { name: "Used", value: usedStorage, color: "#91CC75" },
+      { name: "Available", value: availableStorage, color: "#FAC858" },
+    ]);
+  });
+
+  setTimeout(() => {
+    userTableRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }, 100);
+};
 
   const handleBack = () => {
-    setStorageStatusData(defaultStatusData);
-    setStorageDistributionData(defaultDistributionData);
-    setSelectedChart(null);
-    setFilteredUsers(null); // 👈 reset the list
-    setBackButton(false);
-  };
+  setSelectedChart("Active");
+  setBackButton(false);
+
+  fetchUsers(0).then((response) => {
+    const users = response?.content || [];
+
+    const activeUsers = users.filter((user) => user.active && user.enabled);
+
+    let usedStorage = 0;
+    let totalAllocated = 0;
+
+    activeUsers.forEach((user) => {
+      const used = convertDisplayToMB(user.permissions?.displayStorage);
+      const allowed = convertDisplayToMB(user.permissions?.allowedStorageInBytesDisplay);
+      usedStorage += used;
+      totalAllocated += allowed;
+    });
+
+    const availableStorage = Math.max(totalAllocated - usedStorage, 0);
+
+    setStorageStatusData([
+      { name: "Used", value: usedStorage, color: "#91CC75" },
+      { name: "Available", value: availableStorage, color: "#FAC858" },
+    ]);
+
+    setFilteredUsers(activeUsers);
+  });
+};
+
 
   const handleUserRowsPerPageChange = (event) => {
     setUserRowsPerPage(parseInt(event.target.value, 10));
@@ -602,6 +687,72 @@ const AngelBot = () => {
     const timer = setTimeout(() => setLoading(false), 300);
     return () => clearTimeout(timer);
   }, []);
+
+useEffect(() => {
+  const loadUserStats = async () => {
+    try {
+      const response = await fetchUsers(0);
+      const users = response?.content || [];
+      let totalUserStorage = 0;
+
+      let active = 0,
+        pending = 0,
+        inactive = 0;
+
+      // Status counts for the main userStats pie
+      users.forEach((user) => {
+        if (user.active && user.enabled) active++;
+        else if (user.active && !user.enabled) pending++;
+        else if (!user.active) inactive++;
+
+        const allowed = convertDisplayToGB(user.permissions?.allowedStorageInBytesDisplay);
+  totalUserStorage += allowed;
+      });
+      console.log("totalluser",totalUserStorage)
+
+      // ✅ FILTER Active Users only for initial graph + table (same as handleChartClick)
+      const activeUsers = users.filter((user) => user.active && user.enabled);
+
+      let usedStorage = 0;
+      let totalAllocatedStorage = 0;
+
+      activeUsers.forEach((user) => {
+        const used = convertDisplayToMB(user.permissions?.displayStorage);
+        const allowed = convertDisplayToMB(user.permissions?.allowedStorageInBytesDisplay);
+        usedStorage += used;
+        totalAllocatedStorage += allowed;
+      });
+
+      const availableStorage = Math.max(totalAllocatedStorage - usedStorage, 0);
+
+      // ✅ Full user stats pie (for all statuses)
+      setUserStatsData([
+        { name: "Active", value: active, color: "#91CC75" },
+        { name: "Inactive", value: inactive, color: "#EE6666" },
+        { name: "Pending", value: pending, color: "#5470C6" },
+      ]);
+
+      // ✅ Initial view should match "Active" click
+      setStorageStatusData([
+        { name: "Used", value: usedStorage, color: "#91CC75" },
+        { name: "Available", value: availableStorage, color: "#FAC858" },
+      ]);
+
+      // Show only active users in table initially
+      setFilteredUsers(activeUsers);
+      setStorageDistributionData([
+  { name: "User", value: totalUserStorage, color: "#91CC75" },
+  { name: "Department", value: 2.5, color: "#FAC858" }, // dummy GB value
+]);
+    } catch (error) {
+      console.error("Error fetching user stats:", error);
+    }
+  };
+
+  loadUserStats();
+}, []);
+
+
 
   const LicenseCountdownBox = React.memo(({ licenses, chartColors }) => {
     const [currentIndex, setCurrentIndex] = React.useState(0);
@@ -1409,10 +1560,11 @@ const AngelBot = () => {
                               >
                                 <td style={rowCellStyle}>{user.name}</td>
                                 <td style={rowCellStyle}>
-                                  {user.storageUsed} GB
+                                  {user.permissions?.displayStorage || "—"}
                                 </td>
                                 <td style={rowCellStyle}>
-                                  {user.storageAllocated} GB
+                                  {user.permissions
+                                    ?.allowedStorageInBytesDisplay || "—"}
                                 </td>
                               </tr>
                             ))
