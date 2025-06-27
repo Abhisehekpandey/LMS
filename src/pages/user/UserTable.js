@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import * as XLSX from "xlsx"; // Add this at the top of the file
 import {
   Box,
   Paper,
@@ -333,21 +334,42 @@ export default function UserTable() {
 
   const options = ["10GB", "20GB"];
 
+  
+
+
   const handleBulkDownload = () => {
     let dataToDownload = [];
 
+    const formatStatus = (row) => {
+      if (row.active && !row.enabled) return "Pending";
+      if (row.active && row.enabled) return "Active";
+      return "Inactive";
+    };
+
+    const extractRowData = (row) => ({
+      Name: row.name || "N/A",
+      Department:
+        row.roles && row.roles.length > 0
+          ? row.roles[0].department?.deptName || "N/A"
+          : "N/A",
+      Role:
+        row.roles && row.roles.length > 0
+          ? row.roles[0].roleName || "N/A"
+          : "N/A",
+      "User Email": row.email || "N/A",
+      "Phone Number": row.phoneNumber || "N/A",
+      "Reporting Manager": row.reportingManager || "N/A",
+      "Storage Used": row.permissions?.displayStorage || "N/A",
+      "Manage Storage": row.permissions?.allowedStorageInBytesDisplay || "N/A",
+      "Active License": formatStatus(row),
+    });
+
     if (selected.length > 0) {
-      dataToDownload = rows
+      dataToDownload = rowsData
         .filter((row) => selected.includes(row.id))
-        .map(({ activeLicense, ...row }) => ({
-          ...row,
-          edit: "No",
-        }));
+        .map(extractRowData);
     } else {
-      dataToDownload = rows.map(({ activeLicense, ...row }) => ({
-        ...row,
-        edit: "No",
-      }));
+      dataToDownload = rowsData.map(extractRowData);
     }
 
     if (dataToDownload.length === 0) {
@@ -355,27 +377,47 @@ export default function UserTable() {
       return;
     }
 
-    // Convert JSON to CSV
-    const csvHeaders = Object.keys(dataToDownload[0]).join(",");
-    const csvRows = dataToDownload.map((obj) =>
-      Object.values(obj)
-        .map((val) => `"${String(val).replace(/"/g, '""')}"`) // Handle quotes
-        .join(",")
-    );
-    const csvContent = [csvHeaders, ...csvRows].join("\n");
+    // Define column order explicitly
+    const headers = [
+      "Name",
+      "Department",
+      "Role",
+      "User Email",
+      "Phone Number",
+      "Reporting Manager",
+      "Storage Used",
+      "Manage Storage",
+      "Active License",
+    ];
 
-    // Create a blob and trigger download
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", "users.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // Create worksheet and workbook
+    const worksheet = XLSX.utils.json_to_sheet(dataToDownload, {
+      header: headers,
+    });
 
-    setSelected([]); // Clear selection AFTER download
+    // Set column widths
+    const columnWidths = [
+      { wch: 20 }, // Name
+      { wch: 20 }, // Department
+      { wch: 25 }, // Role
+      { wch: 30 }, // User Email
+      { wch: 18 }, // Phone Number
+      { wch: 25 }, // Reporting Manager
+      { wch: 15 }, // Storage Used
+      { wch: 18 }, // Manage Storage
+      { wch: 15 }, // Active License
+    ];
+    worksheet["!cols"] = columnWidths;
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Users");
+
+    XLSX.writeFile(workbook, "users.xlsx");
+
+    setSelected([]);
   };
+  
+  
 
   const label = { inputProps: { "aria-label": "Switch demo" } };
 

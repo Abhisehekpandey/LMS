@@ -1,4 +1,3 @@
-// updated CreateUser component with collapsed cards for non-active users
 import { Add, Close, Download, Info, UploadFile } from "@mui/icons-material";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
@@ -47,6 +46,7 @@ const CreateUser = ({
 }) => {
   const [bulkSuccessMessage, setBulkSuccessMessage] = useState("");
   const [bulkWarningMessage, setBulkWarningMessage] = useState("");
+  const [isAdminRole, setIsAdminRole] = useState(false);
 
   const [bulkFile, setBulkFile] = useState(null);
   const [fileName, setFileName] = useState("");
@@ -72,7 +72,6 @@ const CreateUser = ({
   const [departmentSubmitted, setDepartmentSubmitted] = useState(false);
   const [roleSubmitted, setRoleSubmitted] = useState(false);
   const [duplicateDeptError, setDuplicateDeptError] = useState(false);
-
 
   const lastFieldRef = useRef(null);
   const dispatch = useDispatch();
@@ -166,6 +165,9 @@ const CreateUser = ({
   ];
 
   const [departments, setDepartments] = useState([]);
+  const [departmentPage, setDepartmentPage] = useState(0);
+  const [hasMoreDepartments, setHasMoreDepartments] = useState(true);
+  const loadingDepartments = useRef(false);
 
   const initialValues = {
     users: [
@@ -261,16 +263,15 @@ const CreateUser = ({
     }
   };
 
-  const addRoleToDepartment = async (deptName, roleName) => {
-    console.log(">>>deptName", deptName.deptName);
-    console.log(">>>role", roleName);
-
-    const payload = { department: deptName.deptName, role: roleName };
-    console.log("payyload", payload);
+  const addRoleToDepartment = async (dept, { role, isAdmin }) => {
+    const payload = {
+      department: dept.deptName,
+      role,
+      isAdmin, // ✅ pass this to API
+    };
 
     try {
-      const response = await createRole(payload); // your API function to add role
-      console.log("response2", response);
+      const response = await createRole(payload);
       return response;
     } catch (error) {
       console.error("Error adding role:", error);
@@ -278,24 +279,30 @@ const CreateUser = ({
     }
   };
 
+  const loadMoreDepartments = async () => {
+    if (loadingDepartments.current || !hasMoreDepartments) return;
+    loadingDepartments.current = true;
+
+    try {
+      const res1 = await getDepartments(departmentPage, 10);
+      const res = res1?.content || [];
+      const newDepartments = res.map((dept) => ({
+        ...dept,
+        roles: (dept.roles || []).map((role) => role.roleName),
+      }));
+
+      if (newDepartments.length < 10) setHasMoreDepartments(false);
+      setDepartments((prev) => [...prev, ...newDepartments]);
+      setDepartmentPage((prev) => prev + 1);
+    } catch (err) {
+      console.error("Failed to load departments:", err);
+    } finally {
+      loadingDepartments.current = false;
+    }
+  };
+
   useEffect(() => {
-    const loadDepartments = async () => {
-      try {
-        const res = await getDepartments();
-        console.log(">>>out", res);
-        // setDepartments(res);
-        const processedDepartments = res.map((dept) => ({
-          ...dept,
-          roles: (dept.roles || []).map((role) => role.roleName),
-        }));
-
-        setDepartments(processedDepartments);
-      } catch (err) {
-        console.error("Error loading departments:", err);
-      }
-    };
-
-    loadDepartments();
+    loadMoreDepartments();
   }, []);
 
   useEffect(() => {
@@ -456,7 +463,6 @@ const CreateUser = ({
                   // ⏳ Delay closing until snackbars are shown
                   if (closeAfter > 0) {
                     setTimeout(() => {
-                     
                       handleClose();
                     }, closeAfter);
                   } else {
@@ -736,6 +742,20 @@ const CreateUser = ({
                                       ? "Add New Department"
                                       : option.deptName || ""
                                   }
+                                  ListboxProps={{
+                                    style: { maxHeight: 300, overflow: "auto" },
+                                    onScroll: (event) => {
+                                      const listboxNode = event.currentTarget;
+                                      const threshold = 50;
+                                      if (
+                                        listboxNode.scrollTop +
+                                          listboxNode.clientHeight >=
+                                        listboxNode.scrollHeight - threshold
+                                      ) {
+                                        loadMoreDepartments();
+                                      }
+                                    },
+                                  }}
                                   renderOption={(props, option) => (
                                     <li
                                       {...props}
@@ -789,7 +809,7 @@ const CreateUser = ({
                                   )}
                                 />
                               </Grid>
-                              <Grid item xs={2}>
+                              <Grid item xs={3}>
                                 <Tooltip
                                   title={
                                     !user.department
@@ -865,7 +885,7 @@ const CreateUser = ({
                                   </div>
                                 </Tooltip>
                               </Grid>
-                              <Grid item xs={4}>
+                              <Grid item xs={3}>
                                 <TextField
                                   label="Reporting Manager"
                                   autoComplete="off"
@@ -1012,50 +1032,31 @@ const CreateUser = ({
         <DialogContent dividers padding="0 !important">
           <Grid container spacing={2}>
             <Grid item xs={6}>
-              {/* <TextField
+              <TextField
                 fullWidth
                 size="small"
                 label="Department Name"
                 FormHelperTextProps={{ sx: { ml: 0 } }}
                 value={newDepartment.deptName}
-                onChange={(e) =>
+                onChange={(e) => {
                   setNewDepartment({
                     ...newDepartment,
                     deptName: e.target.value,
-                  })
+                  });
+                  setDuplicateDeptError(false); // 👈 Clear error on change
+                }}
+                error={
+                  (departmentSubmitted && !newDepartment.deptName) ||
+                  duplicateDeptError
                 }
-                error={departmentSubmitted && !newDepartment.deptName}
                 helperText={
                   departmentSubmitted && !newDepartment.deptName
                     ? "Department Name is required"
+                    : duplicateDeptError
+                    ? "Department with this name already exists"
                     : ""
                 }
-              /> */}
-              <TextField
-  fullWidth
-  size="small"
-  label="Department Name"
-  FormHelperTextProps={{ sx: { ml: 0 } }}
-  value={newDepartment.deptName}
-  onChange={(e) => {
-    setNewDepartment({
-      ...newDepartment,
-      deptName: e.target.value,
-    });
-    setDuplicateDeptError(false); // 👈 Clear error on change
-  }}
-  error={
-    (departmentSubmitted && !newDepartment.deptName) || duplicateDeptError
-  }
-  helperText={
-    departmentSubmitted && !newDepartment.deptName
-      ? "Department Name is required"
-      : duplicateDeptError
-      ? "Department with this name already exists"
-      : ""
-  }
-/>
-
+              />
             </Grid>
             <Grid item xs={6}>
               <Autocomplete
@@ -1202,13 +1203,12 @@ const CreateUser = ({
                 });
                 setAddDepartment(false);
               } catch (error) {
-               
                 setSnackbarMessage(
                   "Failed to create department(Department with this name already Exist). Please try another."
                 );
                 setSnackbarSeverity("error");
                 setSnackbarOpen(true);
-                 setDuplicateDeptError(true); // 👈 Trigger field-level error
+                setDuplicateDeptError(true); // 👈 Trigger field-level error
               }
             }}
             variant="contained"
@@ -1273,9 +1273,6 @@ const CreateUser = ({
               borderRadius: "50%",
               position: "relative",
               "&:hover": {
-                // color: "error.dark",
-                // borderColor: "error.main",
-                // bgcolor: "error.lighter",
                 transform: "rotate(180deg)",
               },
               transition: "transform 0.3s ease",
@@ -1291,94 +1288,84 @@ const CreateUser = ({
         </DialogTitle>
         {/* <DialogContent> */}
         <DialogContent dividers padding="0 !important">
-          {/* <TextField size="small" label="Role Name" /> */}
-          {/* <TextField
-            size="small"
-            label="Role Name"
-            value={newRoleName}
-            onChange={(e) => setNewRoleName(e.target.value)}
-          /> */}
-          <TextField
-  size="small"
-  label="Role Name"
-  FormHelperTextProps={{ sx: { ml: 0 } }}
-  value={newRoleName}
-  onChange={(e) => setNewRoleName(e.target.value)}
-  error={roleSubmitted && !newRoleName.trim()}
-  helperText={
-    roleSubmitted && !newRoleName.trim() ? "Role Name is required" : ""
-  }
-/>
-
+          <Grid container spacing={2} alignItems="center">
+            <Grid item xs={8}>
+              <TextField
+                fullWidth
+                size="small"
+                label="Role Name"
+                FormHelperTextProps={{ sx: { ml: 0 } }}
+                value={newRoleName}
+                onChange={(e) => setNewRoleName(e.target.value)}
+                error={roleSubmitted && !newRoleName.trim()}
+                helperText={
+                  roleSubmitted && !newRoleName.trim()
+                    ? "Role Name is required"
+                    : ""
+                }
+              />
+            </Grid>
+            <Grid item xs={4}>
+              <FormControl>
+                <label
+                  style={{ display: "flex", alignItems: "center", gap: "8px" }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isAdminRole}
+                    onChange={(e) => setIsAdminRole(e.target.checked)}
+                  />
+                  Admin Role
+                </label>
+              </FormControl>
+            </Grid>
+          </Grid>
         </DialogContent>
 
         <DialogActions>
           <Button
-            // onClick={async () => {
-            //   if (!newRoleName.trim()) return; // no empty roles
-
-            //   try {
-            //     const addedRole = await addRoleToDepartment(
-            //       selectedDepartmentForRole,
-            //       newRoleName.trim()
-            //     );
-            //     console.log(">>>selected", selectedDepartmentForRole.deptName);
-            //     console.log(">>>addedRole", addedRole[0]);
-            //     console.log(">>>departments1", departments);
-            //     setDepartments((prevDepartments) =>
-            //       prevDepartments.map((dept) =>
-            //         dept.deptName === selectedDepartmentForRole.deptName
-            //           ? {
-            //               ...dept,
-            //               roles: [...(dept.roles || []), addedRole[0]],
-            //             }
-            //           : dept
-            //       )
-            //     );
-            //     console.log(">>>departments222", departments);
-            //     setNewRoleName("");
-            //     setAddRole(false);
-            //   } catch (error) {}
-            // }}
             onClick={async () => {
-  setRoleSubmitted(true);
+              setRoleSubmitted(true);
 
-  if (!newRoleName.trim()) return;
+              if (!newRoleName.trim()) return;
 
-  try {
-    const addedRole = await addRoleToDepartment(
-      selectedDepartmentForRole,
-      newRoleName.trim()
-    );
+              try {
+                const addedRole = await addRoleToDepartment(
+                  selectedDepartmentForRole,
+                  {
+                    role: newRoleName.trim(),
+                    isAdmin: isAdminRole, // ✅ boolean flag from checkbox
+                  }
+                );
 
-    setDepartments((prevDepartments) =>
-      prevDepartments.map((dept) =>
-        dept.deptName === selectedDepartmentForRole.deptName
-          ? {
-              ...dept,
-              roles: [...(dept.roles || []), addedRole[0]],
-            }
-          : dept
-      )
-    );
+                setDepartments((prevDepartments) =>
+                  prevDepartments.map((dept) =>
+                    dept.deptName === selectedDepartmentForRole.deptName
+                      ? {
+                          ...dept,
+                          roles: [...(dept.roles || []), addedRole[0]],
+                        }
+                      : dept
+                  )
+                );
 
-    setSnackbarMessage("Role added successfully!");
-    setSnackbarSeverity("success");
-    setSnackbarOpen(true);
+                setSnackbarMessage("Role added successfully!");
+                setSnackbarSeverity("success");
+                setSnackbarOpen(true);
 
-    setNewRoleName("");
-    setAddRole(false);
-    setRoleSubmitted(false);
-  } catch (error) {
-    console.error("Add role error:", error);
-    setSnackbarMessage(
-      "Failed to add role. Role might already exist or there was a server error."
-    );
-    setSnackbarSeverity("error");
-    setSnackbarOpen(true);
-  }
-}}
-
+                setNewRoleName("");
+                setAddRole(false);
+                setRoleSubmitted(false);
+                setIsAdminRole(false); // ✅ reset checkbox
+              } catch (error) {
+                console.error("Add role error:", error);
+                setSnackbarMessage(
+                  "Failed to add role. Role might already exist or there was a server error."
+                );
+                setSnackbarSeverity("error");
+                setSnackbarOpen(true);
+              }
+            }}
             variant="contained"
             color="primary"
             sx={{ backgroundColor: "rgb(251, 68, 36)" }}

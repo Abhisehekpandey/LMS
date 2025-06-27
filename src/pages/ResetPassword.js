@@ -36,36 +36,33 @@ const ResetPassword = () => {
   console.log("tokennnn",token);
 
   const getPasswordStrengthMessage = (password) => {
-  const strongPattern =
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^()[\]{}])[A-Za-z\d@$!%*?&#^()[\]{}]{8,}$/;
-
+    const strongPattern =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^()[\]{}])[A-Za-z\d@$!%*?&#^()[\]{}]{8,16}$/;
+  
   if (!password) return "";
   if (!strongPattern.test(password)) {
-    return "Weak password: must include uppercase, lowercase, number, and special character, min 8 characters.";
+    return "Weak password: must include uppercase, lowercase, number, special character, 8–16 characters.";
   }
   return "Strong password";
 };
 
-  // const validateForm = () => {
-  //   const newErrors = {};
-  //   if (!formData.newPassword) newErrors.newPassword = "New password is required";
-  //   if (!formData.confirmPassword) newErrors.confirmPassword = "Please confirm your password";
-  //   if (formData.newPassword !== formData.confirmPassword) {
-  //     newErrors.confirmPassword = "Passwords do not match";
-  //   }
-  //   return newErrors;
-  // };
+ 
   const validateForm = () => {
   const newErrors = {};
   const strongPattern =
     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^()[\]{}])[A-Za-z\d@$!%*?&#^()[\]{}]{8,}$/;
 
-  if (!formData.newPassword) {
-    newErrors.newPassword = "New password is required";
-  } else if (!strongPattern.test(formData.newPassword)) {
-    newErrors.newPassword =
-      "Password must include uppercase, lowercase, number, special character, and be at least 8 characters.";
-  }
+    if (!formData.newPassword) {
+      newErrors.newPassword = "New password is required";
+    } else if (formData.newPassword.length < 8) {
+      newErrors.newPassword = "Password must be at least 8 characters";
+    } else if (formData.newPassword.length > 16) {
+      newErrors.newPassword = "Password must not exceed 16 characters";
+    } else if (!strongPattern.test(formData.newPassword)) {
+      newErrors.newPassword =
+        "Password must include uppercase, lowercase, number, and special character.";
+    }
+    
 
   if (!formData.confirmPassword) {
     newErrors.confirmPassword = "Please confirm your password";
@@ -80,26 +77,6 @@ const ResetPassword = () => {
 
 
 
-//  const handleReset = async (e) => {
-//     e.preventDefault();
-//     const validationErrors = validateForm();
-//     if (Object.keys(validationErrors).length > 0) {
-//       setErrors(validationErrors);
-//       return;
-//     }
-
-//     try {
-//       // pass both newPassword and token to resetPassword function
-//       await resetPassword(formData.newPassword, token);
-//       alert("Password reset successful!");
-//       // navigate("/login");
-//       navigate("http://frontdms-test.apps.lab.ocp.lan/teamsync/home")
-//     } 
-//     catch (error) {
-//       console.error("Reset failed:", error.message);
-//       setErrors({ api: "Failed to reset password. Please try again." });
-//     }
-//   };
 
 const handleReset = async (e) => {
   e.preventDefault();

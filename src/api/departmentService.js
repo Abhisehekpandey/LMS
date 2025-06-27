@@ -47,9 +47,9 @@ export const getDepartments = async (page = 0, pageSize = 10, search = "") => {
 
 export const createRole = async (payload) => {
   try {
-    const { department, role } = payload;
+    const { department, role, isAdmin } = payload;
 
-    const rolesArray = [{ roleName: role }];
+    const rolesArray = [{ roleName: role, isAdmin }];
 
     console.log(">>roesArray", rolesArray);
 

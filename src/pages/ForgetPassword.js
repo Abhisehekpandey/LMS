@@ -10,6 +10,7 @@ import {
   Snackbar,
   Link,
 } from "@mui/material";
+import { FormHelperText } from "@mui/material";
 import MuiAlert from "@mui/material/Alert";
 import { Email, Lock, Visibility, VisibilityOff } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
@@ -39,8 +40,23 @@ const ForgetPassword = () => {
     message: "",
     severity: "success",
   });
+  const [passwordStrengthMsg, setPasswordStrengthMsg] = useState("");
+
 
   const navigate = useNavigate();
+
+  const getPasswordStrengthMessage = (password) => {
+    const strongPattern =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^()[\]{}])[A-Za-z\d@$!%*?&#^()[\]{}]{8,16}$/;
+  
+
+    if (!password) return "";
+    if (!strongPattern.test(password)) {
+      return "Weak password: must include uppercase, lowercase, number, and special character, 8–16 characters.";
+    }
+    return "Strong password";
+  };
+  
 
   const handleSnackbarClose = () => {
     setSnackbar((prev) => ({ ...prev, open: false }));
@@ -57,8 +73,10 @@ const ForgetPassword = () => {
 
   if (!formData.newPassword) {
     newErrors.newPassword = "New password is required";
-  } else if (formData.newPassword.length < 6) {
-    newErrors.newPassword = "Password must be at least 6 characters";
+  } else if (formData.newPassword.length < 8) {
+    newErrors.newPassword = "Password must be at least 8 characters";
+  } else if (formData.newPassword.length > 16) {
+    newErrors.newPassword = "Password must not exceed 16 characters";
   }
 
   if (!formData.confirmPassword) {
@@ -71,13 +89,23 @@ const ForgetPassword = () => {
 };
 
 
+  
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value.trimStart() }));
+
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
+
+    // Show password strength message for newPassword field
+    if (name === "newPassword") {
+      const strengthMsg = getPasswordStrengthMessage(value);
+      setPasswordStrengthMsg(strengthMsg);
+    }
   };
+  
 
   const handleSubmit = async (e) => {
   e.preventDefault();
@@ -193,6 +221,19 @@ const ForgetPassword = () => {
               ),
             }}
           />
+          {formData.newPassword && passwordStrengthMsg && (
+            <FormHelperText
+              sx={{
+                color: passwordStrengthMsg.includes("Strong")
+                  ? "success.main"
+                  : "error.main",
+                ml: 0,
+                mt: -1,
+              }}
+            >
+              {passwordStrengthMsg}
+            </FormHelperText>
+          )}
 
           <TextField
             fullWidth
@@ -214,16 +255,10 @@ const ForgetPassword = () => {
               endAdornment: (
                 <InputAdornment position="end">
                   <IconButton
-                    onClick={() =>
-                      setShowConfirmPassword(!showConfirmPassword)
-                    }
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     edge="end"
                   >
-                    {showConfirmPassword ? (
-                      <VisibilityOff />
-                    ) : (
-                      <Visibility />
-                    )}
+                    {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
                   </IconButton>
                 </InputAdornment>
               ),
@@ -242,13 +277,12 @@ const ForgetPassword = () => {
           <Typography variant="body2" align="center" sx={{ mt: 2 }}>
             Back to{" "}
             <Link
-  component={RouterLink}
-  to="/login"
-  sx={{ fontWeight: 600, color: "#3b82f6" }}
->
-  Login
-</Link>
-
+              component={RouterLink}
+              to="/login"
+              sx={{ fontWeight: 600, color: "#3b82f6" }}
+            >
+              Login
+            </Link>
           </Typography>
         </Box>
 

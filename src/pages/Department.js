@@ -175,6 +175,7 @@ const CustomSpinner = styled(CircularProgress)(({ theme }) => ({
 }));
 
 function Department({ departments, setDepartments, onThemeToggle }) {
+  const [isAdminRole, setIsAdminRole] = useState(false);
   const [page, setPage] = useState(0);
 
   const [rowsPerPage, setRowsPerPage] = useState(10); // Default to 25 rows
@@ -903,14 +904,13 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       const payload = {
         department: selectedDepartment.name.trim(),
         role: newRole.trim(),
+        isAdmin: isAdminRole, // ✅ Send boolean value
       };
 
       await createRole(payload); // API call
 
-      // 🔁 Re-fetch departments from backend
-      // const updatedDepartments = await getDepartments(page,rowsPerPage);
       const departmentData = await getDepartments(page, rowsPerPage);
-const updatedDepartments = departmentData.content || [];
+      const updatedDepartments = departmentData.content || [];
 
       const mapped = updatedDepartments.map((dept) => ({
         name: dept.deptName,
@@ -936,6 +936,7 @@ const updatedDepartments = departmentData.content || [];
 
       setNewRole("");
       setShowAddRoleDialog(false);
+      setIsAdminRole(false); // reset checkbox
     } catch (error) {
       console.error("Failed to create role:", error);
       setSnackbar({
@@ -1098,12 +1099,12 @@ const updatedDepartments = departmentData.content || [];
       try {
         setLoading(true);
         // const apiDepartments = await getDepartments();
-        console.log("ppppp",page)
-        const departmentData = await getDepartments(page,rowsPerPage);
-const apiDepartments = departmentData.content || [];
-console.log("apiDepartment",apiDepartments)
+        console.log("ppppp", page);
+        const departmentData = await getDepartments(page, rowsPerPage);
+        const apiDepartments = departmentData.content || [];
+        console.log("apiDepartment", apiDepartments);
 
-setTotalDepartments(departmentData.totalElements || 0);
+        setTotalDepartments(departmentData.totalElements || 0);
 
         // Map backend data to expected frontend format
         const mapped = apiDepartments.map((dept) => ({
@@ -1135,7 +1136,7 @@ setTotalDepartments(departmentData.totalElements || 0);
     };
 
     fetchDepartments();
-  }, [page,rowsPerPage]);
+  }, [page, rowsPerPage]);
 
   useEffect(() => {
     const fetchAllUsers = async () => {
@@ -1461,367 +1462,376 @@ setTotalDepartments(departmentData.totalElements || 0);
           </TableHead>
           <TableBody>
             {sortedDepartments?.map((dept, index) => {
-                const isItemSelected = isSelected(dept.name);
-                return (
-                  <React.Fragment key={index}>
-                    <StyledTableRow
-                      hover
-                      // onClick={(event) => handleClick(event, dept.name)}
-                      role="checkbox"
-                      aria-checked={isItemSelected}
-                      tabIndex={-1}
-                      selected={isItemSelected}
+              const isItemSelected = isSelected(dept.name);
+              return (
+                <React.Fragment key={index}>
+                  <StyledTableRow
+                    hover
+                    // onClick={(event) => handleClick(event, dept.name)}
+                    role="checkbox"
+                    aria-checked={isItemSelected}
+                    tabIndex={-1}
+                    selected={isItemSelected}
+                    sx={{
+                      cursor: "default", // Change cursor to default instead of pointer
+                    }}
+                  >
+                    <TableCell
+                      padding="checkbox"
                       sx={{
-                        cursor: "default", // Change cursor to default instead of pointer
+                        width: "48px",
+                        padding: "2px 8px",
+                        height: "32px",
+                        textAlign: "center",
                       }}
                     >
-                      <TableCell
-                        padding="checkbox"
+                      <Checkbox
+                        color="primary"
+                        checked={isItemSelected}
+                        size="small"
+                        // onClick={(event) => event.stopPropagation()}
+                        onChange={(event) => handleClick(event, dept.name)}
+                      />
+                    </TableCell>
+
+                    <TableCell sx={{ padding: "2px 8px" }}>
+                      {dept.name}
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        // ...commonTextStyle,
+                        textAlign: "center",
+                        padding: "2px 8px",
+                      }}
+                    >
+                      {dept.displayName}
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        // ...commonTextStyle,
+                        textAlign: "center",
+                        padding: "2px 8px",
+                      }}
+                    >
+                      {dept.departmentModerator}
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        textAlign: "center",
+                        padding: "2px 8px",
+                      }}
+                    >
+                      {dept.storage}
+                    </TableCell>
+
+                    <TableCell
+                      sx={{
+                        textAlign: "center",
+                        padding: "2px 8px",
+                      }}
+                    >
+                      <Select
+                        // value={dept.storage}
+                        value={dept.allowedStorage}
+                        onChange={(e) =>
+                          handleStorageChange(dept.name, e.target.value)
+                        }
                         sx={{
-                          width: "48px",
-                          padding: "2px 8px",
-                          height: "32px",
-                          textAlign: "center",
+                          width: "100px",
+                          height: "30px",
+                          borderRadius: "28px",
                         }}
                       >
-                        <Checkbox
-                          color="primary"
-                          checked={isItemSelected}
+                        {getStorageOptions(dept.allowedStorage).map(
+                          (option) => (
+                            <MenuItem key={option} value={option}>
+                              {option}
+                            </MenuItem>
+                          )
+                        )}
+                      </Select>
+                    </TableCell>
+
+                    <TableCell sx={{ padding: "2px 8px", textAlign: "center" }}>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1,
+                          justifyContent: "center",
+                        }}
+                      >
+                        <Typography variant="body2">
+                          {dept.roles?.length || 0}
+                        </Typography>
+
+                        <IconButton
                           size="small"
-                          // onClick={(event) => event.stopPropagation()}
-                          onChange={(event) => handleClick(event, dept.name)}
-                        />
-                      </TableCell>
-
-                      <TableCell sx={{ padding: "2px 8px" }}>
-                        {dept.name}
-                      </TableCell>
-                      <TableCell
-                        sx={{
-                          // ...commonTextStyle,
-                          textAlign: "center",
-                          padding: "2px 8px",
-                        }}
-                      >
-                        {dept.displayName}
-                      </TableCell>
-                      <TableCell
-                        sx={{
-                          // ...commonTextStyle,
-                          textAlign: "center",
-                          padding: "2px 8px",
-                        }}
-                      >
-                        {dept.departmentModerator}
-                      </TableCell>
-                      <TableCell
-                        sx={{
-                          textAlign: "center",
-                          padding: "2px 8px",
-                        }}
-                      >
-                        {dept.storage}
-                      </TableCell>
-
-                      <TableCell
-                        sx={{
-                          textAlign: "center",
-                          padding: "2px 8px",
-                        }}
-                      >
-                        <Select
-                          // value={dept.storage}
-                          value={dept.allowedStorage}
-                          onChange={(e) =>
-                            handleStorageChange(dept.name, e.target.value)
-                          }
+                          onClick={() => handleRowToggle(index)}
                           sx={{
-                            width: "100px",
-                            height: "30px",
-                            borderRadius: "28px",
+                            padding: "2px",
+                            color: "#64748b",
+                            "&:hover": {
+                              color: "primary.main",
+                            },
                           }}
                         >
-                          {getStorageOptions(dept.allowedStorage).map(
-                            (option) => (
-                              <MenuItem key={option} value={option}>
-                                {option}
-                              </MenuItem>
-                            )
-                          )}
-                        </Select>
-                      </TableCell>
-
-                      <TableCell
-                        sx={{ padding: "2px 8px", textAlign: "center" }}
-                      >
-                        <Box
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 1,
-                            justifyContent: "center",
-                          }}
-                        >
-                          <Typography variant="body2">
-                            {dept.roles?.length || 0}
-                          </Typography>
-
-                          <IconButton
-                            size="small"
-                            onClick={() => handleRowToggle(index)}
+                          <KeyboardArrowDownIcon
                             sx={{
-                              padding: "2px",
-                              color: "#64748b",
-                              "&:hover": {
-                                color: "primary.main",
-                              },
+                              fontSize: "1.1rem",
+                              transition: "transform 0.2s ease-in-out",
+                              transform: openRows[index]
+                                ? "rotate(-180deg)"
+                                : "rotate(0)",
                             }}
-                          >
-                            <KeyboardArrowDownIcon
-                              sx={{
-                                fontSize: "1.1rem",
-                                transition: "transform 0.2s ease-in-out",
-                                transform: openRows[index]
-                                  ? "rotate(-180deg)"
-                                  : "rotate(0)",
-                              }}
-                            />
-                          </IconButton>
+                          />
+                        </IconButton>
 
-                          <Tooltip title="Add Role">
-                            <IconButton
-                              size="small"
-                              onClick={() => {
-                                setSelectedDepartment(dept);
-                                setShowAddRoleDialog(true);
-                              }}
-                              sx={{
-                                padding: "2px",
-                                color: "primary.main",
-                                "&:hover": {
-                                  backgroundColor: "primary.lighter",
-                                },
-                              }}
-                            >
-                              <AddCircleOutlineIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        </Box>
-                      </TableCell>
-
-                      <TableCell sx={{ padding: "2px 8px" }}>
-                        <Box
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            gap: 0.5,
-                          }}
-                        >
-                         
-
-                          <IconButton
-                            size="small"
-                            onClick={() => handleEditDepartment(dept)}
-                            sx={{
-                              color: "#1976d2", // Brighter blue
-                              "&:hover": {
-                                backgroundColor: "#e3f2fd", // Light blue background on hover
-                                color: "#1565c0", // Darker blue on hover
-                              },
-                              padding: "4px",
-                            }}
-                            title="Edit Department"
-                          >
-                            <EditIcon fontSize="small" />
-                          </IconButton>
+                        <Tooltip title="Add Role">
                           <IconButton
                             size="small"
                             onClick={() => {
-                              setDepartmentToDelete(dept);
-                              setDeleteDialogOpen(true);
+                              setSelectedDepartment(dept);
+                              setShowAddRoleDialog(true);
                             }}
                             sx={{
-                              color: "#d32f2f", // Brighter red
+                              padding: "2px",
+                              color: "primary.main",
                               "&:hover": {
-                                backgroundColor: "#ffebee", // Light red background on hover
-                                color: "#c62828", // Darker red on hover
+                                backgroundColor: "primary.lighter",
                               },
-                              padding: "4px",
                             }}
-                            title="Delete Department"
                           >
-                            <DeleteIcon fontSize="small" />
+                            <AddCircleOutlineIcon fontSize="small" />
                           </IconButton>
-                        </Box>
-                      </TableCell>
-                    </StyledTableRow>
+                        </Tooltip>
+                      </Box>
+                    </TableCell>
 
-                    <StyledTableRow key={index}>
-                      <TableCell
-                        style={{
-                          paddingBottom: 0,
-                          paddingTop: 0,
-                          borderBottom: "none",
-                          height: "auto",
+                    <TableCell sx={{ padding: "2px 8px" }}>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 0.5,
                         }}
-                        colSpan={6}
                       >
-                        <ClickAwayListener
-                          onClickAway={() =>
-                            setOpenRows((prev) => ({ ...prev, [index]: false }))
-                          }
+                        <IconButton
+                          size="small"
+                          onClick={() => handleEditDepartment(dept)}
+                          sx={{
+                            color: "#1976d2", // Brighter blue
+                            "&:hover": {
+                              backgroundColor: "#e3f2fd", // Light blue background on hover
+                              color: "#1565c0", // Darker blue on hover
+                            },
+                            padding: "4px",
+                          }}
+                          title="Edit Department"
                         >
-                          <Collapse
-                            in={openRows[index]}
-                            timeout="auto"
-                            unmountOnExit
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          onClick={() => {
+                            setDepartmentToDelete(dept);
+                            setDeleteDialogOpen(true);
+                          }}
+                          sx={{
+                            color: "#d32f2f", // Brighter red
+                            "&:hover": {
+                              backgroundColor: "#ffebee", // Light red background on hover
+                              color: "#c62828", // Darker red on hover
+                            },
+                            padding: "4px",
+                          }}
+                          title="Delete Department"
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Box>
+                    </TableCell>
+                  </StyledTableRow>
+
+                  <StyledTableRow key={index}>
+                    <TableCell
+                      style={{
+                        paddingBottom: 0,
+                        paddingTop: 0,
+                        borderBottom: "none",
+                        height: "auto",
+                      }}
+                      colSpan={6}
+                    >
+                      <ClickAwayListener
+                        onClickAway={() =>
+                          setOpenRows((prev) => ({ ...prev, [index]: false }))
+                        }
+                      >
+                        <Collapse
+                          in={openRows[index]}
+                          timeout="auto"
+                          unmountOnExit
+                        >
+                         
+                          <Box
+                            sx={{
+                              position: "absolute",
+                              left: "75%",
+                              transform: "translateX(-50%)",
+                              width: "250px",
+                              backgroundColor: "#ffff",
+                              borderRadius: "8px",
+                              border: "1px solid #e2e8f0",
+                              boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                              zIndex: 3,
+                              marginTop: "4px",
+                              maxHeight: "240px",
+                              overflowY: "auto",
+
+                              // ✅ Custom scrollbar width
+                              "&::-webkit-scrollbar": {
+                                width: "6px", // set to 6px or smaller
+                              },
+                              "&::-webkit-scrollbar-thumb": {
+                                backgroundColor: "#cbd5e1", // light gray
+                                borderRadius: "4px",
+                              },
+                              "&::-webkit-scrollbar-track": {
+                                backgroundColor: "#f1f5f9", // optional
+                              },
+                            }}
                           >
-                            <Box
-                              sx={{
-                                position: "absolute",
-                                left: "75%", // Center horizontally within the cell
-                                transform: "translateX(-50%)", // Center adjust
-                                width: "250px",
-                                backgroundColor: "#ffff",
-                                borderRadius: "8px",
-                                border: "1px solid #e2e8f0",
-                                boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-                                zIndex: 3,
-                                marginTop: "4px", // Small gap from the count
-                              }}
-                            >
-                              <Table size="small" aria-label="roles">
-                                <TableHead>
-                                  <TableRow>
+                            <Table size="small" aria-label="roles">
+                              <TableHead>
+                                <TableRow>
+                                  <TableCell
+                                    sx={{
+                                      backgroundColor: "#f1f5f9",
+                                      fontWeight: "600 !important",
+                                      color: "#475569",
+                                      fontSize: "0.75rem",
+                                      borderBottom: "1px solid #e2e8f0",
+                                      padding: "8px 12px",
+                                      // ...commonTextStyle,
+                                    }}
+                                  >
+                                    Role Name
+                                  </TableCell>
+                                  <TableCell
+                                    align="right"
+                                    sx={{
+                                      backgroundColor: "#f1f5f9",
+                                      fontWeight: "600 !important",
+                                      color: "#475569",
+                                      fontSize: "0.75rem",
+                                      borderBottom: "1px solid #e2e8f0",
+                                      padding: "8px 12px",
+                                      width: "60px",
+                                    }}
+                                  >
+                                    Actions
+                                  </TableCell>
+                                </TableRow>
+                              </TableHead>
+                              <TableBody>
+                                {dept.roles.map((role, roleIndex) => (
+                                  <TableRow
+                                    key={roleIndex}
+                                    sx={{
+                                      "&:hover": {
+                                        backgroundColor: "rgba(0, 0, 0, 0.02)",
+                                      },
+                                      "& td": {
+                                        borderBottom:
+                                          roleIndex === dept.roles.length - 1
+                                            ? "none"
+                                            : "1px solid #e2e8f0",
+                                      },
+                                    }}
+                                  >
                                     <TableCell
                                       sx={{
-                                        backgroundColor: "#f1f5f9",
-                                        fontWeight: "600 !important",
-                                        color: "#475569",
-                                        fontSize: "0.75rem",
-                                        borderBottom: "1px solid #e2e8f0",
-                                        padding: "8px 12px",
                                         // ...commonTextStyle,
+                                        padding: "6px 12px",
+                                        fontSize: "0.75rem",
+                                        color: "#334155",
                                       }}
                                     >
-                                      Role Name
+                                      {role}
                                     </TableCell>
                                     <TableCell
                                       align="right"
                                       sx={{
-                                        backgroundColor: "#f1f5f9",
-                                        fontWeight: "600 !important",
-                                        color: "#475569",
-                                        fontSize: "0.75rem",
-                                        borderBottom: "1px solid #e2e8f0",
-                                        padding: "8px 12px",
-                                        width: "60px",
+                                        padding: "4px 8px",
                                       }}
                                     >
-                                      Actions
+                                      <Box
+                                        sx={{
+                                          display: "flex",
+                                          gap: 0.5,
+                                          justifyContent: "flex-end",
+                                        }}
+                                      >
+                                        <IconButton
+                                          size="small"
+                                          onClick={() =>
+                                            handleEditRole(
+                                              dept.name,
+                                              roleIndex,
+                                              role
+                                            )
+                                          }
+                                          sx={{
+                                            padding: "2px",
+                                            color: "primary.main",
+                                            "&:hover": {
+                                              backgroundColor:
+                                                "primary.lighter",
+                                            },
+                                          }}
+                                          title="Edit Role"
+                                        >
+                                          <EditIcon
+                                            sx={{ fontSize: "0.875rem" }}
+                                          />
+                                        </IconButton>
+                                        <IconButton
+                                          size="small"
+                                          onClick={() =>
+                                            handleDeleteRole(
+                                              dept.name,
+                                              roleIndex
+                                            )
+                                          }
+                                          sx={{
+                                            padding: "2px",
+                                            color: "error.main",
+                                            "&:hover": {
+                                              backgroundColor: "error.lighter",
+                                            },
+                                          }}
+                                          title="Delete Role"
+                                        >
+                                          <DeleteIcon
+                                            sx={{ fontSize: "0.875rem" }}
+                                          />
+                                        </IconButton>
+                                      </Box>
                                     </TableCell>
                                   </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                  {dept.roles.map((role, roleIndex) => (
-                                    <TableRow
-                                      key={roleIndex}
-                                      sx={{
-                                        "&:hover": {
-                                          backgroundColor:
-                                            "rgba(0, 0, 0, 0.02)",
-                                        },
-                                        "& td": {
-                                          borderBottom:
-                                            roleIndex === dept.roles.length - 1
-                                              ? "none"
-                                              : "1px solid #e2e8f0",
-                                        },
-                                      }}
-                                    >
-                                      <TableCell
-                                        sx={{
-                                          // ...commonTextStyle,
-                                          padding: "6px 12px",
-                                          fontSize: "0.75rem",
-                                          color: "#334155",
-                                        }}
-                                      >
-                                        {role}
-                                      </TableCell>
-                                      <TableCell
-                                        align="right"
-                                        sx={{
-                                          padding: "4px 8px",
-                                        }}
-                                      >
-                                        <Box
-                                          sx={{
-                                            display: "flex",
-                                            gap: 0.5,
-                                            justifyContent: "flex-end",
-                                          }}
-                                        >
-                                          <IconButton
-                                            size="small"
-                                            onClick={() =>
-                                              handleEditRole(
-                                                dept.name,
-                                                roleIndex,
-                                                role
-                                              )
-                                            }
-                                            sx={{
-                                              padding: "2px",
-                                              color: "primary.main",
-                                              "&:hover": {
-                                                backgroundColor:
-                                                  "primary.lighter",
-                                              },
-                                            }}
-                                            title="Edit Role"
-                                          >
-                                            <EditIcon
-                                              sx={{ fontSize: "0.875rem" }}
-                                            />
-                                          </IconButton>
-                                          <IconButton
-                                            size="small"
-                                            onClick={() =>
-                                              handleDeleteRole(
-                                                dept.name,
-                                                roleIndex
-                                              )
-                                            }
-                                            sx={{
-                                              padding: "2px",
-                                              color: "error.main",
-                                              "&:hover": {
-                                                backgroundColor:
-                                                  "error.lighter",
-                                              },
-                                            }}
-                                            title="Delete Role"
-                                          >
-                                            <DeleteIcon
-                                              sx={{ fontSize: "0.875rem" }}
-                                            />
-                                          </IconButton>
-                                        </Box>
-                                      </TableCell>
-                                    </TableRow>
-                                  ))}
-                                </TableBody>
-                              </Table>
-                            </Box>
-                          </Collapse>
-                        </ClickAwayListener>
-                      </TableCell>
-                    </StyledTableRow>
-                  </React.Fragment>
-                );
-              })}
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </Box>
+                        </Collapse>
+                      </ClickAwayListener>
+                    </TableCell>
+                  </StyledTableRow>
+                </React.Fragment>
+              );
+            })}
           </TableBody>
         </Table>
       </TableContainer>
@@ -1839,17 +1849,15 @@ setTotalDepartments(departmentData.totalElements || 0);
           width: "100%",
         }}
       >
-       
         <TablePagination
-  rowsPerPageOptions={[10, 20, 30]}
-  component="div"
-  count={totalDepartments}
-  rowsPerPage={rowsPerPage}
-  page={page}
-  onPageChange={handleChangePage}
-  onRowsPerPageChange={handleChangeRowsPerPage}
-/>
-
+          rowsPerPageOptions={[10, 20, 30]}
+          component="div"
+          count={totalDepartments}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+        />
 
         <Box
           sx={{
@@ -2340,6 +2348,17 @@ setTotalDepartments(departmentData.totalElements || 0);
                 label="New Role"
                 value={newRole}
                 onChange={(e) => setNewRole(e.target.value)}
+                sx={{ mb: 2 }}
+              />
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={isAdminRole}
+                    onChange={(e) => setIsAdminRole(e.target.checked)}
+                    color="primary"
+                  />
+                }
+                label="Admin Role"
               />
             </CardContent>
           </Card>
@@ -2555,4 +2574,3 @@ setTotalDepartments(departmentData.totalElements || 0);
 }
 
 export default Department;
-

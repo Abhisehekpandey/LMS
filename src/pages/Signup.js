@@ -57,11 +57,12 @@ const Signup = () => {
 
   const getPasswordStrengthMessage = (password) => {
     const strongPattern =
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^()[\]{}])[A-Za-z\d@$!%*?&#^()[\]{}]{8,}$/;
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^()[\]{}])[A-Za-z\d@$!%*?&#^()[\]{}]{6,16}$/;
+
 
     if (!password) return "";
     if (!strongPattern.test(password)) {
-      return "Weak password: must include uppercase, lowercase, number, and special character, min 8 characters.";
+      return "Weak password: must include uppercase, lowercase, number, and special character, 6–16 characters.";
     }
     return "Strong password";
   };
@@ -110,6 +111,8 @@ const Signup = () => {
       newErrors.password = "Password is required";
     } else if (formData.password.length < 6) {
       newErrors.password = "Password must be at least 6 characters";
+    } else if (formData.password.length > 16) {
+      newErrors.password = "Password must not exceed 16 characters";
     }
 
     if (!formData.confirmPassword.trim()) {
