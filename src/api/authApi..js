@@ -88,10 +88,35 @@ export const resetPassword = async (newPassword, resetToken) => {
 
 
 
-export const resetAdminPassword = async ({ email, newPassword }) => {
-  const response = await axios.post('/api/auth/reset-password', {
-    email,
-    newPassword,
-  });
+export const ForgetAdminPassword = async ({ email }) => {
+  const response = await axios.post(
+    `${window.__ENV__.REACT_APP_ROUTE}/tenants/public/sendPasswordResetMail`,
+    {}, // 🔹 empty payload/body
+    {
+      headers: {
+        email: email, // 🔹 sending email in headers
+      },
+    }
+  );
   return response.data;
 };
+
+export const resetAdminPassword = async (newPassword, resetToken) => {
+  console.log("resetToken", resetToken);
+
+  if (!resetToken) throw new Error("Reset token is required");
+
+  const response = await axios.post(
+    `${window.__ENV__.REACT_APP_ROUTE}/tenants/public/resetPassword`, // your backend endpoint
+    {}, // no body, since data is in headers
+    {
+      headers: {
+        token: resetToken, // custom header for reset token
+        password: newPassword, // custom header for password
+      },
+    }
+  );
+
+  return response.data;
+};
+

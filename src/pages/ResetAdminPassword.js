@@ -1,7 +1,6 @@
 import React, { useState } from "react";
-import { useSearchParams } from "react-router-dom"; // import this
-import { Link } from "@mui/material";
-
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import {
   Box,
   Button,
@@ -10,12 +9,14 @@ import {
   Paper,
   IconButton,
   InputAdornment,
+  Snackbar,
+  Link,
 } from "@mui/material";
+import MuiAlert from "@mui/material/Alert";
 import { Lock, Visibility, VisibilityOff } from "@mui/icons-material";
-import { useNavigate } from "react-router-dom";
 import backgroundImage from "../assets/Back.jpg.jpg";
 import { keyframes } from "@emotion/react";
-import { resetPassword } from "../api/authApi.";
+import { resetAdminPassword } from "../api/authApi.";
 
 const floatAnimation = keyframes`
   0% { background-position-y: 0px; }
@@ -23,8 +24,11 @@ const floatAnimation = keyframes`
   100% { background-position-y: 0px; }
 `;
 
-const ResetPassword = () => {
+const ResetAdminPassword = () => {
   const navigate = useNavigate();
+  const { token } = useParams();
+  console.log("Token from URL path:", token);
+
   const [formData, setFormData] = useState({
     newPassword: "",
     confirmPassword: "",
@@ -32,11 +36,15 @@ const ResetPassword = () => {
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [passwordStrengthMsg, setPasswordStrengthMsg] = useState("");
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
 
-  const [searchParams] = useSearchParams();
-  console.log("hiiiiii");
-  const token = searchParams.get("token"); // <-- extract token from URL
-  console.log("tokennnn", token);
+  const handleSnackbarClose = () => {
+    setSnackbar((prev) => ({ ...prev, open: false }));
+  };
 
   const getPasswordStrengthMessage = (password) => {
     const strongPattern =
@@ -52,17 +60,13 @@ const ResetPassword = () => {
   const validateForm = () => {
     const newErrors = {};
     const strongPattern =
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^()[\]{}])[A-Za-z\d@$!%*?&#^()[\]{}]{8,}$/;
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^()[\]{}])[A-Za-z\d@$!%*?&#^()[\]{}]{8,16}$/;
 
     if (!formData.newPassword) {
       newErrors.newPassword = "New password is required";
-    } else if (formData.newPassword.length < 8) {
-      newErrors.newPassword = "Password must be at least 8 characters";
-    } else if (formData.newPassword.length > 16) {
-      newErrors.newPassword = "Password must not exceed 16 characters";
     } else if (!strongPattern.test(formData.newPassword)) {
       newErrors.newPassword =
-        "Password must include uppercase, lowercase, number, and special character.";
+        "Password must include uppercase, lowercase, number, and special character, 8–16 characters.";
     }
 
     if (!formData.confirmPassword) {
@@ -74,25 +78,6 @@ const ResetPassword = () => {
     return newErrors;
   };
 
-  const handleReset = async (e) => {
-    e.preventDefault();
-    const validationErrors = validateForm();
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      return;
-    }
-
-    try {
-      await resetPassword(formData.newPassword, token);
-      alert("Password reset successful!");
-    } catch (error) {
-      console.error("Reset failed:", error.message);
-      setErrors({ api: "Failed to set password. Please try again." });
-    } finally {
-      window.location.href =
-        "http://frontdms-test.apps.lab.ocp.lan/teamsync/home";
-    }
-  };
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -102,8 +87,36 @@ const ResetPassword = () => {
     }
 
     if (name === "newPassword") {
-      const strengthMsg = getPasswordStrengthMessage(value);
-      setPasswordStrengthMsg(strengthMsg);
+      setPasswordStrengthMsg(getPasswordStrengthMessage(value));
+    }
+  };
+
+  const handleReset = async (e) => {
+    e.preventDefault();
+    const validationErrors = validateForm();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+
+    try {
+      await resetAdminPassword(formData.newPassword.trim(), token);
+      setSnackbar({
+        open: true,
+        message: "Password reset successful!",
+        severity: "success",
+      });
+
+      setTimeout(() => navigate("/login"), 2000);
+    } catch (error) {
+      console.error("Reset failed:", error);
+      setSnackbar({
+        open: true,
+        message:
+          error?.response?.data?.message ||
+          "Failed to set password. Please try again.",
+        severity: "error",
+      });
     }
   };
 
@@ -133,58 +146,53 @@ const ResetPassword = () => {
           width: "100%",
           maxWidth: 1000,
           backgroundColor: "rgba(255, 255, 255, 0.6)",
-          boxShadow: "none",
         }}
       >
         <Box
           sx={{
             flex: 1,
             p: 4,
-            backgroundColor: "rgba(255, 255, 255, 0.2)",
-            backdropFilter: "blur(2px)",
-            WebkitBackdropFilter: "blur(2px)",
-            border: "1px solid rgba(255, 255, 255, 0.3)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            flexDirection: "column",
+            backgroundColor: "rgba(255,255,255,0.3)",
+            backdropFilter: "blur(5px)",
+            borderRight: "1px solid rgba(0,0,0,0.1)",
           }}
         >
-          <Box maxWidth={400}>
-            <Typography variant="h3" sx={{ fontWeight: 900 }}>
-              <Box component="span" sx={{ color: "#1e3a8a" }}>
-                Angel
-              </Box>
-              <Box component="span" sx={{ color: "#ef4444" }}>
-                Bot
-              </Box>
-            </Typography>
-            <Typography
-              variant="h6"
-              sx={{ mt: 1, fontWeight: 600, color: "#374151" }}
-            >
-              Set Your Password
-            </Typography>
-            <Typography
-              variant="body1"
-              sx={{ mt: 3, fontSize: "0.95rem", color: "#4b5563" }}
-            >
-              Enter and confirm your new password to regain access to your
-              account.
-            </Typography>
-          </Box>
+          <Typography variant="h3" sx={{ fontWeight: 900 }}>
+            <Box component="span" sx={{ color: "#1e3a8a" }}>
+              Angel
+            </Box>
+            <Box component="span" sx={{ color: "#ef4444" }}>
+              Bot
+            </Box>
+          </Typography>
+          <Typography variant="h6" mt={1} fontWeight={600}>
+            Set Your Password
+          </Typography>
+          <Typography
+            variant="body2"
+            mt={2}
+            textAlign="center"
+            sx={{ maxWidth: 300 }}
+          >
+            Enter and confirm your new password to regain access to your
+            account.
+          </Typography>
         </Box>
 
         <Box
           sx={{
             flex: 1,
             p: 4,
-            backgroundColor: "rgba(255, 255, 255, 0.2)",
-            backdropFilter: "blur(10px)",
-            WebkitBackdropFilter: "blur(10px)",
-            border: "1px solid rgba(255, 255, 255, 0.3)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            flexDirection: "column",
+            backgroundColor: "rgba(255,255,255,0.4)",
+            backdropFilter: "blur(10px)",
           }}
         >
           <Box
@@ -192,21 +200,17 @@ const ResetPassword = () => {
             onSubmit={handleReset}
             sx={{ width: "100%", maxWidth: 400 }}
           >
-            <Typography variant="h5" align="center" fontWeight={600} mb={3}>
-              Set Password
-            </Typography>
-
             <TextField
               fullWidth
               label="New Password"
               name="newPassword"
-              FormHelperTextProps={{ sx: { ml: 0 } }}
               type={showPassword ? "text" : "password"}
               value={formData.newPassword}
               onChange={handleChange}
-              margin="normal"
               error={!!errors.newPassword}
               helperText={errors.newPassword}
+              FormHelperTextProps={{ sx: { ml: 0 } }}
+              margin="normal"
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -218,6 +222,7 @@ const ResetPassword = () => {
                     <IconButton
                       onClick={() => setShowPassword(!showPassword)}
                       edge="end"
+                      aria-label="toggle password visibility"
                     >
                       {showPassword ? <VisibilityOff /> : <Visibility />}
                     </IconButton>
@@ -225,6 +230,7 @@ const ResetPassword = () => {
                 ),
               }}
             />
+
             {formData.newPassword && passwordStrengthMsg && (
               <Typography
                 variant="body2"
@@ -244,13 +250,13 @@ const ResetPassword = () => {
               fullWidth
               label="Confirm New Password"
               name="confirmPassword"
-              FormHelperTextProps={{ sx: { ml: 0 } }}
-              type={showPassword ? "text" : "password"}
+              type="password"
               value={formData.confirmPassword}
               onChange={handleChange}
-              margin="normal"
               error={!!errors.confirmPassword}
               helperText={errors.confirmPassword}
+              FormHelperTextProps={{ sx: { ml: 0 } }}
+              margin="normal"
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -265,23 +271,19 @@ const ResetPassword = () => {
               variant="contained"
               fullWidth
               sx={{
-                mt: 2,
+                mt: 3,
                 py: 1.5,
-                fontSize: "1rem",
                 fontWeight: 600,
-                backgroundColor: "#3b82f6",
                 borderRadius: 2,
-                textTransform: "none",
-                boxShadow: "0 4px 12px rgba(59, 130, 246, 0.3)",
+                backgroundColor: "#3b82f6",
               }}
             >
-              Set Password
+              Reset Password
             </Button>
 
-            <Typography variant="body2" align="center" sx={{ mt: 2 }}>
+            <Typography variant="body2" align="center" mt={2}>
               Back to{" "}
               <Link
-                component="button"
                 onClick={() => navigate("/login")}
                 sx={{ fontWeight: 600, color: "#3b82f6", cursor: "pointer" }}
               >
@@ -291,8 +293,24 @@ const ResetPassword = () => {
           </Box>
         </Box>
       </Paper>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <MuiAlert
+          elevation={6}
+          variant="filled"
+          severity={snackbar.severity}
+          onClose={handleSnackbarClose}
+        >
+          {snackbar.message}
+        </MuiAlert>
+      </Snackbar>
     </Box>
   );
 };
 
-export default ResetPassword;
+export default ResetAdminPassword;

@@ -334,11 +334,11 @@ export default function UserTable() {
 
   const options = ["10GB", "20GB"];
 
-  
-
-
   const handleBulkDownload = () => {
-    let dataToDownload = [];
+    if (!rowData || rowData.length === 0) {
+      alert("No data to download");
+      return;
+    }
 
     const formatStatus = (row) => {
       if (row.active && !row.enabled) return "Pending";
@@ -348,76 +348,47 @@ export default function UserTable() {
 
     const extractRowData = (row) => ({
       Name: row.name || "N/A",
-      Department:
-        row.roles && row.roles.length > 0
-          ? row.roles[0].department?.deptName || "N/A"
-          : "N/A",
-      Role:
-        row.roles && row.roles.length > 0
-          ? row.roles[0].roleName || "N/A"
-          : "N/A",
+      Department: row.roles?.[0]?.department?.deptName || "N/A",
+      Role: row.roles?.[0]?.roleName || "N/A",
       "User Email": row.email || "N/A",
-      "Phone Number": row.phoneNumber || "N/A",
-      "Reporting Manager": row.reportingManager || "N/A",
+      "Phone Number": row.phone || "N/A",
+      "Reporting Manager": row.reportingManager?.name || "N/A",
       "Storage Used": row.permissions?.displayStorage || "N/A",
       "Manage Storage": row.permissions?.allowedStorageInBytesDisplay || "N/A",
       "Active License": formatStatus(row),
     });
 
-    if (selected.length > 0) {
-      dataToDownload = rowsData
-        .filter((row) => selected.includes(row.id))
-        .map(extractRowData);
-    } else {
-      dataToDownload = rowsData.map(extractRowData);
-    }
+    const dataToDownload = rowData.map(extractRowData);
+    const headers = Object.keys(dataToDownload[0]);
 
-    if (dataToDownload.length === 0) {
-      alert("No data to download");
-      return;
-    }
-
-    // Define column order explicitly
-    const headers = [
-      "Name",
-      "Department",
-      "Role",
-      "User Email",
-      "Phone Number",
-      "Reporting Manager",
-      "Storage Used",
-      "Manage Storage",
-      "Active License",
-    ];
-
-    // Create worksheet and workbook
     const worksheet = XLSX.utils.json_to_sheet(dataToDownload, {
       header: headers,
     });
 
-    // Set column widths
-    const columnWidths = [
-      { wch: 20 }, // Name
-      { wch: 20 }, // Department
-      { wch: 25 }, // Role
-      { wch: 30 }, // User Email
-      { wch: 18 }, // Phone Number
-      { wch: 25 }, // Reporting Manager
-      { wch: 15 }, // Storage Used
-      { wch: 18 }, // Manage Storage
-      { wch: 15 }, // Active License
+    worksheet["!cols"] = [
+      { wch: 20 },
+      { wch: 20 },
+      { wch: 25 },
+      { wch: 30 },
+      { wch: 18 },
+      { wch: 25 },
+      { wch: 15 },
+      { wch: 18 },
+      { wch: 15 },
     ];
-    worksheet["!cols"] = columnWidths;
 
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Users");
-
-    XLSX.writeFile(workbook, "users.xlsx");
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Selected Users");
+    XLSX.writeFile(workbook, "selected-users.xlsx");
 
     setSelected([]);
+    setRowData([]);
+
+    // ✅ Show success message
+    setSnackbarMessage("User data downloaded successfully");
+    setSnackbarSeverity("success");
+    setSnackbarOpen(true);
   };
-  
-  
 
   const label = { inputProps: { "aria-label": "Switch demo" } };
 
@@ -474,11 +445,7 @@ export default function UserTable() {
     try {
       await toggleUserStatusByUsername(updatedRows, page); // send full payload
       setRowsData(updatedRows); // update state
-      // toast.success(
-      //   `User "${user.name}" has been ${
-      //     newStatus ? "activated" : "deactivated"
-      //   }`
-      // );
+
       let statusMessage = "";
       if (newStatus && !user.enabled) {
         statusMessage = `User "${user.name}" is pending email verification`;
@@ -1056,6 +1023,30 @@ export default function UserTable() {
                 </IconButton>
               </Tooltip>
             )}
+            <div
+              style={{
+                gap: "5px",
+                marginRight: "7px",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              {selected.length > 0 && (
+                <Typography
+                  variant="subtitle2"
+                  sx={{
+                    fontWeight: "bold",
+                    color: "#333",
+                    marginRight: "10px",
+                  }}
+                >
+                  Total Selected: {selected.length} User
+                  {selected.length > 1 ? "s" : ""}
+                </Typography>
+              )}
+            </div>
+
             {selected.length >= 1 && (
               <Tooltip title="Download Selected">
                 <IconButton
@@ -1172,6 +1163,7 @@ export default function UserTable() {
               Cancel
             </Button>
             <div style={{ gap: "4px" }}>
+             
               <Button
                 style={{
                   backgroundColor: "#1976d2",
@@ -1182,38 +1174,56 @@ export default function UserTable() {
                   borderRadius: "4px",
                 }}
                 onClick={() => {
-                  const currentPageRows = rowsData
-                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                    .map((n) => n.id);
+                  const currentPageRows = rowsData.map((n) => n.id);
                   setSelected(currentPageRows); // Select only the current page
+                  setRowData(rowsData); // Store current page data
                   setSelectAllData(false);
                 }}
               >
-                Select Current Page (
-                {
-                  rowsData.slice(
-                    page * rowsPerPage,
-                    page * rowsPerPage + rowsPerPage
-                  ).length
-                }
-                rows)
+                Select Current Page ({rowsData.length} rows)
               </Button>
 
               <Button
                 style={{
                   backgroundColor: "#d32f2f",
                   color: "white",
-                  // padding: "8px 12px",
                   border: "none",
                   cursor: "pointer",
                   borderRadius: "4px",
                 }}
-                onClick={() => {
-                  setSelected(rowsData.map((n) => n.id)); // Select all rows
-                  setSelectAllData(false);
+                onClick={async () => {
+                  try {
+                    setSelectAllData(false); // Close dialog
+
+                    let allUsers = [];
+                    let page = 0;
+                    let totalPages = 1;
+
+                    const firstResponse = await fetchUsers(0);
+                    totalPages = firstResponse.totalPages;
+                    allUsers = [...firstResponse.content];
+
+                    const remainingFetches = [];
+                    for (let p = 1; p < totalPages; p++) {
+                      remainingFetches.push(fetchUsers(p));
+                    }
+
+                    const results = await Promise.all(remainingFetches);
+                    results.forEach((res) => {
+                      allUsers.push(...res.content);
+                    });
+
+                    // ✅ Select all user IDs
+                    const allIds = allUsers.map((u) => u.id);
+                    setSelected(allIds);
+                    setRowData(allUsers); // Store all user data in rowData
+                  } catch (error) {
+                    console.error("Failed to fetch all users:", error);
+                    alert("Something went wrong while selecting all users.");
+                  }
                 }}
               >
-                Select All Rows ({rowsData.length})
+                Select All Page Users
               </Button>
             </div>
           </DialogActions>
