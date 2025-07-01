@@ -123,7 +123,7 @@ const userInitial = user.initial || "U";
     { path: "/user", icon: <UserIcon />, text: "User" },
     { path: "/department", icon: <DepartmentRolesIcon />, text: "Department" },
     { path: "/ldap-config", icon: <LDAPIcon />, text: "LDAP Settings" },
-    { path: "/company-dashboard", icon: <DashboardIcon />, text: "Dashboard" },
+    // { path: "/company-dashboard", icon: <DashboardIcon />, text: "Dashboard" },
   ], []); // Empty dependency array means this only runs once
 
   const handleMouseEnter = () => {

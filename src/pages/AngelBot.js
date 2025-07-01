@@ -818,7 +818,7 @@ const AngelBot = () => {
 
         const departmentStorageData = departments.map((dept) => {
           const name = dept.deptName || "Unnamed Dept";
-          const storage = convertDisplayToGB(dept?.permissions?.displayStorage);
+          const storageUsed = convertDisplayToGB(dept?.permissions?.displayStorage);
           const storageAllocated = convertDisplayToGB(
             dept?.permissions?.allowedStorageInBytesDisplay
           );
@@ -826,7 +826,7 @@ const AngelBot = () => {
           return {
             id: dept.id,
             name,
-            storage: Number(storage.toFixed(2)),
+            storageUsed: storageUsed,
             storageAllocated: Number(storageAllocated.toFixed(2)) || 1,
           };
         });
@@ -834,7 +834,7 @@ const AngelBot = () => {
         // Sort by high usage initially
         departmentStorageData.sort(
           (a, b) =>
-            b.storage / b.storageAllocated - a.storage / a.storageAllocated
+            b.storageUsed / b.storageAllocated - a.storageUsed / a.storageAllocated
         );
 
         setSortedDepartments(departmentStorageData);
@@ -2119,14 +2119,14 @@ const AngelBot = () => {
                                   fontSize: "0.75rem",
                                 }}
                               >
-                                {`${dept.storage}/${dept.storageAllocated}GB`}
+                                {`${dept.storageUsed}/${dept.storageAllocated}GB`}
                               </Typography>
                             </Box>
                             <Box sx={{ flex: 1, mx: 2 }}>
                               <LinearProgress
                                 variant="determinate"
                                 value={
-                                  (dept.storage / dept.storageAllocated) * 100
+                                  (dept.storageUsed / dept.storageAllocated) * 100
                                 }
                                 sx={{
                                   height: 10,
@@ -2140,7 +2140,7 @@ const AngelBot = () => {
                                   [`& .MuiLinearProgress-bar`]: {
                                     borderRadius: 3,
                                     backgroundColor: getProgressBarColor(
-                                      (dept.storage / dept.storageAllocated) *
+                                      (dept.storageUsed / dept.storageAllocated) *
                                         100
                                     ),
                                   },
@@ -2158,7 +2158,7 @@ const AngelBot = () => {
                               }}
                             >
                               {`${Math.round(
-                                (dept.storage / dept.storageAllocated) * 100
+                                (dept.storageUsed / dept.storageAllocated) * 100
                               )}%`}
                             </Typography>
                             <Tooltip title="Increase Storage" arrow>
