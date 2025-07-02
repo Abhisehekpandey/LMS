@@ -1,301 +1,494 @@
-import React, { useState } from 'react';
-import { useEffect } from 'react';
+import React, { useState, useEffect } from "react";
+import Fade from "@mui/material/Fade";
+import Slide from "@mui/material/Slide";
 import {
   Box,
+  Tabs,
+  Tab,
   TextField,
   Button,
-  Typography,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
   Grid,
+  Typography,
+  Paper,
   Alert,
-  Tooltip,
+  InputAdornment,
+  MenuItem,
+  Select,
+  FormControl,
   IconButton,
+  Tooltip,
+  Divider,
   Accordion,
   AccordionSummary,
   AccordionDetails,
-  Divider,
-  Paper,
-} from '@mui/material';
-import InfoIcon from '@mui/icons-material/Info';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import Navbar from "../components/Navbar";
-import Sidebar from "../components/Sidebar";
-import { CircularProgress, keyframes, styled } from '@mui/material';
+  List,
+  ListItemButton,
+  ListItemText,
+} from "@mui/material";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import AddIcon from "@mui/icons-material/Add";
+import DeleteIcon from "@mui/icons-material/Delete";
+import StorageIcon from "@mui/icons-material/Storage";
 
-const fadeIn = keyframes`
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
-`;
-
-// Styled overlay
-const LoaderWrapper = styled(Box)(({ theme }) => ({
-  position: 'fixed',
-  top: 0,
-  left: 0,
-  width: '100vw',
-  height: '100vh',
-  background: 'rgba(255, 255, 255, 0.75)',
-  backdropFilter: 'blur(5px)',
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  zIndex: 1300,
-  animation: `${fadeIn} 0.5s ease-in-out`,
-}));
-
-// Styled CircularProgress
-const CustomSpinner = styled(CircularProgress)(({ theme }) => ({
-  color: theme.palette.primary.main,
-  width: '60px !important',
-  height: '80px !important',
-  thickness: 2,
-}));
-
-const LDAPConfig = ({ onThemeToggle }) => {
-  const [loading, setLoading] = useState(true);
-  const [config, setConfig] = useState({
-    connectionUrl: '',
-    bindDN: '',
-    bindCredentials: '',
-    usersDN: '',
-    userObjectClasses: 'person, organizationalPerson, user',
-    editMode: 'read',
-    displayName: '',
-    usernameAttribute: '',
+const LDAPConfig = () => {
+  const [tabIndex, setTabIndex] = useState(0);
+  const [selectedServer, setSelectedServer] = useState("1");
+  const [servers, setServers] = useState(["1"]);
+  const [activeSection, setActiveSection] = useState("LDAP CONFIGURATION");
+  const [serverConfigs, setServerConfigs] = useState({
+    1: { host: "", port: "", userDn: "", password: "", baseDn: "" },
   });
 
-  const [status, setStatus] = useState({
-    type: 'info',
-    message: '',
-  });
+  const [config, setConfig] = useState(serverConfigs[selectedServer]);
+  const [status, setStatus] = useState({ type: "info", message: "" });
 
-  const [submittedConfigs, setSubmittedConfigs] = useState([]);
-
-  const handleChange = (event) => {
-    const { name, value } = event.target;
-    setConfig((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    setStatus({
-      type: 'success',
-      message: 'LDAP configuration saved successfully!',
-    });
-    setSubmittedConfigs((prev) => [...prev, config]);
-    setConfig({
-      connectionUrl: '',
-      bindDN: '',
-      bindCredentials: '',
-      usersDN: '',
-      userObjectClasses: 'person, organizationalPerson, user',
-      editMode: 'read',
-      displayName: '',
-      usernameAttribute: '',
-    });
-  };
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 300);
-    return () => clearTimeout(timer);
-  }, []);
-  
+    if (status.message) {
+      const timer = setTimeout(
+        () => setStatus({ type: "info", message: "" }),
+        4000
+      );
+      return () => clearTimeout(timer);
+    }
+  }, [status]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    const updated = { ...config, [name]: value };
+    setConfig(updated);
+    setServerConfigs((prev) => ({ ...prev, [selectedServer]: updated }));
+  };
+
+  const handleDummyAction = (label) => {
+    setStatus({ type: "success", message: `${label} clicked (dummy)` });
+  };
+
+  const handleAddServer = () => {
+    const next = `${servers.length + 1}`;
+    setServers((prev) => [...prev, next]);
+    setServerConfigs((prev) => ({
+      ...prev,
+      [next]: { host: "", port: "", userDn: "", password: "", baseDn: "" },
+    }));
+    setSelectedServer(next);
+    setConfig({ host: "", port: "", userDn: "", password: "", baseDn: "" });
+    setStatus({ type: "success", message: `Added Server ${next}` });
+  };
+
+  const handleDeleteServer = () => {
+    if (servers.length === 1) {
+      setStatus({ type: "warning", message: "Cannot delete the last server." });
+      return;
+    }
+    const filtered = servers.filter((s) => s !== selectedServer);
+    const updatedConfigs = { ...serverConfigs };
+    delete updatedConfigs[selectedServer];
+    const nextSelected = filtered[0];
+    setServers(filtered);
+    setServerConfigs(updatedConfigs);
+    setSelectedServer(nextSelected);
+    setConfig(updatedConfigs[nextSelected]);
+    setStatus({ type: "info", message: `Deleted Server ${selectedServer}` });
+  };
+
+  const handleServerChange = (e) => {
+    const id = e.target.value;
+    setSelectedServer(id);
+    setConfig(serverConfigs[id]);
+  };
+
+  const sections = [
+    "LDAP CONFIGURATION",
+    "EMAIL CONFIGURATION",
+    "SMS CONFIGURATION",
+    "WHATSAPP CONFIGURATION",
+  ];
+
   return (
-    <Box sx={{ display: "flex", padding: "14px", position: "relative", marginLeft: "65px", height: "100%", overflow: "hidden", backgroundColor: 'whitesmoke', }}>
-     
-      <Paper elevation={24} sx={{
-        p: 0, height: '90vh', borderRadius: '20px', animation: "slideInFromLeft 0.3s ease-in-out forwards",
-        opacity: 0, // Start with opacity 0
-        transform: "translateX(-50px)", // Start from left
-        "@keyframes slideInFromLeft": {
-          "0%": {
-            opacity: 0,
-            transform: "translateX(-50px)",
-          },
-          "100%": {
-            opacity: 1,
-            transform: "translateX(0)",
-          }
-        }
-      }}>
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <Typography variant="h6" sx={{ fontWeight: 'bold', ml: 1 }}>
-            LDAP Configuration
-          </Typography>
-          <Tooltip title="Configure your LDAP connection settings below." arrow>
-            <IconButton color="primary">
-              <InfoIcon />
-            </IconButton>
-          </Tooltip>
-        </Box>
-
-        {status.message && (
-          <Alert severity={status.type} sx={{ mb: 3 }}>
-            {status.message}
-          </Alert>
-        )}
-
-        <form onSubmit={handleSubmit}>
-          <Grid container spacing={3} padding={2}>
-            <Grid item xs={12}>
-              <Grid container spacing={2}>
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    label="Connection URL"
-                    name="connectionUrl"
-                    value={config.connectionUrl}
-                    onChange={handleChange}
-                    fullWidth
-                    required
-                    placeholder="ldap://hostname:port"
-                  />
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    label="LDAP Display Name"
-                    name="displayName"
-                    value={config.displayName}
-                    onChange={handleChange}
-                    fullWidth
-                    required
-                  />
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    label="Bind Distinguished Name"
-                    name="bindDN"
-                    value={config.bindDN}
-                    onChange={handleChange}
-                    fullWidth
-                    required
-                    placeholder="cn=admin,dc=example,dc=com"
-                  />
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    label="Bind Credentials"
-                    name="bindCredentials"
-                    type="password"
-                    value={config.bindCredentials}
-                    onChange={handleChange}
-                    fullWidth
-                    required
-                  />
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    label="Users Distinguished Name"
-                    name="usersDN"
-                    value={config.usersDN}
-                    onChange={handleChange}
-                    fullWidth
-                    required
-                    placeholder="ou=users,dc=example,dc=com"
-                  />
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    label="User Object Classes"
-                    name="userObjectClasses"
-                    value={config.userObjectClasses}
-                    onChange={handleChange}
-                    fullWidth
-                    required
-                    placeholder="inetOrgPerson, organizationalPerson"
-                  />
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    label="Username LDAP Attribute"
-                    name="usernameAttribute"
-                    value={config.usernameAttribute}
-                    onChange={handleChange}
-                    fullWidth
-                    required
-                    placeholder="uid"
-                  />
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <FormControl fullWidth>
-                    <InputLabel>Edit Mode</InputLabel>
-                    <Select
-                      name="editMode"
-                      value={config.editMode}
-                      label="Edit Mode"
-                      onChange={handleChange}
-                    >
-                      <MenuItem value="read">Read Only</MenuItem>
-                      <MenuItem value="write">Write</MenuItem>
-                      <MenuItem value="admin">Admin</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-              </Grid>
-            </Grid>
-
-            <Grid item xs={12}>
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <Button
-                  type="submit"
-                  variant="contained"
-                  color="primary"
-                  size="large"
-                  sx={{ minWidth: 200 }}
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "row",
+        height: "100%",
+        gap: 1,
+        px: 2,
+        py: 3,
+        width: "80%",
+        margin: "auto",
+      }}
+    >
+      <Box sx={{ width: 180 }}>
+        <Accordion defaultExpanded>
+          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            Settings
+          </AccordionSummary>
+          <AccordionDetails>
+            <List>
+              {sections.map((section) => (
+                <ListItemButton
+                  key={section}
+                  selected={activeSection === section}
+                  onClick={() => setActiveSection(section)}
                 >
-                  Save Configuration
-                </Button>
-              </Box>
-            </Grid>
-          </Grid>
-        </form>
+                  <ListItemText primary={section} />
+                </ListItemButton>
+              ))}
+            </List>
+          </AccordionDetails>
+        </Accordion>
+      </Box>
 
-        {submittedConfigs.length > 0 && (
-          <Box sx={{ mt: 4 }}>
-            <Divider sx={{ mb: 3 }} />
-            <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2 }}>
-              LDAP Directory
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Paper elevation={3} sx={{ p: 3, borderRadius: 3 }}>
+          <Typography
+            variant="h5"
+            gutterBottom
+            sx={{
+              backgroundColor: "#1976d2",
+              color: "white",
+              px: 2,
+              py: 1,
+              borderRadius: 1,
+            }}
+          >
+            {activeSection}
+          </Typography>
+
+          {sections.includes(activeSection) && (
+            <>
+              <Box
+                sx={{ display: "flex", alignItems: "center", mb: 2, gap: 1 }}
+              >
+                <FormControl size="small">
+                  <Select
+                    value={selectedServer}
+                    onChange={handleServerChange}
+                    startAdornment={<StorageIcon sx={{ mr: 1 }} />}
+                  >
+                    {servers.map((s) => (
+                      <MenuItem key={s} value={s}>
+                        Server {s}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <Tooltip title="Add Server">
+                  <IconButton onClick={handleAddServer}>
+                    <AddIcon />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Delete Server">
+                  <IconButton onClick={handleDeleteServer}>
+                    <DeleteIcon />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+
+              <Tabs
+                value={tabIndex}
+                onChange={(e, newValue) => setTabIndex(newValue)}
+                variant="scrollable"
+                scrollButtons="auto"
+                sx={{ mb: 2 }}
+              >
+                <Tab label="Server" />
+                <Tab label="Users" />
+                <Tab label="Groups" />
+              </Tabs>
+
+              {status.message && (
+                <Alert severity={status.type} sx={{ mb: 2 }}>
+                  {status.message}
+                </Alert>
+              )}
+
+              {tabIndex === 0 && (
+                <Slide direction="left" in timeout={300}>
+                  <Box component="form" noValidate autoComplete="off">
+                    <Grid container spacing={2}>
+                      <Grid item xs={5}>
+                        <TextField
+                          fullWidth
+                          label="Host"
+                          name="host"
+                          value={config.host}
+                          onChange={handleChange}
+                          placeholder="192.168.1.99"
+                        />
+                      </Grid>
+                      <Grid item xs={7}>
+                        <TextField
+                          fullWidth
+                          label="Port"
+                          name="port"
+                          value={config.port}
+                          onChange={handleChange}
+                          placeholder="386"
+                          InputProps={{
+                            endAdornment: (
+                              <InputAdornment position="end">
+                                <Button
+                                  size="small"
+                                  onClick={() =>
+                                    handleDummyAction("Detect Port")
+                                  }
+                                >
+                                  Detect Port
+                                </Button>
+                              </InputAdornment>
+                            ),
+                          }}
+                        />
+                      </Grid>
+
+                      <Grid item xs={12}>
+                        <TextField
+                          fullWidth
+                          label="User DN"
+                          name="userDn"
+                          value={config.userDn}
+                          onChange={handleChange}
+                          sx={{ backgroundColor: "#fff9c4" }}
+                        />
+                      </Grid>
+
+                      <Grid item xs={7}>
+                        <TextField
+                          fullWidth
+                          label="Password"
+                          name="password"
+                          type="password"
+                          value={config.password}
+                          onChange={handleChange}
+                          sx={{ backgroundColor: "#fff9c4" }}
+                        />
+                      </Grid>
+                      <Grid
+                        item
+                        xs={5}
+                        sx={{ display: "flex", alignItems: "center" }}
+                      >
+                        <Button
+                          fullWidth
+                          variant="contained"
+                          onClick={() => handleDummyAction("Save Credentials")}
+                        >
+                          Save
+                        </Button>
+                      </Grid>
+
+                      <Grid item xs={12}>
+                        <TextField
+                          fullWidth
+                          label="One Base DN per line"
+                          name="baseDn"
+                          value={config.baseDn}
+                          onChange={handleChange}
+                          placeholder="DC=example,DC=com"
+                          InputProps={{
+                            endAdornment: (
+                              <>
+                                <Button
+                                  size="small"
+                                  onClick={() =>
+                                    handleDummyAction("Detect Base DN")
+                                  }
+                                >
+                                  Detect Base DN
+                                </Button>
+                                <Button
+                                  size="small"
+                                  onClick={() =>
+                                    handleDummyAction("Test Base DN")
+                                  }
+                                >
+                                  Test Base DN
+                                </Button>
+                              </>
+                            ),
+                          }}
+                        />
+                      </Grid>
+                    </Grid>
+                  </Box>
+                </Slide>
+              )}
+
+              {tabIndex === 1 && (
+                <Slide direction="left" in timeout={300}>
+                  <Box>
+                    <Typography mb={2}>
+                      Listing and searching for users is constrained by these
+                      criteria:
+                    </Typography>
+                    <Grid container spacing={2}>
+                      <Grid item xs={12}>
+                        <TextField
+                          fullWidth
+                          label="Only these object classes:"
+                          placeholder="inetOrgPerson"
+                          helperText="The most common object classes for users are organizationalPerson, person, user, and inetOrgPerson."
+                        />
+                      </Grid>
+                      <Grid item xs={12}>
+                        <TextField
+                          fullWidth
+                          label="Only from these groups:"
+                          placeholder="Select groups"
+                        />
+                      </Grid>
+                      <Grid item xs={12}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            gap: 1,
+                          }}
+                        >
+                          <Button size="small">➤</Button>
+                          <Box
+                            sx={{
+                              border: "1px solid #ccc",
+                              borderRadius: 1,
+                              width: 200,
+                              height: 100,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                            }}
+                          >
+                            <Typography variant="caption">
+                              (Group List)
+                            </Typography>
+                          </Box>
+                          <Button size="small">➤</Button>
+                        </Box>
+                      </Grid>
+                      <Grid item xs={12}>
+                        <Button
+                          size="small"
+                          onClick={() => handleDummyAction("Edit LDAP Query")}
+                        >
+                          ↓ Edit LDAP Query
+                        </Button>
+                        <Typography mt={1} variant="body2">
+                          LDAP Filter:{" "}
+                          <code>((objectclass=inetOrgPerson))</code>
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={12}>
+                        <Divider sx={{ my: 2 }} />
+                        <Button
+                          variant="outlined"
+                          onClick={() => handleDummyAction("Verify and Count")}
+                        >
+                          Verify settings and count users
+                        </Button>
+                        <Typography mt={1} variant="body2">
+                          &gt; 1000 users found
+                        </Typography>
+                      </Grid>
+                    </Grid>
+                  </Box>
+                </Slide>
+              )}
+
+              {tabIndex === 2 && (
+                <Slide direction="left" in timeout={300}>
+                  <Box>
+                    <Typography mb={2}>
+                      Groups meeting these criteria are available in Nextcloud:
+                    </Typography>
+                    <Grid container spacing={2}>
+                      <Grid item xs={12}>
+                        <TextField
+                          fullWidth
+                          label="Only these object classes:"
+                          placeholder="groupOfNames"
+                        />
+                      </Grid>
+                      <Grid item xs={12}>
+                        <TextField
+                          fullWidth
+                          label="Only from these groups:"
+                          placeholder="Search groups"
+                        />
+                      </Grid>
+                      <Grid item xs={12}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            gap: 1,
+                          }}
+                        >
+                          <Button size="small">&gt;</Button>
+                          <Box
+                            sx={{
+                              border: "1px solid #ccc",
+                              borderRadius: 1,
+                              width: 200,
+                              height: 100,
+                              overflow: "auto",
+                              px: 1,
+                              py: 0.5,
+                            }}
+                          >
+                            <Typography variant="caption">
+                              Accounting
+                              <br />
+                              Design
+                              <br />
+                              Engineering
+                              <br />
+                              HR
+                              <br />
+                              Management
+                              <br />
+                              QA
+                              <br />
+                              Robots 0
+                            </Typography>
+                          </Box>
+                          <Button size="small">&lt;</Button>
+                        </Box>
+                      </Grid>
+                      <Grid item xs={12}>
+                        <Button
+                          size="small"
+                          onClick={() => handleDummyAction("Edit LDAP Query")}
+                        >
+                          ↓ Edit LDAP Query
+                        </Button>
+                        <Typography mt={1} variant="body2">
+                          LDAP Filter: <code>((objectclass=groupOfNames))</code>
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={12}>
+                        <Divider sx={{ my: 2 }} />
+                        <Button
+                          variant="outlined"
+                          onClick={() => handleDummyAction("Verify Groups")}
+                        >
+                          Verify settings and count the groups
+                        </Button>
+                      </Grid>
+                    </Grid>
+                  </Box>
+                </Slide>
+              )}
+            </>
+          )}
+
+          {activeSection !== "LDAP CONFIGURATION" && (
+            <Typography mt={4} color="text.secondary">
+              Placeholder for {activeSection} settings (coming soon)
             </Typography>
-            {submittedConfigs.map((config, index) => (
-              <Accordion key={index} sx={{ mb: 2 }}>
-                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                  <Typography sx={{ fontWeight: 'bold' }}>
-                    {config.displayName}
-                  </Typography>
-                </AccordionSummary>
-                <AccordionDetails>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12}>
-                      <Typography><strong>Connection URL:</strong> {config.connectionUrl}</Typography>
-                    </Grid>
-                    <Grid item xs={12}>
-                      <Typography><strong>Bind DN:</strong> {config.bindDN}</Typography>
-                    </Grid>
-                    <Grid item xs={12}>
-                      <Typography><strong>Users DN:</strong> {config.usersDN}</Typography>
-                    </Grid>
-                    <Grid item xs={12}>
-                      <Typography><strong>Object Classes:</strong> {config.userObjectClasses}</Typography>
-                    </Grid>
-                    <Grid item xs={12}>
-                      <Typography><strong>Username Attribute:</strong> {config.usernameAttribute}</Typography>
-                    </Grid>
-                    <Grid item xs={12}>
-                      <Typography><strong>Edit Mode:</strong> {config.editMode}</Typography>
-                    </Grid>
-                  </Grid>
-                </AccordionDetails>
-              </Accordion>
-            ))}
-          </Box>
-        )}
-      </Paper>
-      {/* </Box> */}
-      {/* </Box> */}
+          )}
+        </Paper>
+      </Box>
     </Box>
   );
 };
