@@ -2,7 +2,7 @@
   "name": "my-app",
   "version": "0.1.0",
   "private": true,
-  "proxy": "http://gateway-dev.ts-classic-dal10-b3c-8x32-43cc00122240e4e95ae753ca22dd258c-0000.us-south.containers.appdomain.cloud",
+  "proxy": "http://gateway-test.apps.lab.ocp.lan",
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
     "@emotion/react": "^11.11.1",
