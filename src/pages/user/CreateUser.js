@@ -37,6 +37,7 @@ import {
   createRole,
 } from "../../api/departmentService";
 import { createUsers } from "../../api/userService";
+import { fetchUsers } from "../../api/userService";
 
 const CreateUser = ({
   handleClose,
@@ -72,6 +73,11 @@ const CreateUser = ({
   const [departmentSubmitted, setDepartmentSubmitted] = useState(false);
   const [roleSubmitted, setRoleSubmitted] = useState(false);
   const [duplicateDeptError, setDuplicateDeptError] = useState(false);
+
+  const [userOptions, setUserOptions] = useState([]);
+  const [userPage, setUserPage] = useState(0);
+  const [hasMoreUsers, setHasMoreUsers] = useState(true);
+  const loadingUsers = useRef(false);
 
   const lastFieldRef = useRef(null);
   const dispatch = useDispatch();
@@ -124,6 +130,24 @@ const CreateUser = ({
 
     // ✅ Show success snackbar
     showSnackbar("Template downloaded successfully!", "success");
+  };
+
+  const loadMoreUsers = async () => {
+    if (loadingUsers.current || !hasMoreUsers) return;
+    loadingUsers.current = true;
+
+    try {
+      const res = await fetchUsers(userPage);
+      const users = res?.content || []; // adjust based on your actual response structure
+
+      if (users.length < 10) setHasMoreUsers(false);
+      setUserOptions((prev) => [...prev, ...users]);
+      setUserPage((prev) => prev + 1);
+    } catch (error) {
+      console.error("Failed to load users:", error);
+    } finally {
+      loadingUsers.current = false;
+    }
   };
 
   useEffect(() => {
@@ -303,6 +327,10 @@ const CreateUser = ({
 
   useEffect(() => {
     loadMoreDepartments();
+  }, []);
+
+  useEffect(() => {
+    loadMoreUsers(); // Load first 10 users initially
   }, []);
 
   useEffect(() => {
@@ -1063,10 +1091,10 @@ const CreateUser = ({
                 fullWidth
                 size="small"
                 FormHelperTextProps={{ sx: { ml: 0 } }}
-                options={allUsers}
+                options={userOptions}
                 getOptionLabel={(option) => option.name || ""}
                 value={
-                  allUsers.find(
+                  userOptions.find(
                     (user) => user.name === newDepartment.deptModerator
                   ) || null
                 }
@@ -1076,6 +1104,19 @@ const CreateUser = ({
                     deptModerator: value ? value.name : "",
                   })
                 }
+                ListboxProps={{
+                  style: { maxHeight: 300, overflow: "auto" },
+                  onScroll: (event) => {
+                    const listboxNode = event.currentTarget;
+                    const threshold = 50;
+                    if (
+                      listboxNode.scrollTop + listboxNode.clientHeight >=
+                      listboxNode.scrollHeight - threshold
+                    ) {
+                      loadMoreUsers(); // 👈 Trigger pagination
+                    }
+                  },
+                }}
                 renderInput={(params) => (
                   <TextField
                     {...params}
@@ -1136,7 +1177,6 @@ const CreateUser = ({
               />
             </Grid>
             <Grid item xs={4}>
-              {/* <TextField fullWidth size="small" label="Initial Role" /> */}
               <TextField
                 fullWidth
                 size="small"
@@ -1241,7 +1281,6 @@ const CreateUser = ({
           },
         }}
       >
-        {/* <DialogTitle>ADD NEW ROLE</DialogTitle> */}
         <DialogTitle
           sx={{
             pb: 1,

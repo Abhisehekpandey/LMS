@@ -25,6 +25,14 @@ import {
   ListItemButton,
   ListItemText,
 } from "@mui/material";
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+} from "@mui/material";
+import EditIcon from "@mui/icons-material/Edit";
+
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -39,17 +47,41 @@ const sectionDefaults = {
     baseDn: "",
   },
   "EMAIL CONFIGURATION": { smtp: "", port: "", username: "", password: "" },
-  "SMS CONFIGURATION": { gatewayUrl: "", apiKey: "" },
-  "WHATSAPP CONFIGURATION": { apiEndpoint: "", authToken: "" },
+  "SMS CONFIGURATION": {
+    gatewayUrl: "",
+    apiKey: "",
+    username: "",
+    password: "",
+  },
+  "WHATSAPP CONFIGURATION": {
+    apiEndpoint: "",
+    authToken: "",
+    username: "",
+    password: "",
+  },
 };
 
 const LDAPConfig = () => {
-  const sections = [
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [newConfigName, setNewConfigName] = useState("");
+  const [kvPairs, setKvPairs] = useState([{ key: "", value: "" }]);
+  const [customSections, setCustomSections] = useState([]);
+  const [newKey, setNewKey] = useState("");
+  const [newValue, setNewValue] = useState("");
+  const [isServerDropdownOpen, setIsServerDropdownOpen] = useState(false);
+
+  const defaultSections = [
     "LDAP CONFIGURATION",
     "EMAIL CONFIGURATION",
     "SMS CONFIGURATION",
     "WHATSAPP CONFIGURATION",
   ];
+  const sections = [...defaultSections, ...customSections.map((s) => s.name)];
+  const [renameDialog, setRenameDialog] = useState({
+    open: false,
+    oldName: "",
+    newName: "",
+  });
 
   const initialServerState = {};
   sections.forEach((section) => {
@@ -167,6 +199,125 @@ const LDAPConfig = () => {
   };
 
   const renderTabContent = () => {
+    if (!defaultSections.includes(activeSection)) {
+      return (
+        <Fade in timeout={300}>
+          <Box component="form" noValidate autoComplete="off" sx={{ mt: 2 }}>
+            <Grid container spacing={2}>
+              {Object.entries(config).map(([key, value], index) => (
+                <Grid item xs={12} key={index}>
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <TextField
+                      fullWidth
+                      label={key}
+                      name={key}
+                      value={value}
+                      onChange={(e) => {
+                        const updated = { ...config, [key]: e.target.value };
+                        setServerState((prev) => ({
+                          ...prev,
+                          [activeSection]: {
+                            ...prev[activeSection],
+                            configs: {
+                              ...prev[activeSection].configs,
+                              [selectedServer]: updated,
+                            },
+                          },
+                        }));
+                      }}
+                    />
+                    <Tooltip title="Delete Field">
+                      <IconButton
+                        onClick={() => {
+                          if (Object.keys(config).length === 1) {
+                            setStatus({
+                              type: "warning",
+                              message: "At least one field is required.",
+                            });
+                            return;
+                          }
+                          const updatedConfig = { ...config };
+                          delete updatedConfig[key];
+                          setServerState((prev) => ({
+                            ...prev,
+                            [activeSection]: {
+                              ...prev[activeSection],
+                              configs: {
+                                ...prev[activeSection].configs,
+                                [selectedServer]: updatedConfig,
+                              },
+                            },
+                          }));
+                          setStatus({
+                            type: "info",
+                            message: `Field "${key}" removed from "${activeSection}".`,
+                          });
+                        }}
+                      >
+                        <DeleteIcon color="error" />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
+                </Grid>
+              ))}
+
+              <Grid item xs={5}>
+                <TextField
+                  label="New Key"
+                  fullWidth
+                  value={newKey}
+                  onChange={(e) => setNewKey(e.target.value)}
+                />
+              </Grid>
+              <Grid item xs={5}>
+                <TextField
+                  label="New Value"
+                  fullWidth
+                  value={newValue}
+                  onChange={(e) => setNewValue(e.target.value)}
+                />
+              </Grid>
+              <Grid item xs={2}>
+                <Button
+                  fullWidth
+                  variant="contained"
+                  disabled={!newKey.trim() || !newValue.trim()}
+                  onClick={() => {
+                    if (config[newKey]) {
+                      setStatus({
+                        type: "warning",
+                        message: `Key "${newKey}" already exists.`,
+                      });
+                      return;
+                    }
+                    const updated = { ...config, [newKey]: newValue };
+                    setServerState((prev) => ({
+                      ...prev,
+                      [activeSection]: {
+                        ...prev[activeSection],
+                        configs: {
+                          ...prev[activeSection].configs,
+                          [selectedServer]: updated,
+                        },
+                      },
+                    }));
+                    setNewKey("");
+                    setNewValue("");
+                    setStatus({
+                      type: "success",
+                      message: `Added new field "${newKey}" to "${activeSection}".`,
+                    });
+                  }}
+                >
+                  Add
+                </Button>
+              </Grid>
+            </Grid>
+          </Box>
+        </Fade>
+      );
+    }
+
     if (activeSection === "LDAP CONFIGURATION") {
       if (tabIndex === 0) {
         return (
@@ -437,12 +588,6 @@ const LDAPConfig = () => {
       }
     }
 
-    const sectionFields = {
-      "EMAIL CONFIGURATION": ["SMTP Server", "Send Test Email"],
-      "SMS CONFIGURATION": ["Gateway Settings", "Send Test SMS"],
-      "WHATSAPP CONFIGURATION": ["API Settings", "Send Test Message"],
-    };
-
     const sectionContent = {
       "EMAIL CONFIGURATION": [
         <Box>
@@ -505,6 +650,22 @@ const LDAPConfig = () => {
             onChange={handleChange}
             sx={{ mt: 2 }}
           />
+          <TextField
+            fullWidth
+            label="username"
+            name="username"
+            value={config.username}
+            onChange={handleChange}
+            sx={{ mt: 2 }}
+          />
+          <TextField
+            fullWidth
+            label="password"
+            name="password"
+            value={config.password}
+            onChange={handleChange}
+            sx={{ mt: 2 }}
+          />
         </Box>,
         <Box>
           <TextField fullWidth label="Phone Number" />
@@ -537,6 +698,22 @@ const LDAPConfig = () => {
             onChange={handleChange}
             sx={{ mt: 2 }}
           />
+          <TextField
+            fullWidth
+            label="username"
+            name="username"
+            value={config.username}
+            onChange={handleChange}
+            sx={{ mt: 2 }}
+          />
+          <TextField
+            fullWidth
+            label="password"
+            name="password"
+            value={config.password}
+            onChange={handleChange}
+            sx={{ mt: 2 }}
+          />
         </Box>,
         <Box>
           <TextField fullWidth label="WhatsApp Number" />
@@ -556,7 +733,6 @@ const LDAPConfig = () => {
 
     const content = sectionContent[activeSection]?.[tabIndex];
     return (
-    
       <Slide direction="left" in timeout={300}>
         <Box>{content}</Box>
       </Slide>
@@ -576,22 +752,83 @@ const LDAPConfig = () => {
         margin: "auto",
       }}
     >
-      <Box sx={{ width: 180 }}>
-        <Accordion defaultExpanded>
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            Settings
+      <Box sx={{ width: 230 }}>
+        <Accordion expanded>
+          <AccordionSummary>
+            <Box
+              display="flex"
+              justifyContent="space-between"
+              alignItems="center"
+              width="100%"
+              sx={{
+                backgroundColor: "#1976d2", // Blue background
+                color: "white", // White text and icon
+                px: 2,
+                py: 1,
+                borderRadius: 1,
+              }}
+            >
+              <Typography sx={{ color: "white", fontWeight: "bold" }}>
+                Settings
+              </Typography>
+              <Tooltip title="Add Configuration">
+                <IconButton size="small" onClick={() => setDialogOpen(true)}>
+                  <AddIcon sx={{ color: "white" }} />
+                </IconButton>
+              </Tooltip>
+            </Box>
           </AccordionSummary>
+
           <AccordionDetails>
             <List>
-              {sections.map((section) => (
-                <ListItemButton
-                  key={section}
-                  selected={activeSection === section}
-                  onClick={() => setActiveSection(section)}
-                >
-                  <ListItemText primary={section} />
-                </ListItemButton>
-              ))}
+              {sections.map((section) => {
+                const isCustom = !defaultSections.includes(section);
+                return (
+                  <Box
+                    key={section}
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="space-between"
+                    sx={{ pr: 1 }}
+                  >
+                    <ListItemButton
+                      selected={activeSection === section}
+                      onClick={() => setActiveSection(section)}
+                      sx={{ flexGrow: 1 }}
+                    >
+                      <ListItemText primary={section} />
+                    </ListItemButton>
+                    {isCustom && (
+                      <Tooltip title="Delete Configuration">
+                        <IconButton
+                          size="small"
+                          onClick={() => {
+                            setCustomSections((prev) =>
+                              prev.filter((s) => s.name !== section)
+                            );
+                            setServerState((prev) => {
+                              const updated = { ...prev };
+                              delete updated[section];
+                              return updated;
+                            });
+
+                            if (activeSection === section) {
+                              setActiveSection("LDAP CONFIGURATION");
+                            }
+
+                            setStatus({
+                              type: "info",
+                              message: `Deleted "${section}" configuration.`,
+                            });
+                          }}
+                        >
+                          <DeleteIcon fontSize="small" color="error" />
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                  </Box>
+                );
+              })}
             </List>
           </AccordionDetails>
         </Accordion>
@@ -611,48 +848,91 @@ const LDAPConfig = () => {
           >
             {activeSection}
           </Typography>
-          <Box sx={{ display: "flex", alignItems: "center", mb: 2, gap: 1 }}>
-            <FormControl size="small">
-              <Select
-                value={selectedServer}
-                onChange={handleServerChange}
-                startAdornment={<StorageIcon sx={{ mr: 1 }} />}
-              >
-                {servers.map((s) => (
-                  <MenuItem key={s} value={s}>
-                    Server {s}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <Tooltip title="Add Server">
-              <IconButton onClick={handleAddServer}>
-                <AddIcon />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Delete Server">
-              <IconButton onClick={handleDeleteServer}>
-                <DeleteIcon />
-              </IconButton>
-            </Tooltip>
-          </Box>
-          <Tabs
-            value={tabIndex}
-            onChange={(e, newValue) => setTabIndex(newValue)}
-            variant="scrollable"
-            scrollButtons="auto"
-            sx={{ mb: 2 }}
-          >
-            {getTabsForSection().map((label) => (
-              <Tab key={label} label={label} />
-            ))}
-          </Tabs>
+
+          {defaultSections.includes(activeSection) && (
+            <Box sx={{ display: "flex", alignItems: "center", mb: 2, gap: 1 }}>
+              <FormControl size="small">
+                <Select
+                  value={selectedServer}
+                  onChange={handleServerChange}
+                  onOpen={() => setIsServerDropdownOpen(true)}
+                  onClose={() => setIsServerDropdownOpen(false)}
+                  startAdornment={<StorageIcon sx={{ mr: 1 }} />}
+                  MenuProps={{
+                    PaperProps: {
+                      style: {
+                        maxHeight: 250,
+                      },
+                    },
+                  }}
+                >
+                  {servers.map((s) => (
+                    <MenuItem
+                      key={s}
+                      value={s}
+                      sx={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
+                      <Typography>Server {s}</Typography>
+
+                      {isServerDropdownOpen && (
+                        <Tooltip title="Rename Server">
+                          <IconButton
+                            size="small"
+                            onClick={(e) => {
+                              e.stopPropagation(); // prevent dropdown from closing
+                              setRenameDialog({
+                                open: true,
+                                oldName: s,
+                                newName: s,
+                              });
+                            }}
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <Tooltip title="Add Server">
+                <IconButton onClick={handleAddServer}>
+                  <AddIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Delete Server">
+                <IconButton onClick={handleDeleteServer}>
+                  <DeleteIcon />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          )}
+
+          {defaultSections.includes(activeSection) && (
+            <Tabs
+              value={tabIndex}
+              onChange={(e, newValue) => setTabIndex(newValue)}
+              variant="scrollable"
+              scrollButtons="auto"
+              sx={{ mb: 2 }}
+            >
+              {getTabsForSection().map((label) => (
+                <Tab key={label} label={label} />
+              ))}
+            </Tabs>
+          )}
+
           {status.message && (
             <Alert severity={status.type} sx={{ mb: 2 }}>
               {status.message}
             </Alert>
           )}
-          
+
           <Slide
             key={tabIndex}
             direction="left"
@@ -665,6 +945,214 @@ const LDAPConfig = () => {
           </Slide>
         </Paper>
       </Box>
+      <Dialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle
+          sx={{
+            backgroundColor: "#1976d2",
+            color: "white",
+            fontWeight: "bold",
+            px: 2,
+            py: 1.5,
+          }}
+        >
+          Add New Configuration
+        </DialogTitle>
+        <DialogContent>
+          {status.message && (
+            <Alert
+              severity={status.type}
+              sx={{ mb: 2 }}
+              onClose={() => setStatus({ type: "info", message: "" })}
+            >
+              {status.message}
+            </Alert>
+          )}
+          <TextField
+            fullWidth
+            label="Configuration Name"
+            value={newConfigName}
+            onChange={(e) => setNewConfigName(e.target.value)}
+            sx={{ mt: 2, mb: 2 }}
+          />
+
+          {kvPairs.map((pair, index) => (
+            <Box key={index} display="flex" alignItems="center" gap={1} mb={2}>
+              <TextField
+                label="Key"
+                fullWidth
+                value={pair.key}
+                onChange={(e) => {
+                  const newPairs = [...kvPairs];
+                  newPairs[index].key = e.target.value;
+                  setKvPairs(newPairs);
+                }}
+              />
+              <TextField
+                label="Value"
+                fullWidth
+                value={pair.value}
+                onChange={(e) => {
+                  const newPairs = [...kvPairs];
+                  newPairs[index].value = e.target.value;
+                  setKvPairs(newPairs);
+                }}
+              />
+              <IconButton
+                aria-label="delete"
+                onClick={() => {
+                  if (kvPairs.length === 1) {
+                    setStatus({
+                      type: "warning",
+                      message: "At least one field is required.",
+                    });
+                    return;
+                  }
+                  const updatedPairs = kvPairs.filter((_, i) => i !== index);
+                  setKvPairs(updatedPairs);
+                }}
+              >
+                <DeleteIcon color="error" />
+              </IconButton>
+            </Box>
+          ))}
+
+          <Button
+            onClick={() => setKvPairs([...kvPairs, { key: "", value: "" }])}
+            size="small"
+          >
+            + Add More
+          </Button>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
+
+          <Button
+            variant="contained"
+            onClick={() => {
+              const cleaned = kvPairs.filter((kv) => kv.key && kv.value);
+              const newSection = {
+                name: newConfigName,
+                data: cleaned,
+              };
+
+              if (!newConfigName || cleaned.length === 0) {
+                setStatus({
+                  type: "warning",
+                  message:
+                    "Please enter a configuration name and at least one key-value pair.",
+                });
+                return;
+              }
+
+              setCustomSections((prev) => [...prev, newSection]);
+              setServerState((prev) => ({
+                ...prev,
+                [newConfigName]: {
+                  selectedServer: "1",
+                  servers: ["1"],
+                  configs: {
+                    1: Object.fromEntries(
+                      cleaned.map(({ key, value }) => [key, value])
+                    ),
+                  },
+                },
+              }));
+              setActiveSection(newConfigName);
+              setDialogOpen(false);
+              setNewConfigName("");
+              setKvPairs([{ key: "", value: "" }]);
+
+              setStatus({
+                type: "success",
+                message: `New configuration "${newConfigName}" created successfully.`,
+              });
+            }}
+          >
+            Save Changes
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog
+        open={renameDialog.open}
+        onClose={() => setRenameDialog({ ...renameDialog, open: false })}
+      >
+        <DialogTitle>Rename Server</DialogTitle>
+        <DialogContent>
+          <TextField
+            fullWidth
+            label="New Server Name"
+            value={renameDialog.newName}
+            onChange={(e) =>
+              setRenameDialog({ ...renameDialog, newName: e.target.value })
+            }
+            sx={{ mt: 1 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setRenameDialog({ ...renameDialog, open: false })}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={() => {
+              const { oldName, newName } = renameDialog;
+
+              if (!newName.trim()) {
+                setStatus({
+                  type: "warning",
+                  message: "Server name cannot be empty.",
+                });
+                return;
+              }
+
+              if (oldName === newName) {
+                setRenameDialog({ ...renameDialog, open: false });
+                return;
+              }
+
+              setServerState((prev) => {
+                const currentSection = prev[activeSection];
+                const updatedServers = currentSection.servers.map((s) =>
+                  s === oldName ? newName : s
+                );
+
+                const updatedConfigs = {};
+                Object.entries(currentSection.configs).forEach(([key, val]) => {
+                  updatedConfigs[key === oldName ? newName : key] = val;
+                });
+
+                return {
+                  ...prev,
+                  [activeSection]: {
+                    ...currentSection,
+                    servers: updatedServers,
+                    selectedServer:
+                      currentSection.selectedServer === oldName
+                        ? newName
+                        : currentSection.selectedServer,
+                    configs: updatedConfigs,
+                  },
+                };
+              });
+
+              setRenameDialog({ open: false, oldName: "", newName: "" });
+              setStatus({
+                type: "success",
+                message: `Server renamed to "${renameDialog.newName}"`,
+              });
+            }}
+          >
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

@@ -175,6 +175,11 @@ const CustomSpinner = styled(CircularProgress)(({ theme }) => ({
 }));
 
 function Department({ departments, setDepartments, onThemeToggle }) {
+  const [userOptions, setUserOptions] = useState([]);
+  const [userPage, setUserPage] = useState(0);
+  const [hasMoreUsers, setHasMoreUsers] = useState(true);
+  const loadingUsers = useRef(false);
+
   const [isAdminRole, setIsAdminRole] = useState(false);
   const [page, setPage] = useState(0);
 
@@ -248,6 +253,25 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     }
 
     return baseOptions;
+  };
+
+  const loadMoreUsers = async () => {
+    if (loadingUsers.current || !hasMoreUsers) return;
+    loadingUsers.current = true;
+
+    try {
+      const res = await fetchUsers(userPage);
+      const users = res?.content || [];
+
+      if (users.length < 10) setHasMoreUsers(false);
+
+      setUserOptions((prev) => [...prev, ...users]);
+      setUserPage((prev) => prev + 1);
+    } catch (error) {
+      console.error("Failed to load users:", error);
+    } finally {
+      loadingUsers.current = false;
+    }
   };
 
   const handleStorageChange = (name, newStorage) => {
@@ -1139,15 +1163,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
   }, [page, rowsPerPage]);
 
   useEffect(() => {
-    const fetchAllUsers = async () => {
-      try {
-        const res = await fetchUsers(0); // or your real API call
-        setAllUsers(res.content || []);
-      } catch (error) {
-        console.error("Failed to load users", error);
-      }
-    };
-    fetchAllUsers();
+    loadMoreUsers();
   }, []);
 
   return (
@@ -1674,7 +1690,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                           timeout="auto"
                           unmountOnExit
                         >
-                         
                           <Box
                             sx={{
                               position: "absolute",
@@ -2093,14 +2108,41 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                   ].map((field, index) => {
                     if (field.label === "Department Moderator") {
                       return (
+                        // <Autocomplete
+                        //   key={index}
+                        //   size="small"
+                        //   fullWidth
+                        //   options={allUsers}
+                        //   getOptionLabel={(option) => option.name || ""}
+                        //   value={
+                        //     allUsers.find((u) => u.name === field.value) || null
+                        //   }
+                        //   onChange={(event, newValue) =>
+                        //     setNewDepartment((prev) => ({
+                        //       ...prev,
+                        //       departmentModerator: newValue?.name || "",
+                        //     }))
+                        //   }
+                        //   renderInput={(params) => (
+                        //     <TextField
+                        //       {...params}
+                        //       label="Department Moderator"
+                        //       FormHelperTextProps={{ sx: { ml: 0 } }}
+                        //       error={field.error}
+                        //       helperText={field.helperText}
+                        //       required
+                        //     />
+                        //   )}
+                        // />
                         <Autocomplete
                           key={index}
                           size="small"
                           fullWidth
-                          options={allUsers}
+                          options={userOptions}
                           getOptionLabel={(option) => option.name || ""}
                           value={
-                            allUsers.find((u) => u.name === field.value) || null
+                            userOptions.find((u) => u.name === field.value) ||
+                            null
                           }
                           onChange={(event, newValue) =>
                             setNewDepartment((prev) => ({
@@ -2108,6 +2150,20 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                               departmentModerator: newValue?.name || "",
                             }))
                           }
+                          ListboxProps={{
+                            style: { maxHeight: 300, overflow: "auto" },
+                            onScroll: (event) => {
+                              const listboxNode = event.currentTarget;
+                              const threshold = 50;
+                              if (
+                                listboxNode.scrollTop +
+                                  listboxNode.clientHeight >=
+                                listboxNode.scrollHeight - threshold
+                              ) {
+                                loadMoreUsers();
+                              }
+                            },
+                          }}
                           renderInput={(params) => (
                             <TextField
                               {...params}
