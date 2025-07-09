@@ -22,6 +22,7 @@ import UserTable from "./pages/user/UserTable";
 import ResetPassword from "./pages/ResetPassword";
 import ForgetPassword from "./pages/ForgetPassword";
 import ResetAdminPassword from "./pages/ResetAdminPassword";
+import ChooseExtension from "./pages/ChooseExtension";
 
 function App() {
   const [darkMode, setDarkMode] = useState(false);
@@ -98,7 +99,10 @@ function App() {
           <Route path="/set-password" element={<ResetPassword />} />
           <Route path="/forget-password" element={<ForgetPassword />} />
 
-          <Route path="/reset-password/:token" element={<ResetAdminPassword />} />
+          <Route
+            path="/reset-password/:token"
+            element={<ResetAdminPassword />}
+          />
 
           {/* Protected routes — with Layout */}
           <Route
@@ -150,6 +154,14 @@ function App() {
             element={
               <Layout>
                 <LDAPConfig />
+              </Layout>
+            }
+          />
+          <Route
+            path="/choose-extension"
+            element={
+              <Layout>
+                <ChooseExtension />
               </Layout>
             }
           />

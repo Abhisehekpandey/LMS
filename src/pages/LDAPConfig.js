@@ -37,6 +37,13 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
 import StorageIcon from "@mui/icons-material/Storage";
+import {
+  detectPort,
+  saveLdapCredentials,
+  detectBaseDn,
+  testBaseDn,
+  saveLdapConfig,
+} from "../api/ldapApi";
 
 const sectionDefaults = {
   "LDAP CONFIGURATION": {
@@ -69,6 +76,10 @@ const LDAPConfig = () => {
   const [newKey, setNewKey] = useState("");
   const [newValue, setNewValue] = useState("");
   const [isServerDropdownOpen, setIsServerDropdownOpen] = useState(false);
+  const [sslCertificate, setSslCertificate] = useState(null);
+  const [emailSslCertificate, setEmailSslCertificate] = useState(null);
+  const [smsSslCertificate, setSmsSslCertificate] = useState(null);
+  const [whatsappSslCertificate, setWhatsappSslCertificate] = useState(null);
 
   const defaultSections = [
     "LDAP CONFIGURATION",
@@ -203,64 +214,102 @@ const LDAPConfig = () => {
       return (
         <Fade in timeout={300}>
           <Box component="form" noValidate autoComplete="off" sx={{ mt: 2 }}>
-            <Grid container spacing={2}>
+            <Grid container spacing={2} sx={{ mt: 3 }}>
               {Object.entries(config).map(([key, value], index) => (
-                <Grid item xs={12} key={index}>
-                  <Box display="flex" alignItems="center" gap={1}>
-                    <TextField
-                      fullWidth
-                      label={key}
-                      name={key}
-                      value={value}
-                      onChange={(e) => {
-                        const updated = { ...config, [key]: e.target.value };
-                        setServerState((prev) => ({
-                          ...prev,
-                          [activeSection]: {
-                            ...prev[activeSection],
-                            configs: {
-                              ...prev[activeSection].configs,
-                              [selectedServer]: updated,
-                            },
-                          },
-                        }));
+                <React.Fragment key={index}>
+                  {/* Key Field */}
+                  <Grid item xs={5}>
+                    <Box
+                      sx={{
+                        border: "1px solid #ccc",
+                        borderRadius: 1,
+                        px: 2,
+                        py: 1,
+                        minHeight: "56px",
+                        display: "flex",
+                        alignItems: "center",
                       }}
-                    />
-                    <Tooltip title="Delete Field">
-                      <IconButton
-                        onClick={() => {
-                          if (Object.keys(config).length === 1) {
-                            setStatus({
-                              type: "warning",
-                              message: "At least one field is required.",
-                            });
-                            return;
-                          }
-                          const updatedConfig = { ...config };
-                          delete updatedConfig[key];
+                    >
+                      <TextField
+                        variant="standard"
+                        fullWidth
+                        value={key}
+                        InputProps={{ disableUnderline: true, readOnly: true }}
+                      />
+                    </Box>
+                  </Grid>
+
+                  {/* Value Field */}
+                  <Grid item xs={5}>
+                    <Box
+                      sx={{
+                        border: "1px solid #ccc",
+                        borderRadius: 1,
+                        px: 2,
+                        py: 1,
+                        minHeight: "56px",
+                        display: "flex",
+                        alignItems: "center",
+                      }}
+                    >
+                      <TextField
+                        variant="standard"
+                        fullWidth
+                        value={value}
+                        onChange={(e) => {
+                          const updated = { ...config, [key]: e.target.value };
                           setServerState((prev) => ({
                             ...prev,
                             [activeSection]: {
                               ...prev[activeSection],
                               configs: {
                                 ...prev[activeSection].configs,
-                                [selectedServer]: updatedConfig,
+                                [selectedServer]: updated,
                               },
                             },
                           }));
-                          setStatus({
-                            type: "info",
-                            message: `Field "${key}" removed from "${activeSection}".`,
-                          });
                         }}
-                      >
-                        <DeleteIcon color="error" />
-                      </IconButton>
-                    </Tooltip>
-                  </Box>
-                </Grid>
-              ))}
+                        InputProps={{ disableUnderline: true }}
+                      />
+                    </Box>
+                  </Grid>
 
+                  {/* Delete Button */}
+                  <Grid item xs={2} display="flex" alignItems="center">
+                    <IconButton
+                      onClick={() => {
+                        if (Object.keys(config).length === 1) {
+                          setStatus({
+                            type: "warning",
+                            message: "At least one field is required.",
+                          });
+                          return;
+                        }
+
+                        const updatedConfig = { ...config };
+                        delete updatedConfig[key];
+                        setServerState((prev) => ({
+                          ...prev,
+                          [activeSection]: {
+                            ...prev[activeSection],
+                            configs: {
+                              ...prev[activeSection].configs,
+                              [selectedServer]: updatedConfig,
+                            },
+                          },
+                        }));
+
+                        setStatus({
+                          type: "info",
+                          message: `Field "${key}" removed from "${activeSection}".`,
+                        });
+                      }}
+                    >
+                      <DeleteIcon color="error" />
+                    </IconButton>
+                  </Grid>
+                </React.Fragment>
+              ))}
               <Grid item xs={5}>
                 <TextField
                   label="New Key"
@@ -269,6 +318,7 @@ const LDAPConfig = () => {
                   onChange={(e) => setNewKey(e.target.value)}
                 />
               </Grid>
+
               <Grid item xs={5}>
                 <TextField
                   label="New Value"
@@ -277,6 +327,7 @@ const LDAPConfig = () => {
                   onChange={(e) => setNewValue(e.target.value)}
                 />
               </Grid>
+
               <Grid item xs={2}>
                 <Button
                   fullWidth
@@ -290,6 +341,7 @@ const LDAPConfig = () => {
                       });
                       return;
                     }
+
                     const updated = { ...config, [newKey]: newValue };
                     setServerState((prev) => ({
                       ...prev,
@@ -333,6 +385,36 @@ const LDAPConfig = () => {
                     onChange={handleChange}
                     placeholder="192.168.1.99"
                   />
+                  {config.host?.toLowerCase().startsWith("https") && (
+                    <Grid item xs={12}>
+                      <Button variant="outlined" component="label" fullWidth>
+                        Upload SSL Certificate
+                        <input
+                          type="file"
+                          hidden
+                          accept=".crt,.pem,.cer,.der"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              setSslCertificate(file);
+                              setStatus({
+                                type: "success",
+                                message: `SSL Certificate "${file.name}" selected.`,
+                              });
+                            }
+                          }}
+                        />
+                      </Button>
+                      {sslCertificate && (
+                        <Typography
+                          variant="caption"
+                          sx={{ mt: 1, display: "block" }}
+                        >
+                          Selected: {sslCertificate.name}
+                        </Typography>
+                      )}
+                    </Grid>
+                  )}
                 </Grid>
                 <Grid item xs={7}>
                   <TextField
@@ -345,9 +427,60 @@ const LDAPConfig = () => {
                     InputProps={{
                       endAdornment: (
                         <InputAdornment position="end">
-                          <Button
+                          {/* <Button
                             size="small"
                             onClick={() => handleDummyAction("Detect Port")}
+                          >
+                            Detect Port
+                          </Button> */}
+                          <Button
+                            size="small"
+                            onClick={async () => {
+                              if (!config.host || !config.port) {
+                                setStatus({
+                                  type: "warning",
+                                  message:
+                                    "Host and Port are required to detect port.",
+                                });
+                                return;
+                              }
+                              try {
+                                setStatus({
+                                  type: "info",
+                                  message: "Detecting port...",
+                                });
+                                const detectedPort = await detectPort({
+                                  host: config.host,
+                                  port: config.port,
+                                });
+
+                                const updated = {
+                                  ...config,
+                                  port: detectedPort,
+                                };
+                                setServerState((prev) => ({
+                                  ...prev,
+                                  [activeSection]: {
+                                    ...prev[activeSection],
+                                    configs: {
+                                      ...prev[activeSection].configs,
+                                      [selectedServer]: updated,
+                                    },
+                                  },
+                                }));
+                                setStatus({
+                                  type: "success",
+                                  message: `Detected Port: ${detectedPort}`,
+                                });
+                              } catch (error) {
+                                setStatus({
+                                  type: "error",
+                                  message:
+                                    error?.response?.data?.message ||
+                                    "Failed to detect port.",
+                                });
+                              }
+                            }}
                           >
                             Detect Port
                           </Button>
@@ -385,7 +518,43 @@ const LDAPConfig = () => {
                   <Button
                     fullWidth
                     variant="contained"
-                    onClick={() => handleDummyAction("Save Credentials")}
+                    onClick={async () => {
+                      const { host, port, userDn, password } = config;
+
+                      if (!host || !port || !userDn || !password) {
+                        setStatus({
+                          type: "warning",
+                          message:
+                            "All fields (Host, Port, User DN, Password) are required.",
+                        });
+                        return;
+                      }
+
+                      try {
+                        setStatus({
+                          type: "info",
+                          message: "Saving credentials...",
+                        });
+                        const result = await saveLdapCredentials({
+                          host,
+                          port,
+                          userDn,
+                          password,
+                        });
+                        setStatus({
+                          type: "success",
+                          message:
+                            result.message || "Credentials saved successfully.",
+                        });
+                      } catch (error) {
+                        setStatus({
+                          type: "error",
+                          message:
+                            error?.response?.data?.message ||
+                            "Failed to save credentials.",
+                        });
+                      }
+                    }}
                   >
                     Save
                   </Button>
@@ -401,15 +570,138 @@ const LDAPConfig = () => {
                     InputProps={{
                       endAdornment: (
                         <>
-                          <Button
+                          {/* <Button
                             size="small"
                             onClick={() => handleDummyAction("Detect Base DN")}
                           >
                             Detect Base DN
-                          </Button>
+                          </Button> */}
                           <Button
                             size="small"
+                            onClick={async () => {
+                              const { host, port, userDn, password, baseDn } =
+                                config;
+
+                              if (
+                                !host ||
+                                !port ||
+                                !userDn ||
+                                !password ||
+                                !baseDn
+                              ) {
+                                setStatus({
+                                  type: "warning",
+                                  message:
+                                    "All fields including Base DN are required to detect Base DN.",
+                                });
+                                return;
+                              }
+
+                              try {
+                                setStatus({
+                                  type: "info",
+                                  message: "Detecting Base DN...",
+                                });
+                                const result = await detectBaseDn({
+                                  host,
+                                  port,
+                                  userDn,
+                                  password,
+                                  baseDn,
+                                });
+
+                                // Optionally, you can update the baseDn value with response
+                                if (result.baseDn) {
+                                  const updated = {
+                                    ...config,
+                                    baseDn: result.baseDn,
+                                  };
+                                  setServerState((prev) => ({
+                                    ...prev,
+                                    [activeSection]: {
+                                      ...prev[activeSection],
+                                      configs: {
+                                        ...prev[activeSection].configs,
+                                        [selectedServer]: updated,
+                                      },
+                                    },
+                                  }));
+                                }
+
+                                setStatus({
+                                  type: "success",
+                                  message:
+                                    result.message ||
+                                    "Base DN detected successfully.",
+                                });
+                              } catch (error) {
+                                setStatus({
+                                  type: "error",
+                                  message:
+                                    error?.response?.data?.message ||
+                                    "Failed to detect Base DN.",
+                                });
+                              }
+                            }}
+                          >
+                            Detect Base DN
+                          </Button>
+
+                          {/* <Button
+                            size="small"
                             onClick={() => handleDummyAction("Test Base DN")}
+                          >
+                            Test Base DN
+                          </Button> */}
+                          <Button
+                            size="small"
+                            onClick={async () => {
+                              const { host, port, userDn, password, baseDn } =
+                                config;
+
+                              if (
+                                !host ||
+                                !port ||
+                                !userDn ||
+                                !password ||
+                                !baseDn
+                              ) {
+                                setStatus({
+                                  type: "warning",
+                                  message:
+                                    "All fields including Base DN are required to test Base DN.",
+                                });
+                                return;
+                              }
+
+                              try {
+                                setStatus({
+                                  type: "info",
+                                  message: "Testing Base DN...",
+                                });
+                                const result = await testBaseDn({
+                                  host,
+                                  port,
+                                  userDn,
+                                  password,
+                                  baseDn,
+                                });
+
+                                setStatus({
+                                  type: "success",
+                                  message:
+                                    result.message ||
+                                    "Base DN tested successfully.",
+                                });
+                              } catch (error) {
+                                setStatus({
+                                  type: "error",
+                                  message:
+                                    error?.response?.data?.message ||
+                                    "Failed to validate Base DN with provided credentials.",
+                                });
+                              }
+                            }}
                           >
                             Test Base DN
                           </Button>
@@ -418,6 +710,69 @@ const LDAPConfig = () => {
                     }}
                   />
                 </Grid>
+              </Grid>
+              <Grid
+                item
+                xs={12}
+                sx={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  gap: 2,
+                  mt: 2,
+                }}
+              >
+                <Button
+                  variant="outlined"
+                  // onClick={() => handleDummyAction("Continue")}
+                  onClick={() => setTabIndex((prev) => prev + 1)}
+                >
+                  Continue
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={async () => {
+                    const { host, port, userDn, password, baseDn } = config;
+
+                    if (!host || !port || !userDn || !password || !baseDn) {
+                      setStatus({
+                        type: "warning",
+                        message:
+                          "Please fill all fields before saving the configuration.",
+                      });
+                      return;
+                    }
+
+                    try {
+                      setStatus({
+                        type: "info",
+                        message: "Saving configuration...",
+                      });
+                      const result = await saveLdapConfig({
+                        host,
+                        port,
+                        userDn,
+                        password,
+                        baseDn,
+                      });
+
+                      setStatus({
+                        type: "success",
+                        message:
+                          result.message ||
+                          "LDAP configuration saved successfully.",
+                      });
+                    } catch (error) {
+                      setStatus({
+                        type: "error",
+                        message:
+                          error?.response?.data?.message ||
+                          "Failed to save LDAP configuration.",
+                      });
+                    }
+                  }}
+                >
+                  Save Configuration
+                </Button>
               </Grid>
             </Box>
           </Slide>
@@ -598,6 +953,35 @@ const LDAPConfig = () => {
             value={config.smtp}
             onChange={handleChange}
           />
+
+          {config.smtp?.toLowerCase().startsWith("https") && (
+            <Box sx={{ mt: 2 }}>
+              <Button variant="outlined" component="label" fullWidth>
+                Upload SSL Certificate
+                <input
+                  type="file"
+                  hidden
+                  accept=".crt,.pem,.cer,.der"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setEmailSslCertificate(file);
+                      setStatus({
+                        type: "success",
+                        message: `SSL Certificate "${file.name}" selected for SMTP.`,
+                      });
+                    }
+                  }}
+                />
+              </Button>
+              {emailSslCertificate && (
+                <Typography variant="caption" sx={{ mt: 1, display: "block" }}>
+                  Selected: {emailSslCertificate.name}
+                </Typography>
+              )}
+            </Box>
+          )}
+
           <TextField
             fullWidth
             label="Port"
@@ -642,6 +1026,34 @@ const LDAPConfig = () => {
             value={config.gatewayUrl}
             onChange={handleChange}
           />
+          {config.gatewayUrl?.toLowerCase().startsWith("https") && (
+            <Box sx={{ mt: 2 }}>
+              <Button variant="outlined" component="label" fullWidth>
+                Upload SSL Certificate
+                <input
+                  type="file"
+                  hidden
+                  accept=".crt,.pem,.cer,.der"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setSmsSslCertificate(file);
+                      setStatus({
+                        type: "success",
+                        message: `SSL Certificate "${file.name}" selected for Gateway.`,
+                      });
+                    }
+                  }}
+                />
+              </Button>
+              {smsSslCertificate && (
+                <Typography variant="caption" sx={{ mt: 1, display: "block" }}>
+                  Selected: {smsSslCertificate.name}
+                </Typography>
+              )}
+            </Box>
+          )}
+
           <TextField
             fullWidth
             label="API Key"
@@ -690,6 +1102,34 @@ const LDAPConfig = () => {
             value={config.apiEndpoint}
             onChange={handleChange}
           />
+          {config.apiEndpoint?.toLowerCase().startsWith("https") && (
+            <Box sx={{ mt: 2 }}>
+              <Button variant="outlined" component="label" fullWidth>
+                Upload SSL Certificate
+                <input
+                  type="file"
+                  hidden
+                  accept=".crt,.pem,.cer,.der"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setWhatsappSslCertificate(file);
+                      setStatus({
+                        type: "success",
+                        message: `SSL Certificate "${file.name}" selected for WhatsApp.`,
+                      });
+                    }
+                  }}
+                />
+              </Button>
+              {whatsappSslCertificate && (
+                <Typography variant="caption" sx={{ mt: 1, display: "block" }}>
+                  Selected: {whatsappSslCertificate.name}
+                </Typography>
+              )}
+            </Box>
+          )}
+
           <TextField
             fullWidth
             label="Auth Token"
@@ -768,8 +1208,11 @@ const LDAPConfig = () => {
                 borderRadius: 1,
               }}
             >
-              <Typography sx={{ color: "white", fontWeight: "bold" }}>
+              {/* <Typography sx={{ color: "white", fontWeight: "bold" }}>
                 Settings
+              </Typography> */}
+              <Typography variant="h5" sx={{ color: "white" }}>
+                SETTINGS
               </Typography>
               <Tooltip title="Add Configuration">
                 <IconButton size="small" onClick={() => setDialogOpen(true)}>

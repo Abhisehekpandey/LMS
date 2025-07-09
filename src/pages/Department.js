@@ -182,6 +182,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
   const [isAdminRole, setIsAdminRole] = useState(false);
   const [page, setPage] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
 
   const [rowsPerPage, setRowsPerPage] = useState(10); // Default to 25 rows
 
@@ -283,6 +284,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
   // Add these at the top of your component with other state declarations
   const [selected, setSelected] = useState([]);
+  const [selectAllData, setSelectAllData] = useState(false);
+  const [rowData, setRowData] = useState([]);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredDepartments, setFilteredDepartments] = useState([]);
   // Add this handler function
@@ -429,11 +433,11 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       const exportData = departments.map((dept) => ({
         Department: dept.name,
         "Display Name": dept.displayName,
-        "Department Moderator": dept.departmentModerator, // Added Department Owner
-        "Storage Allocated": dept.storage || "50GB",
+        "Department Moderator": dept.departmentModerator,
+        "Storage Allocated":
+          dept?.permissions?.allowedStorageInBytesDisplay || "50GB",
+        "Storage Consumed": dept?.permissions?.displayStorage || "0KB",
         Roles: `${dept.roles.length} (${dept.roles.join(", ")})`,
-        Status: dept.isActive ? "Active" : "Inactive", // Add Status column
-        Edit: "No",
       }));
 
       const ws = XLSX.utils.json_to_sheet(exportData);
@@ -1053,9 +1057,16 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
   const handleBulkDownloadSelected = (selectedItems) => {
     try {
-      const selectedDepartments = departments.filter((dept) =>
+      // const selectedDepartments = departments.filter((dept) =>
+      //   selectedItems.includes(dept.name)
+      // );
+
+      const sourceData = rowData.length > 0 ? rowData : departments;
+      const selectedDepartments = sourceData.filter((dept) =>
         selectedItems.includes(dept.name)
       );
+
+      console.log(">>ssss", selectedDepartments);
 
       const exportData = selectedDepartments.flatMap((dept) => {
         if (!dept.roles || dept.roles.length === 0) {
@@ -1063,12 +1074,10 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             {
               Department: dept.name,
               "Display Name": dept.displayName,
-              "Department Moderator": dept.departmentModerator, // Added Department Owner
-              "Storage Allocated": dept.storage || "50GB",
+              "Department Moderator": dept.departmentModerator,
+              "Storage Allocated": dept.allowedStorage || "N/A",
+              "Storage Consumed": dept.storage || "N/A",
               Role: "",
-              Status: dept.isActive ? "Active" : "Inactive",
-              Edit: "No",
-              Delete: "No", // Added Delete column
             },
           ];
         }
@@ -1076,12 +1085,10 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         return dept.roles.map((role) => ({
           Department: dept.name,
           "Display Name": dept.displayName,
-          "Department Moderator": dept.departmentModerator, // Added Department Owner
-          "Storage Allocated": dept.storage || "50GB",
+          "Department Moderator": dept.departmentModerator,
+          "Storage Allocated": dept.allowedStorage || "N/A",
+          "Storage Consumed": dept.storage || "N/A",
           Role: role,
-          Status: dept.isActive ? "Active" : "Inactive",
-          Edit: "No",
-          Delete: "No", // Added Delete column
         }));
       });
 
@@ -1090,12 +1097,10 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       const wscols = [
         { wch: 25 }, // Department
         { wch: 15 }, // Display Name
-        { wch: 25 }, // Department Owner
+        { wch: 25 }, // Department Moderator
         { wch: 20 }, // Storage Allocated
+        { wch: 20 }, // Storage Consumed
         { wch: 30 }, // Role
-        { wch: 15 }, // Status
-        { wch: 10 }, // Edit
-        { wch: 10 }, // Delete
       ];
       ws["!cols"] = wscols;
 
@@ -1108,6 +1113,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         message: `Successfully exported ${selectedItems.length} departments`,
         severity: "success",
       });
+      setSelected([]);
     } catch (error) {
       console.error("Export error:", error);
       setSnackbar({
@@ -1254,10 +1260,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     sortedDepartments.length > 0 &&
                     selected.length === sortedDepartments.length
                   }
-                  onChange={handleSelectAllClick}
-                  inputProps={{
-                    "aria-label": "select all departments",
-                  }}
+                  onChange={() => setSelectAllData(true)} // ✅ New line
+                  inputProps={{ "aria-label": "select all departments" }}
                   size="small"
                 />
               </TableCell>
@@ -2108,32 +2112,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                   ].map((field, index) => {
                     if (field.label === "Department Moderator") {
                       return (
-                        // <Autocomplete
-                        //   key={index}
-                        //   size="small"
-                        //   fullWidth
-                        //   options={allUsers}
-                        //   getOptionLabel={(option) => option.name || ""}
-                        //   value={
-                        //     allUsers.find((u) => u.name === field.value) || null
-                        //   }
-                        //   onChange={(event, newValue) =>
-                        //     setNewDepartment((prev) => ({
-                        //       ...prev,
-                        //       departmentModerator: newValue?.name || "",
-                        //     }))
-                        //   }
-                        //   renderInput={(params) => (
-                        //     <TextField
-                        //       {...params}
-                        //       label="Department Moderator"
-                        //       FormHelperTextProps={{ sx: { ml: 0 } }}
-                        //       error={field.error}
-                        //       helperText={field.helperText}
-                        //       required
-                        //     />
-                        //   )}
-                        // />
                         <Autocomplete
                           key={index}
                           size="small"
@@ -2622,6 +2600,92 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           <Button onClick={() => setEditRoleDialog(false)}>Cancel</Button>
           <Button onClick={handleSaveRole} color="primary" variant="contained">
             Save
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog
+        open={selectAllData}
+        onClose={() => setSelectAllData(false)}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle
+          sx={{
+            backgroundColor: "#1976d2", // Material UI blue[700]
+            color: "white",
+            fontWeight: "bold",
+          }}
+        >
+          Select Departments
+        </DialogTitle>
+        <DialogContent dividers>
+          <Typography variant="body1">
+            Do you want to select all departments or just those on the current
+            page?
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSelectAllData(false)}>Cancel</Button>
+          <Button
+            onClick={() => {
+              const currentIds = sortedDepartments.map((d) => d.name);
+              setSelected(currentIds);
+              setRowData(sortedDepartments);
+              setSelectAllData(false);
+            }}
+          >
+            Select Current Page ({sortedDepartments.length})
+          </Button>
+          <Button
+            color="error"
+            onClick={async () => {
+              try {
+                setLoading(true);
+                const first = await getDepartments(0, rowsPerPage);
+                let allDepartments = [...first.content];
+                const totalPages = first.totalPages;
+
+                const promises = [];
+                for (let i = 1; i < totalPages; i++) {
+                  promises.push(getDepartments(i, rowsPerPage));
+                }
+
+                const results = await Promise.all(promises);
+                results.forEach((res) => {
+                  allDepartments.push(...res.content);
+                });
+
+                // Map backend response to department format
+                const mapped = allDepartments.map((dept) => ({
+                  name: dept.deptName,
+                  displayName: dept.deptDisplayName,
+                  departmentModerator:
+                    dept.deptModerator || dept.permissions?.deptUsername || "",
+                  storage: dept.permissions?.displayStorage || "0 GB",
+                  allowedStorage:
+                    dept.permissions?.allowedStorageInBytesDisplay || "0 GB",
+                  roles: dept.roles?.map((r) => r.roleName) || [],
+                  userCount: dept.numberOfUsers || 0,
+                  isActive: dept.permissions?.active || false,
+                  createdAt: dept.createdOn,
+                }));
+
+                setSelected(mapped.map((d) => d.name));
+                setRowData(mapped);
+                setSelectAllData(false);
+              } catch (error) {
+                console.error("Error selecting all departments:", error);
+                setSnackbar({
+                  open: true,
+                  message: "Failed to fetch all departments",
+                  severity: "error",
+                });
+              } finally {
+                setLoading(false);
+              }
+            }}
+          >
+            Select All Departments
           </Button>
         </DialogActions>
       </Dialog>

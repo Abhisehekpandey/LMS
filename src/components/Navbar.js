@@ -1,5 +1,7 @@
 import React, { useState, useCallback, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import Slide from "@mui/material/Slide";
+
 import {
   AppBar,
   Toolbar,
@@ -17,12 +19,26 @@ import {
   ClickAwayListener,
   Divider,
 } from "@mui/material";
+import {
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Checkbox,
+  FormControlLabel,
+} from "@mui/material";
+
 import SearchIcon from "@mui/icons-material/Search";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
 import LogoutIcon from "@mui/icons-material/Logout";
 import debounce from "lodash/debounce";
 import { fetchUsers } from "../api/userService";
 import { getDepartments } from "../api/departmentService"; // adjust import path if needed
+
+const Transition = React.forwardRef(function Transition(props, ref) {
+  return <Slide direction="left" ref={ref} {...props} timeout={200} />;
+});
 
 const StyledAppBar = styled(AppBar)({
   backgroundColor: "white",
@@ -97,6 +113,8 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searchAnchorEl, setSearchAnchorEl] = useState(null);
+  const [extensionDialogOpen, setExtensionDialogOpen] = useState(false);
+  const [selectedExtensions, setSelectedExtensions] = useState([]);
 
   const debouncedSearch = useRef(
     debounce(async (query) => {
@@ -318,7 +336,15 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
 
         <Box sx={{ flexGrow: 1 }} />
 
-        <Box sx={{ display: "flex", gap: 3 }}>
+        <Box sx={{ display: "flex", gap: 1.5, alignItems: "center" }}>
+          <Button
+            variant="outlined"
+            size="small"
+            sx={{ height: 35, textTransform: "none", fontSize: "0.75rem" }}
+            onClick={() => setExtensionDialogOpen(true)}
+          >
+            Choose Extension
+          </Button>
           <Tooltip title="Toggle Theme" arrow>
             <IconButton
               onClick={onThemeToggle}
@@ -338,12 +364,137 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
             </IconButton>
           </Tooltip>
         </Box>
+        {/* <Dialog
+          open={extensionDialogOpen}
+          onClose={() => setExtensionDialogOpen(false)}
+          fullWidth
+          maxWidth="sm"
+        > */}
+        {/* <Dialog
+          open={extensionDialogOpen}
+          onClose={() => setExtensionDialogOpen(false)}
+          fullWidth
+          maxWidth="sm"
+          TransitionComponent={Transition}
+          keepMounted
+        > */}
+        <Dialog
+          open={extensionDialogOpen}
+          onClose={() => setExtensionDialogOpen(false)}
+          fullWidth
+          maxWidth="sm"
+          TransitionComponent={Transition}
+          keepMounted
+          transitionDuration={200}
+        >
+          {/* <DialogTitle>Select File Extensions</DialogTitle> */}
+          <DialogTitle
+            sx={{
+              backgroundColor: "#1976d2",
+              color: "#fff",
+              fontWeight: "bold",
+              fontSize: "1.1rem",
+            }}
+          >
+            Select File Extensions
+          </DialogTitle>
+
+          <DialogContent dividers>
+            {[
+              {
+                label: "Documents",
+                values: [
+                  "pdf",
+                  "doc",
+                  "docx",
+                  "xls",
+                  "xlsx",
+                  "csv",
+                  "txt",
+                  "rtf",
+                  "ppt",
+                  "pptx",
+                  "xml",
+                  "json",
+                ],
+              },
+              {
+                label: "Images",
+                values: [
+                  "jpg",
+                  "jpeg",
+                  "png",
+                  "gif",
+                  "bmp",
+                  "tiff",
+                  "webp",
+                  "svg",
+                ],
+              },
+              {
+                label: "Audio",
+                values: ["mp3", "aac", "ogg", "m4a", "wav", "flac", "wma"],
+              },
+              {
+                label: "Video",
+                values: [
+                  "mp4",
+                  "avi",
+                  "mov",
+                  "mkv",
+                  "webm",
+                  "flv",
+                  "wmv",
+                  "3gp",
+                ],
+              },
+              { label: "Archives", values: ["zip", "rar", "7z", "tar", "gz"] },
+            ].map((group) => (
+              <Box key={group.label} sx={{ mb: 2 }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                  {group.label}
+                </Typography>
+                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+                  {group.values.map((ext) => (
+                    <FormControlLabel
+                      key={ext}
+                      control={
+                        <Checkbox
+                          checked={selectedExtensions.includes(ext)}
+                          onChange={() =>
+                            setSelectedExtensions((prev) =>
+                              prev.includes(ext)
+                                ? prev.filter((e) => e !== ext)
+                                : [...prev, ext]
+                            )
+                          }
+                        />
+                      }
+                      label={ext}
+                    />
+                  ))}
+                </Box>
+              </Box>
+            ))}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setExtensionDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              onClick={() => {
+                console.log("Selected Extensions:", selectedExtensions);
+                setExtensionDialogOpen(false);
+              }}
+            >
+              Save
+            </Button>
+          </DialogActions>
+        </Dialog>
       </StyledToolbar>
     </StyledAppBar>
   );
 };
 
 export default Navbar;
-
-
-

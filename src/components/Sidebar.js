@@ -118,13 +118,25 @@ const userName = user.name || "User";
 const userRole = user.role || "Role";
 const userInitial = user.initial || "U";
 
-  const menuItems = React.useMemo(() => [
-    { path: "/angelbot", icon: <TimelineIcon />, text: "AngelBot" },
-    { path: "/user", icon: <UserIcon />, text: "User" },
-    { path: "/department", icon: <DepartmentRolesIcon />, text: "Department" },
-    { path: "/ldap-config", icon: <LDAPIcon />, text: "LDAP Settings" },
-    // { path: "/company-dashboard", icon: <DashboardIcon />, text: "Dashboard" },
-  ], []); // Empty dependency array means this only runs once
+  const menuItems = React.useMemo(
+    () => [
+      { path: "/angelbot", icon: <TimelineIcon />, text: "AngelBot" },
+      { path: "/user", icon: <UserIcon />, text: "User" },
+      {
+        path: "/department",
+        icon: <DepartmentRolesIcon />,
+        text: "Department",
+      },
+      { path: "/ldap-config", icon: <LDAPIcon />, text: "LDAP Settings" },
+      {
+        path: "/choose-extension",
+        icon: <DashboardIcon />,
+        text: "Choose Extension",
+      },
+      // { path: "/company-dashboard", icon: <DashboardIcon />, text: "Dashboard" },
+    ],
+    []
+  ); // Empty dependency array means this only runs once
 
   const handleMouseEnter = () => {
     clearTimeout(timeoutRef.current);
