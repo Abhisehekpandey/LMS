@@ -44,6 +44,8 @@ import { Snackbar, Alert } from "@mui/material"; // already likely imported
 import { fetchUsers } from "../api/userService";
 import { getDepartments } from "../api/departmentService";
 import Loading from "../components/Loading";
+import CreateUser from "./user/CreateUser";
+import Slide from "@mui/material/Slide";
 
 import {
   ArrowDropUp,
@@ -57,6 +59,9 @@ const fadeIn = keyframes`
   from { opacity: 0; transform: scale(0.95); }
   to { opacity: 1; transform: scale(1); }
 `;
+const Transition = React.forwardRef(function Transition(props, ref) {
+  return <Slide direction="right" ref={ref} {...props} />;
+});
 
 // Styled overlay
 const LoaderWrapper = styled(Box)(({ theme }) => ({
@@ -153,6 +158,10 @@ const AngelBot = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [userTableLoading, setUserTableLoading] = useState(false);
 
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarSeverity, setSnackbarSeverity] = useState("success"); // 'error', 'warning', 'info', 'success'
+
   const defaultStatusData = [
     { value: 500, name: "Used", color: "#91CC75" },
     { value: 484, name: "Available", color: "#5470C6" },
@@ -178,6 +187,7 @@ const AngelBot = () => {
 
   const [nextExpiringLicense, setNextExpiringLicense] = useState("");
   const [currentLicenseIndex, setCurrentLicenseIndex] = useState(0);
+  const [openCreateUser, setOpenCreateUser] = useState(false);
 
   const activeConfig = {
     storageStatusData: [
@@ -216,6 +226,12 @@ const AngelBot = () => {
   const [storageTab, setStorageTab] = useState("status"); // "status" or "distribution"
   // const [licenseFilter, setLicenseFilter] = useState("all");
   const [licenseFilter, setLicenseFilter] = useState("active");
+
+  const showSnackbar = (message, severity = "success") => {
+    setSnackbarMessage(message);
+    setSnackbarSeverity(severity);
+    setSnackbarOpen(true);
+  };
 
   const convertDisplayToGB = (value) => {
     if (!value || typeof value !== "string") return 0;
@@ -818,7 +834,9 @@ const AngelBot = () => {
 
         const departmentStorageData = departments.map((dept) => {
           const name = dept.deptName || "Unnamed Dept";
-          const storageUsed = convertDisplayToGB(dept?.permissions?.displayStorage);
+          const storageUsed = convertDisplayToGB(
+            dept?.permissions?.displayStorage
+          );
           const storageAllocated = convertDisplayToGB(
             dept?.permissions?.allowedStorageInBytesDisplay
           );
@@ -834,16 +852,19 @@ const AngelBot = () => {
         // Sort by high usage initially
         departmentStorageData.sort(
           (a, b) =>
-            b.storageUsed / b.storageAllocated - a.storageUsed / a.storageAllocated
+            b.storageUsed / b.storageAllocated -
+            a.storageUsed / a.storageAllocated
         );
 
         setSortedDepartments(departmentStorageData);
 
         departments.forEach((dept) => {
-          const allowed = convertDisplayToGB(dept?.permissions?.allowedStorageInBytesDisplay);
+          const allowed = convertDisplayToGB(
+            dept?.permissions?.allowedStorageInBytesDisplay
+          );
           totalDepartmentStorage += allowed;
         });
-        console.log("totalDepartment",totalDepartmentStorage)
+        console.log("totalDepartment", totalDepartmentStorage);
 
         setStorageDistributionData([
           { name: "User", value: totalUserStorage, color: "#91CC75" },
@@ -1126,7 +1147,7 @@ const AngelBot = () => {
                         <IconButton
                           color="primary"
                           size="small"
-                          onClick={() => console.log("Add User clicked")}
+                          onClick={() => setOpenCreateUser(true)} // ✅ open dialog
                           sx={{
                             backgroundColor: (theme) =>
                               theme.palette.primary.light,
@@ -2126,7 +2147,8 @@ const AngelBot = () => {
                               <LinearProgress
                                 variant="determinate"
                                 value={
-                                  (dept.storageUsed / dept.storageAllocated) * 100
+                                  (dept.storageUsed / dept.storageAllocated) *
+                                  100
                                 }
                                 sx={{
                                   height: 10,
@@ -2140,7 +2162,8 @@ const AngelBot = () => {
                                   [`& .MuiLinearProgress-bar`]: {
                                     borderRadius: 3,
                                     backgroundColor: getProgressBarColor(
-                                      (dept.storageUsed / dept.storageAllocated) *
+                                      (dept.storageUsed /
+                                        dept.storageAllocated) *
                                         100
                                     ),
                                   },
@@ -2295,6 +2318,35 @@ const AngelBot = () => {
           </Snackbar>
         </Box>
       )}
+
+      <Dialog
+        open={openCreateUser}
+        onClose={() => setOpenCreateUser(false)}
+        TransitionComponent={Transition}
+        keepMounted
+        maxWidth="md" // Options: 'xs' | 'sm' | 'md' | 'lg' | 'xl'
+        fullWidth={false} // ❌ don't stretch full width
+      >
+        <CreateUser
+          handleClose={() => setOpenCreateUser(false)}
+          showSnackbar={showSnackbar}
+        />
+      </Dialog>
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={4000}
+        onClose={() => setSnackbarOpen(false)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setSnackbarOpen(false)}
+          severity={snackbarSeverity}
+          sx={{ width: "100%" }}
+          variant="filled"
+        >
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
     </>
   );
 };

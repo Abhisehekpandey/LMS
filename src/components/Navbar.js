@@ -214,29 +214,37 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
         <Box sx={{ display: "flex", alignItems: "center", flexGrow: 1 }}>
           <Typography variant="h6" sx={{ fontSize: "1.1rem", fontWeight: 600 }}>
             {getFormattedPath() && (
-              <Box sx={{ display: "flex", flexDirection: "column", ml: 10 }}>
+           
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  ml: 8,
+                  lineHeight: 1.2,
+                }}
+              >
                 <Typography
                   variant="h5"
                   sx={{
                     fontSize: "1.6rem",
                     color: "#00318e",
                     fontWeight: "bold",
+                    lineHeight: 1,
                   }}
                 >
                   Angel<span style={{ color: "#ff0000" }}>Bot</span>
                 </Typography>
-                <Divider>
-                  <Typography
-                    variant="h6"
-                    sx={{
-                      fontSize: "1rem",
-                      color: "#707070",
-                      fontFamily: "fangsong",
-                    }}
-                  >
-                    Access Arc
-                  </Typography>
-                </Divider>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    fontSize: "1rem",
+                    color: "#707070",
+                    fontFamily: "fangsong",
+                    mt: 0.2, // reduce top margin
+                  }}
+                >
+                  Access Arc
+                </Typography>
               </Box>
             )}
           </Typography>
@@ -337,14 +345,6 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
         <Box sx={{ flexGrow: 1 }} />
 
         <Box sx={{ display: "flex", gap: 1.5, alignItems: "center" }}>
-          <Button
-            variant="outlined"
-            size="small"
-            sx={{ height: 35, textTransform: "none", fontSize: "0.75rem" }}
-            onClick={() => setExtensionDialogOpen(true)}
-          >
-            Choose Extension
-          </Button>
           <Tooltip title="Toggle Theme" arrow>
             <IconButton
               onClick={onThemeToggle}
@@ -364,20 +364,7 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
             </IconButton>
           </Tooltip>
         </Box>
-        {/* <Dialog
-          open={extensionDialogOpen}
-          onClose={() => setExtensionDialogOpen(false)}
-          fullWidth
-          maxWidth="sm"
-        > */}
-        {/* <Dialog
-          open={extensionDialogOpen}
-          onClose={() => setExtensionDialogOpen(false)}
-          fullWidth
-          maxWidth="sm"
-          TransitionComponent={Transition}
-          keepMounted
-        > */}
+
         <Dialog
           open={extensionDialogOpen}
           onClose={() => setExtensionDialogOpen(false)}

@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from "react";
 import Fade from "@mui/material/Fade";
 import Slide from "@mui/material/Slide";
+import GroupsIcon from "@mui/icons-material/Groups";
+import Snackbar from "@mui/material/Snackbar";
+
 import {
   Box,
   Tabs,
@@ -24,7 +27,12 @@ import {
   List,
   ListItemButton,
   ListItemText,
+  InputLabel,
 } from "@mui/material";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import Chip from "@mui/material/Chip";
+
 import {
   Dialog,
   DialogTitle,
@@ -43,13 +51,14 @@ import {
   detectBaseDn,
   testBaseDn,
   saveLdapConfig,
+  fetchGroupsByObjectClass,
 } from "../api/ldapApi";
 
 const sectionDefaults = {
   "LDAP CONFIGURATION": {
     host: "",
     port: "",
-    userDn: "",
+    username: "",
     password: "",
     baseDn: "",
   },
@@ -80,6 +89,16 @@ const LDAPConfig = () => {
   const [emailSslCertificate, setEmailSslCertificate] = useState(null);
   const [smsSslCertificate, setSmsSslCertificate] = useState(null);
   const [whatsappSslCertificate, setWhatsappSslCertificate] = useState(null);
+  const [selectedObjectClass, setSelectedObjectClass] = useState("");
+  const [availableGroups, setAvailableGroups] = useState([]);
+  const [selectedGroup, setSelectedGroup] = useState(""); // or [] for multi-select
+  const [groupListBox, setGroupListBox] = useState([]); // holds displayed items
+  const [selectedGroupObjectClass, setSelectedGroupObjectClass] = useState("");
+
+  const [availableGroupGroups, setAvailableGroupGroups] = useState([]);
+  const [selectedGroupGroup, setSelectedGroupGroup] = useState("");
+  const [groupListBoxGroup, setGroupListBoxGroup] = useState([]);
+  const [groupCount, setGroupCount] = useState(null);
 
   const defaultSections = [
     "LDAP CONFIGURATION",
@@ -217,7 +236,6 @@ const LDAPConfig = () => {
             <Grid container spacing={2} sx={{ mt: 3 }}>
               {Object.entries(config).map(([key, value], index) => (
                 <React.Fragment key={index}>
-                  {/* Key Field */}
                   <Grid item xs={5}>
                     <Box
                       sx={{
@@ -239,7 +257,6 @@ const LDAPConfig = () => {
                     </Box>
                   </Grid>
 
-                  {/* Value Field */}
                   <Grid item xs={5}>
                     <Box
                       sx={{
@@ -274,7 +291,6 @@ const LDAPConfig = () => {
                     </Box>
                   </Grid>
 
-                  {/* Delete Button */}
                   <Grid item xs={2} display="flex" alignItems="center">
                     <IconButton
                       onClick={() => {
@@ -427,12 +443,6 @@ const LDAPConfig = () => {
                     InputProps={{
                       endAdornment: (
                         <InputAdornment position="end">
-                          {/* <Button
-                            size="small"
-                            onClick={() => handleDummyAction("Detect Port")}
-                          >
-                            Detect Port
-                          </Button> */}
                           <Button
                             size="small"
                             onClick={async () => {
@@ -456,7 +466,7 @@ const LDAPConfig = () => {
 
                                 const updated = {
                                   ...config,
-                                  port: detectedPort,
+                                  port: detectedPort.ActivePort,
                                 };
                                 setServerState((prev) => ({
                                   ...prev,
@@ -470,7 +480,7 @@ const LDAPConfig = () => {
                                 }));
                                 setStatus({
                                   type: "success",
-                                  message: `Detected Port: ${detectedPort}`,
+                                  message: `Detected Port: ${detectedPort.ActivePort}`,
                                 });
                               } catch (error) {
                                 setStatus({
@@ -493,8 +503,8 @@ const LDAPConfig = () => {
                   <TextField
                     fullWidth
                     label="User DN"
-                    name="userDn"
-                    value={config.userDn}
+                    name="username"
+                    value={config.username}
                     onChange={handleChange}
                     sx={{ backgroundColor: "#fff9c4" }}
                   />
@@ -519,9 +529,9 @@ const LDAPConfig = () => {
                     fullWidth
                     variant="contained"
                     onClick={async () => {
-                      const { host, port, userDn, password } = config;
+                      const { host, port, username, password } = config;
 
-                      if (!host || !port || !userDn || !password) {
+                      if (!host || !port || !username || !password) {
                         setStatus({
                           type: "warning",
                           message:
@@ -538,13 +548,13 @@ const LDAPConfig = () => {
                         const result = await saveLdapCredentials({
                           host,
                           port,
-                          userDn,
+                          username,
                           password,
                         });
+                        console.log("result", result);
                         setStatus({
                           type: "success",
-                          message:
-                            result.message || "Credentials saved successfully.",
+                          message: result || "Credentials saved successfully.",
                         });
                       } catch (error) {
                         setStatus({
@@ -570,29 +580,16 @@ const LDAPConfig = () => {
                     InputProps={{
                       endAdornment: (
                         <>
-                          {/* <Button
-                            size="small"
-                            onClick={() => handleDummyAction("Detect Base DN")}
-                          >
-                            Detect Base DN
-                          </Button> */}
                           <Button
                             size="small"
                             onClick={async () => {
-                              const { host, port, userDn, password, baseDn } =
-                                config;
+                              const { host, port, username, password } = config;
 
-                              if (
-                                !host ||
-                                !port ||
-                                !userDn ||
-                                !password ||
-                                !baseDn
-                              ) {
+                              if (!host || !port || !username || !password) {
                                 setStatus({
                                   type: "warning",
                                   message:
-                                    "All fields including Base DN are required to detect Base DN.",
+                                    "Host, Port, User DN, and Password are required.",
                                 });
                                 return;
                               }
@@ -602,20 +599,23 @@ const LDAPConfig = () => {
                                   type: "info",
                                   message: "Detecting Base DN...",
                                 });
+
                                 const result = await detectBaseDn({
                                   host,
                                   port,
-                                  userDn,
+                                  username,
                                   password,
-                                  baseDn,
                                 });
 
-                                // Optionally, you can update the baseDn value with response
-                                if (result.baseDn) {
+                                if (
+                                  Array.isArray(result) &&
+                                  result.length > 0
+                                ) {
                                   const updated = {
                                     ...config,
-                                    baseDn: result.baseDn,
+                                    baseDn: result[0],
                                   };
+
                                   setServerState((prev) => ({
                                     ...prev,
                                     [activeSection]: {
@@ -626,14 +626,17 @@ const LDAPConfig = () => {
                                       },
                                     },
                                   }));
-                                }
 
-                                setStatus({
-                                  type: "success",
-                                  message:
-                                    result.message ||
-                                    "Base DN detected successfully.",
-                                });
+                                  setStatus({
+                                    type: "success",
+                                    message: `Base DN detected: ${result[0]}`,
+                                  });
+                                } else {
+                                  setStatus({
+                                    type: "warning",
+                                    message: "No Base DN returned from server.",
+                                  });
+                                }
                               } catch (error) {
                                 setStatus({
                                   type: "error",
@@ -647,29 +650,23 @@ const LDAPConfig = () => {
                             Detect Base DN
                           </Button>
 
-                          {/* <Button
-                            size="small"
-                            onClick={() => handleDummyAction("Test Base DN")}
-                          >
-                            Test Base DN
-                          </Button> */}
                           <Button
                             size="small"
                             onClick={async () => {
-                              const { host, port, userDn, password, baseDn } =
+                              const { host, port, username, password, baseDn } =
                                 config;
 
                               if (
                                 !host ||
                                 !port ||
-                                !userDn ||
+                                !username ||
                                 !password ||
                                 !baseDn
                               ) {
                                 setStatus({
                                   type: "warning",
                                   message:
-                                    "All fields including Base DN are required to test Base DN.",
+                                    "All fields including Base DN are required to test it.",
                                 });
                                 return;
                               }
@@ -679,10 +676,11 @@ const LDAPConfig = () => {
                                   type: "info",
                                   message: "Testing Base DN...",
                                 });
+
                                 const result = await testBaseDn({
                                   host,
                                   port,
-                                  userDn,
+                                  username,
                                   password,
                                   baseDn,
                                 });
@@ -690,8 +688,7 @@ const LDAPConfig = () => {
                                 setStatus({
                                   type: "success",
                                   message:
-                                    result.message ||
-                                    "Base DN tested successfully.",
+                                    result || "Base DN tested successfully.",
                                 });
                               } catch (error) {
                                 setStatus({
@@ -714,26 +711,14 @@ const LDAPConfig = () => {
               <Grid
                 item
                 xs={12}
-                sx={{
-                  display: "flex",
-                  justifyContent: "flex-end",
-                  gap: 2,
-                  mt: 2,
-                }}
+                sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}
               >
-                <Button
-                  variant="outlined"
-                  // onClick={() => handleDummyAction("Continue")}
-                  onClick={() => setTabIndex((prev) => prev + 1)}
-                >
-                  Continue
-                </Button>
                 <Button
                   variant="contained"
                   onClick={async () => {
-                    const { host, port, userDn, password, baseDn } = config;
+                    const { host, port, username, password, baseDn } = config;
 
-                    if (!host || !port || !userDn || !password || !baseDn) {
+                    if (!host || !port || !username || !password || !baseDn) {
                       setStatus({
                         type: "warning",
                         message:
@@ -747,20 +732,36 @@ const LDAPConfig = () => {
                         type: "info",
                         message: "Saving configuration...",
                       });
+
                       const result = await saveLdapConfig({
                         host,
                         port,
-                        userDn,
+                        username,
                         password,
                         baseDn,
                       });
+                      console.log("rrrr", result);
+
+                      if (result?.id) {
+                        setServerState((prev) => ({
+                          ...prev,
+                          [activeSection]: {
+                            ...prev[activeSection],
+                            configId: result.id, // ✅ save config ID for later
+                          },
+                        }));
+                        localStorage.setItem("ldapConfigId", result.id);
+                      }
 
                       setStatus({
                         type: "success",
                         message:
-                          result.message ||
+                          result?.message ||
                           "LDAP configuration saved successfully.",
                       });
+
+                      // ✅ Switch to USERS tab after successful save
+                      setTabIndex(1);
                     } catch (error) {
                       setStatus({
                         type: "error",
@@ -785,57 +786,146 @@ const LDAPConfig = () => {
                 Listing and searching for users is constrained by these
                 criteria:
               </Typography>
-              <Grid container spacing={2}>
+              <Grid container spacing={1}>
                 <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Only these object classes:"
-                    placeholder="inetOrgPerson"
-                    helperText="The most common object classes for users are organizationalPerson, person, user, and inetOrgPerson."
-                  />
+                  <FormControl fullWidth size="small" sx={{ mt: 2 }}>
+                    <InputLabel id="object-class-label">
+                      Only these object classes
+                    </InputLabel>
+                    <Select
+                      labelId="object-class-label"
+                      value={selectedObjectClass}
+                      label="Only these object classes"
+                      onChange={async (e) => {
+                        const value = e.target.value;
+                        setSelectedObjectClass(value);
+
+                        if (value === "group") {
+                          const configId = localStorage.getItem("ldapConfigId");
+
+                          if (!configId) {
+                            setStatus({
+                              type: "warning",
+                              message:
+                                "Configuration ID not found. Please save configuration first.",
+                            });
+                            return;
+                          }
+
+                          try {
+                            setStatus({
+                              type: "info",
+                              message: "Fetching groups...",
+                            });
+                            const groups = await fetchGroupsByObjectClass(
+                              configId
+                            );
+                            setAvailableGroups(groups);
+                            setStatus({
+                              type: "success",
+                              message: "Groups fetched successfully.",
+                            });
+                            console.log("Fetched groups:", groups); // Use them as needed
+                          } catch (error) {
+                            setStatus({
+                              type: "error",
+                              message:
+                                error?.response?.data?.message ||
+                                "Failed to fetch groups.",
+                            });
+                          }
+                        }
+                      }}
+                    >
+                      <MenuItem value="group">group</MenuItem>
+                    </Select>
+                  </FormControl>
                 </Grid>
                 <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Only from these groups:"
-                    placeholder="Select groups"
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      justifyContent: "center",
-                      alignItems: "center",
-                      gap: 1,
-                    }}
-                  >
-                    <Button size="small">➤</Button>
+                  <FormControl fullWidth size="small" sx={{ mt: 2 }}>
+                    <InputLabel id="only-from-groups-label">
+                      Only from these Groups
+                    </InputLabel>
+                    <Select
+                      labelId="only-from-groups-label"
+                      value={selectedGroup}
+                      onChange={(e) => {
+                        const selected = e.target.value;
+                        setSelectedGroup(selected);
+
+                        if (!groupListBox.includes(selected)) {
+                          setGroupListBox((prev) => [...prev, selected]);
+                        }
+                      }}
+                      label="Only from these Groups"
+                    >
+                      {availableGroups.map((group, index) => (
+                        <MenuItem key={index} value={group.name}>
+                          {group.name}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+
+                  <Box display="flex" alignItems="center" gap={2} mt={2}>
                     <Box
                       sx={{
                         border: "1px solid #ccc",
                         borderRadius: 1,
-                        width: 200,
-                        height: 100,
+                        px: 2,
+                        py: 1,
+                        minHeight: "56px",
+                        flex: 1,
                         display: "flex",
                         alignItems: "center",
-                        justifyContent: "center",
+                        flexWrap: "wrap",
+                        gap: 1,
                       }}
                     >
-                      <Typography variant="caption">(Group List)</Typography>
+                      {groupListBox.length === 0 ? (
+                        <Typography color="text.secondary">
+                          No groups added
+                        </Typography>
+                      ) : (
+                        groupListBox.map((name, index) => (
+                          <Chip key={index} label={name} />
+                        ))
+                      )}
                     </Box>
-                    <Button size="small">➤</Button>
+
+                    <Tooltip title="Add next group from dropdown">
+                      <IconButton
+                        onClick={() => {
+                          const currentIndex = availableGroups.findIndex(
+                            (g) => g.name === selectedGroup
+                          );
+                          const next = availableGroups[currentIndex + 1];
+                          if (next && !groupListBox.includes(next.name)) {
+                            setSelectedGroup(next.name);
+                            setGroupListBox((prev) => [...prev, next.name]);
+                          }
+                        }}
+                      >
+                        <ArrowForwardIcon />
+                      </IconButton>
+                    </Tooltip>
+
+                    <Tooltip title="Remove last group">
+                      <IconButton
+                        onClick={() => {
+                          setGroupListBox((prev) => prev.slice(0, -1));
+                        }}
+                      >
+                        <ArrowBackIcon />
+                      </IconButton>
+                    </Tooltip>
                   </Box>
                 </Grid>
+
                 <Grid item xs={12}>
-                  <Button
-                    size="small"
-                    onClick={() => handleDummyAction("Edit LDAP Query")}
-                  >
-                    ↓ Edit LDAP Query
-                  </Button>
                   <Typography mt={1} variant="body2">
-                    LDAP Filter: <code>((objectclass=inetOrgPerson))</code>
+                    LDAP Filter: ((objectclass=
+                    {selectedObjectClass || "Not Selected"}))
                   </Typography>
                 </Grid>
                 <Grid item xs={12}>
@@ -861,80 +951,192 @@ const LDAPConfig = () => {
               <Typography mb={2}>
                 Groups meeting these criteria are available in Nextcloud:
               </Typography>
-              <Grid container spacing={2}>
+              <Grid container spacing={1}>
                 <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Only these object classes:"
-                    placeholder="groupOfNames"
-                  />
+                  <FormControl fullWidth size="small" sx={{ mt: 2 }}>
+                    <InputLabel id="group-object-class-label">
+                      Only these object classes
+                    </InputLabel>
+                    <Select
+                      labelId="group-object-class-label"
+                      value={selectedGroupObjectClass}
+                      label="Only these object classes"
+                      onChange={async (e) => {
+                        const value = e.target.value;
+                        setSelectedGroupObjectClass(value);
+
+                        if (value === "group") {
+                          const configId = localStorage.getItem("ldapConfigId");
+
+                          if (!configId) {
+                            setStatus({
+                              type: "warning",
+                              message:
+                                "Configuration ID not found. Please save configuration first.",
+                            });
+                            return;
+                          }
+
+                          try {
+                            setStatus({
+                              type: "info",
+                              message: "Fetching groups...",
+                            });
+                            const groups = await fetchGroupsByObjectClass(
+                              configId
+                            );
+                            setAvailableGroupGroups(groups);
+                            setStatus({
+                              type: "success",
+                              message: "Groups fetched successfully.",
+                            });
+                          } catch (error) {
+                            setStatus({
+                              type: "error",
+                              message:
+                                error?.response?.data?.message ||
+                                "Failed to fetch groups.",
+                            });
+                          }
+                        }
+                      }}
+                    >
+                      <MenuItem value="group">group</MenuItem>
+                    </Select>
+                  </FormControl>
                 </Grid>
                 <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Only from these groups:"
-                    placeholder="Search groups"
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      justifyContent: "center",
-                      alignItems: "center",
-                      gap: 1,
-                    }}
-                  >
-                    <Button size="small">&gt;</Button>
+                  <FormControl fullWidth size="small" sx={{ mt: 2 }}>
+                    <InputLabel id="group-only-from-label">
+                      Only from these Groups
+                    </InputLabel>
+                    <Select
+                      labelId="group-only-from-label"
+                      value={selectedGroupGroup}
+                      onChange={(e) => {
+                        const selected = e.target.value;
+                        setSelectedGroupGroup(selected);
+
+                        if (!groupListBoxGroup.includes(selected)) {
+                          setGroupListBoxGroup((prev) => [...prev, selected]);
+                        }
+                      }}
+                      label="Only from these Groups"
+                    >
+                      {availableGroupGroups.map((group, index) => (
+                        <MenuItem key={index} value={group.name}>
+                          {group.name}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                  <Box display="flex" alignItems="center" gap={2} mt={2}>
                     <Box
                       sx={{
                         border: "1px solid #ccc",
                         borderRadius: 1,
-                        width: 200,
-                        height: 100,
-                        overflow: "auto",
-                        px: 1,
-                        py: 0.5,
+                        px: 2,
+                        py: 1,
+                        minHeight: "56px",
+                        flex: 1,
+                        display: "flex",
+                        alignItems: "center",
+                        flexWrap: "wrap",
+                        gap: 1,
                       }}
                     >
-                      <Typography variant="caption">
-                        Accounting
-                        <br />
-                        Design
-                        <br />
-                        Engineering
-                        <br />
-                        HR
-                        <br />
-                        Management
-                        <br />
-                        QA
-                        <br />
-                        Robots 0
-                      </Typography>
+                      {groupListBoxGroup.length === 0 ? (
+                        <Typography color="text.secondary">
+                          No groups added
+                        </Typography>
+                      ) : (
+                        groupListBoxGroup.map((name, index) => (
+                          <Chip key={index} label={name} />
+                        ))
+                      )}
                     </Box>
-                    <Button size="small">&lt;</Button>
+
+                    <Tooltip title="Add next group from dropdown">
+                      <IconButton
+                        onClick={() => {
+                          const currentIndex = availableGroupGroups.findIndex(
+                            (g) => g.name === selectedGroupGroup
+                          );
+                          const next = availableGroupGroups[currentIndex + 1];
+                          if (next && !groupListBoxGroup.includes(next.name)) {
+                            setSelectedGroupGroup(next.name);
+                            setGroupListBoxGroup((prev) => [
+                              ...prev,
+                              next.name,
+                            ]);
+                          }
+                        }}
+                      >
+                        <ArrowForwardIcon />
+                      </IconButton>
+                    </Tooltip>
+
+                    <Tooltip title="Remove last group">
+                      <IconButton
+                        onClick={() => {
+                          setGroupListBoxGroup((prev) => prev.slice(0, -1));
+                        }}
+                      >
+                        <ArrowBackIcon />
+                      </IconButton>
+                    </Tooltip>
                   </Box>
                 </Grid>
+
                 <Grid item xs={12}>
-                  <Button
-                    size="small"
-                    onClick={() => handleDummyAction("Edit LDAP Query")}
-                  >
-                    ↓ Edit LDAP Query
-                  </Button>
                   <Typography mt={1} variant="body2">
-                    LDAP Filter: <code>((objectclass=groupOfNames))</code>
+                    <Typography sx={{ mt: 2 }}>
+                      LDAP Filter:{" "}
+                      <code>
+                        ((objectclass=
+                        {selectedGroupObjectClass || "Not Selected"}))
+                      </code>
+                    </Typography>
                   </Typography>
                 </Grid>
                 <Grid item xs={12}>
-                  <Divider sx={{ my: 2 }} />
-                  <Button
-                    variant="outlined"
-                    onClick={() => handleDummyAction("Verify Groups")}
-                  >
-                    Verify settings and count the groups
-                  </Button>
+                  <Box display="flex" alignItems="center" gap={2} mt={2}>
+                    <Tooltip
+                      title={
+                        availableGroupGroups.length === 0
+                          ? "No groups available to count"
+                          : "Click to verify and count groups"
+                      }
+                    >
+                      <span>
+                        <Button
+                          variant="outlined"
+                          disabled={availableGroupGroups.length === 0} // ✅ disables button if list is empty
+                          // onClick={() => handleDummyAction("Verify Groups")}
+                          size="small"
+                          sx={{ mt: 2 }}
+                          onClick={() => {
+                            const count = availableGroupGroups.length;
+                            setGroupCount(count);
+                            setStatus({
+                              type: "info",
+                              message: `Verified: ${count} group(s) available.`,
+                            });
+                          }}
+                        >
+                          Verify settings and count the groups
+                        </Button>
+                      </span>
+                    </Tooltip>
+                    {groupCount !== null && (
+                      <Box display="flex" alignItems="center" gap={1}>
+                        <GroupsIcon fontSize="small" color="action" />
+                        <Typography variant="body2">
+                          Group Count: <strong>{groupCount}</strong>
+                        </Typography>
+                      </Box>
+                    )}
+                  </Box>
                 </Grid>
               </Grid>
             </Box>
@@ -1208,9 +1410,6 @@ const LDAPConfig = () => {
                 borderRadius: 1,
               }}
             >
-              {/* <Typography sx={{ color: "white", fontWeight: "bold" }}>
-                Settings
-              </Typography> */}
               <Typography variant="h5" sx={{ color: "white" }}>
                 SETTINGS
               </Typography>
@@ -1370,12 +1569,6 @@ const LDAPConfig = () => {
             </Tabs>
           )}
 
-          {status.message && (
-            <Alert severity={status.type} sx={{ mb: 2 }}>
-              {status.message}
-            </Alert>
-          )}
-
           <Slide
             key={tabIndex}
             direction="left"
@@ -1406,15 +1599,6 @@ const LDAPConfig = () => {
           Add New Configuration
         </DialogTitle>
         <DialogContent>
-          {status.message && (
-            <Alert
-              severity={status.type}
-              sx={{ mb: 2 }}
-              onClose={() => setStatus({ type: "info", message: "" })}
-            >
-              {status.message}
-            </Alert>
-          )}
           <TextField
             fullWidth
             label="Configuration Name"
@@ -1596,6 +1780,20 @@ const LDAPConfig = () => {
           </Button>
         </DialogActions>
       </Dialog>
+      <Snackbar
+        open={!!status.message}
+        autoHideDuration={4000}
+        onClose={() => setStatus({ type: "info", message: "" })}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setStatus({ type: "info", message: "" })}
+          severity={status.type}
+          sx={{ width: "100%" }}
+        >
+          {status.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

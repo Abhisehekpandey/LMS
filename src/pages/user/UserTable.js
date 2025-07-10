@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import * as XLSX from "xlsx"; // Add this at the top of the file
 import {
   Box,
@@ -52,6 +52,7 @@ import {
   Filter,
   FilterList,
 } from "@mui/icons-material";
+
 import styles from "./user.module.css";
 import DeleteUser from "./DeleteUser";
 import Migration from "./Migration";
@@ -61,6 +62,7 @@ import { toast } from "react-toastify";
 import { CircularProgress, keyframes } from "@mui/material";
 import { activateAll, fetchUsers } from "../../api/userService";
 import { toggleUserStatusByUsername } from "../../api/userService";
+import { getDepartments } from "../../api/departmentService";
 // import { activateAll } from "../../api/userService";
 
 const CustomSwitch = styled(Switch)(({ theme, checked }) => ({
@@ -259,6 +261,11 @@ const Transition = React.forwardRef(function Transition(props, ref) {
 });
 
 export default function UserTable() {
+  const [departments, setDepartments] = useState([]);
+  const [departmentPage, setDepartmentPage] = useState(0);
+  const [hasMoreDepartments, setHasMoreDepartments] = useState(true);
+  const loadingDepartments = useRef(false);
+
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [snackbarSeverity, setSnackbarSeverity] = useState("success");
@@ -282,6 +289,68 @@ export default function UserTable() {
   const [editData, setEditData] = useState({});
   const [Storage, setStorage] = React.useState("");
   const [loading, setLoading] = useState(true);
+  const [selectedDepartment, setSelectedDepartment] = useState(null);
+
+  <Autocomplete
+    options={departments}
+    getOptionLabel={(option) => option.deptName || ""}
+    value={departments.find((d) => d.deptName === editData.department) || null}
+    onChange={(e, value) => {
+      setEditData((prev) => ({
+        ...prev,
+        department: value?.deptName || "",
+      }));
+    }}
+    ListboxProps={{
+      style: { maxHeight: 300, overflow: "auto" },
+      onScroll: (event) => {
+        const listboxNode = event.currentTarget;
+        const threshold = 50;
+        if (
+          listboxNode.scrollTop + listboxNode.clientHeight >=
+          listboxNode.scrollHeight - threshold
+        ) {
+          loadMoreDepartments();
+        }
+      },
+    }}
+    renderInput={(params) => (
+      <TextField
+        {...params}
+        size="small"
+        label="Department"
+        fullWidth
+        variant="outlined"
+      />
+    )}
+  />;
+
+  const loadMoreDepartments = async () => {
+    if (loadingDepartments.current || !hasMoreDepartments) return;
+    loadingDepartments.current = true;
+
+    try {
+      const res1 = await getDepartments(departmentPage, 10);
+      const res = res1?.content || [];
+
+      const newDepartments = res.map((dept) => ({
+        ...dept,
+        roles: (dept.roles || []).map((role) => role.roleName),
+      }));
+
+      if (newDepartments.length < 10) setHasMoreDepartments(false);
+      setDepartments((prev) => [...prev, ...newDepartments]);
+      setDepartmentPage((prev) => prev + 1);
+    } catch (err) {
+      console.error("Failed to load departments:", err);
+    } finally {
+      loadingDepartments.current = false;
+    }
+  };
+
+  useEffect(() => {
+    loadMoreDepartments();
+  }, []);
 
   const handleMigrationComplete = (updatedRows) => {
     setRowsData(updatedRows);
@@ -292,10 +361,22 @@ export default function UserTable() {
   };
 
   const handleEdit = (e, row) => {
-    console.log(row);
-    setEditData(row);
+    const deptName = row.roles?.[0]?.department?.deptName || "";
+    const roleName = row.roles?.[0]?.roleName || "";
+
+    setEditData({
+      ...row,
+      department: deptName,
+      role: roleName,
+    });
+
+    // ✅ Set selected department object
+    const matchingDept = departments.find((d) => d.deptName === deptName);
+    setSelectedDepartment(matchingDept || null);
+
     setEditDialogOpen(true);
   };
+
   // console.log(rowData);
 
   const handleMigration = () => {
@@ -1163,7 +1244,6 @@ export default function UserTable() {
               Cancel
             </Button>
             <div style={{ gap: "4px" }}>
-             
               <Button
                 style={{
                   backgroundColor: "#1976d2",
@@ -1364,14 +1444,39 @@ export default function UserTable() {
                 />
               </Grid>
               <Grid item xs={4}>
-                <TextField
-                  size="small"
-                  name="department"
-                  label="Department"
-                  type="text"
-                  fullWidth
-                  variant="outlined"
-                  value={editData.department || ""}
+                <Autocomplete
+                  options={departments}
+                  getOptionLabel={(option) => option.deptName || ""}
+                  value={selectedDepartment}
+                  onChange={(e, value) => {
+                    setSelectedDepartment(value);
+                    setEditData((prev) => ({
+                      ...prev,
+                      department: value?.deptName || "",
+                    }));
+                  }}
+                  ListboxProps={{
+                    style: { maxHeight: 300, overflow: "auto" },
+                    onScroll: (event) => {
+                      const listboxNode = event.currentTarget;
+                      const threshold = 50;
+                      if (
+                        listboxNode.scrollTop + listboxNode.clientHeight >=
+                        listboxNode.scrollHeight - threshold
+                      ) {
+                        loadMoreDepartments();
+                      }
+                    },
+                  }}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      size="small"
+                      label="Department"
+                      fullWidth
+                      variant="outlined"
+                    />
+                  )}
                 />
               </Grid>
               <Grid item xs={6}>

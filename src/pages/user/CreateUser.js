@@ -39,12 +39,25 @@ import {
 import { createUsers } from "../../api/userService";
 import { fetchUsers } from "../../api/userService";
 
+const emptyUser = {
+  name: "",
+  email: "",
+  phone: "",
+  storage: "",
+  role: "",
+  department: "",
+  reportingManager: "",
+};
+
 const CreateUser = ({
   handleClose,
   onUserCreated,
   showSnackbar,
   allUsers = [],
 }) => {
+  const [formInitialValues, setFormInitialValues] = useState({
+    users: [emptyUser],
+  });
   const [bulkSuccessMessage, setBulkSuccessMessage] = useState("");
   const [bulkWarningMessage, setBulkWarningMessage] = useState("");
   const [isAdminRole, setIsAdminRole] = useState(false);
@@ -77,6 +90,7 @@ const CreateUser = ({
   const [userOptions, setUserOptions] = useState([]);
   const [userPage, setUserPage] = useState(0);
   const [hasMoreUsers, setHasMoreUsers] = useState(true);
+  const [formKey, setFormKey] = useState(Date.now());
   const loadingUsers = useRef(false);
 
   const lastFieldRef = useRef(null);
@@ -84,6 +98,11 @@ const CreateUser = ({
 
   const adminEmail = sessionStorage.getItem("adminEmail"); // You must save this during login!
   const adminDomain = adminEmail?.split("@")[1]; // Extract domain
+
+  useEffect(() => {
+    // Reset Formik when the dialog is opened
+    setFormKey(Date.now());
+  }, [handleClose]); // You can track another prop if you have a better signal when dialog is opened
 
   const downloadExcelTemplate = () => {
     const headers = [
@@ -522,6 +541,7 @@ const CreateUser = ({
           )}
         </div>
         <Formik
+          key={formKey} // 👈 This line forces Formik to re-initialize
           initialValues={initialValues}
           validationSchema={validationSchema}
           onSubmit={async (values, actions) => {
