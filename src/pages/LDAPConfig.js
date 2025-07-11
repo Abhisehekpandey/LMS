@@ -3,6 +3,7 @@ import Fade from "@mui/material/Fade";
 import Slide from "@mui/material/Slide";
 import GroupsIcon from "@mui/icons-material/Groups";
 import Snackbar from "@mui/material/Snackbar";
+import SettingsIcon from "@mui/icons-material/Settings"; // Make sure this is imported
 
 import {
   Box,
@@ -29,6 +30,9 @@ import {
   ListItemText,
   InputLabel,
 } from "@mui/material";
+import Checkbox from "@mui/material/Checkbox";
+import FormControlLabel from "@mui/material/FormControlLabel";
+
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import Chip from "@mui/material/Chip";
@@ -52,6 +56,7 @@ import {
   testBaseDn,
   saveLdapConfig,
   fetchGroupsByObjectClass,
+  verifyAndCountUsers,
 } from "../api/ldapApi";
 
 const sectionDefaults = {
@@ -99,6 +104,7 @@ const LDAPConfig = () => {
   const [selectedGroupGroup, setSelectedGroupGroup] = useState("");
   const [groupListBoxGroup, setGroupListBoxGroup] = useState([]);
   const [groupCount, setGroupCount] = useState(null);
+  const [userCount, setUserCount] = useState(null);
 
   const defaultSections = [
     "LDAP CONFIGURATION",
@@ -126,6 +132,10 @@ const LDAPConfig = () => {
   const [activeSection, setActiveSection] = useState("LDAP CONFIGURATION");
   const [serverState, setServerState] = useState(initialServerState);
   const [status, setStatus] = useState({ type: "info", message: "" });
+  const [useSsl, setUseSsl] = useState(false);
+  const [useEmailSsl, setUseEmailSsl] = useState(false);
+  const [useSmsSsl, setUseSmsSsl] = useState(false);
+  const [useWhatsappSsl, setUseWhatsappSsl] = useState(false);
 
   const current = serverState[activeSection];
   const selectedServer = current.selectedServer;
@@ -401,7 +411,20 @@ const LDAPConfig = () => {
                     onChange={handleChange}
                     placeholder="192.168.1.99"
                   />
-                  {config.host?.toLowerCase().startsWith("https") && (
+
+                  <Grid item xs={12}>
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={useSsl}
+                          onChange={(e) => setUseSsl(e.target.checked)}
+                        />
+                      }
+                      label="Use SSL Certificate"
+                    />
+                  </Grid>
+
+                  {useSsl && (
                     <Grid item xs={12}>
                       <Button variant="outlined" component="label" fullWidth>
                         Upload SSL Certificate
@@ -760,7 +783,6 @@ const LDAPConfig = () => {
                           "LDAP configuration saved successfully.",
                       });
 
-                      // ✅ Switch to USERS tab after successful save
                       setTabIndex(1);
                     } catch (error) {
                       setStatus({
@@ -930,15 +952,71 @@ const LDAPConfig = () => {
                 </Grid>
                 <Grid item xs={12}>
                   <Divider sx={{ my: 2 }} />
-                  <Button
-                    variant="outlined"
-                    onClick={() => handleDummyAction("Verify and Count")}
-                  >
-                    Verify settings and count users
-                  </Button>
-                  <Typography mt={1} variant="body2">
-                    &gt; 1000 users found
-                  </Typography>
+
+                  <Grid item xs={12}>
+                    <Divider sx={{ my: 2 }} />
+                    <Box display="flex" alignItems="center" gap={2}>
+                      <Button
+                        variant="outlined"
+                        onClick={async () => {
+                          const ldapId = localStorage.getItem("ldapConfigId");
+
+                          if (!ldapId) {
+                            setStatus({
+                              type: "warning",
+                              message:
+                                "Configuration ID not found. Please save configuration first.",
+                            });
+                            return;
+                          }
+
+                          if (groupListBox.length === 0) {
+                            setStatus({
+                              type: "warning",
+                              message:
+                                "Please select at least one group to verify.",
+                            });
+                            return;
+                          }
+
+                          try {
+                            setStatus({
+                              type: "info",
+                              message: "Verifying users...",
+                            });
+
+                            const result = await verifyAndCountUsers({
+                              ldapId,
+                              groupDn: groupListBox,
+                            });
+
+                            const savedUsers = result?.savedUsers || [];
+                            setUserCount(savedUsers.length); // ✅ update count
+
+                            setStatus({
+                              type: "success",
+                              message: `${savedUsers.length} users found.`,
+                            });
+                          } catch (error) {
+                            setStatus({
+                              type: "error",
+                              message:
+                                error?.response?.data?.message ||
+                                "Failed to verify users.",
+                            });
+                          }
+                        }}
+                      >
+                        Verify settings and count users
+                      </Button>
+
+                      {userCount !== null && (
+                        <Typography variant="body2">
+                          <strong>{userCount}</strong> user(s) found
+                        </Typography>
+                      )}
+                    </Box>
+                  </Grid>
                 </Grid>
               </Grid>
             </Box>
@@ -1156,7 +1234,19 @@ const LDAPConfig = () => {
             onChange={handleChange}
           />
 
-          {config.smtp?.toLowerCase().startsWith("https") && (
+          <Box sx={{ mt: 2 }}>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={useEmailSsl}
+                  onChange={(e) => setUseEmailSsl(e.target.checked)}
+                />
+              }
+              label="Use SSL Certificate"
+            />
+          </Box>
+
+          {useEmailSsl && (
             <Box sx={{ mt: 2 }}>
               <Button variant="outlined" component="label" fullWidth>
                 Upload SSL Certificate
@@ -1228,7 +1318,20 @@ const LDAPConfig = () => {
             value={config.gatewayUrl}
             onChange={handleChange}
           />
-          {config.gatewayUrl?.toLowerCase().startsWith("https") && (
+
+          <Box sx={{ mt: 2 }}>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={useSmsSsl}
+                  onChange={(e) => setUseSmsSsl(e.target.checked)}
+                />
+              }
+              label="Use SSL Certificate"
+            />
+          </Box>
+
+          {useSmsSsl && (
             <Box sx={{ mt: 2 }}>
               <Button variant="outlined" component="label" fullWidth>
                 Upload SSL Certificate
@@ -1304,7 +1407,46 @@ const LDAPConfig = () => {
             value={config.apiEndpoint}
             onChange={handleChange}
           />
-          {config.apiEndpoint?.toLowerCase().startsWith("https") && (
+          {/* {config.apiEndpoint?.toLowerCase().startsWith("https") && (
+            <Box sx={{ mt: 2 }}>
+              <Button variant="outlined" component="label" fullWidth>
+                Upload SSL Certificate
+                <input
+                  type="file"
+                  hidden
+                  accept=".crt,.pem,.cer,.der"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setWhatsappSslCertificate(file);
+                      setStatus({
+                        type: "success",
+                        message: `SSL Certificate "${file.name}" selected for WhatsApp.`,
+                      });
+                    }
+                  }}
+                />
+              </Button>
+              {whatsappSslCertificate && (
+                <Typography variant="caption" sx={{ mt: 1, display: "block" }}>
+                  Selected: {whatsappSslCertificate.name}
+                </Typography>
+              )}
+            </Box>
+          )} */}
+          <Box sx={{ mt: 2 }}>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={useWhatsappSsl}
+                  onChange={(e) => setUseWhatsappSsl(e.target.checked)}
+                />
+              }
+              label="Use SSL Certificate"
+            />
+          </Box>
+
+          {useWhatsappSsl && (
             <Box sx={{ mt: 2 }}>
               <Button variant="outlined" component="label" fullWidth>
                 Upload SSL Certificate
@@ -1397,25 +1539,38 @@ const LDAPConfig = () => {
       <Box sx={{ width: 230 }}>
         <Accordion expanded>
           <AccordionSummary>
-            <Box
-              display="flex"
-              justifyContent="space-between"
-              alignItems="center"
-              width="100%"
-              sx={{
-                backgroundColor: "#1976d2", // Blue background
-                color: "white", // White text and icon
-                px: 2,
-                py: 1,
-                borderRadius: 1,
-              }}
-            >
-              <Typography variant="h5" sx={{ color: "white" }}>
-                SETTINGS
-              </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", width: "100%" }}>
+              <Box
+                sx={{
+                  backgroundColor: "#1976d2",
+                  color: "white",
+                  px: 2,
+                  py: 1,
+                  borderRadius: 1,
+                  flexGrow: 1,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                }}
+              >
+                <SettingsIcon sx={{ fontSize: 20 }} />
+                <Typography variant="h6">SETTINGS</Typography>
+              </Box>
+
               <Tooltip title="Add Configuration">
-                <IconButton size="small" onClick={() => setDialogOpen(true)}>
-                  <AddIcon sx={{ color: "white" }} />
+                <IconButton
+                  color="primary"
+                  onClick={() => setDialogOpen(true)}
+                  sx={{
+                    border: "1px solid #ccc",
+                    ml: 2,
+                    backgroundColor: "#fff",
+                    "&:hover": {
+                      backgroundColor: "#f5f5f5",
+                    },
+                  }}
+                >
+                  <AddIcon />
                 </IconButton>
               </Tooltip>
             </Box>
@@ -1543,12 +1698,31 @@ const LDAPConfig = () => {
               </FormControl>
 
               <Tooltip title="Add Server">
-                <IconButton onClick={handleAddServer}>
+                <IconButton
+                  color="primary"
+                  onClick={handleAddServer}
+                  sx={{
+                    border: "1px solid #ccc",
+                    backgroundColor: "#fff",
+                    "&:hover": { backgroundColor: "#f5f5f5" },
+                    ml: 1,
+                  }}
+                >
                   <AddIcon />
                 </IconButton>
               </Tooltip>
+
               <Tooltip title="Delete Server">
-                <IconButton onClick={handleDeleteServer}>
+                <IconButton
+                  color="error"
+                  onClick={handleDeleteServer}
+                  sx={{
+                    border: "1px solid #ccc",
+                    backgroundColor: "#fff",
+                    "&:hover": { backgroundColor: "#f5f5f5" },
+                    ml: 1,
+                  }}
+                >
                   <DeleteIcon />
                 </IconButton>
               </Tooltip>

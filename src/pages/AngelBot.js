@@ -1088,7 +1088,7 @@ const AngelBot = () => {
                 spacing={2}
                 sx={{ justifyContent: "center", alignItems: "stretch" }}
               >
-                <Grid item xs={4}>
+                <Grid item xs={12} sm={6} md={4}>
                   <Card
                     sx={{
                       p: 1,
@@ -1169,7 +1169,7 @@ const AngelBot = () => {
                   </Card>
                 </Grid>
 
-                <Grid item xs={4}>
+                <Grid item xs={12} sm={6} md={4}>
                   <Card
                     sx={{
                       p: 1,
@@ -1322,7 +1322,7 @@ const AngelBot = () => {
                   </Card>
                 </Grid>
 
-                <Grid item xs={4}>
+                <Grid item xs={12} sm={6} md={4}>
                   <Card
                     sx={{
                       p: 1,

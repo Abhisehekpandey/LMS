@@ -104,3 +104,16 @@ export const fetchGroupsByObjectClass = async (configId) => {
   console.log("response",response)
   return response.data;
 };
+
+
+export const verifyAndCountUsers = async ({ ldapId, groupDn }) => {
+  const response = await axios.post(
+    `${window.__ENV__.REACT_APP_ROUTE}/api/ldap/users-from-group`,
+    {
+      ldapId,
+      groupDn,
+    }
+  );
+  console.log("responseFinal",response)
+  return response.data;
+};
