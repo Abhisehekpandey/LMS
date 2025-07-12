@@ -71,3 +71,36 @@ export const createRole = async (payload) => {
     throw error;
   }
 };
+
+
+
+
+
+export const updateDepartment = async (payload) => {
+  return await axios.put(
+    `${window.__ENV__.REACT_APP_ROUTE}/tenants/Editdepartments`,
+    payload,
+    {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+      },
+    }
+  );
+};
+
+
+
+export const deleteDepartment = async (deptName) => {
+  return await axios.delete(
+    `${window.__ENV__.REACT_APP_ROUTE}/tenants/Editdepartments`,
+    {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+      },
+      params: { deptName },
+    }
+  );
+};
+

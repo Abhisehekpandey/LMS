@@ -84,3 +84,20 @@ export const activateAll = async (users) => {
   }
 };
 
+
+
+
+export const fetchUsersByDepartment = async (deptName, page = 0, size = 10) => {
+  return await axios.get(
+    `${window.__ENV__.REACT_APP_ROUTE}/tenants/Departmentusers`,
+    {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+      },
+      params: { deptName, page, size },
+    }
+  );
+};
+
+

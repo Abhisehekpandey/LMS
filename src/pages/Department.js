@@ -64,6 +64,8 @@ import {
   Dashboard as DashboardIcon,
   Add,
 } from "@mui/icons-material";
+import Popper from "@mui/material/Popper";
+import Grow from "@mui/material/Grow";
 
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import Drawer from "@mui/material/Drawer";
@@ -83,6 +85,9 @@ import Button from "@mui/material/Button";
 import { Checkbox } from "@mui/material";
 import styles from "./department.module.css";
 import { fetchUsers } from "../api/userService";
+import { fetchUsersByDepartment } from "../api/userService";
+import { updateDepartment } from "../api/departmentService";
+import { deleteDepartment } from "../api/departmentService";
 
 const IOSSwitch = styled((props) => (
   <Switch focusVisibleClassName=".Mui-focusVisible" disableRipple {...props} />
@@ -175,10 +180,17 @@ const CustomSpinner = styled(CircularProgress)(({ theme }) => ({
 }));
 
 function Department({ departments, setDepartments, onThemeToggle }) {
+  const [filteredUsers, setFilteredUsers] = useState([]);
+  const [filteredPage, setFilteredPage] = useState(0);
+  const [hasMoreFilteredUsers, setHasMoreFilteredUsers] = useState(true);
+  const loadingFilteredUsers = useRef(false);
+
   const [userOptions, setUserOptions] = useState([]);
   const [userPage, setUserPage] = useState(0);
   const [hasMoreUsers, setHasMoreUsers] = useState(true);
   const loadingUsers = useRef(false);
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const anchorRef = useRef(null);
 
   const [isAdminRole, setIsAdminRole] = useState(false);
   const [page, setPage] = useState(0);
@@ -254,6 +266,87 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     }
 
     return baseOptions;
+  };
+
+  const handleUpdateDepartment = async () => {
+    if (
+      !editedDepartment?.name ||
+      !editedDepartment?.displayName ||
+      !editedDepartment?.departmentModerator
+    ) {
+      setSnackbar({
+        open: true,
+        message: "Please fill all required fields",
+        severity: "error",
+      });
+      return;
+    }
+
+    const payload = {
+      deptName: editedDepartment.name.trim(),
+      deptDisplayName: editedDepartment.displayName.trim(),
+      deptModerator: editedDepartment.departmentModerator.trim(),
+    };
+
+    try {
+      await updateDepartment(payload);
+
+      setDepartments((prev) =>
+        prev.map((dept) =>
+          dept.name === editedDepartment.originalName
+            ? {
+                ...dept,
+                name: payload.deptName,
+                displayName: payload.deptDisplayName,
+                departmentModerator: payload.deptModerator,
+              }
+            : dept
+        )
+      );
+
+      setSnackbar({
+        open: true,
+        message: "Department updated successfully",
+        severity: "success",
+      });
+
+      setEditDialogOpen(false);
+      setEditedDepartment(null);
+    } catch (error) {
+      console.error("Failed to update department:", error);
+      setSnackbar({
+        open: true,
+        message: "Failed to update department. Please try again.",
+        severity: "error",
+      });
+    }
+  };
+
+  const loadFilteredUsers = async () => {
+    if (
+      loadingFilteredUsers.current ||
+      !hasMoreFilteredUsers ||
+      !editedDepartment
+    )
+      return;
+    loadingFilteredUsers.current = true;
+
+    try {
+      const res = await fetchUsersByDepartment(
+        editedDepartment.name,
+        filteredPage
+      );
+      const users = res?.content || [];
+
+      if (users.length < 10) setHasMoreFilteredUsers(false);
+
+      setFilteredUsers((prev) => [...prev, ...users]);
+      setFilteredPage((prev) => prev + 1);
+    } catch (error) {
+      console.error("Failed to load filtered users:", error);
+    } finally {
+      loadingFilteredUsers.current = false;
+    }
   };
 
   const loadMoreUsers = async () => {
@@ -995,6 +1088,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     setEditedDepartment({
       ...dept,
       originalName: dept.name,
+      departmentModerator: dept.departmentModerator || "", // ✅ add this
     });
     setEditDialogOpen(true);
   };
@@ -2435,14 +2529,14 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             borderRadius: "8px",
             // boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
             position: "absolute",
-            top: "30%",
-            left: "40%",
+            top: "20%",
+            left: "35%",
             transform: "translate(-50%, -50%)",
             m: 0,
             height: "auto", // dynamic height
             maxHeight: "95vh", // prevent it from overflowin
             overflow: "hidden", // avoid extra scrollbars
-            width: "450px",
+            width: "550px",
             padding: "10px",
             animation: "slideInFromLeft 0.2s ease-in-out forwards",
             opacity: 0, // Start with opacity 0
@@ -2524,6 +2618,89 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                   }))
                 }
               />
+
+              <Box display="flex" alignItems="center" gap={1} mt={2}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Department Moderator"
+                  value={editedDepartment?.departmentModerator || ""}
+                  InputProps={{
+                    readOnly: true,
+                  }}
+                />
+
+                <Button
+                  variant="outlined"
+                  size="small"
+                  ref={anchorRef}
+                  onClick={() => {
+                    setShowUserDropdown(true);
+                    setFilteredUsers([]); // reset list
+                    setFilteredPage(0); // reset page
+                    setHasMoreFilteredUsers(true); // reset scroll
+                    loadFilteredUsers(); // 🔥 fetch on click
+                  }}
+                >
+                  Select New Moderator
+                </Button>
+              </Box>
+
+              <Popper
+                open={showUserDropdown}
+                anchorEl={anchorRef.current}
+                placement="bottom-start"
+                disablePortal={false}
+                flip={false}
+                transition
+                modifiers={[
+                  {
+                    name: "zIndex",
+                    enabled: true,
+                    phase: "write",
+                    fn({ state }) {
+                      state.styles.popper.zIndex = 1600;
+                    },
+                  },
+                ]}
+              >
+                {({ TransitionProps }) => (
+                  <Grow {...TransitionProps}>
+                    <Paper
+                      sx={{ maxHeight: 300, overflowY: "auto", width: 300 }}
+                    >
+                      <Box
+                        sx={{ maxHeight: 300, overflowY: "auto" }}
+                        onScroll={(event) => {
+                          const { scrollTop, clientHeight, scrollHeight } =
+                            event.currentTarget;
+                          if (scrollTop + clientHeight >= scrollHeight - 50) {
+                            loadFilteredUsers(); // 🔁 loads more filtered users
+                          }
+                        }}
+                      >
+                        {filteredUsers.map((user, index) => (
+                          <MenuItem
+                            key={index}
+                            onClick={() => {
+                              setEditedDepartment((prev) => ({
+                                ...prev,
+                                departmentModerator: user.name,
+                              }));
+                              setShowUserDropdown(false);
+                            }}
+                          >
+                            {user.name}
+                          </MenuItem>
+                        ))}
+                        {filteredUsers.length === 0 && (
+                          <MenuItem disabled>No users found</MenuItem>
+                        )}
+                      </Box>
+                    </Paper>
+                  </Grow>
+                )}
+              </Popper>
             </Box>
           </CardContent>
         </Card>
@@ -2533,24 +2710,17 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           sx={{ display: "flex", justifyContent: "flex-end", gap: 1, mt: 3 }}
         >
           <Button onClick={() => setEditDialogOpen(false)}>Cancel</Button>
+
           <Button
-            sx={{ background: "rgb(251, 68, 36)" }}
+            onClick={handleUpdateDepartment}
             variant="contained"
-            color="primary"
-            onClick={() => {
-              setDepartments((prev) =>
-                prev.map((d) =>
-                  d.name === editedDepartment.originalName
-                    ? { ...editedDepartment, name: editedDepartment.name }
-                    : d
-                )
-              );
-              setEditDialogOpen(false);
-              setSnackbar({
-                open: true,
-                message: "Department updated successfully",
-                severity: "success",
-              });
+            sx={{
+              background: "rgb(251, 68, 36)",
+              "&:hover": {
+                background: "rgb(251, 68, 36)",
+              },
+              px: 3,
+              py: 0.7,
             }}
           >
             Save
