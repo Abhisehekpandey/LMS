@@ -1093,18 +1093,47 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     setEditDialogOpen(true);
   };
 
-  const handleDeleteDepartment = () => {
-    setDepartments((prev) =>
-      prev.filter((d) => d.name !== departmentToDelete.name)
-    );
-    setDeleteDialogOpen(false);
-    setSnackbar({
-      open: true,
-      message: `Department "${departmentToDelete.name}" deleted successfully`,
-      severity: "success",
-    });
-    setDepartmentToDelete(null);
+  // const handleDeleteDepartment = () => {
+  //   setDepartments((prev) =>
+  //     prev.filter((d) => d.name !== departmentToDelete.name)
+  //   );
+  //   setDeleteDialogOpen(false);
+  //   setSnackbar({
+  //     open: true,
+  //     message: `Department "${departmentToDelete.name}" deleted successfully`,
+  //     severity: "success",
+  //   });
+  //   setDepartmentToDelete(null);
+  // };
+
+  const handleDeleteDepartment = async () => {
+    if (!departmentToDelete?.name) return;
+
+    try {
+      await deleteDepartment(departmentToDelete.name);
+
+      setDepartments((prev) =>
+        prev.filter((d) => d.name !== departmentToDelete.name)
+      );
+
+      setSnackbar({
+        open: true,
+        message: `Department "${departmentToDelete.name}" deleted successfully`,
+        severity: "success",
+      });
+    } catch (error) {
+      console.error("Error deleting department:", error);
+      setSnackbar({
+        open: true,
+        message: `Failed to delete department "${departmentToDelete.name}"`,
+        severity: "error",
+      });
+    } finally {
+      setDeleteDialogOpen(false);
+      setDepartmentToDelete(null);
+    }
   };
+
 
   const handleTemplateDownload = () => {
     const template = [

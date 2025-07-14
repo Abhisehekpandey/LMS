@@ -23,6 +23,7 @@ import ResetPassword from "./pages/ResetPassword";
 import ForgetPassword from "./pages/ForgetPassword";
 import ResetAdminPassword from "./pages/ResetAdminPassword";
 import ChooseExtension from "./pages/ChooseExtension";
+import DepartmentTypeSetting from "./pages/DepartmentTypeSetting";
 
 function App() {
   const [darkMode, setDarkMode] = useState(false);
@@ -162,6 +163,14 @@ function App() {
             element={
               <Layout>
                 <ChooseExtension />
+              </Layout>
+            }
+          />
+          <Route
+            path="/department-type-setting"
+            element={
+              <Layout>
+                <DepartmentTypeSetting />
               </Layout>
             }
           />
