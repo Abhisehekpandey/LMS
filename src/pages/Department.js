@@ -322,6 +322,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     }
   };
 
+  
   const loadFilteredUsers = async () => {
     if (
       loadingFilteredUsers.current ||
@@ -334,20 +335,28 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     try {
       const res = await fetchUsersByDepartment(
         editedDepartment.name,
-        filteredPage
+        filteredPage,
+        10
       );
-      const users = res?.content || [];
+      const users = res?.data?.users || [];
 
       if (users.length < 10) setHasMoreFilteredUsers(false);
 
-      setFilteredUsers((prev) => [...prev, ...users]);
+      // ✅ store only name and id (or just name if id not needed)
+      const simplifiedUsers = users.map((u) => ({
+        name: u.name,
+        id: u.id, // optional, if you need it later
+      }));
+
+      setFilteredUsers((prev) => [...prev, ...simplifiedUsers]);
       setFilteredPage((prev) => prev + 1);
     } catch (error) {
-      console.error("Failed to load filtered users:", error);
+      console.error("Failed to load users by department:", error);
     } finally {
       loadingFilteredUsers.current = false;
     }
   };
+
 
   const loadMoreUsers = async () => {
     if (loadingUsers.current || !hasMoreUsers) return;

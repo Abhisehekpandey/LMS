@@ -86,18 +86,77 @@ export const activateAll = async (users) => {
 
 
 
-
-export const fetchUsersByDepartment = async (deptName, page = 0, size = 10) => {
+export const fetchUsersByDepartment = async (
+  deptName,
+  pageNumber = 0,
+  pageSize = 10,
+  search = ""
+) => {
   return await axios.get(
-    `${window.__ENV__.REACT_APP_ROUTE}/tenants/Departmentusers`,
+    `${window.__ENV__.REACT_APP_ROUTE}/tenants/department/users`,
     {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+        appName: "TeamSync", // ✅ required by backend
+        username: "r", // ✅ required by backend
       },
-      params: { deptName, page, size },
+      params: {
+        deptName,
+        pageNumber, // ✅ backend expects this
+        pageSize, // ✅ backend expects this
+        search,
+      },
     }
   );
 };
+
+
+
+
+export const deleteUsers = async (userIds) => {
+  try {
+
+   console.log(">>>>uu",userIds)
+    const response = await axios.delete(
+      `${window.__ENV__.REACT_APP_ROUTE}/tenants/Deleteusers`, // replace with your actual API endpoint
+      {
+        headers: {
+          Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+          "Content-Type": "application/json",
+        },
+        data: userIds, // assuming your API expects array of user IDs in body
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    console.error("Error deleting users:", error);
+    throw error;
+  }
+};
+
+
+
+export const updateUser = async (userData) => {
+ 
+  try {
+    const response = await axios.put(
+      `${window.__ENV__.REACT_APP_ROUTE}/tenants/Updateusers`, // 🔁 Replace with your actual update endpoint
+      userData,
+      {
+        headers: {
+          Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Failed to update user:", error);
+    throw error;
+  }
+};
+
 
 

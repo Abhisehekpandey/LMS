@@ -63,6 +63,7 @@ import { CircularProgress, keyframes } from "@mui/material";
 import { activateAll, fetchUsers } from "../../api/userService";
 import { toggleUserStatusByUsername } from "../../api/userService";
 import { getDepartments } from "../../api/departmentService";
+import { updateUser } from "../../api/userService";
 // import { activateAll } from "../../api/userService";
 
 const CustomSwitch = styled(Switch)(({ theme, checked }) => ({
@@ -261,6 +262,8 @@ const Transition = React.forwardRef(function Transition(props, ref) {
 });
 
 export default function UserTable() {
+  const [showDeptChange, setShowDeptChange] = useState(false);
+
   const [departments, setDepartments] = useState([]);
   const [departmentPage, setDepartmentPage] = useState(0);
   const [hasMoreDepartments, setHasMoreDepartments] = useState(true);
@@ -324,6 +327,25 @@ export default function UserTable() {
       />
     )}
   />;
+
+  const handleSaveChanges = async () => {
+    const deptObj = departments.find((d) => d.deptName === editData.department);
+
+    const userPayload = {
+      ...editData,
+      departmentId: deptObj?.id, // Assuming backend expects department ID
+      // other fields as required by backend
+    };
+
+    try {
+      await updateUser(userPayload); // 👈 Call the API
+      toast.success("User updated successfully!");
+      setEditDialogOpen(false); // Close dialog
+      refetchUsers(); // Refresh table
+    } catch (error) {
+      toast.error("Failed to update user.");
+    }
+  };
 
   const loadMoreDepartments = async () => {
     if (loadingDepartments.current || !hasMoreDepartments) return;
@@ -1199,7 +1221,11 @@ export default function UserTable() {
         {/* delete Dialog */}
         <Dialog open={deleteUser} onClose={() => setDeleteUser(false)}>
           <DeleteUser
-            handleClose={() => setDeleteUser(false)}
+            // handleClose={() => setDeleteUser(false)}
+            handleClose={() => {
+              setDeleteUser(false);
+              refetchUsers(); // 👈 Add this to refresh the list after deletion
+            }}
             rowId={selected}
           />
         </Dialog>
@@ -1441,44 +1467,87 @@ export default function UserTable() {
                   fullWidth
                   variant="outlined"
                   value={editData.name || ""}
+                  onChange={(e) =>
+                    setEditData((prev) => ({ ...prev, name: e.target.value }))
+                  }
                 />
               </Grid>
-              <Grid item xs={4}>
-                <Autocomplete
-                  options={departments}
-                  getOptionLabel={(option) => option.deptName || ""}
-                  value={selectedDepartment}
-                  onChange={(e, value) => {
-                    setSelectedDepartment(value);
-                    setEditData((prev) => ({
-                      ...prev,
-                      department: value?.deptName || "",
-                    }));
-                  }}
-                  ListboxProps={{
-                    style: { maxHeight: 300, overflow: "auto" },
-                    onScroll: (event) => {
-                      const listboxNode = event.currentTarget;
-                      const threshold = 50;
-                      if (
-                        listboxNode.scrollTop + listboxNode.clientHeight >=
-                        listboxNode.scrollHeight - threshold
-                      ) {
-                        loadMoreDepartments();
+
+              <Grid item xs={8}>
+                {showDeptChange ? (
+                  <Autocomplete
+                    options={departments}
+                    getOptionLabel={(option) => option.deptName || ""}
+                    value={selectedDepartment}
+                    onChange={(e, value) => {
+                      if (!value) {
+                        // If no selection made, keep previous department
+                        const existing = departments.find(
+                          (d) => d.deptName === editData.department
+                        );
+                        setSelectedDepartment(existing || null);
+                        return;
                       }
-                    },
-                  }}
-                  renderInput={(params) => (
+
+                      // New department selected
+                      setSelectedDepartment(value);
+                      setEditData((prev) => ({
+                        ...prev,
+                        department: value.deptName || "",
+                      }));
+                    }}
+                    onBlur={() => {
+                      // Restore to previous department if nothing selected and field loses focus
+                      if (!selectedDepartment) {
+                        const existing = departments.find(
+                          (d) => d.deptName === editData.department
+                        );
+                        setSelectedDepartment(existing || null);
+                      }
+                    }}
+                    ListboxProps={{
+                      style: { maxHeight: 300, overflow: "auto" },
+                      onScroll: (event) => {
+                        const listboxNode = event.currentTarget;
+                        const threshold = 50;
+                        if (
+                          listboxNode.scrollTop + listboxNode.clientHeight >=
+                          listboxNode.scrollHeight - threshold
+                        ) {
+                          loadMoreDepartments();
+                        }
+                      },
+                    }}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        size="small"
+                        label="Department"
+                        fullWidth
+                        variant="outlined"
+                      />
+                    )}
+                  />
+                ) : (
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                     <TextField
-                      {...params}
                       size="small"
                       label="Department"
                       fullWidth
-                      variant="outlined"
+                      value={editData.department || ""}
+                      InputProps={{ readOnly: true }}
                     />
-                  )}
-                />
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      onClick={() => setShowDeptChange(true)}
+                    >
+                      Change
+                    </Button>
+                  </Box>
+                )}
               </Grid>
+
               <Grid item xs={6}>
                 <TextField
                   size="small"
@@ -1488,8 +1557,12 @@ export default function UserTable() {
                   fullWidth
                   variant="outlined"
                   value={editData.role || ""}
+                  onChange={(e) =>
+                    setEditData((prev) => ({ ...prev, role: e.target.value }))
+                  }
                 />
               </Grid>
+
               <Grid item xs={6}>
                 <Tooltip title="Email cannot be edited" placement="top">
                   <TextField
@@ -1511,6 +1584,7 @@ export default function UserTable() {
                   />
                 </Tooltip>
               </Grid>
+
               <Grid item xs={6}>
                 <TextField
                   size="small"
@@ -1519,18 +1593,13 @@ export default function UserTable() {
                   label="Phone Number"
                   type="tel"
                   variant="outlined"
-                  value={editData.phone || ""}
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
-                  size="small"
-                  name="storageUsed"
-                  label="Storage Used"
-                  type="text"
-                  fullWidth
-                  variant="outlined"
-                  value={editData.storageUsed || ""}
+                  value={editData.phoneNumber || ""}
+                  onChange={(e) =>
+                    setEditData((prev) => ({
+                      ...prev,
+                      phoneNumber: e.target.value,
+                    }))
+                  }
                 />
               </Grid>
             </Grid>
@@ -1538,7 +1607,6 @@ export default function UserTable() {
 
           <DialogActions>
             <Button
-              // onClick={saveEditedUser}
               variant="contained"
               color="primary"
               size="small"
@@ -1550,6 +1618,7 @@ export default function UserTable() {
                   color: "white",
                 },
               }}
+              onClick={handleSaveChanges}
             >
               Save Changes
             </Button>
