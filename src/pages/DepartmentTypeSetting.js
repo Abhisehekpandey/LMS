@@ -19,13 +19,16 @@ import {
   TextField,
   Snackbar,
   IconButton,
+  Divider,
 } from "@mui/material";
 import MuiAlert from "@mui/material/Alert";
 import DeleteIcon from "@mui/icons-material/Delete";
-import { getDepartments } from "../api/departmentService"; // ✅ Update if path differs
-import Loading from "../components/Loading"; // ✅ Update if path differs
+import CategoryIcon from "@mui/icons-material/Category";
+import AddBusinessIcon from "@mui/icons-material/AddBusiness";
 
-// Snackbar Alert wrapper
+import { getDepartments } from "../api/departmentService";
+import Loading from "../components/Loading";
+
 const CustomAlert = React.forwardRef(function CustomAlert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
 });
@@ -38,12 +41,10 @@ const DepartmentTypeSetting = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Dialog State
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState(null);
   const [typeInputs, setTypeInputs] = useState([""]);
 
-  // Snackbar State
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
@@ -99,7 +100,6 @@ const DepartmentTypeSetting = () => {
     const validTypes = typeInputs.map((t) => t.trim()).filter(Boolean);
     if (validTypes.length === 0) return;
 
-    // TODO: Replace with real API call here
     const success = true;
 
     if (success) {
@@ -123,8 +123,7 @@ const DepartmentTypeSetting = () => {
     const validTypes = typeInputs.map((t) => t.trim()).filter(Boolean);
     if (validTypes.length === 0) return;
 
-    // TODO: Replace with real API call
-    console.log("Saving global types:", validTypes);
+    console.log("Saving global types:", validTypes); // Replace with real API
 
     setSnackbar({
       open: true,
@@ -139,19 +138,20 @@ const DepartmentTypeSetting = () => {
     <Box
       sx={{
         p: 3,
-        maxWidth: "1300px",
+        maxWidth: "1200px",
         mx: "auto",
         width: "100%",
-        boxSizing: "border-box",
+        backgroundColor: "#f4f6f8",
+        minHeight: "100vh",
       }}
     >
-      <Typography variant="h5" fontWeight={600} gutterBottom>
-        Department Type Setting
-      </Typography>
-
-      <Paper elevation={3} sx={{ mt: 2 }}>
+      {/* Department Table Section */}
+      <Paper elevation={3}>
         <Box
           sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
             bgcolor: "primary.main",
             color: "white",
             px: 2,
@@ -160,6 +160,7 @@ const DepartmentTypeSetting = () => {
             borderTopRightRadius: 4,
           }}
         >
+          <CategoryIcon />
           <Typography variant="h6" fontWeight={600}>
             Types
           </Typography>
@@ -216,6 +217,7 @@ const DepartmentTypeSetting = () => {
                   ))}
                 </TableBody>
               </Table>
+              <Divider sx={{ my: 1 }} />
               <TablePagination
                 component="div"
                 count={totalDepartments}
@@ -230,60 +232,75 @@ const DepartmentTypeSetting = () => {
                 sx={{ px: 2 }}
               />
             </TableContainer>
-
-            {/* Global Types Section */}
-            <Box sx={{ p: 2, borderTop: "1px solid #ddd", mt: 2 }}>
-              <Typography variant="h6" fontWeight={600} gutterBottom>
-                Add Global Types for All Departments
-              </Typography>
-
-              {typeInputs.map((type, index) => (
-                <Box
-                  key={`global-${index}`}
-                  sx={{ display: "flex", alignItems: "center", mb: 1, gap: 1 }}
-                >
-                  <TextField
-                    fullWidth
-                    label={`Global Type ${index + 1}`}
-                    size="small"
-                    value={type}
-                    onChange={(e) => handleTypeChange(index, e.target.value)}
-                  />
-                  {typeInputs.length > 1 && (
-                    <IconButton
-                      onClick={() => handleRemoveField(index)}
-                      color="error"
-                      size="small"
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  )}
-                </Box>
-              ))}
-
-              <Box sx={{ display: "flex", gap: 1, mt: 1 }}>
-                <Button
-                  onClick={handleAddField}
-                  variant="outlined"
-                  size="small"
-                >
-                  + Add More
-                </Button>
-                <Button
-                  onClick={handleSaveGlobalTypes}
-                  variant="contained"
-                  size="small"
-                  disabled={typeInputs.every((t) => !t.trim())}
-                >
-                  Save
-                </Button>
-              </Box>
-            </Box>
           </>
         )}
       </Paper>
 
-      {/* Dialog for Per-Department Type */}
+      {/* Global Types Section */}
+      <Paper elevation={3} sx={{ mt: 3 }}>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+            bgcolor: "primary.main",
+            color: "white",
+            px: 2,
+            py: 1.5,
+            borderTopLeftRadius: 4,
+            borderTopRightRadius: 4,
+          }}
+        >
+          <AddBusinessIcon />
+          <Typography variant="h6" fontWeight={600}>
+            Add Global Types for All Departments
+          </Typography>
+        </Box>
+
+        <Box sx={{ p: 2 }}>
+          {typeInputs.map((type, index) => (
+            <Box
+              key={`global-${index}`}
+              sx={{ display: "flex", alignItems: "center", mb: 1, gap: 1 }}
+            >
+              <TextField
+                fullWidth
+                label={`Global Type ${index + 1}`}
+                size="small"
+                value={type}
+                onChange={(e) => handleTypeChange(index, e.target.value)}
+              />
+              {typeInputs.length > 1 && (
+                <IconButton
+                  onClick={() => handleRemoveField(index)}
+                  color="error"
+                  size="small"
+                >
+                  <DeleteIcon />
+                </IconButton>
+              )}
+            </Box>
+          ))}
+
+          <Box
+            sx={{ display: "flex", gap: 1, mt: 2, justifyContent: "flex-end" }}
+          >
+            <Button onClick={handleAddField} variant="outlined" size="small">
+              + Add More
+            </Button>
+            <Button
+              onClick={handleSaveGlobalTypes}
+              variant="contained"
+              size="small"
+              disabled={typeInputs.every((t) => !t.trim())}
+            >
+              Save Global Types
+            </Button>
+          </Box>
+        </Box>
+      </Paper>
+
+      {/* Add Type Dialog */}
       <Dialog
         open={openDialog}
         onClose={handleCloseDialog}
@@ -293,11 +310,15 @@ const DepartmentTypeSetting = () => {
         <DialogTitle
           sx={{
             bgcolor: "primary.main",
-            color: "white",
+            color: "#fff",
             fontWeight: 600,
             fontSize: "1.1rem",
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
           }}
         >
+          <CategoryIcon />
           Add Types for {selectedDepartment?.deptName}
         </DialogTitle>
         <DialogContent dividers>
@@ -328,7 +349,7 @@ const DepartmentTypeSetting = () => {
             + Add More
           </Button>
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button onClick={handleCloseDialog}>Cancel</Button>
           <Button
             onClick={handleSaveType}
@@ -346,6 +367,11 @@ const DepartmentTypeSetting = () => {
         autoHideDuration={3000}
         onClose={() => setSnackbar({ ...snackbar, open: false })}
         anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        sx={{
+          "& .MuiAlert-root": {
+            borderRadius: 2,
+          },
+        }}
       >
         <CustomAlert
           onClose={() => setSnackbar({ ...snackbar, open: false })}
@@ -360,3 +386,4 @@ const DepartmentTypeSetting = () => {
 };
 
 export default DepartmentTypeSetting;
+

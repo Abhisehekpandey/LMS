@@ -1,6 +1,8 @@
 import React, { useState, useCallback, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Slide from "@mui/material/Slide";
+import SettingsApplicationsIcon from "@mui/icons-material/SettingsApplications";
+import SettingsSuggestIcon from "@mui/icons-material/SettingsSuggest";
 
 import {
   AppBar,
@@ -27,6 +29,11 @@ import {
   DialogActions,
   Checkbox,
   FormControlLabel,
+  TextField,
+  Radio,
+  RadioGroup,
+  FormControl,
+  Switch,
 } from "@mui/material";
 
 import SearchIcon from "@mui/icons-material/Search";
@@ -35,6 +42,7 @@ import LogoutIcon from "@mui/icons-material/Logout";
 import debounce from "lodash/debounce";
 import { fetchUsers } from "../api/userService";
 import { getDepartments } from "../api/departmentService"; // adjust import path if needed
+import { saveApmSettings } from "../api/apm";
 
 const Transition = React.forwardRef(function Transition(props, ref) {
   return <Slide direction="left" ref={ref} {...props} timeout={200} />;
@@ -115,6 +123,12 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
   const [searchAnchorEl, setSearchAnchorEl] = useState(null);
   const [extensionDialogOpen, setExtensionDialogOpen] = useState(false);
   const [selectedExtensions, setSelectedExtensions] = useState([]);
+  const [apmDialogOpen, setApmDialogOpen] = useState(false);
+  const [apmScope, setApmScope] = useState("both");
+  const [apmEnabled, setApmEnabled] = useState(true);
+  const [logLevel, setLogLevel] = useState("info");
+  const [cacheBackend, setCacheBackend] = useState(true);
+  const [cacheFrontend, setCacheFrontend] = useState(false);
 
   const debouncedSearch = useRef(
     debounce(async (query) => {
@@ -214,7 +228,6 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
         <Box sx={{ display: "flex", alignItems: "center", flexGrow: 1 }}>
           <Typography variant="h6" sx={{ fontSize: "1.1rem", fontWeight: 600 }}>
             {getFormattedPath() && (
-           
               <Box
                 sx={{
                   display: "flex",
@@ -345,6 +358,27 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
         <Box sx={{ flexGrow: 1 }} />
 
         <Box sx={{ display: "flex", gap: 1.5, alignItems: "center" }}>
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => setApmDialogOpen(true)}
+            sx={{
+              textTransform: "none",
+              fontWeight: 500,
+              borderRadius: 2,
+              height: 32,
+              fontSize: "0.8rem",
+              color: "#1976d2",
+              borderColor: "#1976d2",
+              "&:hover": {
+                backgroundColor: "rgba(25, 118, 210, 0.08)",
+                borderColor: "#115293",
+              },
+            }}
+          >
+            APM Settings
+          </Button>
+
           <Tooltip title="Toggle Theme" arrow>
             <IconButton
               onClick={onThemeToggle}
@@ -473,6 +507,163 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
               onClick={() => {
                 console.log("Selected Extensions:", selectedExtensions);
                 setExtensionDialogOpen(false);
+              }}
+            >
+              Save
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        <Dialog
+          open={apmDialogOpen}
+          onClose={() => setApmDialogOpen(false)}
+          fullWidth
+          maxWidth="sm"
+          TransitionComponent={Transition}
+          keepMounted
+          transitionDuration={200}
+          PaperProps={{
+            sx: {
+              borderRadius: 2,
+              boxShadow: 6,
+            },
+          }}
+        >
+          <DialogTitle
+            sx={{
+              backgroundColor: "#1976d2",
+              color: "#fff",
+              fontWeight: "bold",
+              fontSize: "1.1rem",
+            }}
+          >
+            APM Settings
+          </DialogTitle>
+
+          <DialogContent dividers sx={{ p: 3 }}>
+            {/* APM Section */}
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+                APM Configuration
+              </Typography>
+
+              {/* APM Scope */}
+              <FormControl component="fieldset" sx={{ mb: 2, pl: 1 }}>
+                <Typography variant="body2" sx={{ mb: 0.5 }}>
+                  APM Scope
+                </Typography>
+                <RadioGroup
+                  row
+                  value={apmScope}
+                  onChange={(e) => setApmScope(e.target.value)}
+                  name="apm-scope"
+                >
+                  <FormControlLabel
+                    value="frontend"
+                    control={<Radio />}
+                    label="Frontend"
+                  />
+                  <FormControlLabel
+                    value="backend"
+                    control={<Radio />}
+                    label="Backend"
+                  />
+                  <FormControlLabel
+                    value="both"
+                    control={<Radio />}
+                    label="Both"
+                  />
+                </RadioGroup>
+              </FormControl>
+
+              {/* APM Toggle */}
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={apmEnabled}
+                    onChange={(e) => setApmEnabled(e.target.checked)}
+                    color="primary"
+                  />
+                }
+                label="Enable APM Monitoring"
+                sx={{ ml: 1, mb: 2 }}
+              />
+
+              {/* Log Level */}
+              <TextField
+                fullWidth
+                select
+                size="small"
+                label="Log Level"
+                value={logLevel}
+                onChange={(e) => setLogLevel(e.target.value)}
+                SelectProps={{ native: true }}
+              >
+                <option value="trace">Trace</option>
+                <option value="debug">Debug</option>
+                <option value="info">Info</option>
+                <option value="notice">Notice</option>
+                <option value="warning">Warning</option>
+                <option value="error">Error</option>
+                <option value="critical">Critical</option>
+                <option value="alert">Alert</option>
+                <option value="emergency">Emergency</option>
+              </TextField>
+            </Box>
+
+            <Divider sx={{ my: 2 }} />
+
+            {/* Caching Section */}
+            <Box>
+              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+                Caching Options
+              </Typography>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={cacheBackend}
+                    onChange={(e) => setCacheBackend(e.target.checked)}
+                    color="primary"
+                  />
+                }
+                label="Enable Backend Caching"
+                sx={{ ml: 1, mb: 1 }}
+              />
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={cacheFrontend}
+                    onChange={(e) => setCacheFrontend(e.target.checked)}
+                    color="primary"
+                  />
+                }
+                label="Enable Frontend Caching"
+                sx={{ ml: 1 }}
+              />
+            </Box>
+          </DialogContent>
+
+          <DialogActions sx={{ px: 3, pb: 2 }}>
+            <Button onClick={() => setApmDialogOpen(false)} variant="outlined">
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              onClick={async () => {
+                const payload = {
+                  apmScope,
+                  apmEnabled,
+                  logLevel,
+                  cacheBackend,
+                  cacheFrontend,
+                };
+                try {
+                  await saveApmSettings(payload);
+                  console.log("APM settings saved:", payload);
+                  setApmDialogOpen(false);
+                } catch (error) {
+                  alert("Failed to save APM settings. Please try again.");
+                }
               }}
             >
               Save

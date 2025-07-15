@@ -88,6 +88,8 @@ import { fetchUsers } from "../api/userService";
 import { fetchUsersByDepartment } from "../api/userService";
 import { updateDepartment } from "../api/departmentService";
 import { deleteDepartment } from "../api/departmentService";
+import { updateDepartmentStorage } from "../api/departmentService";
+import { toggleUserStatusByUsername } from "../api/userService";
 
 const IOSSwitch = styled((props) => (
   <Switch focusVisibleClassName=".Mui-focusVisible" disableRipple {...props} />
@@ -180,6 +182,12 @@ const CustomSpinner = styled(CircularProgress)(({ theme }) => ({
 }));
 
 function Department({ departments, setDepartments, onThemeToggle }) {
+  const [allDepartments, setAllDepartments] = useState([]);
+  const [migrationPage, setMigrationPage] = useState(0);
+  const [hasMoreDepartments, setHasMoreDepartments] = useState(true);
+
+  const [targetDepartment, setTargetDepartment] = useState("");
+
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [filteredPage, setFilteredPage] = useState(0);
   const [hasMoreFilteredUsers, setHasMoreFilteredUsers] = useState(true);
@@ -236,6 +244,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
   const [editedDepartment, setEditedDepartment] = useState(null);
   // First, add a new state for managing row expansion
   const [expandedRows, setExpandedRows] = useState({});
+  const [migrationDialogOpen, setMigrationDialogOpen] = useState(false);
+  const [departmentToMigrate, setDepartmentToMigrate] = useState(null);
 
   // Add these new state variables after other state declarations
   const [editRoleDialog, setEditRoleDialog] = useState(false);
@@ -266,6 +276,42 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     }
 
     return baseOptions;
+  };
+
+  const loadingDepartments = useRef(false);
+
+  console.log("AllDepartment", allDepartments);
+  console.log("departmentMigrat", departmentToMigrate);
+
+  const loadMoreDepartments = async () => {
+    if (loadingDepartments.current || !hasMoreDepartments) return;
+    loadingDepartments.current = true;
+
+    try {
+      const res = await getDepartments(migrationPage, 10); // 10 per page
+      const newDepts = res.content || [];
+      console.log(">>newDe", newDepts);
+
+      setAllDepartments((prev) => [...prev, ...newDepts]);
+      setMigrationPage((prev) => prev + 1);
+      if (newDepts.length < 10) setHasMoreDepartments(false);
+    } catch (error) {
+      console.error("Error loading departments:", error);
+    } finally {
+      loadingDepartments.current = false;
+    }
+  };
+
+  const handleOpenMigration = (dept) => {
+    setDepartmentToMigrate(dept);
+    setMigrationDialogOpen(true);
+    setDeleteDialogOpen(false);
+
+    // 🔥 Reset and load first page
+    setAllDepartments([]);
+    setMigrationPage(0);
+    setHasMoreDepartments(true);
+    loadMoreDepartments();
   };
 
   const handleUpdateDepartment = async () => {
@@ -322,7 +368,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     }
   };
 
-  
   const loadFilteredUsers = async () => {
     if (
       loadingFilteredUsers.current ||
@@ -357,7 +402,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     }
   };
 
-
   const loadMoreUsers = async () => {
     if (loadingUsers.current || !hasMoreUsers) return;
     loadingUsers.current = true;
@@ -377,11 +421,66 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     }
   };
 
-  const handleStorageChange = (name, newStorage) => {
-    const updated = departments.map((dept) =>
-      dept.name === name ? { ...dept, storage: newStorage } : dept
+  const handleStorageChange = async (deptName, newStorageDisplay) => {
+    // ✅ 1. Optimistically update UI state for visual feedback
+    setDepartments((prev) =>
+      prev.map((dept) =>
+        dept.name === deptName
+          ? { ...dept, allowedStorage: newStorageDisplay }
+          : dept
+      )
     );
-    setDepartments(updated);
+
+    try {
+      // ✅ 2. Get current page data from backend
+      const res = await getDepartments(page, rowsPerPage);
+      const departmentsOnPage = res.content;
+
+      if (!departmentsOnPage || departmentsOnPage.length === 0) {
+        throw new Error("No departments found on this page");
+      }
+
+      // ✅ 3. Update only the display storage for selected department
+      const updatedDepartments = departmentsOnPage.map((dept) => {
+        const isTarget = dept.deptName === deptName;
+        return {
+          ...dept,
+          permissions: {
+            ...dept.permissions,
+            allowedStorageInBytesDisplay: isTarget
+              ? newStorageDisplay
+              : dept.permissions.allowedStorageInBytesDisplay,
+          },
+          deptModerator: dept.deptModerator || "", // Ensure this is present
+        };
+      });
+
+      // ✅ 4. Call backend with updated full page payload
+      await toggleUserStatusByUsername(updatedDepartments, page);
+
+      // ✅ 5. Optionally refresh again from backend (if needed to be 100% in sync)
+      const refreshed = await getDepartments(page, rowsPerPage);
+      setDepartments(
+        refreshed.content.map((dept) => ({
+          name: dept.deptName,
+          displayName: dept.deptDisplayName,
+          allowedStorage: dept.permissions?.allowedStorageInBytesDisplay || "",
+        }))
+      );
+
+      setSnackbar({
+        open: true,
+        message: `Storage updated to ${newStorageDisplay} for ${deptName}`,
+        severity: "success",
+      });
+    } catch (error) {
+      console.error("Storage update failed:", error);
+      setSnackbar({
+        open: true,
+        message: `Failed to update storage for ${deptName}`,
+        severity: "error",
+      });
+    }
   };
 
   // Add these at the top of your component with other state declarations
@@ -916,6 +1015,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         : bVal.localeCompare(aVal);
     });
   }, [departments, filteredDepartments, order, orderBy]);
+  console.log("SSSS", sortedDepartments);
 
   const StyledTableRow = styled(TableRow)(({ theme }) => ({
     "&:nth-of-type(odd)": {
@@ -1102,19 +1202,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     setEditDialogOpen(true);
   };
 
-  // const handleDeleteDepartment = () => {
-  //   setDepartments((prev) =>
-  //     prev.filter((d) => d.name !== departmentToDelete.name)
-  //   );
-  //   setDeleteDialogOpen(false);
-  //   setSnackbar({
-  //     open: true,
-  //     message: `Department "${departmentToDelete.name}" deleted successfully`,
-  //     severity: "success",
-  //   });
-  //   setDepartmentToDelete(null);
-  // };
-
   const handleDeleteDepartment = async () => {
     if (!departmentToDelete?.name) return;
 
@@ -1142,7 +1229,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       setDepartmentToDelete(null);
     }
   };
-
 
   const handleTemplateDownload = () => {
     const template = [
@@ -1189,10 +1275,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
   const handleBulkDownloadSelected = (selectedItems) => {
     try {
-      // const selectedDepartments = departments.filter((dept) =>
-      //   selectedItems.includes(dept.name)
-      // );
-
       const sourceData = rowData.length > 0 ? rowData : departments;
       const selectedDepartments = sourceData.filter((dept) =>
         selectedItems.includes(dept.name)
@@ -1376,7 +1458,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         <Table sx={{ border: "0px solid #e2e8f0 !important" }}>
           <TableHead className={styles.tableHeader}>
             <TableRow
-              sx={{ boxShadow: "0 -2px 8px 0 rgba(0, 0, 0, 0.2) !important" }}
+              sx={{ boxShadow: "0 -2px 8px 0 rgba(0, 0, 0, 0.2) !important", }}
             >
               <TableCell
                 padding="checkbox"
@@ -2034,9 +2116,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               FabProps={{
                 sx: {
                   bgcolor: "orange",
-                  // "&:hover": {
-                  //   bgcolor: "orange",
-                  // },
+
                   "&:hover": {
                     backgroundColor: "orange", // Keep the background color on hover
                     animation: "glowBorder 1.5s ease-in-out infinite", // Apply glowing animation on hover
@@ -2770,15 +2850,120 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         open={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}
       >
-        <DialogTitle>Confirm Delete</DialogTitle>
+        {/* <DialogTitle>Confirm Delete</DialogTitle> */}
+        <DialogTitle
+          sx={{
+            backgroundColor: "#1976d2",
+            color: "white",
+            fontWeight: "bold",
+            fontSize: "1.1rem",
+          }}
+        >
+          Confirm Delete
+        </DialogTitle>
+
         <DialogContent>
           Are you sure you want to delete department "{departmentToDelete?.name}
           "? This action cannot be undone.
         </DialogContent>
+
+        <DialogActions
+          sx={{ display: "flex", justifyContent: "space-between" }}
+        >
+          <Box>
+            <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+            <Button
+              onClick={handleDeleteDepartment}
+              color="error"
+              variant="contained"
+            >
+              Delete
+            </Button>
+          </Box>
+
+          <Button
+            variant="outlined"
+            color="primary"
+            onClick={() => {
+              handleOpenMigration(departmentToDelete);
+              setMigrationDialogOpen(true);
+              setDepartmentToMigrate(departmentToDelete);
+              setDeleteDialogOpen(false);
+              setAllDepartments([]); // reset list
+              setMigrationPage(0);
+              setHasMoreDepartments(true);
+              loadMoreDepartments(); // fetch first page
+            }}
+          >
+            Migration
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={migrationDialogOpen}
+        onClose={() => setMigrationDialogOpen(false)}
+      >
+        <DialogTitle>Migrate Users</DialogTitle>
+        <DialogContent>
+          <Typography sx={{ mb: 1 }}>
+            Migrate users from <b>{departmentToMigrate?.name}</b> to:
+          </Typography>
+
+          <Box
+            sx={{
+              maxHeight: 300,
+              overflowY: "auto",
+              border: "1px solid #ccc",
+              borderRadius: 1,
+              mt: 1,
+              p: 1,
+            }}
+            onScroll={(e) => {
+              const { scrollTop, clientHeight, scrollHeight } = e.currentTarget;
+              if (scrollTop + clientHeight >= scrollHeight - 50) {
+                loadMoreDepartments(); // fetch next page
+              }
+            }}
+          >
+            {allDepartments
+              .filter((d) => d.deptName !== departmentToMigrate?.name)
+              .map((dept) => (
+                <MenuItem
+                  key={dept.name}
+                  selected={targetDepartment === dept.name}
+                  onClick={() => setTargetDepartment(dept.name)}
+                >
+                  {dept.displayName}
+                </MenuItem>
+              ))}
+          </Box>
+        </DialogContent>
+
         <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleDeleteDepartment} color="error">
-            Delete
+          <Button onClick={() => setMigrationDialogOpen(false)}>Cancel</Button>
+          <Button
+            variant="contained"
+            onClick={() => {
+              if (!targetDepartment) {
+                setSnackbar({
+                  open: true,
+                  message: "Please select a target department.",
+                  severity: "error",
+                });
+                return;
+              }
+
+              // Placeholder logic for now
+              setSnackbar({
+                open: true,
+                message: `Users migrated to ${targetDepartment}`,
+                severity: "success",
+              });
+              setMigrationDialogOpen(false);
+            }}
+          >
+            Migrate
           </Button>
         </DialogActions>
       </Dialog>
@@ -2894,6 +3079,72 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             }}
           >
             Select All Departments
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog
+        open={migrationDialogOpen}
+        onClose={() => setMigrationDialogOpen(false)}
+      >
+        <DialogTitle>Migrate Users</DialogTitle>
+        <DialogContent>
+          <Typography sx={{ mb: 1 }}>
+            Migrate users from <b>{departmentToMigrate?.name}</b> to:
+          </Typography>
+
+          <Box
+            sx={{
+              maxHeight: 300,
+              overflowY: "auto",
+              border: "1px solid #ccc",
+              borderRadius: 1,
+              mt: 1,
+              p: 1,
+            }}
+            onScroll={(e) => {
+              const { scrollTop, clientHeight, scrollHeight } = e.currentTarget;
+              if (scrollTop + clientHeight >= scrollHeight - 50) {
+                loadMoreDepartments();
+              }
+            }}
+          >
+            {allDepartments
+              .filter((d) => d.name !== departmentToMigrate?.name)
+              .map((dept) => (
+                <MenuItem
+                  key={dept.name}
+                  selected={targetDepartment === dept.name}
+                  onClick={() => setTargetDepartment(dept.name)}
+                >
+                  {dept.displayName}
+                </MenuItem>
+              ))}
+          </Box>
+        </DialogContent>
+
+        <DialogActions>
+          <Button onClick={() => setMigrationDialogOpen(false)}>Cancel</Button>
+          <Button
+            onClick={() => {
+              if (!targetDepartment) {
+                setSnackbar({
+                  open: true,
+                  message: "Please select a target department.",
+                  severity: "error",
+                });
+                return;
+              }
+
+              setSnackbar({
+                open: true,
+                message: `Users migrated to ${targetDepartment}`,
+                severity: "success",
+              });
+              setMigrationDialogOpen(false);
+            }}
+            variant="contained"
+          >
+            Migrate
           </Button>
         </DialogActions>
       </Dialog>

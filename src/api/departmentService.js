@@ -93,7 +93,7 @@ export const updateDepartment = async (payload) => {
 
 export const deleteDepartment = async (deptName) => {
   return await axios.delete(
-    `${window.__ENV__.REACT_APP_ROUTE}/tenants/Editdepartments`,
+    `${window.__ENV__.REACT_APP_ROUTE}/tenants/department`,
     {
       headers: {
         "Content-Type": "application/json",
@@ -103,4 +103,20 @@ export const deleteDepartment = async (deptName) => {
     }
   );
 };
+
+
+export const updateDepartmentStorage = async ({ deptName, allowedStorage }) => {
+  return await axios.put(
+    `${window.__ENV__.REACT_APP_ROUTE}/tenants/updateDepartmentStorage`,
+    { deptName, allowedStorage },
+    {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+      
+      },
+    }
+  );
+};
+
 

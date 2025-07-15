@@ -1,9 +1,14 @@
+// ✅ Enhanced UI Version
 import React, { useState, useEffect } from "react";
 import Fade from "@mui/material/Fade";
 import Slide from "@mui/material/Slide";
 import GroupsIcon from "@mui/icons-material/Groups";
 import Snackbar from "@mui/material/Snackbar";
 import SettingsIcon from "@mui/icons-material/Settings"; // Make sure this is imported
+import SmsIcon from "@mui/icons-material/Sms";
+import WhatsAppIcon from "@mui/icons-material/WhatsApp";
+import EmailIcon from "@mui/icons-material/Email";
+import DnsIcon from "@mui/icons-material/Dns";
 
 import {
   Box,
@@ -1973,3 +1978,8 @@ const LDAPConfig = () => {
 };
 
 export default LDAPConfig;
+
+
+// ✅ Icon Imports for Sidebar
+
+
