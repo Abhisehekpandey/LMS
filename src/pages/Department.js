@@ -90,6 +90,7 @@ import { updateDepartment } from "../api/departmentService";
 import { deleteDepartment } from "../api/departmentService";
 import { updateDepartmentStorage } from "../api/departmentService";
 import { toggleUserStatusByUsername } from "../api/userService";
+import { updateDepartmentStoragePermission } from "../api/departmentService";
 
 const IOSSwitch = styled((props) => (
   <Switch focusVisibleClassName=".Mui-focusVisible" disableRipple {...props} />
@@ -282,6 +283,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
   console.log("AllDepartment", allDepartments);
   console.log("departmentMigrat", departmentToMigrate);
+  console.log("targetDepatment", targetDepartment);
 
   const loadMoreDepartments = async () => {
     if (loadingDepartments.current || !hasMoreDepartments) return;
@@ -421,51 +423,66 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     }
   };
 
+  
+
+  const toBytes = (value) => {
+    const num = parseFloat(value);
+    const unit = value.replace(/[0-9.\s]/g, "").toLowerCase();
+
+    switch (unit) {
+      case "kb":
+        return num * 1024;
+      case "mb":
+        return num * 1024 ** 2;
+      case "gb":
+        return num * 1024 ** 3;
+      case "tb":
+        return num * 1024 ** 4;
+      default:
+        return num; // assume already in bytes
+    }
+  };
+
+  
+
+
+
   const handleStorageChange = async (deptName, newStorageDisplay) => {
-    // ✅ 1. Optimistically update UI state for visual feedback
-    setDepartments((prev) =>
-      prev.map((dept) =>
-        dept.name === deptName
-          ? { ...dept, allowedStorage: newStorageDisplay }
-          : dept
-      )
-    );
-
     try {
-      // ✅ 2. Get current page data from backend
       const res = await getDepartments(page, rowsPerPage);
-      const departmentsOnPage = res.content;
+      const allDepts = res.content;
 
-      if (!departmentsOnPage || departmentsOnPage.length === 0) {
-        throw new Error("No departments found on this page");
-      }
+      const targetDept = allDepts.find((d) => d.deptName === deptName);
+      if (!targetDept) throw new Error("Target department not found");
 
-      // ✅ 3. Update only the display storage for selected department
-      const updatedDepartments = departmentsOnPage.map((dept) => {
-        const isTarget = dept.deptName === deptName;
-        return {
-          ...dept,
+      const payload = [
+        {
           permissions: {
-            ...dept.permissions,
-            allowedStorageInBytesDisplay: isTarget
-              ? newStorageDisplay
-              : dept.permissions.allowedStorageInBytesDisplay,
+            id: targetDept.permissions?.id || "",
+            userId: targetDept.deptName,
+            deptName: targetDept.deptName,
+            accessLevel: "EDITOR",
+            accessCode: 111000,
+            allowedStorageInBytes: toBytes(newStorageDisplay), // ✅ convert string to bytes
+            allowedStorageInBytesDisplay: newStorageDisplay,
+            currentStorageInBytes:
+              targetDept.permissions?.currentStorageInBytes || 0,
+            isDMS_CreateType: false,
+            licenseTier: "PREMIUM",
+            tenantId: targetDept.tenantId,
           },
-          deptModerator: dept.deptModerator || "", // Ensure this is present
-        };
-      });
+        },
+      ];
 
-      // ✅ 4. Call backend with updated full page payload
-      await toggleUserStatusByUsername(updatedDepartments, page);
 
-      // ✅ 5. Optionally refresh again from backend (if needed to be 100% in sync)
-      const refreshed = await getDepartments(page, rowsPerPage);
-      setDepartments(
-        refreshed.content.map((dept) => ({
-          name: dept.deptName,
-          displayName: dept.deptDisplayName,
-          allowedStorage: dept.permissions?.allowedStorageInBytesDisplay || "",
-        }))
+      await updateDepartmentStoragePermission(payload, page);
+
+      setDepartments((prev) =>
+        prev.map((dept) =>
+          dept.name === deptName
+            ? { ...dept, allowedStorage: newStorageDisplay }
+            : dept
+        )
       );
 
       setSnackbar({
@@ -482,6 +499,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       });
     }
   };
+
+
 
   // Add these at the top of your component with other state declarations
   const [selected, setSelected] = useState([]);
@@ -1336,7 +1355,15 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         severity: "error",
       });
     }
+  };const cleanDisplay = (val) => {
+    if (!val) return "";
+    const [num, unit] = val.trim().split(/\s+/); // splits "25.00 GB" → ["25.00", "GB"]
+    const rounded = parseFloat(num);
+    return `${
+      Number.isInteger(rounded) ? rounded : Math.floor(rounded)
+    }${unit}`;
   };
+
 
   useEffect(() => {
     const fetchDepartments = async () => {
@@ -1359,7 +1386,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           // storage: dept.permissions?.allowedStorageInBytesDisplay || "0 GB",
           storage: dept.permissions?.displayStorage || "0 GB",
           allowedStorage:
-            dept.permissions?.allowedStorageInBytesDisplay || "0 GB", // 🔥
+            cleanDisplay(dept.permissions?.allowedStorageInBytesDisplay) ||
+            "0 GB", // 🔥
           roles: dept.roles?.map((r) => r.roleName) || [],
           userCount: dept.numberOfUsers || 0,
           isActive: dept.permissions?.active || false,
@@ -1458,7 +1486,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         <Table sx={{ border: "0px solid #e2e8f0 !important" }}>
           <TableHead className={styles.tableHeader}>
             <TableRow
-              sx={{ boxShadow: "0 -2px 8px 0 rgba(0, 0, 0, 0.2) !important", }}
+              sx={{ boxShadow: "0 -2px 8px 0 rgba(0, 0, 0, 0.2) !important" }}
             >
               <TableCell
                 padding="checkbox"
@@ -2526,7 +2554,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             position: "absolute",
             top: "30%",
             left: "40%",
-            // transform: "translate(-50%, -50%)",
+
             m: 0,
             height: "auto", // dynamic height
             maxHeight: "95vh", // prevent it from overflowin
@@ -2706,7 +2734,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           </IconButton>
         </Box>
 
-        {/* Form Fields */}
         <Card elevation={1} sx={{ borderRadius: 2 }}>
           <CardContent>
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -2823,7 +2850,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           </CardContent>
         </Card>
 
-        {/* Action Buttons */}
         <Box
           sx={{ display: "flex", justifyContent: "flex-end", gap: 1, mt: 3 }}
         >
@@ -2850,7 +2876,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         open={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}
       >
-        {/* <DialogTitle>Confirm Delete</DialogTitle> */}
         <DialogTitle
           sx={{
             backgroundColor: "#1976d2",
@@ -2900,14 +2925,14 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         </DialogActions>
       </Dialog>
 
-      <Dialog
+      {/* <Dialog
         open={migrationDialogOpen}
         onClose={() => setMigrationDialogOpen(false)}
       >
-        <DialogTitle>Migrate Users</DialogTitle>
+        <DialogTitle>Migrate Department</DialogTitle>
         <DialogContent>
           <Typography sx={{ mb: 1 }}>
-            Migrate users from <b>{departmentToMigrate?.name}</b> to:
+            Migrate Data from <b>{departmentToMigrate?.name}</b> to:
           </Typography>
 
           <Box
@@ -2927,14 +2952,14 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             }}
           >
             {allDepartments
-              .filter((d) => d.deptName !== departmentToMigrate?.name)
+              .filter((d) => d.deptName !== departmentToMigrate?.name) // ✅ use correct field
               .map((dept) => (
                 <MenuItem
-                  key={dept.name}
-                  selected={targetDepartment === dept.name}
-                  onClick={() => setTargetDepartment(dept.name)}
+                  key={dept.deptName}
+                  selected={targetDepartment === dept.deptName}
+                  onClick={() => setTargetDepartment(dept.deptName)}
                 >
-                  {dept.displayName}
+                  {dept.deptName}
                 </MenuItem>
               ))}
           </Box>
@@ -2954,7 +2979,105 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 return;
               }
 
-              // Placeholder logic for now
+              setSnackbar({
+                open: true,
+                message: `Users migrated to ${targetDepartment}`,
+                severity: "success",
+              });
+              setMigrationDialogOpen(false);
+            }}
+          >
+            Migrate
+          </Button>
+        </DialogActions>
+      </Dialog> */}
+
+      <Dialog
+        open={migrationDialogOpen}
+        onClose={() => setMigrationDialogOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle
+          sx={{
+            backgroundColor: "#1976d2",
+            color: "white",
+            fontWeight: "bold",
+            fontSize: "1.1rem",
+          }}
+        >
+          Migrate Users
+        </DialogTitle>
+
+        <DialogContent dividers>
+          <Typography variant="body2" sx={{ mb: 1 }}>
+            Migrate users from <b>{departmentToMigrate?.name}</b> to:
+          </Typography>
+
+          <Box
+            sx={{
+              maxHeight: 250,
+              overflowY: "auto",
+              border: "1px solid #ccc",
+              borderRadius: 1,
+              mt: 1,
+              p: 1,
+              bgcolor: "#f9f9f9",
+            }}
+            onScroll={(e) => {
+              const { scrollTop, clientHeight, scrollHeight } = e.currentTarget;
+              if (scrollTop + clientHeight >= scrollHeight - 50) {
+                loadMoreDepartments(); // fetch more
+              }
+            }}
+          >
+            {allDepartments
+              .filter((d) => d.deptName !== departmentToMigrate?.name)
+              .map((dept) => (
+                <MenuItem
+                  key={dept.deptName}
+                  selected={targetDepartment === dept.deptName}
+                  onClick={() => setTargetDepartment(dept.deptName)}
+                  sx={{
+                    borderRadius: 1,
+                    mb: 0.5,
+                    backgroundColor:
+                      targetDepartment === dept.deptName
+                        ? "#e3f2fd"
+                        : "transparent",
+                    "&:hover": {
+                      backgroundColor: "#e3f2fd",
+                    },
+                  }}
+                >
+                  <Box>
+                    <Typography variant="subtitle2">
+                      {dept.displayName}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {dept.deptName}
+                    </Typography>
+                  </Box>
+                </MenuItem>
+              ))}
+          </Box>
+        </DialogContent>
+
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setMigrationDialogOpen(false)}>Cancel</Button>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => {
+              if (!targetDepartment) {
+                setSnackbar({
+                  open: true,
+                  message: "Please select a target department.",
+                  severity: "error",
+                });
+                return;
+              }
+
               setSnackbar({
                 open: true,
                 message: `Users migrated to ${targetDepartment}`,
@@ -3048,7 +3171,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                   allDepartments.push(...res.content);
                 });
 
-                // Map backend response to department format
                 const mapped = allDepartments.map((dept) => ({
                   name: dept.deptName,
                   displayName: dept.deptDisplayName,
@@ -3079,72 +3201,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             }}
           >
             Select All Departments
-          </Button>
-        </DialogActions>
-      </Dialog>
-      <Dialog
-        open={migrationDialogOpen}
-        onClose={() => setMigrationDialogOpen(false)}
-      >
-        <DialogTitle>Migrate Users</DialogTitle>
-        <DialogContent>
-          <Typography sx={{ mb: 1 }}>
-            Migrate users from <b>{departmentToMigrate?.name}</b> to:
-          </Typography>
-
-          <Box
-            sx={{
-              maxHeight: 300,
-              overflowY: "auto",
-              border: "1px solid #ccc",
-              borderRadius: 1,
-              mt: 1,
-              p: 1,
-            }}
-            onScroll={(e) => {
-              const { scrollTop, clientHeight, scrollHeight } = e.currentTarget;
-              if (scrollTop + clientHeight >= scrollHeight - 50) {
-                loadMoreDepartments();
-              }
-            }}
-          >
-            {allDepartments
-              .filter((d) => d.name !== departmentToMigrate?.name)
-              .map((dept) => (
-                <MenuItem
-                  key={dept.name}
-                  selected={targetDepartment === dept.name}
-                  onClick={() => setTargetDepartment(dept.name)}
-                >
-                  {dept.displayName}
-                </MenuItem>
-              ))}
-          </Box>
-        </DialogContent>
-
-        <DialogActions>
-          <Button onClick={() => setMigrationDialogOpen(false)}>Cancel</Button>
-          <Button
-            onClick={() => {
-              if (!targetDepartment) {
-                setSnackbar({
-                  open: true,
-                  message: "Please select a target department.",
-                  severity: "error",
-                });
-                return;
-              }
-
-              setSnackbar({
-                open: true,
-                message: `Users migrated to ${targetDepartment}`,
-                severity: "success",
-              });
-              setMigrationDialogOpen(false);
-            }}
-            variant="contained"
-          >
-            Migrate
           </Button>
         </DialogActions>
       </Dialog>

@@ -1,9 +1,6 @@
 import React, { useState, useCallback, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Slide from "@mui/material/Slide";
-import SettingsApplicationsIcon from "@mui/icons-material/SettingsApplications";
-import SettingsSuggestIcon from "@mui/icons-material/SettingsSuggest";
-
 import {
   AppBar,
   Toolbar,
@@ -20,8 +17,6 @@ import {
   ListItemText,
   ClickAwayListener,
   Divider,
-} from "@mui/material";
-import {
   Button,
   Dialog,
   DialogTitle,
@@ -37,12 +32,12 @@ import {
 } from "@mui/material";
 
 import SearchIcon from "@mui/icons-material/Search";
-import Brightness4Icon from "@mui/icons-material/Brightness4";
-import LogoutIcon from "@mui/icons-material/Logout";
+import DarkModeIcon from "@mui/icons-material/DarkMode";
+import ExitToAppIcon from "@mui/icons-material/ExitToApp";
 import debounce from "lodash/debounce";
 import { fetchUsers } from "../api/userService";
-import { getDepartments } from "../api/departmentService"; // adjust import path if needed
-import { saveApmSettings } from "../api/apm";
+import { getDepartments } from "../api/departmentService";
+import { saveApmSettings } from "../api/apm"; // ✅ your API call here
 
 const Transition = React.forwardRef(function Transition(props, ref) {
   return <Slide direction="left" ref={ref} {...props} timeout={200} />;
@@ -51,26 +46,23 @@ const Transition = React.forwardRef(function Transition(props, ref) {
 const StyledAppBar = styled(AppBar)({
   backgroundColor: "white",
   color: "#424242",
-  boxShadow: "0 1px 2px rgba(0,0,0,0.15)",
-  height: "50px",
-  backdropFilter: "blur(8px)",
+  boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
+  height: "56px",
   zIndex: 1100,
-  fontFamily: '"Be Vietnam", sans-serif',
+  fontFamily: '"Poppins", sans-serif',
 });
 
 const StyledToolbar = styled(Toolbar)({
-  minHeight: "48px !important",
+  minHeight: "56px !important",
   padding: "0 16px !important",
 });
 
 const SearchWrapper = styled("div")({
   position: "relative",
   borderRadius: "20px",
-  backgroundColor: "rgba(246,249,254)",
-  marginRight: "20px",
-  marginLeft: "80px",
+  backgroundColor: "#f6f9fe",
+  marginLeft: "40px",
   width: "100%",
-  minWidth: "400px",
   maxWidth: "400px",
   display: "flex",
   alignItems: "center",
@@ -121,9 +113,9 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searchAnchorEl, setSearchAnchorEl] = useState(null);
-  const [extensionDialogOpen, setExtensionDialogOpen] = useState(false);
-  const [selectedExtensions, setSelectedExtensions] = useState([]);
   const [apmDialogOpen, setApmDialogOpen] = useState(false);
+
+  // APM Dialog States
   const [apmScope, setApmScope] = useState("both");
   const [apmEnabled, setApmEnabled] = useState(true);
   const [logLevel, setLogLevel] = useState("info");
@@ -204,65 +196,42 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
     navigate("/login");
   };
 
-  const getFormattedPath = () => {
-    const path = location.pathname;
-    const segments = path.substring(1).split("/");
-    const pathMap = {
-      user: "Users",
-      department: "Departments",
-      angelbot: "AngelBot",
-      "ldap-config": "LDAP Settings",
-      "company-dashboard": "Company Dashboard",
-    };
-    return segments
-      .map(
-        (segment) =>
-          pathMap[segment] || segment.charAt(0).toUpperCase() + segment.slice(1)
-      )
-      .join(" / ");
-  };
-
   return (
     <StyledAppBar position="static">
       <StyledToolbar>
+      
         <Box sx={{ display: "flex", alignItems: "center", flexGrow: 1 }}>
-          <Typography variant="h6" sx={{ fontSize: "1.1rem", fontWeight: 600 }}>
-            {getFormattedPath() && (
-              <Box
-                sx={{
-                  display: "flex",
-                  flexDirection: "column",
-                  ml: 8,
-                  lineHeight: 1.2,
-                }}
-              >
-                <Typography
-                  variant="h5"
-                  sx={{
-                    fontSize: "1.6rem",
-                    color: "#00318e",
-                    fontWeight: "bold",
-                    lineHeight: 1,
-                  }}
-                >
-                  Angel<span style={{ color: "#ff0000" }}>Bot</span>
-                </Typography>
-                <Typography
-                  variant="h6"
-                  sx={{
-                    fontSize: "1rem",
-                    color: "#707070",
-                    fontFamily: "fangsong",
-                    mt: 0.2, // reduce top margin
-                  }}
-                >
-                  Access Arc
-                </Typography>
-              </Box>
-            )}
-          </Typography>
+          <Box
+            sx={{
+              ml: { xs: 7, sm: 5, md: 6, lg: 7 },
+              transition: "margin 0.3s",
+            }}
+          >
+            <Typography
+              variant="h5"
+              sx={{
+                fontSize: "1.6rem",
+                color: "#00318e",
+                fontWeight: "bold",
+                lineHeight: 1,
+              }}
+            >
+              Angel<span style={{ color: "#ff0000" }}>Bot</span>
+            </Typography>
+            <Typography
+              variant="subtitle2"
+              sx={{
+                fontSize: "0.85rem",
+                color: "#707070",
+                fontFamily: "fangsong",
+              }}
+            >
+              Access Arc
+            </Typography>
+          </Box>
         </Box>
 
+        {/* Search Center */}
         {(location.pathname === "/user" ||
           location.pathname === "/department") && (
           <SearchWrapper>
@@ -309,7 +278,6 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
                                   location.pathname === "/user" ? (
                                     <>
                                       <Typography
-                                        component="span"
                                         variant="body2"
                                         color="text.primary"
                                       >
@@ -317,9 +285,7 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
                                           ?.deptName || "N/A"}{" "}
                                         - {result.roles?.[0]?.roleName || "N/A"}
                                       </Typography>
-                                      <br />
                                       <Typography
-                                        component="span"
                                         variant="caption"
                                         color="text.secondary"
                                       >
@@ -328,7 +294,6 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
                                     </>
                                   ) : (
                                     <Typography
-                                      component="span"
                                       variant="caption"
                                       color="text.secondary"
                                     >
@@ -355,9 +320,8 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
           </SearchWrapper>
         )}
 
-        <Box sx={{ flexGrow: 1 }} />
-
-        <Box sx={{ display: "flex", gap: 1.5, alignItems: "center" }}>
+        {/* Actions Right */}
+        <Box sx={{ display: "flex", gap: 1.5, alignItems: "center", ml: 2 }}>
           <Button
             variant="outlined"
             size="small"
@@ -380,299 +344,159 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
           </Button>
 
           <Tooltip title="Toggle Theme" arrow>
-            <IconButton
-              onClick={onThemeToggle}
-              size="medium"
-              sx={{ width: 40, height: 35, mt: 0.5 }}
-            >
-              <Brightness4Icon sx={{ fontSize: "1.2rem" }} />
+            <IconButton onClick={onThemeToggle} size="medium">
+              <DarkModeIcon sx={{ fontSize: "1.3rem", color: "#555" }} />
             </IconButton>
           </Tooltip>
+
           <Tooltip title="Logout" arrow>
-            <IconButton
-              onClick={handleLogout}
-              size="medium"
-              sx={{ width: 40, height: 35, mt: 0.5 }}
-            >
-              <LogoutIcon sx={{ fontSize: "1.2rem" }} />
+            <IconButton onClick={handleLogout} size="medium">
+              <ExitToAppIcon sx={{ fontSize: "1.3rem", color: "#d32f2f" }} />
             </IconButton>
           </Tooltip>
         </Box>
+      </StyledToolbar>
 
-        <Dialog
-          open={extensionDialogOpen}
-          onClose={() => setExtensionDialogOpen(false)}
-          fullWidth
-          maxWidth="sm"
-          TransitionComponent={Transition}
-          keepMounted
-          transitionDuration={200}
-        >
-          {/* <DialogTitle>Select File Extensions</DialogTitle> */}
-          <DialogTitle
-            sx={{
-              backgroundColor: "#1976d2",
-              color: "#fff",
-              fontWeight: "bold",
-              fontSize: "1.1rem",
-            }}
-          >
-            Select File Extensions
-          </DialogTitle>
-
-          <DialogContent dividers>
-            {[
-              {
-                label: "Documents",
-                values: [
-                  "pdf",
-                  "doc",
-                  "docx",
-                  "xls",
-                  "xlsx",
-                  "csv",
-                  "txt",
-                  "rtf",
-                  "ppt",
-                  "pptx",
-                  "xml",
-                  "json",
-                ],
-              },
-              {
-                label: "Images",
-                values: [
-                  "jpg",
-                  "jpeg",
-                  "png",
-                  "gif",
-                  "bmp",
-                  "tiff",
-                  "webp",
-                  "svg",
-                ],
-              },
-              {
-                label: "Audio",
-                values: ["mp3", "aac", "ogg", "m4a", "wav", "flac", "wma"],
-              },
-              {
-                label: "Video",
-                values: [
-                  "mp4",
-                  "avi",
-                  "mov",
-                  "mkv",
-                  "webm",
-                  "flv",
-                  "wmv",
-                  "3gp",
-                ],
-              },
-              { label: "Archives", values: ["zip", "rar", "7z", "tar", "gz"] },
-            ].map((group) => (
-              <Box key={group.label} sx={{ mb: 2 }}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                  {group.label}
-                </Typography>
-                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-                  {group.values.map((ext) => (
-                    <FormControlLabel
-                      key={ext}
-                      control={
-                        <Checkbox
-                          checked={selectedExtensions.includes(ext)}
-                          onChange={() =>
-                            setSelectedExtensions((prev) =>
-                              prev.includes(ext)
-                                ? prev.filter((e) => e !== ext)
-                                : [...prev, ext]
-                            )
-                          }
-                        />
-                      }
-                      label={ext}
-                    />
-                  ))}
-                </Box>
-              </Box>
-            ))}
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setExtensionDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              variant="contained"
-              onClick={() => {
-                console.log("Selected Extensions:", selectedExtensions);
-                setExtensionDialogOpen(false);
-              }}
-            >
-              Save
-            </Button>
-          </DialogActions>
-        </Dialog>
-
-        <Dialog
-          open={apmDialogOpen}
-          onClose={() => setApmDialogOpen(false)}
-          fullWidth
-          maxWidth="sm"
-          TransitionComponent={Transition}
-          keepMounted
-          transitionDuration={200}
-          PaperProps={{
-            sx: {
-              borderRadius: 2,
-              boxShadow: 6,
-            },
+      {/* APM Dialog */}
+      <Dialog
+        open={apmDialogOpen}
+        onClose={() => setApmDialogOpen(false)}
+        fullWidth
+        maxWidth="sm"
+        TransitionComponent={Transition}
+        keepMounted
+        transitionDuration={200}
+        PaperProps={{ sx: { borderRadius: 2, boxShadow: 6 } }}
+      >
+        <DialogTitle
+          sx={{
+            backgroundColor: "#1976d2",
+            color: "#fff",
+            fontWeight: "bold",
+            fontSize: "1.1rem",
           }}
         >
-          <DialogTitle
-            sx={{
-              backgroundColor: "#1976d2",
-              color: "#fff",
-              fontWeight: "bold",
-              fontSize: "1.1rem",
+          APM Settings
+        </DialogTitle>
+
+        <DialogContent dividers sx={{ p: 3 }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+            APM Configuration
+          </Typography>
+
+          <FormControl component="fieldset" sx={{ mb: 2, pl: 1 }}>
+            <Typography variant="body2" sx={{ mb: 0.5 }}>
+              APM Scope
+            </Typography>
+            <RadioGroup
+              row
+              value={apmScope}
+              onChange={(e) => setApmScope(e.target.value)}
+            >
+              <FormControlLabel
+                value="frontend"
+                control={<Radio />}
+                label="Frontend"
+              />
+              <FormControlLabel
+                value="backend"
+                control={<Radio />}
+                label="Backend"
+              />
+              <FormControlLabel value="both" control={<Radio />} label="Both" />
+            </RadioGroup>
+          </FormControl>
+
+          <FormControlLabel
+            control={
+              <Switch
+                checked={apmEnabled}
+                onChange={(e) => setApmEnabled(e.target.checked)}
+                color="primary"
+              />
+            }
+            label="Enable APM Monitoring"
+            sx={{ ml: 1, mb: 2 }}
+          />
+
+          <TextField
+            fullWidth
+            select
+            size="small"
+            label="Log Level"
+            value={logLevel}
+            onChange={(e) => setLogLevel(e.target.value)}
+            SelectProps={{ native: true }}
+          >
+            <option value="trace">Trace</option>
+            <option value="debug">Debug</option>
+            <option value="info">Info</option>
+            <option value="notice">Notice</option>
+            <option value="warning">Warning</option>
+            <option value="error">Error</option>
+            <option value="critical">Critical</option>
+            <option value="alert">Alert</option>
+            <option value="emergency">Emergency</option>
+          </TextField>
+
+          <Divider sx={{ my: 2 }} />
+
+          <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+            Caching Options
+          </Typography>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={cacheBackend}
+                onChange={(e) => setCacheBackend(e.target.checked)}
+                color="primary"
+              />
+            }
+            label="Enable Backend Caching"
+            sx={{ ml: 1, mb: 1 }}
+          />
+          <FormControlLabel
+            control={
+              <Switch
+                checked={cacheFrontend}
+                onChange={(e) => setCacheFrontend(e.target.checked)}
+                color="primary"
+              />
+            }
+            label="Enable Frontend Caching"
+            sx={{ ml: 1 }}
+          />
+        </DialogContent>
+
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setApmDialogOpen(false)} variant="outlined">
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={async () => {
+              const payload = {
+                apmScope,
+                apmEnabled,
+                logLevel,
+                cacheBackend,
+                cacheFrontend,
+              };
+              try {
+                await saveApmSettings(payload);
+                setApmDialogOpen(false);
+              } catch {
+                alert("Failed to save APM settings.");
+              }
             }}
           >
-            APM Settings
-          </DialogTitle>
-
-          <DialogContent dividers sx={{ p: 3 }}>
-            {/* APM Section */}
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-                APM Configuration
-              </Typography>
-
-              {/* APM Scope */}
-              <FormControl component="fieldset" sx={{ mb: 2, pl: 1 }}>
-                <Typography variant="body2" sx={{ mb: 0.5 }}>
-                  APM Scope
-                </Typography>
-                <RadioGroup
-                  row
-                  value={apmScope}
-                  onChange={(e) => setApmScope(e.target.value)}
-                  name="apm-scope"
-                >
-                  <FormControlLabel
-                    value="frontend"
-                    control={<Radio />}
-                    label="Frontend"
-                  />
-                  <FormControlLabel
-                    value="backend"
-                    control={<Radio />}
-                    label="Backend"
-                  />
-                  <FormControlLabel
-                    value="both"
-                    control={<Radio />}
-                    label="Both"
-                  />
-                </RadioGroup>
-              </FormControl>
-
-              {/* APM Toggle */}
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={apmEnabled}
-                    onChange={(e) => setApmEnabled(e.target.checked)}
-                    color="primary"
-                  />
-                }
-                label="Enable APM Monitoring"
-                sx={{ ml: 1, mb: 2 }}
-              />
-
-              {/* Log Level */}
-              <TextField
-                fullWidth
-                select
-                size="small"
-                label="Log Level"
-                value={logLevel}
-                onChange={(e) => setLogLevel(e.target.value)}
-                SelectProps={{ native: true }}
-              >
-                <option value="trace">Trace</option>
-                <option value="debug">Debug</option>
-                <option value="info">Info</option>
-                <option value="notice">Notice</option>
-                <option value="warning">Warning</option>
-                <option value="error">Error</option>
-                <option value="critical">Critical</option>
-                <option value="alert">Alert</option>
-                <option value="emergency">Emergency</option>
-              </TextField>
-            </Box>
-
-            <Divider sx={{ my: 2 }} />
-
-            {/* Caching Section */}
-            <Box>
-              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-                Caching Options
-              </Typography>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={cacheBackend}
-                    onChange={(e) => setCacheBackend(e.target.checked)}
-                    color="primary"
-                  />
-                }
-                label="Enable Backend Caching"
-                sx={{ ml: 1, mb: 1 }}
-              />
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={cacheFrontend}
-                    onChange={(e) => setCacheFrontend(e.target.checked)}
-                    color="primary"
-                  />
-                }
-                label="Enable Frontend Caching"
-                sx={{ ml: 1 }}
-              />
-            </Box>
-          </DialogContent>
-
-          <DialogActions sx={{ px: 3, pb: 2 }}>
-            <Button onClick={() => setApmDialogOpen(false)} variant="outlined">
-              Cancel
-            </Button>
-            <Button
-              variant="contained"
-              onClick={async () => {
-                const payload = {
-                  apmScope,
-                  apmEnabled,
-                  logLevel,
-                  cacheBackend,
-                  cacheFrontend,
-                };
-                try {
-                  await saveApmSettings(payload);
-                  console.log("APM settings saved:", payload);
-                  setApmDialogOpen(false);
-                } catch (error) {
-                  alert("Failed to save APM settings. Please try again.");
-                }
-              }}
-            >
-              Save
-            </Button>
-          </DialogActions>
-        </Dialog>
-      </StyledToolbar>
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
     </StyledAppBar>
   );
 };
 
 export default Navbar;
+

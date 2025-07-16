@@ -120,3 +120,33 @@ export const updateDepartmentStorage = async ({ deptName, allowedStorage }) => {
 };
 
 
+
+export const updateDepartmentStoragePermission = async (
+  permissionPayload,
+  pageNumber
+) => {
+  const token = sessionStorage.getItem("authToken");
+  const adminEmail = sessionStorage.getItem("adminEmail");
+
+  try {
+    const response = await axios.post(
+      `${window.__ENV__.REACT_APP_ROUTE}/dms_service_LM/api/dms_admin_service/setDeptData`,
+      permissionPayload,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          pageNumber: pageNumber.toString(),
+          userName: adminEmail,
+        },
+      }
+    );
+    console.log(">>>>response",response)
+    return response.data;
+  } catch (error) {
+    console.error("Failed to update department storage permission:", error);
+    throw error;
+  }
+};
+
+
+
