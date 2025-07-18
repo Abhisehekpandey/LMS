@@ -29,3 +29,20 @@ export const saveFileType = async ({
   const response = await axios.post(url, payload, { headers });
   return response.data;
 };
+
+
+
+
+export const saveUserFileType = async (payload) => {
+  return await axios.post(
+    `${window.__ENV__.REACT_APP_ROUTE}/api/dms_service_LM/api/newFileTypeForUser`,
+    payload,
+    {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+      },
+    }
+  );
+};
+

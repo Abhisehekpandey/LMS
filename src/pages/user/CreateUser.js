@@ -284,7 +284,8 @@ const CreateUser = ({
             .filter((row) => row["EMAIL"])
             .map((row) => ({
               name: row["NAME"]?.trim() || "",
-              email: row["EMAIL"]?.trim() || "",
+              // email: row["EMAIL"]?.trim() || "",
+              email: row["EMAIL"]?.trim().toLowerCase() || "",
               phoneNumber: row["PHONE"]?.trim() || "",
               storage: row["STORAGE"]?.trim() || null,
               roleName: row["ROLE"]?.trim() || "",
@@ -548,7 +549,7 @@ const CreateUser = ({
             try {
               const transformedUsers = values.users.map((user) => ({
                 name: user.name,
-                email: user.email,
+                email: user.email.toLowerCase(), // 👈 convert to lowercase
                 deptName:
                   typeof user.department === "object"
                     ? user.department.deptName
@@ -668,7 +669,9 @@ const CreateUser = ({
                                   value={user.email?.split("@")[0] || ""}
                                   FormHelperTextProps={{ sx: { ml: 0 } }}
                                   onChange={(e) => {
-                                    const emailPrefix = e.target.value.trim();
+                                    const emailPrefix = e.target.value
+                                      .trim()
+                                      .toLowerCase();
                                     const fullEmail = `${emailPrefix}@${adminDomain}`;
 
                                     formik.setFieldValue(

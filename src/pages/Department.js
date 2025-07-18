@@ -183,6 +183,8 @@ const CustomSpinner = styled(CircularProgress)(({ theme }) => ({
 }));
 
 function Department({ departments, setDepartments, onThemeToggle }) {
+  const [tabValue, setTabValue] = useState(0);
+
   const [allDepartments, setAllDepartments] = useState([]);
   const [migrationPage, setMigrationPage] = useState(0);
   const [hasMoreDepartments, setHasMoreDepartments] = useState(true);
@@ -423,8 +425,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     }
   };
 
-  
-
   const toBytes = (value) => {
     const num = parseFloat(value);
     const unit = value.replace(/[0-9.\s]/g, "").toLowerCase();
@@ -442,10 +442,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         return num; // assume already in bytes
     }
   };
-
-  
-
-
 
   const handleStorageChange = async (deptName, newStorageDisplay) => {
     try {
@@ -474,7 +470,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         },
       ];
 
-
       await updateDepartmentStoragePermission(payload, page);
 
       setDepartments((prev) =>
@@ -500,9 +495,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     }
   };
 
-
-
-  // Add these at the top of your component with other state declarations
   const [selected, setSelected] = useState([]);
   const [selectAllData, setSelectAllData] = useState(false);
   const [rowData, setRowData] = useState([]);
@@ -662,7 +654,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
       const ws = XLSX.utils.json_to_sheet(exportData);
 
-      // Updated column widths to include Status
       const wscols = [
         { wch: 25 }, // Department
         { wch: 15 }, // Display Name
@@ -1087,22 +1078,26 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     };
 
     try {
-      const res = await createDepartment(payload);
+      await createDepartment(payload);
 
-      // Add new department to the list (you might want to re-fetch from API instead)
-      setDepartments((prev) => [
-        ...prev,
-        {
-          name: res.deptName,
-          displayName: res.deptDisplayName,
-          departmentModerator: res.deptModerator,
-          storage: res.storage,
-          roles: [res.role],
-          isActive: true,
-          userCount: 0,
-          createdAt: new Date().toISOString(),
-        },
-      ]);
+      const refreshed = await getDepartments();
+      const mapped = refreshed.content.map((dept) => ({
+        name: dept.deptName,
+        displayName: dept.deptDisplayName,
+        departmentModerator:
+          dept.deptModerator || dept.permissions?.deptUsername || "",
+        storage: dept.permissions?.displayStorage || "0 GB",
+        allowedStorage:
+          cleanDisplay(dept.permissions?.allowedStorageInBytesDisplay) ||
+          "0 GB",
+        roles: dept.roles?.map((r) => r.roleName) || [],
+        userCount: dept.numberOfUsers || 0,
+        isActive: dept.permissions?.active || false,
+        createdAt: dept.createdOn,
+      }));
+      setDepartments(mapped);
+
+      setTotalDepartments(refreshed.totalElements);
 
       setShowAddDepartment(false);
 
@@ -1122,12 +1117,14 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       });
     } catch (error) {
       const errorMessage =
-        error?.response?.data?.message ||
-        "Failed to create department. Please try again.";
+        error?.response?.data?.error || // ✅ NEW correct path
+        error?.response?.data?.error || // fallback
+        "Failed to create department. Please try again."; // final fallback
+
       console.log("errrrrr", errorMessage);
 
-      if (errorMessage.includes("Failed")) {
-        console.log("hiiiiii");
+      if (/already exists/i.test(errorMessage)) {
+        console.log("Duplicate department detected");
         setDuplicateDepartmentError(true);
       }
 
@@ -1355,7 +1352,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         severity: "error",
       });
     }
-  };const cleanDisplay = (val) => {
+  };
+  const cleanDisplay = (val) => {
     if (!val) return "";
     const [num, unit] = val.trim().split(/\s+/); // splits "25.00 GB" → ["25.00", "GB"]
     const rounded = parseFloat(num);
@@ -1363,7 +1361,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       Number.isInteger(rounded) ? rounded : Math.floor(rounded)
     }${unit}`;
   };
-
 
   useEffect(() => {
     const fetchDepartments = async () => {
@@ -2440,7 +2437,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                       required
                     >
                       {[0, 25, 50, 75, 100, 150, 200].map((size) => (
-                        <MenuItem key={size} value={`${size}GB`}>
+                        <MenuItem key={size} value={`${size} GB`}>
                           {size} GB
                         </MenuItem>
                       ))}
@@ -2737,19 +2734,17 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         <Card elevation={1} sx={{ borderRadius: 2 }}>
           <CardContent>
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              <TextField
-                size="small"
-                label="Department Name"
-                fullWidth
-                required
-                value={editedDepartment?.name || ""}
-                onChange={(e) =>
-                  setEditedDepartment((prev) => ({
-                    ...prev,
-                    name: e.target.value,
-                  }))
-                }
-              />
+              <Tooltip title="Department Name cannot be edited" arrow>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Department Name"
+                  value={editedDepartment?.name || ""}
+                  disabled
+                  helperText="This field is locked"
+                />
+              </Tooltip>
+
               <TextField
                 size="small"
                 label="Display Name"
@@ -2924,73 +2919,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           </Button>
         </DialogActions>
       </Dialog>
-
-      {/* <Dialog
-        open={migrationDialogOpen}
-        onClose={() => setMigrationDialogOpen(false)}
-      >
-        <DialogTitle>Migrate Department</DialogTitle>
-        <DialogContent>
-          <Typography sx={{ mb: 1 }}>
-            Migrate Data from <b>{departmentToMigrate?.name}</b> to:
-          </Typography>
-
-          <Box
-            sx={{
-              maxHeight: 300,
-              overflowY: "auto",
-              border: "1px solid #ccc",
-              borderRadius: 1,
-              mt: 1,
-              p: 1,
-            }}
-            onScroll={(e) => {
-              const { scrollTop, clientHeight, scrollHeight } = e.currentTarget;
-              if (scrollTop + clientHeight >= scrollHeight - 50) {
-                loadMoreDepartments(); // fetch next page
-              }
-            }}
-          >
-            {allDepartments
-              .filter((d) => d.deptName !== departmentToMigrate?.name) // ✅ use correct field
-              .map((dept) => (
-                <MenuItem
-                  key={dept.deptName}
-                  selected={targetDepartment === dept.deptName}
-                  onClick={() => setTargetDepartment(dept.deptName)}
-                >
-                  {dept.deptName}
-                </MenuItem>
-              ))}
-          </Box>
-        </DialogContent>
-
-        <DialogActions>
-          <Button onClick={() => setMigrationDialogOpen(false)}>Cancel</Button>
-          <Button
-            variant="contained"
-            onClick={() => {
-              if (!targetDepartment) {
-                setSnackbar({
-                  open: true,
-                  message: "Please select a target department.",
-                  severity: "error",
-                });
-                return;
-              }
-
-              setSnackbar({
-                open: true,
-                message: `Users migrated to ${targetDepartment}`,
-                severity: "success",
-              });
-              setMigrationDialogOpen(false);
-            }}
-          >
-            Migrate
-          </Button>
-        </DialogActions>
-      </Dialog> */}
 
       <Dialog
         open={migrationDialogOpen}

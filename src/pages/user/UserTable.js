@@ -952,19 +952,43 @@ export default function UserTable() {
                       }}
                     >
                       <>
-                        <IconButton
-                          size="small"
-                          onClick={(e) => handleEdit(e, row)}
+                     
+                        <Tooltip
+                          title={
+                            row.email === adminEmail
+                              ? "Admin user cannot be edited"
+                              : "Edit User"
+                          }
                         >
-                          <Edit />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={handleDelete}
+                          <span>
+                            <IconButton
+                              size="small"
+                              onClick={(e) => handleEdit(e, row)}
+                              disabled={row.email === adminEmail}
+                            >
+                              <Edit />
+                            </IconButton>
+                          </span>
+                        </Tooltip>
+
+                        <Tooltip
+                          title={
+                            row.email === adminEmail
+                              ? "Admin user cannot be deleted"
+                              : "Delete User"
+                          }
                         >
-                          <Delete />
-                        </IconButton>
+                          <span>
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={handleDelete}
+                              disabled={row.email === adminEmail}
+                            >
+                              <Delete />
+                            </IconButton>
+                          </span>
+                        </Tooltip>
                       </>
 
                       {/* )} */}

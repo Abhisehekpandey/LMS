@@ -13,6 +13,7 @@ export const createDepartment = async (payload) => {
         },
       }
     );
+    console.log("checkDepartment",response)
     return response.data;
   } catch (error) {
     console.error("Failed to create department:", error);
@@ -78,7 +79,7 @@ export const createRole = async (payload) => {
 
 export const updateDepartment = async (payload) => {
   return await axios.put(
-    `${window.__ENV__.REACT_APP_ROUTE}/tenants/Editdepartments`,
+    `${window.__ENV__.REACT_APP_ROUTE}/tenants/update`,
     payload,
     {
       headers: {
@@ -93,11 +94,12 @@ export const updateDepartment = async (payload) => {
 
 export const deleteDepartment = async (deptName) => {
   return await axios.delete(
-    `${window.__ENV__.REACT_APP_ROUTE}/tenants/department`,
+    `${window.__ENV__.REACT_APP_ROUTE}/dms_service_LM/api/dms_admin_service/department`,
     {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+        username: `${sessionStorage.getItem("adminEmail")}`,
       },
       params: { deptName },
     }

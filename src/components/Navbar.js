@@ -203,7 +203,7 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
         <Box sx={{ display: "flex", alignItems: "center", flexGrow: 1 }}>
           <Box
             sx={{
-              ml: { xs: 7, sm: 5, md: 6, lg: 7 },
+              ml: { xs: 8, sm: 6, md: 7, lg: 8 },
               transition: "margin 0.3s",
             }}
           >
