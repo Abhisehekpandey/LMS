@@ -12,6 +12,7 @@ import {
   Typography,
 } from "@mui/material";
 import { Settings as SettingsIcon } from "@mui/icons-material";
+import { MenuBook as DictionaryIcon } from "@mui/icons-material";
 
 import {
   People as UserIcon,
@@ -22,30 +23,30 @@ import {
   Dashboard as DashboardIcon,
 } from "@mui/icons-material";
 import { Link, useLocation } from "react-router-dom";
-import { styled as muiStyled } from '@mui/system';
+import { styled as muiStyled } from "@mui/system";
 const LogoText = muiStyled(Typography)(({ theme }) => ({
   fontFamily: "'Poppins', sans-serif", // Modern font family
   fontWeight: 700,
-  fontSize: '1.3rem',
-  letterSpacing: '0.5px',
-  background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
-  WebkitBackgroundClip: 'text',
-  WebkitTextFillColor: 'transparent',
-  textShadow: '0px 1px 2px rgba(0, 0, 0, 0.05)',
-  display: 'inline-block',
-  position: 'relative',
-  '&::after': {
+  fontSize: "1.3rem",
+  letterSpacing: "0.5px",
+  background: "linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)",
+  WebkitBackgroundClip: "text",
+  WebkitTextFillColor: "transparent",
+  textShadow: "0px 1px 2px rgba(0, 0, 0, 0.05)",
+  display: "inline-block",
+  position: "relative",
+  "&::after": {
     content: '""',
-    position: 'absolute',
-    width: '30%',
-    height: '2px',
+    position: "absolute",
+    width: "30%",
+    height: "2px",
     bottom: 0,
-    left: '0',
-    background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
-    borderRadius: '2px',
-  }
+    left: "0",
+    background: "linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)",
+    borderRadius: "2px",
+  },
 }));
-// Styled Drawer
+
 const StyledDrawer = styled(Drawer)(({ theme, open }) => ({
   position: "absolute",
   zIndex: 1200,
@@ -60,19 +61,26 @@ const StyledDrawer = styled(Drawer)(({ theme, open }) => ({
         ? theme.transitions.duration.enteringScreen
         : theme.transitions.duration.leavingScreen,
     }),
-    backgroundColor: "rgba(255, 255, 255, 0.60)",
-    // 👈 opacity thodi zyada (0.05 → 0.15 ya 0.2)
-    backdropFilter: "blur(4px)", // blur bhi thoda kam kar diya
-    WebkitBackdropFilter: "blur(4px)",
+    backgroundColor:
+      theme.palette.mode === "dark"
+        ? "rgba(18, 18, 18, 0.7)" // Dark glass effect
+        : "rgba(255, 255, 255, 0.6)",
+
+    color:
+      theme.palette.mode === "dark" ? theme.palette.text.primary : "#424242",
+
+    borderRight:
+      theme.palette.mode === "dark"
+        ? "1px solid rgba(255, 255, 255, 0.08)"
+        : "1px solid rgba(0, 0, 0, 0.08)",
 
     backdropFilter: "blur(8px)",
-    color: "#424242",
-    borderRight: "1px solid rgba(0, 0, 0, 0.08)",
+    WebkitBackdropFilter: "blur(8px)",
     boxShadow: "0 0 15px rgba(0, 0, 0, 0.05)",
     overflow: "hidden",
-    display: "flex", // Add flex display
-    flexDirection: "column", // Stack children vertically
-    height: "100%", // Ensure full heigh
+    display: "flex",
+    flexDirection: "column",
+    height: "100%",
   },
 }));
 
@@ -90,23 +98,23 @@ const StyledListItem = styled(ListItem)(({ active }) => ({
   transform: "translateZ(0)",
   willChange: "transform, box-shadow, background-color",
   "&:hover": {
-    backgroundColor: active
-      ? "orange"
-      : "rgba(0, 0, 0, 0.04)",
+    backgroundColor: active ? "orange" : "rgba(0, 0, 0, 0.04)",
     transform: "translateY(-1px) translateZ(0)",
     boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
   },
 }));
 
-// Styled Icon
-const StyledListItemIcon = styled(ListItemIcon)(({ active }) => ({
+const StyledListItemIcon = styled(ListItemIcon)(({ active, theme }) => ({
   minWidth: 32,
-  color: active ? "white" : "rgba(0, 0, 0, 0.6)",
+  color: active
+    ? theme.palette.mode === "dark"
+      ? "#fff"
+      : "#fff"
+    : theme.palette.text.secondary,
   justifyContent: "center",
   transition: "color 0.2s ease",
-  marginLeft: "2px", // Add consistent left margin
+  marginLeft: "2px",
   marginRight: "2px",
-
 }));
 
 const Sidebar = () => {
@@ -116,35 +124,38 @@ const Sidebar = () => {
   const location = useLocation();
 
   const user = JSON.parse(localStorage.getItem("user")) || {};
-const userName = user.name || "User";
-const userRole = user.role || "Role";
-const userInitial = user.initial || "U";
+  const userName = user.name || "User";
+  const userRole = user.role || "Role";
+  const userInitial = user.initial || "U";
 
-const menuItems = React.useMemo(
-  () => [
-    { path: "/angelbot", icon: <TimelineIcon />, text: "AngelBot" },
-    { path: "/user", icon: <UserIcon />, text: "User" },
-    {
-      path: "/department",
-      icon: <DepartmentRolesIcon />,
-      text: "Department",
-    },
-    { path: "/ldap-config", icon: <LDAPIcon />, text: "LDAP Settings" },
-    {
-      path: "/choose-extension",
-      icon: <DashboardIcon />,
-      text: "Choose Extension",
-    },
-    {
-      path: "/department-type-setting",
-      icon: <SettingsIcon />,
-
-      text: "Department Type Setting",
-    },
-  ],
-  []
-);
-
+  const menuItems = React.useMemo(
+    () => [
+      { path: "/angelbot", icon: <TimelineIcon />, text: "AngelBot" },
+      { path: "/user", icon: <UserIcon />, text: "User" },
+      {
+        path: "/department",
+        icon: <DepartmentRolesIcon />,
+        text: "Department",
+      },
+      { path: "/ldap-config", icon: <LDAPIcon />, text: "LDAP Settings" },
+      {
+        path: "/choose-extension",
+        icon: <DashboardIcon />,
+        text: "Choose Extension",
+      },
+      {
+        path: "/department-type-setting",
+        icon: <SettingsIcon />,
+        text: "Department Type Setting",
+      },
+      {
+        path: "/data-dictionary",
+        icon: <DictionaryIcon />,
+        text: "Data Dictionary",
+      }, // ✅ NEW ITEM
+    ],
+    []
+  );
 
   const handleMouseEnter = () => {
     clearTimeout(timeoutRef.current);
@@ -165,7 +176,6 @@ const menuItems = React.useMemo(
     setOpen(newLock);
   };
 
-
   return (
     <StyledDrawer
       variant="permanent"
@@ -175,7 +185,6 @@ const menuItems = React.useMemo(
       onMouseLeave={handleMouseLeave}
     >
       <Box
-
         sx={{
           // pl: "3px",
           display: "flex",
@@ -205,61 +214,63 @@ const menuItems = React.useMemo(
               background: "linear-gradient(135deg, #42a5f5, #1976d2)",
             }}
           >
-              {userInitial}
+            {userInitial}
           </Avatar>
           <Box
             sx={{
-              width: { xs: 'calc(100% - 62px)', xl: 'calc(100% - 72px)' },
+              width: { xs: "calc(100% - 62px)", xl: "calc(100% - 72px)" },
               ml: 2,
               // color: "white",
             }}
-            className='user-info'
+            className="user-info"
           >
             <Box
               sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
               }}
             >
               <Box
                 sx={{
                   mb: 0,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
                   fontSize: 16,
-                  fontWeight: 'bold', // Use a constant value for boldness
-                  color: 'inherit',
+                  fontWeight: "bold", // Use a constant value for boldness
+                  color: "inherit",
                 }}
-                component='span'
+                component="span"
               >
-                 {userName}
+                {userName}
               </Box>
             </Box>
             <Box
               sx={{
                 mt: -0.5,
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                color: 'inherit',
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                color: "inherit",
               }}
             >
               Administrator
             </Box>
           </Box>
-
         </Box>
-
       </Box>
 
-      <List sx={{
-        pt: 0.5, padding: "8px", display: "flex",
-        flexDirection: "column",
-        gap: "8px",
-        justifyContent: "center",
-        // alignItems: "center",
-      }}>
+      <List
+        sx={{
+          pt: 0.5,
+          padding: "8px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "8px",
+          justifyContent: "center",
+          // alignItems: "center",
+        }}
+      >
         {menuItems.map((item) => {
           const isActive = location.pathname === item.path;
           return (
@@ -268,11 +279,15 @@ const menuItems = React.useMemo(
               to={item.path}
               style={{ textDecoration: "none", color: "inherit" }}
             >
-              <StyledListItem button active={isActive} sx={{
-                height: 44, // Fixed height instead of minHeight
-                padding: "5px !important",
-                overflow: "hidden" // Prevent content overflow
-              }}>
+              <StyledListItem
+                button
+                active={isActive}
+                sx={{
+                  height: 44, // Fixed height instead of minHeight
+                  padding: "5px !important",
+                  overflow: "hidden", // Prevent content overflow
+                }}
+              >
                 <StyledListItemIcon active={isActive}>
                   {item.icon}
                 </StyledListItemIcon>

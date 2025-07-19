@@ -6,6 +6,7 @@ import {
   Group,
   Warning,
 } from "@mui/icons-material";
+
 import {
   alpha,
   Box,
@@ -143,6 +144,8 @@ const rowCellStyle = {
 };
 
 const AngelBot = () => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
   const userTableRef = React.useRef(null);
   const [negativeCount, setNegativeCount] = useState(0);
   const [remainingDays, setRemainingDays] = useState(0);
@@ -654,7 +657,6 @@ const AngelBot = () => {
 
       setFilteredUsers(filtered);
 
-      // ✅ Calculate Used & Allocated based on parsed display values
       let usedStorage = 0;
       let totalAllocated = 0;
 
@@ -1469,19 +1471,20 @@ const AngelBot = () => {
                       <Box
                         sx={{
                           mt: 1,
-                          border: "1px solid #e0e0e0",
+                          border: `1px solid ${isDark ? "#444" : "#e0e0e0"}`,
                           borderRadius: 2,
                           maxHeight: 200,
                           overflowY: "auto",
+                          backgroundColor: isDark ? "#121212" : "#fff",
                           "&::-webkit-scrollbar": {
-                            width: "4px", // ⬅️ reduce scrollbar width here
+                            width: "4px",
                           },
                           "&::-webkit-scrollbar-thumb": {
-                            backgroundColor: "#ccc", // customize thumb color
+                            backgroundColor: isDark ? "#666" : "#ccc",
                             borderRadius: "4px",
                           },
                           "&::-webkit-scrollbar-track": {
-                            backgroundColor: "#f5f5f5",
+                            backgroundColor: isDark ? "#1e1e1e" : "#f5f5f5",
                           },
                         }}
                       >
@@ -1495,98 +1498,78 @@ const AngelBot = () => {
                           <thead>
                             <tr
                               style={{
-                                background: "#f5f5f5",
+                                background: isDark ? "#2b2b2b" : "#f5f5f5",
+                                color: isDark ? "#fff" : "#000",
                                 position: "sticky",
                                 top: 0,
                                 zIndex: 1,
                               }}
                             >
-                              <th
-                                style={{
-                                  padding: "8px",
-                                  fontWeight: "600",
-                                  fontSize: "0.9rem",
-                                  textAlign: "left",
-                                }}
-                              >
-                                Name
-                              </th>
-                              <th
-                                style={{
-                                  padding: "8px",
-                                  fontWeight: "600",
-                                  fontSize: "0.9rem",
-                                  textAlign: "left",
-                                }}
-                              >
-                                Expiry Date
-                              </th>
-                              <th
-                                style={{
-                                  padding: "8px",
-                                  fontWeight: "600",
-                                  fontSize: "0.9rem",
-                                  textAlign: "left",
-                                }}
-                              >
-                                Status
-                              </th>
-                              <th
-                                style={{
-                                  padding: "8px",
-                                  fontWeight: "600",
-                                  fontSize: "0.9rem",
-                                  textAlign: "left",
-                                }}
-                              >
-                                Days Left
-                              </th>
-
-                              <th
-                                style={{
-                                  padding: "4px",
-                                  fontWeight: "600",
-                                  fontSize: "0.9rem",
-                                  textAlign: "center",
-                                }}
-                              >
-                                <div
+                              {[
+                                "Name",
+                                "Expiry Date",
+                                "Status",
+                                "Days Left",
+                                "Alert",
+                              ].map((header, i) => (
+                                <th
+                                  key={header}
                                   style={{
-                                    display: "flex",
-                                    justifyContent: "center",
-                                    alignItems: "center",
-                                    gap: "4px",
+                                    padding: "8px",
+                                    fontWeight: "600",
+                                    fontSize: "0.9rem",
+                                    textAlign: i === 4 ? "center" : "left",
+                                    color: isDark ? "#fff" : "#000",
                                   }}
                                 >
-                                  Alert
-                                  <FormControl
-                                    size="small"
-                                    sx={{ width: "50px" }}
-                                  >
-                                    <Select
-                                      value={licenseFilter}
-                                      onChange={(e) =>
-                                        setLicenseFilter(e.target.value)
-                                      }
-                                      displayEmpty
-                                      renderValue={() => ""}
-                                      sx={{
-                                        fontSize: "0.75rem",
-                                        minHeight: "20px",
+                                  {header === "Alert" ? (
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        justifyContent: "center",
+                                        alignItems: "center",
+                                        gap: "4px",
                                       }}
                                     >
-                                      <MenuItem value="all">All</MenuItem>
-                                      <MenuItem value="active">Active</MenuItem>
-                                      <MenuItem value="expired">
-                                        Expired
-                                      </MenuItem>
-                                      <MenuItem value="expiring soon">
-                                        Expiring Soon
-                                      </MenuItem>
-                                    </Select>
-                                  </FormControl>
-                                </div>
-                              </th>
+                                      Alert
+                                      <FormControl
+                                        size="small"
+                                        sx={{ width: "50px" }}
+                                      >
+                                        <Select
+                                          value={licenseFilter}
+                                          onChange={(e) =>
+                                            setLicenseFilter(e.target.value)
+                                          }
+                                          displayEmpty
+                                          renderValue={() => ""}
+                                          sx={{
+                                            fontSize: "0.75rem",
+                                            minHeight: "20px",
+                                            backgroundColor: isDark
+                                              ? "#424242"
+                                              : "#fff",
+                                            color: isDark ? "#fff" : "#000",
+                                          }}
+                                        >
+                                          <MenuItem value="all">All</MenuItem>
+                                          <MenuItem value="active">
+                                            Active
+                                          </MenuItem>
+                                          <MenuItem value="expired">
+                                            Expired
+                                          </MenuItem>
+                                          <MenuItem value="expiring soon">
+                                            Expiring Soon
+                                          </MenuItem>
+                                        </Select>
+                                      </FormControl>
+                                    </div>
+                                  ) : (
+                                    header
+                                  )}
+                                </th>
+                              ))}
                             </tr>
                           </thead>
                           <tbody>
@@ -1600,6 +1583,8 @@ const AngelBot = () => {
                                 Expired: "#f44336",
                               };
 
+                              const isSelected = index === currentLicenseIndex;
+
                               return (
                                 <tr
                                   key={index}
@@ -1612,12 +1597,18 @@ const AngelBot = () => {
                                     }
                                   }}
                                   style={{
-                                    borderBottom: "1px solid #eee",
+                                    borderBottom: `1px solid ${
+                                      isDark ? "#333" : "#eee"
+                                    }`,
                                     cursor: "pointer",
-                                    backgroundColor:
-                                      index === currentLicenseIndex
-                                        ? "rgba(25, 118, 210, 0.05)"
-                                        : "inherit",
+                                    backgroundColor: isSelected
+                                      ? isDark
+                                        ? "#263238"
+                                        : "rgba(25, 118, 210, 0.05)"
+                                      : isDark
+                                      ? "#1e1e1e"
+                                      : "#fff",
+                                    color: isDark ? "#e0e0e0" : "#000",
                                     transition:
                                       "background-color 0.3s ease-in-out",
                                   }}
@@ -1664,7 +1655,7 @@ const AngelBot = () => {
                                   >
                                     {status === "Expired" ? (
                                       <Tooltip
-                                        title={`Your license \"${license.name}\" has expired. Please upgrade your plan.`}
+                                        title={`Your license "${license.name}" has expired. Please upgrade your plan.`}
                                         arrow
                                       >
                                         <WarningAmber
@@ -1678,7 +1669,9 @@ const AngelBot = () => {
                                     ) : (
                                       <Typography
                                         variant="caption"
-                                        color="text.secondary"
+                                        color={
+                                          isDark ? "grey.500" : "text.secondary"
+                                        }
                                       >
                                         —
                                       </Typography>
@@ -1693,6 +1686,7 @@ const AngelBot = () => {
                     </CardContent>
                   </Card>
                 </Grid>
+
                 <Grid container spacing={2}>
                   <Grid item xs={12}>
                     {selectedChart && filteredUsers && (
@@ -1705,12 +1699,17 @@ const AngelBot = () => {
                           borderRadius: 2,
                           width: "100%",
                           boxShadow: 3,
-                          border: "1px solid #e0e0e0",
+                          backgroundColor: isDark ? "#1e1e1e" : "#fff",
+                          border: `1px solid ${isDark ? "#444" : "#e0e0e0"}`,
                         }}
                       >
                         <Typography
                           variant="h6"
-                          sx={{ mb: 2, fontWeight: 600 }}
+                          sx={{
+                            mb: 2,
+                            fontWeight: 600,
+                            color: isDark ? "#fff" : "#000",
+                          }}
                         >
                           {selectedChart} Users
                         </Typography>
@@ -1719,17 +1718,18 @@ const AngelBot = () => {
                           sx={{
                             maxHeight: 350,
                             overflowY: "auto",
-                            border: "1px solid #ccc",
+                            border: `1px solid ${isDark ? "#555" : "#ccc"}`,
                             borderRadius: "6px",
+                            backgroundColor: isDark ? "#121212" : "#fafafa",
                             "&::-webkit-scrollbar": {
-                              width: "6px", // ⬅️ Scrollbar width
+                              width: "6px",
                             },
                             "&::-webkit-scrollbar-thumb": {
-                              backgroundColor: "#888",
+                              backgroundColor: isDark ? "#666" : "#888",
                               borderRadius: "4px",
                             },
                             "&::-webkit-scrollbar-thumb:hover": {
-                              backgroundColor: "#555",
+                              backgroundColor: isDark ? "#888" : "#555",
                             },
                           }}
                         >
@@ -1742,11 +1742,11 @@ const AngelBot = () => {
                           >
                             <thead
                               style={{
-                                backgroundColor: "#1976d2",
+                                backgroundColor: isDark ? "#333" : "#1976d2",
                                 color: "#fff",
                                 position: "sticky",
                                 top: 0,
-                                zIndex: 2, // ensures it stays above rows while scrolling
+                                zIndex: 2,
                                 boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
                               }}
                             >
@@ -1764,6 +1764,7 @@ const AngelBot = () => {
                                     style={{
                                       padding: "8px",
                                       fontSize: "0.875rem",
+                                      color: isDark ? "#aaa" : "#000",
                                     }}
                                   >
                                     No users found.
@@ -1774,16 +1775,40 @@ const AngelBot = () => {
                                   <tr
                                     key={index}
                                     style={{
-                                      borderBottom: "1px solid #f0f0f0",
-                                      backgroundColor:
-                                        index % 2 === 0 ? "#fafafa" : "#fff",
+                                      borderBottom: `1px solid ${
+                                        isDark ? "#333" : "#f0f0f0"
+                                      }`,
+                                      backgroundColor: isDark
+                                        ? index % 2 === 0
+                                          ? "#1c1c1c"
+                                          : "#222"
+                                        : index % 2 === 0
+                                        ? "#fafafa"
+                                        : "#fff",
                                     }}
                                   >
-                                    <td style={rowCellStyle}>{user.name}</td>
-                                    <td style={rowCellStyle}>
+                                    <td
+                                      style={{
+                                        ...rowCellStyle,
+                                        color: isDark ? "#eee" : "#000",
+                                      }}
+                                    >
+                                      {user.name}
+                                    </td>
+                                    <td
+                                      style={{
+                                        ...rowCellStyle,
+                                        color: isDark ? "#eee" : "#000",
+                                      }}
+                                    >
                                       {user.permissions?.displayStorage || "—"}
                                     </td>
-                                    <td style={rowCellStyle}>
+                                    <td
+                                      style={{
+                                        ...rowCellStyle,
+                                        color: isDark ? "#eee" : "#000",
+                                      }}
+                                    >
                                       {user.permissions
                                         ?.allowedStorageInBytesDisplay || "—"}
                                     </td>

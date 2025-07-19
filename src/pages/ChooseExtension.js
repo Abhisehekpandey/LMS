@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { useTheme } from "@mui/material/styles";
+
 import {
   Box,
   Typography,
@@ -52,6 +54,7 @@ const EXTENSION_GROUPS = [
 ];
 
 const ChooseExtension = () => {
+  const theme = useTheme();
   const [selectedExtensions, setSelectedExtensions] = useState([]);
   const [openDialog, setOpenDialog] = useState(false);
   const [newExtension, setNewExtension] = useState("");
@@ -113,35 +116,42 @@ const ChooseExtension = () => {
 
   return (
     <Box
-      sx={{
+      sx={(theme) => ({
         display: "flex",
         justifyContent: "flex-start",
         alignItems: "flex-start",
         height: "100vh",
+        mt: "10px", 
         pt: 2,
         px: 2,
-        backgroundColor: "#f9f9f9",
-        ml: "110px",
+
+        bgcolor: (theme) =>
+          theme.palette.mode === "dark" ? "#121212" : "#f9f9f9", // custom background
+        color: (theme) => theme.palette.text.primary,
+        ml: "90px",
         gap: 3,
-      }}
+      })}
     >
-      {/* Left Panel */}
       <Paper
         elevation={2}
-        sx={{
+        sx={(theme) => ({
           borderRadius: 2,
           width: "70%",
           height: "85vh",
           overflow: "hidden",
           display: "flex",
           flexDirection: "column",
-        }}
+          backgroundColor:
+            theme.palette.mode === "dark"
+              ? theme.palette.background.default
+              : "#fff",
+        })}
       >
         {/* Header */}
         <Box
           sx={{
-            backgroundColor: "#1976d2",
-            color: "#fff",
+            backgroundColor: (theme) => theme.palette.primary.main,
+            color: (theme) => theme.palette.primary.contrastText,
             px: 2,
             py: 1.5,
             borderRadius: "4px 4px 0 0",
@@ -153,13 +163,13 @@ const ChooseExtension = () => {
           </Typography>
         </Box>
 
-        {/* Scrollable Content */}
         <Box
-          sx={{
+          sx={(theme) => ({
             flexGrow: 1,
             overflowY: "auto",
             py: 2,
             px: 2,
+            color: theme.palette.text.primary,
             "&::-webkit-scrollbar": {
               width: "6px",
             },
@@ -172,7 +182,7 @@ const ChooseExtension = () => {
             },
             scrollbarWidth: "thin",
             scrollbarColor: "rgba(0, 0, 0, 0.2) transparent",
-          }}
+          })}
         >
           {EXTENSION_GROUPS.map((group) => (
             <Box key={group.label} sx={{ mb: 3 }}>
@@ -230,15 +240,19 @@ const ChooseExtension = () => {
           ))}
         </Box>
 
-        {/* Footer */}
         <Box
-          sx={{
-            backgroundColor: "#fff",
-            borderTop: "1px solid #ddd",
+          sx={(theme) => ({
+            backgroundColor:
+              theme.palette.mode === "dark"
+                ? theme.palette.background.default
+                : "#fff",
+            borderTop: `1px solid ${
+              theme.palette.mode === "dark" ? "#333" : "#ddd"
+            }`,
             px: 2,
             py: 2,
             boxShadow: "0px -2px 4px rgba(0,0,0,0.05)",
-          }}
+          })}
         >
           <Button
             variant="contained"
@@ -253,7 +267,6 @@ const ChooseExtension = () => {
         </Box>
       </Paper>
 
-      {/* Right Panel */}
       <Paper
         elevation={2}
         sx={{
@@ -262,12 +275,14 @@ const ChooseExtension = () => {
           height: "fit-content",
           display: "flex",
           flexDirection: "column",
+          backgroundColor: (theme) => theme.palette.background.paper,
+          color: (theme) => theme.palette.text.primary,
         }}
       >
         <Box
           sx={{
-            backgroundColor: "#1976d2",
-            color: "#fff",
+            backgroundColor: (theme) => theme.palette.primary.main,
+            color: (theme) => theme.palette.primary.contrastText,
             px: 2,
             py: 1.5,
             borderRadius: "4px 4px 0 0",
@@ -283,7 +298,6 @@ const ChooseExtension = () => {
           </Typography>
         </Box>
 
-        {/* Content */}
         <Box sx={{ p: 3 }}>
           <Box>
             <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: "bold" }}>
@@ -353,7 +367,6 @@ const ChooseExtension = () => {
         </Box>
       </Paper>
 
-      {/* Dialog for Adding Extensions */}
       <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
         <DialogTitle
           sx={{
@@ -391,4 +404,3 @@ const ChooseExtension = () => {
 };
 
 export default ChooseExtension;
-

@@ -24,61 +24,12 @@ import ForgetPassword from "./pages/ForgetPassword";
 import ResetAdminPassword from "./pages/ResetAdminPassword";
 import ChooseExtension from "./pages/ChooseExtension";
 import DepartmentTypeSetting from "./pages/DepartmentTypeSetting";
+import DataDictionary from "./pages/DataDictionary";
 
 function App() {
   const [darkMode, setDarkMode] = useState(false);
 
-  const [departments, setDepartments] = useState([
-    {
-      name: "Engineering",
-      displayName: "ENG",
-      departmentModerator: "Abhishek",
-      roles: ["Developer", "Tech Lead", "Software Architect"],
-      storage: "100GB",
-    },
-    {
-      name: "Marketing",
-      displayName: "MKT",
-      departmentModerator: "Kunal",
-      roles: ["Marketing Manager", "Content Writer", "SEO Specialist"],
-      storage: "50GB",
-    },
-    {
-      name: "Sales",
-      displayName: "SLS",
-      departmentModerator: "Pratibha",
-      roles: ["Sales Rep", "Sales Manager", "Account Executive"],
-      storage: "50GB",
-    },
-    {
-      name: "Human Resource",
-      displayName: "HR",
-      departmentModerator: "Satyam",
-      roles: ["HR Manager", "Recruiter", "HR Assistant"],
-      storage: "50GB",
-    },
-    {
-      name: "Finance",
-      displayName: "FIN",
-      departmentModerator: "Ankit",
-      roles: ["Accountant", "Financial Analyst", "Controller"],
-      storage: "100GB",
-    },
-    {
-      name: "Information Technology",
-      displayName: "ITS",
-      departmentModerator: "Keshav",
-      roles: ["System Admin", "Support Engineer", "Network Engineer"],
-      storage: "200GB",
-    },
-    {
-      name: "Operations",
-      displayName: "OPS",
-      departmentModerator: "Shivam",
-      roles: ["Operations Manager", "Project Manager", "Business Analyst"],
-      storage: "75GB",
-    },
-  ]);
+  const [departments, setDepartments] = useState([]);
 
   const theme = createTheme({
     palette: {
@@ -109,7 +60,7 @@ function App() {
           <Route
             path="/user"
             element={
-              <Layout>
+              <Layout onThemeToggle={toggleTheme}>
                 <ProtectedRoute>
                   <Dashboard
                     onThemeToggle={toggleTheme}
@@ -123,7 +74,7 @@ function App() {
           <Route
             path="/department"
             element={
-              <Layout>
+              <Layout onThemeToggle={toggleTheme}>
                 <ProtectedRoute>
                   <Department
                     onThemeToggle={toggleTheme}
@@ -137,7 +88,7 @@ function App() {
           <Route
             path="/angelbot"
             element={
-              <Layout>
+              <Layout onThemeToggle={toggleTheme}>
                 <AngelBot onThemeToggle={toggleTheme} />
               </Layout>
             }
@@ -153,7 +104,7 @@ function App() {
           <Route
             path="/ldap-config"
             element={
-              <Layout>
+              <Layout onThemeToggle={toggleTheme}>
                 <LDAPConfig />
               </Layout>
             }
@@ -161,7 +112,7 @@ function App() {
           <Route
             path="/choose-extension"
             element={
-              <Layout>
+              <Layout onThemeToggle={toggleTheme}>
                 <ChooseExtension />
               </Layout>
             }
@@ -169,8 +120,16 @@ function App() {
           <Route
             path="/department-type-setting"
             element={
-              <Layout>
+              <Layout onThemeToggle={toggleTheme}>
                 <DepartmentTypeSetting />
+              </Layout>
+            }
+          />
+          <Route
+            path="/data-dictionary"
+            element={
+              <Layout onThemeToggle={toggleTheme}>
+                <DataDictionary />
               </Layout>
             }
           />
@@ -192,4 +151,3 @@ function App() {
 }
 
 export default App;
-

@@ -43,44 +43,51 @@ const Transition = React.forwardRef(function Transition(props, ref) {
   return <Slide direction="left" ref={ref} {...props} timeout={200} />;
 });
 
-const StyledAppBar = styled(AppBar)({
-  backgroundColor: "white",
-  color: "#424242",
+const StyledAppBar = styled(AppBar)(({ theme }) => ({
+  backgroundColor:
+    theme.palette.mode === "dark" ? theme.palette.background.paper : "white",
+  color: theme.palette.text.primary,
   boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
   height: "56px",
   zIndex: 1100,
   fontFamily: '"Poppins", sans-serif',
-});
+}));
 
 const StyledToolbar = styled(Toolbar)({
   minHeight: "56px !important",
   padding: "0 16px !important",
 });
 
-const SearchWrapper = styled("div")({
+const SearchWrapper = styled("div")(({ theme }) => ({
   position: "relative",
   borderRadius: "20px",
-  backgroundColor: "#f6f9fe",
+  backgroundColor:
+    theme.palette.mode === "dark"
+      ? theme.palette.background.default
+      : "#f6f9fe",
   marginLeft: "40px",
   width: "100%",
   maxWidth: "400px",
   display: "flex",
   alignItems: "center",
-});
+}));
 
-const StyledInputBase = styled(InputBase)({
-  color: "inherit",
+const StyledInputBase = styled(InputBase)(({ theme }) => ({
+  color: theme.palette.text.primary,
   width: "100%",
   "& .MuiInputBase-input": {
     padding: "8px 12px 6px 40px",
     fontSize: "0.875rem",
     height: "1.5rem",
     "&::placeholder": {
-      color: "rgba(0, 0, 0, 0.5)",
+      color:
+        theme.palette.mode === "dark"
+          ? "rgba(255, 255, 255, 0.5)"
+          : "rgba(0, 0, 0, 0.5)",
       opacity: 1,
     },
   },
-});
+}));
 
 const SearchIconWrapper = styled("div")({
   padding: "0 12px",
@@ -107,6 +114,7 @@ const SearchResultWrapper = styled(Paper)(({ theme }) => ({
 }));
 
 const Navbar = ({ onThemeToggle, onSearch }) => {
+  console.log("ontehe", onThemeToggle);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -199,7 +207,6 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
   return (
     <StyledAppBar position="static">
       <StyledToolbar>
-      
         <Box sx={{ display: "flex", alignItems: "center", flexGrow: 1 }}>
           <Box
             sx={{
@@ -499,4 +506,3 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
 };
 
 export default Navbar;
-
