@@ -27,6 +27,8 @@ import DepartmentTypeSetting from "./pages/DepartmentTypeSetting";
 import DataDictionary from "./pages/DataDictionary";
 
 function App() {
+  const [dictionarySearchResults, setDictionarySearchResults] = useState([]);
+
   const [darkMode, setDarkMode] = useState(false);
 
   const [departments, setDepartments] = useState([]);
@@ -125,14 +127,26 @@ function App() {
               </Layout>
             }
           />
-          <Route
+          {/* <Route
             path="/data-dictionary"
             element={
               <Layout onThemeToggle={toggleTheme}>
                 <DataDictionary />
               </Layout>
             }
+          /> */}
+          <Route
+            path="/data-dictionary"
+            element={
+              <Layout
+                onThemeToggle={toggleTheme}
+                onSearch={setDictionarySearchResults}
+              >
+                <DataDictionary searchResults={dictionarySearchResults} />
+              </Layout>
+            }
           />
+
           <Route
             path="/activate/:token"
             element={

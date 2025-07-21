@@ -10,6 +10,7 @@ export const createDepartment = async (payload) => {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+          username: `${sessionStorage.getItem("adminEmail")}`,
         },
       }
     );
@@ -29,6 +30,7 @@ export const getDepartments = async (page = 0, pageSize = 10, search = "") => {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+          username: `${sessionStorage.getItem("adminEmail")}`,
         },
         params: {
           search, // Optional search param
@@ -61,6 +63,7 @@ export const createRole = async (payload) => {
         headers: {
           Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
           "Content-Type": "application/json",
+          username: `${sessionStorage.getItem("adminEmail")}`,
         },
       }
     );
@@ -85,6 +88,7 @@ export const updateDepartment = async (payload) => {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+        username: `${sessionStorage.getItem("adminEmail")}`,
       },
     }
   );
@@ -115,7 +119,7 @@ export const updateDepartmentStorage = async ({ deptName, allowedStorage }) => {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
-      
+        username: `${sessionStorage.getItem("adminEmail")}`,
       },
     }
   );

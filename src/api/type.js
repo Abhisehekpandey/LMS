@@ -19,6 +19,7 @@ export const saveFileType = async ({
   const headers = {
     "Content-Type": "application/json",
     Authorization: `Bearer ${token}`,
+    
     fileType: documentType,
     username: username,
     isTypeAutoClassified: false,
@@ -40,7 +41,8 @@ export const saveUserFileType = async (payload) => {
     {
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+        username: `Bearer ${sessionStorage.getItem("adminEmail")}`,
+        Authorization: `${sessionStorage.getItem("authToken")}`,
       },
     }
   );

@@ -7,6 +7,7 @@ export const detectPort = async ({ host, port }) => {
     {
       headers: {
         "Content-Type": "application/json",
+        username: `${sessionStorage.getItem("adminEmail")}`,
       },
     }
   );
@@ -31,6 +32,7 @@ export const saveLdapCredentials = async ({
     {
       headers: {
         "Content-Type": "application/json",
+        username: `${sessionStorage.getItem("adminEmail")}`,
       },
     }
   );
@@ -50,6 +52,7 @@ export const detectBaseDn = async ({ host, port, username, password }) => {
     {
       headers: {
         "Content-Type": "application/json",
+        username: `${sessionStorage.getItem("adminEmail")}`,
       },
     }
   );
@@ -70,6 +73,7 @@ export const testBaseDn = async ({
     {
       headers: {
         "Content-Type": "application/json",
+        username: `${sessionStorage.getItem("adminEmail")}`,
       },
     }
   );
@@ -84,6 +88,7 @@ export const saveLdapConfig = async (config) => {
     {
       headers: {
         "Content-Type": "application/json",
+        username: `${sessionStorage.getItem("adminEmail")}`,
       },
     }
   );
@@ -97,6 +102,7 @@ export const fetchGroupsByObjectClass = async (configId) => {
     {
       headers: {
         "Content-Type": "application/json",
+        username: `${sessionStorage.getItem("adminEmail")}`,
         ldapId: configId, // ✅ send as custom header
       },
     }

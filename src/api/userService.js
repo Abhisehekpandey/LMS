@@ -7,11 +7,12 @@ export const createUsers = async (users) => {
   try {
     const response = await axios.post(
       `${window.__ENV__.REACT_APP_ROUTE}/tenants/users`,
-      Array.isArray(users) ? users : [users],  // 👈 send raw array, not object
+      Array.isArray(users) ? users : [users], // 👈 send raw array, not object
       {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+          username: `${sessionStorage.getItem("adminEmail")}`,
         },
       }
     );
@@ -29,12 +30,16 @@ export const createUsers = async (users) => {
 
 export const fetchUsers = async (page=0) => {
   try {
-    const response = await axios.get(`${window.__ENV__.REACT_APP_ROUTE}/tenants/users`, {
-      headers: {
-        Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+    const response = await axios.get(
+      `${window.__ENV__.REACT_APP_ROUTE}/tenants/users`,
+      {
+        headers: {
+          Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+          username: `${sessionStorage.getItem("adminEmail")}`,
           pageNumber: page.toString(), // send page number as header
-      },
-    });
+        },
+      }
+    );
     console.log(">>>>userResponse",response)
     return response.data; // Assume it's an array of user objects
   } catch (error) {
@@ -99,7 +104,7 @@ export const fetchUsersByDepartment = async (
         "Content-Type": "application/json",
         Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
         appName: "TeamSync", // ✅ required by backend
-        username: "r", // ✅ required by backend
+        username: `${sessionStorage.getItem("adminEmail")}`,
       },
       params: {
         deptName,
@@ -114,27 +119,52 @@ export const fetchUsersByDepartment = async (
 
 
 
+// export const deleteUsers = async (userIds) => {
+//   try {
+
+//    console.log(">>>>uu",userIds)
+//     const response = await axios.delete(
+//       `${window.__ENV__.REACT_APP_ROUTE}/tenants/Deleteusers`, // replace with your actual API endpoint
+//       {
+//         headers: {
+//           Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+//           "Content-Type": "application/json",
+//         },
+//         data: userIds, // assuming your API expects array of user IDs in body
+//       }
+//     );
+
+//     return response.data;
+//   } catch (error) {
+//     console.error("Error deleting users:", error);
+//     throw error;
+//   }
+// };
 export const deleteUsers = async (userIds) => {
   try {
+    const authToken = sessionStorage.getItem("authToken");
+    const username = sessionStorage.getItem("adminEmail"); // make sure this is set during login
 
-   console.log(">>>>uu",userIds)
-    const response = await axios.delete(
-      `${window.__ENV__.REACT_APP_ROUTE}/tenants/Deleteusers`, // replace with your actual API endpoint
-      {
+    for (const userId of userIds) {
+      const url = `${window.__ENV__.REACT_APP_ROUTE}/dms_service_LM/api/dms_admin_service/user?userId=${userId}`;
+
+      await axios.delete(url, {
         headers: {
-          Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+          Authorization: `Bearer ${authToken}`,
+          username: username,
           "Content-Type": "application/json",
         },
-        data: userIds, // assuming your API expects array of user IDs in body
-      }
-    );
+        // Do NOT pass 'data' for DELETE when using query param
+      });
+    }
 
-    return response.data;
+    return { success: true };
   } catch (error) {
     console.error("Error deleting users:", error);
     throw error;
   }
 };
+
 
 
 
@@ -147,6 +177,7 @@ export const updateUser = async (userData) => {
       {
         headers: {
           Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+          username: `${sessionStorage.getItem("adminEmail")}`,
           "Content-Type": "application/json",
         },
       }

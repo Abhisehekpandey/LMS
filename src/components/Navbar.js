@@ -170,6 +170,15 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
               dept.deptName?.toLowerCase().includes(lowercaseQuery) ||
               dept.deptDisplayName?.toLowerCase().includes(lowercaseQuery)
           );
+        } else if (location.pathname === "/data-dictionary") {
+          const localData =
+            JSON.parse(localStorage.getItem("dataDictionary")) || [];
+          const filteredResults = localData.filter((item) =>
+            [item.key, item.value, item.applicableTo].some((val) =>
+              val?.toLowerCase().includes(lowercaseQuery)
+            )
+          );
+          onSearch?.(filteredResults);
         }
 
         setSearchResults(results.slice(0, 5));
@@ -239,8 +248,9 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
         </Box>
 
         {/* Search Center */}
-        {(location.pathname === "/user" ||
-          location.pathname === "/department") && (
+        {["/user", "/department", "/data-dictionary"].includes(
+          location.pathname
+        ) && (
           <SearchWrapper>
             <SearchIconWrapper>
               <SearchIcon sx={{ fontSize: "1.2rem", color: "inherit" }} />
