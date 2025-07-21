@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { TableSortLabel } from "@mui/material";
+
 import {
   Paper,
   Table,
@@ -35,17 +37,23 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
 } from "@mui/icons-material";
+import { Add } from "@mui/icons-material";
 import axios from "axios";
 
 // const DataDictionary = () => {
 const DataDictionary = ({ searchResults = [] }) => {
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
+
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+
   const [data, setData] = useState([]);
   const [selected, setSelected] = useState([]);
 
   const [rows, setRows] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [openDialog, setOpenDialog] = useState(false);
   const [newEntry, setNewEntry] = useState({
     key: "",
@@ -68,6 +76,14 @@ const DataDictionary = ({ searchResults = [] }) => {
 
   const isSelected = (id) => selected.indexOf(id) !== -1;
 
+  const handleSort = (columnKey) => {
+    let direction = "asc";
+    if (sortConfig.key === columnKey && sortConfig.direction === "asc") {
+      direction = "desc";
+    }
+    setSortConfig({ key: columnKey, direction });
+  };
+
   const fetchDataDictionary = async () => {
     try {
       const response = await axios.get(
@@ -78,14 +94,18 @@ const DataDictionary = ({ searchResults = [] }) => {
           },
         }
       );
+      console.log("responseDictionary", response);
 
-      const fetchedData = response.data || [];
+      const fetchedData = (response.data.data || []).map((item) => ({
+        ...item,
+        applicableTo: item.applicatbleTo || "All", // Normalize here
+      }));
+
       setData(fetchedData);
     } catch (error) {
       console.error("Failed to fetch data dictionary:", error);
     }
   };
-
 
   const handleClick = (id) => {
     const selectedIndex = selected.indexOf(id);
@@ -201,97 +221,78 @@ const DataDictionary = ({ searchResults = [] }) => {
     setSnackbarOpen(true);
   };
 
-  // const handleSave = async () => {
-  //   if (!newEntry.key || !newEntry.value || !newEntry.applicableTo) return;
+  const handleSave = async () => {
+    console.log("newEntry", newEntry);
+    if (!newEntry.key || !newEntry.value || !newEntry.applicableTo) return;
 
-  //   const payload = {
-  //     key: newEntry.key,
-  //     value: newEntry.value,
-  //     applicableTo: newEntry.applicableTo,
-  //     selectedUsers:
-  //       newEntry.selectedUsers.length > 0 ? newEntry.selectedUsers : null,
-  //     selectedDepartments:
-  //       newEntry.selectedDepartments.length > 0
-  //         ? newEntry.selectedDepartments
-  //         : null,
-  //   };
+    const payload = {
+      id: isEditing ? newEntry.id : undefined, // required for update
+      key: newEntry.key,
+      value: newEntry.value,
+      applicatbleTo:
+        newEntry.applicableTo?.charAt(0).toUpperCase() +
+        newEntry.applicableTo?.slice(1),
+      usernames: newEntry.selectedUsers?.map((u) => u.name) || [],
+      deptNames: newEntry.selectedDepartments?.map((d) => d.deptName) || [],
+    };
 
-  //   try {
-  //     await axios.post(
-  //       `${window.__ENV__.REACT_APP_ROUTE}/tenants/data-dictionary`,
-  //       payload,
-  //       {
-  //         headers: {
-  //           "Content-Type": "application/json",
-  //           Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
-  //         },
-  //       }
-  //     );
-  //   } catch (err) {
-  //     console.error("Failed to save entry:", err);
-  //   }
+    try {
+      if (isEditing) {
+        await axios.put(
+          `${window.__ENV__.REACT_APP_ROUTE}/tenants/updateDictionary`,
+          payload,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+            },
+          }
+        );
+        const updated = [...data];
+        updated[editIndex] = newEntry;
+        setData(updated);
+      } else {
+        await axios.post(
+          `${window.__ENV__.REACT_APP_ROUTE}/tenants/addDictionary`,
+          payload,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+            },
+          }
+        );
+        const updatedData = [newEntry, ...data];
+        setData(updatedData);
+        setPage(0);
+      }
 
-  //   if (isEditing) {
-  //     const updated = [...rows];
-  //     updated[editIndex] = newEntry;
-  //     // setRows(updated);
-  //      setData(updated);
-  //   } else {
-  //     // setRows([newEntry, ...rows]);
-  //     // setPage(0);
-  //       const updatedData = [newEntry, ...data];
-  //       setData(updatedData);
-  //       setPage(0);
-  //   }
-
-  //   setSnackbarOpen(true);
-  //   setOpenDialog(false);
-  // };
-const handleSave = async () => {
-  if (!newEntry.key || !newEntry.value || !newEntry.applicableTo) return;
-
-  const payload = {
-    key: newEntry.key,
-    value: newEntry.value,
-    applicatbleTo:
-      newEntry.applicableTo.charAt(0).toUpperCase() +
-      newEntry.applicableTo.slice(1), // Capitalize (User/Department/All)
-    usernames: newEntry.selectedUsers?.map((u) => u.username) || [],
-    deptNames: newEntry.selectedDepartments?.map((d) => d.deptName) || [],
+      setSnackbarOpen(true);
+      setOpenDialog(false);
+    } catch (err) {
+      console.error("Failed to save entry:", err);
+    }
   };
 
-  try {
-    await axios.post(
-      `${window.__ENV__.REACT_APP_ROUTE}/tenants/addDictionary`,
-      payload,
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
-        },
-      }
-    );
+  const filteredRows =
+    Array.isArray(searchResults) && searchResults.length > 0
+      ? searchResults
+      : Array.isArray(data)
+      ? data
+      : [];
 
-    if (isEditing) {
-      const updated = [...data];
-      updated[editIndex] = newEntry;
-      setData(updated);
-    } else {
-      const updatedData = [newEntry, ...data];
-      setData(updatedData);
-      setPage(0);
-    }
+  const sortedRows = [...filteredRows].sort((a, b) => {
+    if (!sortConfig.key) return 0;
 
-    setSnackbarOpen(true);
-    setOpenDialog(false);
-  } catch (err) {
-    console.error("Failed to save entry:", err);
-  }
-};
+    const aVal = a[sortConfig.key]?.toString().toLowerCase() ?? "";
+    const bVal = b[sortConfig.key]?.toString().toLowerCase() ?? "";
 
-  const filteredRows = searchResults.length > 0 ? searchResults : data;
+    if (aVal < bVal) return sortConfig.direction === "asc" ? -1 : 1;
+    if (aVal > bVal) return sortConfig.direction === "asc" ? 1 : -1;
+    return 0;
+  });
 
-  const paginatedRows = filteredRows.slice(
+  const paginatedRows = sortedRows.slice(
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
   );
@@ -320,7 +321,6 @@ const handleSave = async () => {
     fetchDataDictionary();
   }, []);
 
-
   const handleDeptScroll = (e) => {
     const bottom =
       e.target.scrollTop + e.target.clientHeight >= e.target.scrollHeight - 10;
@@ -332,13 +332,12 @@ const handleSave = async () => {
   };
 
   const getApplicableToText = (entry) => {
-    if (entry.applicableTo === "user") {
-      return entry.selectedUsers?.map((u) => u.name).join(", ") || "User";
-    } else if (entry.applicableTo === "department") {
-      return (
-        entry.selectedDepartments?.map((d) => d.deptName).join(", ") ||
-        "Department"
-      );
+    const applicable = entry.applicableTo?.toLowerCase(); // <-- now this works
+
+    if (applicable === "user") {
+      return "User";
+    } else if (applicable === "department") {
+      return "Department";
     }
     return "All";
   };
@@ -389,46 +388,79 @@ const handleSave = async () => {
                     sx={{ color: "black" }}
                   />
                 </TableCell>
+
                 <TableCell
                   align="center"
-                  sx={{
-                    color: "black",
-                    fontWeight: "bold",
-                    fontFamily: '"Be Vietnam", sans-serif',
-                  }}
+                  sortDirection={
+                    sortConfig.key === "id" ? sortConfig.direction : false
+                  }
                 >
-                  S.No
+                  <TableSortLabel
+                    active={sortConfig.key === "id"}
+                    direction={
+                      sortConfig.key === "id" ? sortConfig.direction : "asc"
+                    }
+                    onClick={() => handleSort("id")}
+                  >
+                    S.No
+                  </TableSortLabel>
                 </TableCell>
+
                 <TableCell
                   align="center"
-                  sx={{
-                    color: "black",
-                    fontWeight: "bold",
-                    fontFamily: '"Be Vietnam", sans-serif',
-                  }}
+                  sortDirection={
+                    sortConfig.key === "key" ? sortConfig.direction : false
+                  }
                 >
-                  KEY
+                  <TableSortLabel
+                    active={sortConfig.key === "key"}
+                    direction={
+                      sortConfig.key === "key" ? sortConfig.direction : "asc"
+                    }
+                    onClick={() => handleSort("key")}
+                  >
+                    KEY
+                  </TableSortLabel>
                 </TableCell>
+
                 <TableCell
                   align="center"
-                  sx={{
-                    color: "black",
-                    fontWeight: "bold",
-                    fontFamily: '"Be Vietnam", sans-serif',
-                  }}
+                  sortDirection={
+                    sortConfig.key === "value" ? sortConfig.direction : false
+                  }
                 >
-                  VALUE
+                  <TableSortLabel
+                    active={sortConfig.key === "value"}
+                    direction={
+                      sortConfig.key === "value" ? sortConfig.direction : "asc"
+                    }
+                    onClick={() => handleSort("value")}
+                  >
+                    VALUE
+                  </TableSortLabel>
                 </TableCell>
+
                 <TableCell
                   align="center"
-                  sx={{
-                    color: "black",
-                    fontWeight: "bold",
-                    fontFamily: '"Be Vietnam", sans-serif',
-                  }}
+                  sortDirection={
+                    sortConfig.key === "applicableTo"
+                      ? sortConfig.direction
+                      : false
+                  }
                 >
-                  APPLICABLE TO
+                  <TableSortLabel
+                    active={sortConfig.key === "applicableTo"}
+                    direction={
+                      sortConfig.key === "applicableTo"
+                        ? sortConfig.direction
+                        : "asc"
+                    }
+                    onClick={() => handleSort("applicableTo")}
+                  >
+                    APPLICABLE TO
+                  </TableSortLabel>
                 </TableCell>
+
                 <TableCell
                   align="center"
                   sx={{
@@ -472,12 +504,24 @@ const handleSave = async () => {
                     </TableCell>
                     <TableCell align="center">
                       <Tooltip title="Edit">
-                        <IconButton color="primary" size="small">
+                        <IconButton
+                          color="primary"
+                          size="small"
+                          onClick={() => handleEditRow(row, globalIndex)}
+                        >
                           <EditIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
+
                       <Tooltip title="Delete">
-                        <IconButton color="error" size="small">
+                        <IconButton
+                          color="error"
+                          size="small"
+                          onClick={() => {
+                            setDeleteDialogOpen(true);
+                            setDeleteTarget(row); // Save full row so we have access to its ID
+                          }}
+                        >
                           <DeleteIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
@@ -497,7 +541,7 @@ const handleSave = async () => {
         </TableContainer>
 
         <TablePagination
-          rowsPerPageOptions={[5, 10, 25]}
+          rowsPerPageOptions={[10, 15]}
           component="div"
           count={filteredRows.length}
           rowsPerPage={rowsPerPage}
@@ -511,6 +555,7 @@ const handleSave = async () => {
             "& .MuiTablePagination-toolbar": {
               px: 2,
               py: 1,
+              justifyContent: "flex-start", // ✅ Aligns pagination to the left
             },
           }}
         />
@@ -657,6 +702,55 @@ const handleSave = async () => {
         </DialogActions>
       </Dialog>
 
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+      >
+        <DialogTitle
+          sx={{
+            backgroundColor: "primary.main", // MUI blue
+            color: "white",
+            fontWeight: "bold",
+          }}
+        >
+          Confirm Deletion
+        </DialogTitle>
+        <DialogContent>
+          Are you sure you want to delete <b>{deleteTarget?.key}</b>?
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+          <Button
+            onClick={async () => {
+              try {
+                await axios.delete(
+                  `${window.__ENV__.REACT_APP_ROUTE}/tenants/deleteDictionary/${deleteTarget?.id}`,
+                  {
+                    headers: {
+                      Authorization: `Bearer ${sessionStorage.getItem(
+                        "authToken"
+                      )}`,
+                    },
+                  }
+                );
+                setData((prev) =>
+                  prev.filter((item) => item.id !== deleteTarget?.id)
+                );
+                setSnackbarOpen(true);
+              } catch (err) {
+                console.error("Delete failed", err);
+              } finally {
+                setDeleteDialogOpen(false);
+              }
+            }}
+            variant="contained"
+            color="error"
+          >
+            Confirm
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <Snackbar
         open={snackbarOpen}
         autoHideDuration={3000}
@@ -677,17 +771,39 @@ const handleSave = async () => {
           onClick={handleOpenDialog}
           sx={{
             position: "fixed",
-            bottom: 50,
-            right: 32,
+            bottom: 65,
+            right: 38,
             backgroundColor: "primary.main",
             color: "#fff",
             boxShadow: 3,
             "&:hover": {
               backgroundColor: "primary.dark",
             },
+            bgcolor: "orange", // Solid orange background color
+            color: "white",
+            boxShadow:
+              "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.6)", // Default shadow
+            "&:hover": {
+              backgroundColor: "orange", // Keep the background color on hover
+              animation: "glowBorder 1.5s ease-in-out infinite", // Apply glowing animation on hover
+            },
+            "@keyframes glowBorder": {
+              "0%": {
+                boxShadow: "0 0 0px 2px rgba(251, 68, 36, 0.5)", // Start with soft glow
+                borderColor: "transparent", // Initial transparent border
+              },
+              "50%": {
+                boxShadow: "0 0 20px 5px rgba(251, 68, 36, 0.8)", // Stronger glow
+                borderColor: "rgb(251, 68, 36)", // Glowing orange border
+              },
+              "100%": {
+                boxShadow: "0 0 0px 2px rgba(251, 68, 36, 0.5)", // Glow fades out
+                borderColor: "transparent", // Reset to transparent
+              },
+            },
           }}
         >
-          <AddCircleIcon fontSize="medium" />
+          <Add fontSize="medium" />
         </IconButton>
       </Tooltip>
     </Box>
