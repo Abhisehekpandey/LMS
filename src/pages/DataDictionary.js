@@ -263,6 +263,7 @@ const DataDictionary = ({ searchResults = [] }) => {
             headers: {
               "Content-Type": "application/json",
               Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+              username: `${sessionStorage.getItem("adminEmail")}`,
             },
           }
         );
@@ -761,6 +762,7 @@ const DataDictionary = ({ searchResults = [] }) => {
                       Authorization: `Bearer ${sessionStorage.getItem(
                         "authToken"
                       )}`,
+                      username: `${sessionStorage.getItem("adminEmail")}`,
                     },
                   }
                 );

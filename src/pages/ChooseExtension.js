@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useTheme } from "@mui/material/styles";
+import axios from "axios";
 
 import {
   Box,
@@ -19,6 +20,8 @@ import {
 
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import SettingsIcon from "@mui/icons-material/Settings";
+import Snackbar from "@mui/material/Snackbar";
+import MuiAlert from "@mui/material/Alert";
 
 const EXTENSION_GROUPS = [
   {
@@ -54,6 +57,14 @@ const EXTENSION_GROUPS = [
 ];
 
 const ChooseExtension = () => {
+  const [preCheckedExtensions, setPreCheckedExtensions] = useState([]);
+
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success", // or 'error'
+  });
+
   const theme = useTheme();
   const [selectedExtensions, setSelectedExtensions] = useState([]);
   const [openDialog, setOpenDialog] = useState(false);
@@ -89,9 +100,113 @@ const ChooseExtension = () => {
     );
   };
 
-  const handleSave = () => {
-    console.log("Saved Extensions:", selectedExtensions);
+  const handleSave = async () => {
+    const payload = {
+      documents: [],
+      archives: [],
+      images: [],
+      audio: [],
+      video: [],
+    };
+
+    console.log(">>pay",payload)
+
+   EXTENSION_GROUPS.forEach((group) => {
+     const key = group.label.toLowerCase(); // 'Documents' -> 'documents'
+     payload[key] = group.values.filter((ext) =>
+       selectedExtensions.includes(ext)
+     );
+   });
+
+    try {
+      const response = await axios.post(
+        `${window.__ENV__.REACT_APP_ROUTE}/tenants/addExtensions`, // 🔁 Replace with actual endpoint
+        payload,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+            username: `${sessionStorage.getItem("adminEmail")}`,
+          },
+        }
+      );
+      console.log("Extensions saved successfully:", response.data);
+       setSelectedExtensions([]);
+      setSnackbar({
+        open: true,
+        message: "Extensions saved successfully!",
+        severity: "success",
+      });
+    } catch (error) {
+      console.error("Error saving extensions:", error);
+      setSnackbar({
+        open: true,
+        message: "Failed to save extensions. Please try again.",
+        severity: "error",
+      });
+    }
   };
+
+    useEffect(() => {
+    const fetchAllowedExtensions = async () => {
+      try {
+        const response = await axios.get(
+          `${window.__ENV__.REACT_APP_ROUTE}/tenants/getExtensionsAllowed`,
+          {
+            headers: {
+              Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+              username: `${sessionStorage.getItem("adminEmail")}`,
+            },
+          }
+        );
+
+        const data = response.data;
+        console.log("Extension response", data);
+
+        const allPreChecked = Object.values(data).flat();
+        setSelectedExtensions(allPreChecked);
+        setPreCheckedExtensions(allPreChecked);
+
+        // Add new extensions (not defined in EXTENSION_GROUPS)
+        const knownExtensions = EXTENSION_GROUPS.flatMap(
+          (group) => group.values
+        );
+        const newExtensionsMap = {};
+
+        Object.entries(data).forEach(([category, extArray]) => {
+          const groupLabel =
+            category.charAt(0).toUpperCase() + category.slice(1).toLowerCase(); // e.g., "documents" -> "Documents"
+
+          extArray.forEach((ext) => {
+            if (!knownExtensions.includes(ext)) {
+              if (!newExtensionsMap[groupLabel]) {
+                newExtensionsMap[groupLabel] = [];
+              }
+              newExtensionsMap[groupLabel].push(ext);
+            }
+          });
+        });
+
+        // Add new extensions to appropriate EXTENSION_GROUPS
+        EXTENSION_GROUPS.forEach((group) => {
+          const newExts = newExtensionsMap[group.label];
+          if (newExts && newExts.length) {
+            newExts.forEach((ext) => {
+              if (!group.values.includes(ext)) {
+                group.values.push(ext); // mutate in-place to reflect in UI
+              }
+            });
+          }
+        });
+      } catch (error) {
+        console.error("Failed to fetch allowed extensions:", error);
+      }
+    };
+
+    fetchAllowedExtensions();
+  }, []);
+
+
 
   const handleAddClick = (groupLabel) => {
     setActiveGroup(groupLabel);
@@ -121,7 +236,7 @@ const ChooseExtension = () => {
         justifyContent: "flex-start",
         alignItems: "flex-start",
         height: "100vh",
-        mt: "10px", 
+        mt: "10px",
         pt: 2,
         px: 2,
 
@@ -217,16 +332,25 @@ const ChooseExtension = () => {
 
               <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
                 {group.values.map((ext) => (
-                  <FormControlLabel
-                    key={ext}
-                    control={
-                      <Checkbox
-                        checked={selectedExtensions.includes(ext)}
-                        onChange={() => handleToggle(ext)}
-                      />
+                  
+                  <Tooltip
+                    title={
+                      preCheckedExtensions.includes(ext) ? "Already added" : ""
                     }
-                    label={ext}
-                  />
+                    arrow
+                  >
+                    <FormControlLabel
+                      key={ext}
+                      control={
+                        <Checkbox
+                          checked={selectedExtensions.includes(ext)}
+                          onChange={() => handleToggle(ext)}
+                          disabled={false} // optionally disable editing of pre-checked
+                        />
+                      }
+                      label={ext}
+                    />
+                  </Tooltip>
                 ))}
                 <Tooltip title="Add Extension" arrow>
                   <AddCircleOutlineIcon
@@ -399,6 +523,21 @@ const ChooseExtension = () => {
           </Button>
         </DialogActions>
       </Dialog>
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <MuiAlert
+          elevation={6}
+          variant="filled"
+          severity={snackbar.severity}
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+        >
+          {snackbar.message}
+        </MuiAlert>
+      </Snackbar>
     </Box>
   );
 };

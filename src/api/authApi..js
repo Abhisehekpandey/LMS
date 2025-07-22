@@ -28,6 +28,7 @@ export const loginUser = async (username, password) => {
           "Content-Type": "multipart/form-data",
           Accept: "*/*",
           appName: "TeamSync",
+          username: `${sessionStorage.getItem("adminEmail")}`,
         },
       }
     );
