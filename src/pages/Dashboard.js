@@ -4,7 +4,7 @@ import { Box, Paper } from "@mui/material";
 
 import UserTable from "./user/UserTable";
 
-const Dashboard = ({ onThemeToggle, departments, setDepartments }) => {
+const Dashboard = ({ onThemeToggle, departments, setDepartments, }) => {
   return (
     <Box
       sx={{

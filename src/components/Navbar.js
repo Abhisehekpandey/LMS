@@ -171,14 +171,24 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
               dept.deptDisplayName?.toLowerCase().includes(lowercaseQuery)
           );
         } else if (location.pathname === "/data-dictionary") {
-          const localData =
-            JSON.parse(localStorage.getItem("dataDictionary")) || [];
-          const filteredResults = localData.filter((item) =>
-            [item.key, item.value, item.applicableTo].some((val) =>
+          const response = await fetch(
+            `${window.__ENV__.REACT_APP_ROUTE}/tenants/getAllDictionary`,
+            {
+              headers: {
+                Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+                username: `${sessionStorage.getItem("adminEmail")}`,
+              },
+            }
+          );
+
+          const dictData = await response.json();
+          const items = dictData.data || [];
+
+          results = items.filter((item) =>
+            [item.key, item.value, item.applicatbleTo].some((val) =>
               val?.toLowerCase().includes(lowercaseQuery)
             )
           );
-          onSearch?.(filteredResults);
         }
 
         setSearchResults(results.slice(0, 5));
@@ -289,7 +299,9 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
                                 primary={
                                   location.pathname === "/user"
                                     ? result.name
-                                    : result.deptName
+                                    : location.pathname === "/department"
+                                    ? result.deptName
+                                    : result.key
                                 }
                                 secondary={
                                   location.pathname === "/user" ? (
@@ -309,13 +321,28 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
                                         {result.email}
                                       </Typography>
                                     </>
-                                  ) : (
+                                  ) : location.pathname === "/department" ? (
                                     <Typography
                                       variant="caption"
                                       color="text.secondary"
                                     >
                                       {result.deptDisplayName}
                                     </Typography>
+                                  ) : (
+                                    <>
+                                      <Typography
+                                        variant="body2"
+                                        color="text.primary"
+                                      >
+                                        {result.value}
+                                      </Typography>
+                                      <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                      >
+                                        Applicable To: {result.applicatbleTo}
+                                      </Typography>
+                                    </>
                                   )
                                 }
                               />

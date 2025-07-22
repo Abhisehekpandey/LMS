@@ -91,6 +91,7 @@ const DataDictionary = ({ searchResults = [] }) => {
         {
           headers: {
             Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+            username: `${sessionStorage.getItem("adminEmail")}`,
           },
         }
       );
@@ -147,6 +148,7 @@ const DataDictionary = ({ searchResults = [] }) => {
           headers: {
             Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
             pageNumber: page.toString(),
+            username: `${sessionStorage.getItem("adminEmail")}`,
           },
         }
       );
@@ -168,6 +170,7 @@ const DataDictionary = ({ searchResults = [] }) => {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+            username: `${sessionStorage.getItem("adminEmail")}`,
           },
           params: {
             search: "",
@@ -245,6 +248,7 @@ const DataDictionary = ({ searchResults = [] }) => {
             headers: {
               "Content-Type": "application/json",
               Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+              username: `${sessionStorage.getItem("adminEmail")}`,
             },
           }
         );
@@ -370,8 +374,15 @@ const DataDictionary = ({ searchResults = [] }) => {
           <Table stickyHeader>
             <TableHead>
               <TableRow
+                // sx={{
+                //   backgroundColor: "#1976d2",
+                // }}
                 sx={{
+                  height: 36, // ⬅️ reduce row height
                   backgroundColor: "#1976d2",
+                  "& td": {
+                    padding: "6px 8px", // ⬅️ reduce cell padding
+                  },
                 }}
               >
                 <TableCell padding="checkbox" align="center">
@@ -390,6 +401,11 @@ const DataDictionary = ({ searchResults = [] }) => {
                 </TableCell>
 
                 <TableCell
+                  sx={{
+                    color: "black",
+                    fontWeight: "bold",
+                    fontFamily: '"Be Vietnam", sans-serif',
+                  }}
                   align="center"
                   sortDirection={
                     sortConfig.key === "id" ? sortConfig.direction : false
@@ -407,6 +423,11 @@ const DataDictionary = ({ searchResults = [] }) => {
                 </TableCell>
 
                 <TableCell
+                  sx={{
+                    color: "black",
+                    fontWeight: "bold",
+                    fontFamily: '"Be Vietnam", sans-serif',
+                  }}
                   align="center"
                   sortDirection={
                     sortConfig.key === "key" ? sortConfig.direction : false
@@ -424,6 +445,11 @@ const DataDictionary = ({ searchResults = [] }) => {
                 </TableCell>
 
                 <TableCell
+                  sx={{
+                    color: "black",
+                    fontWeight: "bold",
+                    fontFamily: '"Be Vietnam", sans-serif',
+                  }}
                   align="center"
                   sortDirection={
                     sortConfig.key === "value" ? sortConfig.direction : false
@@ -441,6 +467,11 @@ const DataDictionary = ({ searchResults = [] }) => {
                 </TableCell>
 
                 <TableCell
+                  sx={{
+                    color: "black",
+                    fontWeight: "bold",
+                    fontFamily: '"Be Vietnam", sans-serif',
+                  }}
                   align="center"
                   sortDirection={
                     sortConfig.key === "applicableTo"
@@ -542,7 +573,7 @@ const DataDictionary = ({ searchResults = [] }) => {
 
         <TablePagination
           rowsPerPageOptions={[10, 15]}
-          component="div"
+          // component="div"
           count={filteredRows.length}
           rowsPerPage={rowsPerPage}
           page={page}
@@ -771,7 +802,7 @@ const DataDictionary = ({ searchResults = [] }) => {
           onClick={handleOpenDialog}
           sx={{
             position: "fixed",
-            bottom: 65,
+            bottom: 20,
             right: 38,
             backgroundColor: "primary.main",
             color: "#fff",

@@ -28,7 +28,16 @@ const DeleteUser = ({ handleClose, rowId }) => {
 
   return (
     <>
-      <DialogTitle>Confirm Deletion</DialogTitle>
+      <DialogTitle
+        sx={{
+          fontWeight: "bold",
+          padding: "8px 12px",
+          backgroundColor: "primary.main", // MUI blue
+          color: "white", // white text
+        }}
+      >
+        Confirm Deletion
+      </DialogTitle>
       <DialogContent>
         <DialogContentText>
           Are you sure you want to delete {rowId.length} user

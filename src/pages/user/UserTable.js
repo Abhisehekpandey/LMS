@@ -65,6 +65,7 @@ import { toggleUserStatusByUsername } from "../../api/userService";
 import { getDepartments } from "../../api/departmentService";
 import { updateUser } from "../../api/userService";
 // import { activateAll } from "../../api/userService";
+import { TableSortLabel } from "@mui/material";
 
 const CustomSwitch = styled(Switch)(({ theme, checked }) => ({
   "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
@@ -262,6 +263,9 @@ const Transition = React.forwardRef(function Transition(props, ref) {
 });
 
 export default function UserTable() {
+  const [order, setOrder] = useState("asc");
+  const [orderBy, setOrderBy] = useState(""); // column field
+
   const [showDeptChange, setShowDeptChange] = useState(false);
 
   const [departments, setDepartments] = useState([]);
@@ -327,6 +331,66 @@ export default function UserTable() {
       />
     )}
   />;
+
+  const handleRequestSort = (property) => {
+    const isAsc = orderBy === property && order === "asc";
+    setOrder(isAsc ? "desc" : "asc");
+    setOrderBy(property);
+  };
+
+  // const getComparator = (order, orderBy) => {
+  //   return order === "desc"
+  //     ? (a, b) => descendingComparator(a, b, orderBy)
+  //     : (a, b) => -descendingComparator(a, b, orderBy);
+  // };
+  const getComparator = (order, orderBy) => {
+    return (a, b) => {
+      // Always show admin at top
+      if (a.email === adminEmail) return -1;
+      if (b.email === adminEmail) return 1;
+
+      const valA = extractValue(a, orderBy);
+      const valB = extractValue(b, orderBy);
+
+      if (order === "desc") {
+        if (valB < valA) return -1;
+        if (valB > valA) return 1;
+      } else {
+        if (valA < valB) return -1;
+        if (valA > valB) return 1;
+      }
+      return 0;
+    };
+  };
+
+
+  const descendingComparator = (a, b, orderBy) => {
+    const valA = extractValue(a, orderBy);
+    const valB = extractValue(b, orderBy);
+
+    if (valB < valA) return -1;
+    if (valB > valA) return 1;
+    return 0;
+  };
+
+  // Extract nested values
+  const extractValue = (row, orderBy) => {
+    switch (orderBy) {
+      case "name":
+      case "email":
+        return row[orderBy]?.toLowerCase() || "";
+      case "department":
+        return row.roles?.[0]?.department?.deptName?.toLowerCase() || "";
+      case "role":
+        return row.roles?.[0]?.roleName?.toLowerCase() || "";
+      case "storageUsed":
+        return toBytes(row.permissions?.displayStorage);
+      default:
+        return "";
+    }
+  };
+
+
 
   const handleSaveChanges = async () => {
     const deptObj = departments.find((d) => d.deptName === editData.department);
@@ -664,6 +728,7 @@ export default function UserTable() {
   const handleClose = () => {
     setMigrationDialog(false);
   };
+  const sortedRows = [...rowsData].sort(getComparator(order, orderBy));
 
   return (
     <Box
@@ -713,11 +778,63 @@ export default function UserTable() {
                   />
                 </TableCell>
                 {/* <TableCell align="center">USER NAME</TableCell> */}
-                <TableCell align="center">Name</TableCell>
-                <TableCell align="center">Department</TableCell>
-                <TableCell align="center">Role</TableCell>
-                <TableCell align="center">User email</TableCell>
+                {/* <TableCell align="center">Name</TableCell> */}
                 <TableCell
+                  align="center"
+                  sortDirection={orderBy === "name" ? order : false}
+                >
+                  <TableSortLabel
+                    active={orderBy === "name"}
+                    direction={orderBy === "name" ? order : "asc"}
+                    onClick={() => handleRequestSort("name")}
+                  >
+                    Name
+                  </TableSortLabel>
+                </TableCell>
+
+                {/* <TableCell align="center">Department</TableCell> */}
+                <TableCell
+                  align="center"
+                  sortDirection={orderBy === "department" ? order : false}
+                >
+                  <TableSortLabel
+                    active={orderBy === "department"}
+                    direction={orderBy === "department" ? order : "asc"}
+                    onClick={() => handleRequestSort("department")}
+                  >
+                    Department
+                  </TableSortLabel>
+                </TableCell>
+
+                {/* <TableCell align="center">Role</TableCell> */}
+                <TableCell
+                  align="center"
+                  sortDirection={orderBy === "role" ? order : false}
+                >
+                  <TableSortLabel
+                    active={orderBy === "role"}
+                    direction={orderBy === "role" ? order : "asc"}
+                    onClick={() => handleRequestSort("role")}
+                  >
+                    Role
+                  </TableSortLabel>
+                </TableCell>
+
+                {/* <TableCell align="center">User email</TableCell> */}
+                <TableCell
+                  align="center"
+                  sortDirection={orderBy === "email" ? order : false}
+                >
+                  <TableSortLabel
+                    active={orderBy === "email"}
+                    direction={orderBy === "email" ? order : "asc"}
+                    onClick={() => handleRequestSort("email")}
+                  >
+                    Name
+                  </TableSortLabel>
+                </TableCell>
+
+                {/* <TableCell
                   align="center"
                   sx={{
                     whiteSpace: "nowrap",
@@ -727,7 +844,20 @@ export default function UserTable() {
                   }}
                 >
                   Storage used
+                </TableCell> */}
+                <TableCell
+                  align="center"
+                  sortDirection={orderBy === "name" ? order : false}
+                >
+                  <TableSortLabel
+                    active={orderBy === "storageUsed"}
+                    direction={orderBy === "storageUsed" ? order : "asc"}
+                    onClick={() => handleRequestSort("storageUsed")}
+                  >
+                    Storage Used
+                  </TableSortLabel>
                 </TableCell>
+
                 <TableCell
                   align="center"
                   sx={{
@@ -754,7 +884,7 @@ export default function UserTable() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {rowsData.map((row, index) => {
+              {sortedRows.map((row, index) => {
                 const isItemSelected = isSelected(row.id);
 
                 return (
@@ -952,7 +1082,6 @@ export default function UserTable() {
                       }}
                     >
                       <>
-                     
                         <Tooltip
                           title={
                             row.email === adminEmail
@@ -1244,11 +1373,20 @@ export default function UserTable() {
 
         {/* delete Dialog */}
         <Dialog open={deleteUser} onClose={() => setDeleteUser(false)}>
-          <DeleteUser
+          {/* <DeleteUser
             // handleClose={() => setDeleteUser(false)}
             handleClose={() => {
               setDeleteUser(false);
               refetchUsers(); // 👈 Add this to refresh the list after deletion
+            }}
+            rowId={selected}
+          /> */}
+          <DeleteUser
+            handleClose={() => {
+              setDeleteUser(false);
+              setSelected([]); // ✅ Clear selected IDs
+              setRowData([]); // ✅ Clear selected row data
+              refetchUsers(); // ✅ Then refresh the table
             }}
             rowId={selected}
           />
@@ -1667,3 +1805,4 @@ export default function UserTable() {
     </Box>
   );
 }
+
