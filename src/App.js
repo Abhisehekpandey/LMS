@@ -25,6 +25,7 @@ import ResetAdminPassword from "./pages/ResetAdminPassword";
 import ChooseExtension from "./pages/ChooseExtension";
 import DepartmentTypeSetting from "./pages/DepartmentTypeSetting";
 import DataDictionary from "./pages/DataDictionary";
+import FeedContext from "./pages/FeedContext";
 
 function App() {
   const [dictionarySearchResults, setDictionarySearchResults] = useState([]);
@@ -127,14 +128,7 @@ function App() {
               </Layout>
             }
           />
-          {/* <Route
-            path="/data-dictionary"
-            element={
-              <Layout onThemeToggle={toggleTheme}>
-                <DataDictionary />
-              </Layout>
-            }
-          /> */}
+        
           <Route
             path="/data-dictionary"
             element={
@@ -143,6 +137,17 @@ function App() {
                 onSearch={setDictionarySearchResults}
               >
                 <DataDictionary searchResults={dictionarySearchResults} />
+              </Layout>
+            }
+          />
+
+          <Route
+            path="/feed-context"
+            element={
+              <Layout
+                onThemeToggle={toggleTheme}
+              >
+                <FeedContext/>
               </Layout>
             }
           />

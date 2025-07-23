@@ -2032,7 +2032,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                           justifyContent: "flex-end",
                                         }}
                                       >
-                                        <IconButton
+                                        {/* <IconButton
                                           size="small"
                                           onClick={() =>
                                             handleEditRole(
@@ -2054,7 +2054,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                           <EditIcon
                                             sx={{ fontSize: "0.875rem" }}
                                           />
-                                        </IconButton>
+                                        </IconButton> */}
                                         <IconButton
                                           size="small"
                                           onClick={() =>

@@ -13,6 +13,8 @@ import {
 } from "@mui/material";
 import { Settings as SettingsIcon } from "@mui/icons-material";
 import { MenuBook as DictionaryIcon } from "@mui/icons-material";
+import { DynamicFeed as FeedContextIcon } from "@mui/icons-material";
+
 
 import {
   People as UserIcon,
@@ -128,6 +130,7 @@ const Sidebar = () => {
   const userRole = user.role || "Role";
   const userInitial = user.initial || "U";
 
+  
   const menuItems = React.useMemo(
     () => [
       { path: "/angelbot", icon: <TimelineIcon />, text: "AngelBot" },
@@ -152,10 +155,16 @@ const Sidebar = () => {
         path: "/data-dictionary",
         icon: <DictionaryIcon />,
         text: "Data Dictionary",
-      }, // ✅ NEW ITEM
+      },
+      {
+        path: "/feed-context",
+        icon: <FeedContextIcon />,
+        text: "Feed Context",
+      },
     ],
     []
   );
+
 
   const handleMouseEnter = () => {
     clearTimeout(timeoutRef.current);

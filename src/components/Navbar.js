@@ -258,7 +258,7 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
         </Box>
 
         {/* Search Center */}
-        {["/user", "/department", "/data-dictionary"].includes(
+        {["/user", "/department", "/data-dictionary","/feed-context"].includes(
           location.pathname
         ) && (
           <SearchWrapper>
