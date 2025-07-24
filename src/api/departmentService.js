@@ -156,3 +156,18 @@ export const updateDepartmentStoragePermission = async (
 
 
 
+export const deleteRole = async (roleId) => {
+  console.log("roleId",roleId)
+  return await axios.delete(
+    `${window.__ENV__.REACT_APP_ROUTE}/tenants/deleteRole/${roleId}`,
+    {
+      headers: {
+        Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+        username: `${sessionStorage.getItem("adminEmail")}`,
+      },
+    }
+  );
+};
+
+
+

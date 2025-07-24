@@ -73,6 +73,7 @@ import Drawer from "@mui/material/Drawer";
 import { PersonAdd as PersonAddIcon } from "@mui/icons-material";
 import { ManageAccounts as ManageAccountsIcon } from "@mui/icons-material";
 import ClickAwayListener from "@mui/material/ClickAwayListener";
+import { deleteRole } from "../api/departmentService";
 
 // Add this import with other imports
 import AddBusinessIcon from "@mui/icons-material/AddBusiness";
@@ -577,31 +578,51 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     setEditRoleDialog(true);
   };
 
-  const handleDeleteRole = (deptName, roleIndex) => {
-    setDepartments((prevDepartments) => {
-      return prevDepartments.map((dept) => {
-        if (dept.name !== deptName) return dept;
+  const handleDeleteRole = async (deptName, roleIndex) => {
+    const department = departments.find((d) => d.name === deptName);
+    if (!department) return;
 
-        if (dept.roles.length <= 1) {
-          setSnackbar({
-            open: true,
-            message:
-              "Cannot delete the last role. Department must have at least one role.",
-            severity: "error",
-          });
-          return dept;
-        }
+    const roleToDelete = department.roles[roleIndex];
+    console.log("roleToDeelete", roleToDelete);
+    if (!roleToDelete || !roleToDelete.id) return;
 
-        const updatedRoles = dept.roles.filter((_, i) => i !== roleIndex);
-        return { ...dept, roles: updatedRoles };
+    if (department.roles.length <= 1) {
+      setSnackbar({
+        open: true,
+        message:
+          "Cannot delete the last role. Department must have at least one role.",
+        severity: "error",
       });
-    });
+      return;
+    }
 
-    setSnackbar({
-      open: true,
-      message: "Role deleted successfully",
-      severity: "success",
-    });
+    try {
+      await deleteRole(roleToDelete.id); // ✅ pass role ID
+
+      setDepartments((prevDepartments) =>
+        prevDepartments.map((dept) =>
+          dept.name === deptName
+            ? {
+                ...dept,
+                roles: dept.roles.filter((_, i) => i !== roleIndex),
+              }
+            : dept
+        )
+      );
+
+      setSnackbar({
+        open: true,
+        message: `Role "${roleToDelete.roleName}" deleted successfully`,
+        severity: "success",
+      });
+    } catch (error) {
+      console.error("Failed to delete role:", error);
+      setSnackbar({
+        open: true,
+        message: `Failed to delete role "${roleToDelete.roleName}"`,
+        severity: "error",
+      });
+    }
   };
 
   const handleSaveRole = () => {
@@ -620,7 +641,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           ? {
               ...dept,
               roles: dept.roles.map((role, i) =>
-                i === editingRole.roleIndex ? editingRole.value : role
+                i === editingRole.roleIndex ? editingRole.value : role.roleName
               ),
             }
           : dept
@@ -1318,7 +1339,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           "Department Moderator": dept.departmentModerator,
           "Storage Allocated": dept.allowedStorage || "N/A",
           "Storage Consumed": dept.storage || "N/A",
-          Role: role,
+          Role: role.roleName,
         }));
       });
 
@@ -1385,7 +1406,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           allowedStorage:
             cleanDisplay(dept.permissions?.allowedStorageInBytesDisplay) ||
             "0 GB", // 🔥
-          roles: dept.roles?.map((r) => r.roleName) || [],
+          // roles: dept.roles?.map((r) => r.roleName) || [],
+          roles: dept.roles || [],
+
           userCount: dept.numberOfUsers || 0,
           isActive: dept.permissions?.active || false,
           createdAt: dept.createdOn,
@@ -2017,7 +2040,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                         color: "#334155",
                                       }}
                                     >
-                                      {role}
+                                      {role.roleName}
                                     </TableCell>
                                     <TableCell
                                       align="right"
@@ -2032,29 +2055,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                           justifyContent: "flex-end",
                                         }}
                                       >
-                                        {/* <IconButton
-                                          size="small"
-                                          onClick={() =>
-                                            handleEditRole(
-                                              dept.name,
-                                              roleIndex,
-                                              role
-                                            )
-                                          }
-                                          sx={{
-                                            padding: "2px",
-                                            color: "primary.main",
-                                            "&:hover": {
-                                              backgroundColor:
-                                                "primary.lighter",
-                                            },
-                                          }}
-                                          title="Edit Role"
-                                        >
-                                          <EditIcon
-                                            sx={{ fontSize: "0.875rem" }}
-                                          />
-                                        </IconButton> */}
                                         <IconButton
                                           size="small"
                                           onClick={() =>

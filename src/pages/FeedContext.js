@@ -1,5 +1,6 @@
 // FeedContext.js
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import {
   Box,
   Paper,
@@ -15,29 +16,6 @@ import {
   Divider,
 } from "@mui/material";
 
-const sampleRows = [
-  {
-    id: 1,
-    user: "John Doe",
-    feedType: "Info",
-    immediateContext: "What's your name?",
-    immediateAnswer: "I am ChatGPT.",
-    historicalContext: "Earlier conversation...",
-    historicalAnswer: "I said I'm a language model.",
-    timestamp: "2025-07-23 10:45:00",
-  },
-  {
-    id: 2,
-    user: "Jane Smith",
-    feedType: "Action",
-    immediateContext: "Turn on the light",
-    immediateAnswer: "Light is turned on.",
-    historicalContext: "Last command was to shut it off.",
-    historicalAnswer: "Light turned off.",
-    timestamp: "2025-07-22 18:30:00",
-  },
-];
-
 function descendingComparator(a, b, orderBy) {
   if (b[orderBy] < a[orderBy]) return -1;
   if (b[orderBy] > a[orderBy]) return 1;
@@ -51,10 +29,33 @@ function getComparator(order, orderBy) {
 }
 
 function FeedContext() {
+  const [rows, setRows] = useState([]);
   const [order, setOrder] = useState("asc");
   const [orderBy, setOrderBy] = useState("user");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        
+        const response = await axios.get(
+          `${window.__ENV__.REACT_APP_ROUTE}/mainGpt/getAllUsersChat`,
+          {
+            headers: {
+              Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+              username: `${sessionStorage.getItem("adminEmail")}`,
+            },
+          }
+        );
+        console.log("chatResponse", response)
+        setRows(response.data);
+      } catch (error) {
+        console.error("Error fetching FeedContext data:", error);
+      }
+    };
+    fetchData();
+  }, []);
 
   const handleRequestSort = (property) => {
     const isAsc = orderBy === property && order === "asc";
@@ -68,7 +69,7 @@ function FeedContext() {
     setPage(0);
   };
 
-  const sortedRows = sampleRows.sort(getComparator(order, orderBy));
+  const sortedRows = rows.sort(getComparator(order, orderBy));
   const paginatedRows = sortedRows.slice(
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
@@ -124,25 +125,35 @@ function FeedContext() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {paginatedRows.map((row) => (
-                <TableRow key={row.id} hover>
-                  <TableCell align="center">{row.user}</TableCell>
-                  <TableCell align="center">{row.feedType}</TableCell>
-                  <TableCell align="center">{row.immediateContext}</TableCell>
-                  <TableCell align="center">{row.immediateAnswer}</TableCell>
-                  <TableCell align="center">{row.historicalContext}</TableCell>
-                  <TableCell align="center">{row.historicalAnswer}</TableCell>
-                  <TableCell align="center">{row.timestamp}</TableCell>
+              {paginatedRows.length > 0 ? (
+                paginatedRows.map((row, idx) => (
+                  <TableRow key={idx} hover>
+                    <TableCell align="center">{row.user}</TableCell>
+                    <TableCell align="center">{row.feedType}</TableCell>
+                    <TableCell align="center">{row.immediateContext}</TableCell>
+                    <TableCell align="center">{row.immediateAnswer}</TableCell>
+                    <TableCell align="center">{row.historicalContext}</TableCell>
+                    <TableCell align="center">{row.historicalAnswer}</TableCell>
+                    <TableCell align="center">{row.timestamp}</TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={7} align="center">
+                    <Typography variant="subtitle1" color="textSecondary">
+                      No Feed Found
+                    </Typography>
+                  </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </TableContainer>
         <Divider />
         <TablePagination
           rowsPerPageOptions={[10, 30, 60, 100]}
-        //   component="div"
-          count={sampleRows.length}
+          component="div"
+          count={rows.length}
           rowsPerPage={rowsPerPage}
           page={page}
           onPageChange={handleChangePage}
@@ -154,5 +165,7 @@ function FeedContext() {
 }
 
 export default FeedContext;
+
+
 
 

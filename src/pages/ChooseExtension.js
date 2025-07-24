@@ -74,14 +74,74 @@ const ChooseExtension = () => {
   const [globalFileSizeUnit, setGlobalFileSizeUnit] = useState("MB");
   const [fileBatchSize, setFileBatchSize] = useState("");
 
-  const handleSaveGlobalSize = () => {
-    const limit = `${globalFileSize} ${globalFileSizeUnit}`;
-    console.log("Global File Size Saved:", limit);
+  // const handleSaveGlobalSize = () => {
+  //   const limit = `${globalFileSize} ${globalFileSizeUnit}`;
+  //   console.log("Global File Size Saved:", limit);
+  // };
+
+  const handleSaveGlobalSize = async () => {
+    const limit = `${globalFileSize}${globalFileSizeUnit}`;
+
+    try {
+      const response = await axios.post(
+        `${window.__ENV__.REACT_APP_ROUTE}/tenants/addFileLimit`,
+        { fileSize: limit },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+            username: `${sessionStorage.getItem("adminEmail")}`,
+          },
+        }
+      );
+
+      console.log("Global File Size Limit Saved:", response.data);
+      setSnackbar({
+        open: true,
+        message: "Global file size limit saved successfully!",
+        severity: "success",
+      });
+    } catch (error) {
+      console.error("Failed to save file size limit:", error);
+      setSnackbar({
+        open: true,
+        message: "Failed to save global file size limit.",
+        severity: "error",
+      });
+    }
   };
 
-  const handleSaveBatchSize = () => {
-    console.log("File Batch Size Saved:", fileBatchSize);
+ 
+  const handleSaveBatchSize = async () => {
+    try {
+      const response = await axios.post(
+        `${window.__ENV__.REACT_APP_ROUTE}/tenants/saveFileBatchSize`,
+        { batchSize: parseInt(fileBatchSize, 10) },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+            username: `${sessionStorage.getItem("adminEmail")}`,
+          },
+        }
+      );
+
+      console.log("File Batch Size Saved:", response.data);
+      setSnackbar({
+        open: true,
+        message: "File batch size saved successfully!",
+        severity: "success",
+      });
+    } catch (error) {
+      console.error("Failed to save file batch size:", error);
+      setSnackbar({
+        open: true,
+        message: "Failed to save file batch size.",
+        severity: "error",
+      });
+    }
   };
+
 
   const isGroupFullySelected = (groupValues) =>
     groupValues.every((ext) => selectedExtensions.includes(ext));

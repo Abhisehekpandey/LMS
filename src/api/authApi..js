@@ -50,7 +50,7 @@ export const loginUser = async (username, password) => {
   } catch (error) {
     console.log(">>eeerror",error)
     // Handle error (e.g., invalid credentials)
-    throw new Error(error.response?.data?.message || "Invalid Credentials check Email and Password ");
+    throw new Error(error?.response?.data?.error || "Invalid Credentials check Email and Password ");
   }
 };
 
