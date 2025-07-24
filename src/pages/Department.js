@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
+import { saveAs } from "file-saver";
+
 import PropTypes from "prop-types";
 import {
   Box,
@@ -706,6 +708,495 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
   const fileInputRef = useRef(null);
 
+  // const handleBulkUpload = async (event) => {
+  //   const file = event.target.files[0];
+  //   if (!file) return;
+
+  //   try {
+  //     const reader = new FileReader();
+  //     reader.onload = (e) => {
+  //       try {
+  //         const data = new Uint8Array(e.target.result);
+  //         const workbook = XLSX.read(data, { type: "array" });
+  //         const sheetName = workbook.SheetNames[0];
+  //         const worksheet = workbook.Sheets[sheetName];
+  //         const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+  //         // Required columns
+  //         const requiredColumns = {
+  //           Department: false,
+  //           "Display Name": false,
+  //           "Department Moderator": false, // Added Department Owner
+  //           "Storage Allocated": false,
+  //           Role: false,
+  //           Status: false,
+  //           Edit: false,
+  //           Delete: false,
+  //         };
+
+  //         // Check which columns are present in the first row
+  //         if (jsonData.length > 0) {
+  //           const firstRow = jsonData[0];
+  //           Object.keys(firstRow).forEach((column) => {
+  //             if (requiredColumns.hasOwnProperty(column)) {
+  //               requiredColumns[column] = true;
+  //             }
+  //           });
+  //         }
+
+  //         // Find missing columns
+  //         const missingColumns = Object.entries(requiredColumns)
+  //           .filter(([_, present]) => !present)
+  //           .map(([column]) => column);
+
+  //         if (missingColumns.length > 0) {
+  //           setSnackbar({
+  //             open: true,
+  //             message: `Invalid file format. Missing required columns: ${missingColumns.join(
+  //               ", "
+  //             )}`,
+  //             severity: "error",
+  //           });
+  //           return;
+  //         }
+
+  //         // Validate data in each row
+  //         const invalidRows = [];
+  //         jsonData.forEach((row, index) => {
+  //           const rowNumber = index + 2; // Add 2 because Excel rows start at 1 and we skip header
+  //           const errors = [];
+
+  //           if (!row.Department) errors.push("Department");
+  //           if (!row["Display Name"]) errors.push("Display Name");
+  //           if (!row["Department Moderator"])
+  //             errors.push("Department Moderator"); // Added validation
+  //           if (!row["Storage Allocated"]) errors.push("Storage Allocated");
+  //           if (row.Role === undefined) errors.push("Role");
+  //           if (!row.Status) errors.push("Status");
+  //           if (row.Edit === undefined) errors.push("Edit");
+  //           if (row.Delete === undefined) errors.push("Delete");
+
+  //           if (errors.length > 0) {
+  //             invalidRows.push(
+  //               `Row ${rowNumber} missing values for: ${errors.join(", ")}`
+  //             );
+  //           }
+  //         });
+
+  //         if (invalidRows.length > 0) {
+  //           setSnackbar({
+  //             open: true,
+  //             message: `Data validation failed:\n${invalidRows.join("\n")}`,
+  //             severity: "error",
+  //           });
+  //           return;
+  //         }
+
+  //         // Validation check
+  //         const isValidData = jsonData.every(
+  //           (row) =>
+  //             row.Department &&
+  //             row["Display Name"] &&
+  //             row["Storage Allocated"] &&
+  //             row.Role !== undefined &&
+  //             row.Status &&
+  //             row.Edit !== undefined &&
+  //             row.Delete !== undefined
+  //         );
+
+  //         if (!isValidData) {
+  //           setSnackbar({
+  //             open: true,
+  //             message: "Invalid file format. Please use the correct template.",
+  //             severity: "error",
+  //           });
+  //           return;
+  //         }
+
+  //         // Group rows by department
+  //         const departmentGroups = {};
+  //         jsonData.forEach((row) => {
+  //           if (!departmentGroups[row.Department]) {
+  //             departmentGroups[row.Department] = [];
+  //           }
+  //           departmentGroups[row.Department].push(row);
+  //         });
+
+  //         let updatedDepartmentsList = [...departments];
+
+  //         let operationSummary = {
+  //           added: [],
+  //           updated: [],
+  //           deleted: [],
+  //           rolesAdded: {},
+  //           rolesDeleted: {},
+  //           rolesUpdated: {},
+  //           skipped: [],
+  //         };
+
+  //         // Process each department
+  //         Object.entries(departmentGroups).forEach(([deptName, rows]) => {
+  //           const existingDeptIndex = updatedDepartmentsList.findIndex(
+  //             (d) => d.name === deptName
+  //           );
+
+  //           if (existingDeptIndex !== -1) {
+  //             if (rows[0].Edit?.toString().toLowerCase() === "yes") {
+  //               // Update department details
+  //               updatedDepartmentsList[existingDeptIndex] = {
+  //                 ...updatedDepartmentsList[existingDeptIndex],
+  //                 displayName: rows[0]["Display Name"],
+  //                 departmentModerator: rows[0]["Department Moderator"],
+  //                 storage: rows[0]["Storage Allocated"],
+  //                 isActive: rows[0].Status.toLowerCase() === "active",
+  //               };
+  //               operationSummary.updated.push(deptName);
+  //             } else {
+  //               operationSummary.skipped.push(deptName);
+  //             }
+
+  //             // Track role changes
+  //             const initialRoles = [
+  //               ...updatedDepartmentsList[existingDeptIndex].roles,
+  //             ];
+
+  //             // Process role deletions
+  //             const updatedRoles = updatedDepartmentsList[
+  //               existingDeptIndex
+  //             ].roles.filter(
+  //               (role) =>
+  //                 !rows.some(
+  //                   (row) =>
+  //                     row.Role === role &&
+  //                     row.Delete?.toString().toLowerCase() === "yes"
+  //                 )
+  //             );
+
+  //             // Track deleted roles
+  //             const deletedRoles = initialRoles.filter(
+  //               (role) => !updatedRoles.includes(role)
+  //             );
+  //             if (deletedRoles.length > 0) {
+  //               operationSummary.rolesDeleted[deptName] = deletedRoles;
+  //             }
+
+  //             // Add new roles
+  //             const initialRolesCount = updatedRoles.length;
+  //             rows.forEach((row) => {
+  //               if (
+  //                 row.Delete?.toString().toLowerCase() !== "yes" &&
+  //                 !updatedRoles.includes(row.Role) &&
+  //                 row.Role
+  //               ) {
+  //                 updatedRoles.push(row.Role);
+  //               }
+  //             });
+
+  //             // Track added roles
+  //             const addedRoles = updatedRoles.slice(initialRolesCount);
+  //             if (addedRoles.length > 0) {
+  //               operationSummary.rolesAdded[deptName] = addedRoles;
+  //             }
+
+  //             if (updatedRoles.length === 0) {
+  //               // Remove department if no roles remain
+  //               updatedDepartmentsList = updatedDepartmentsList.filter(
+  //                 (_, index) => index !== existingDeptIndex
+  //               );
+  //               operationSummary.deleted.push(deptName);
+  //             } else {
+  //               updatedDepartmentsList[existingDeptIndex].roles = updatedRoles;
+  //             }
+  //           } else {
+  //             // New department
+  //             const newDeptRoles = rows
+  //               .filter((row) => row.Delete?.toString().toLowerCase() !== "yes")
+  //               .map((row) => row.Role)
+  //               .filter((role) => role);
+
+  //             if (newDeptRoles.length > 0) {
+  //               updatedDepartmentsList.push({
+  //                 name: deptName,
+  //                 displayName: rows[0]["Display Name"],
+  //                 departmentModerator: rows[0]["Department Moderator"],
+  //                 storage: rows[0]["Storage Allocated"],
+  //                 roles: newDeptRoles,
+  //                 isActive: rows[0].Status.toLowerCase() === "active",
+  //               });
+  //               operationSummary.added.push(deptName);
+  //               operationSummary.rolesAdded[deptName] = newDeptRoles;
+  //             }
+  //           }
+  //         });
+
+  //         // Update state and localStorage
+  //         setDepartments(updatedDepartmentsList);
+
+  //         let summaryMessages = [];
+
+  //         if (operationSummary.added.length > 0) {
+  //           summaryMessages.push(
+  //             `Added departments: ${operationSummary.added.join(", ")}`
+  //           );
+  //         }
+
+  //         if (operationSummary.updated.length > 0) {
+  //           summaryMessages.push(
+  //             `Updated departments: ${operationSummary.updated.join(", ")}`
+  //           );
+  //         }
+
+  //         if (operationSummary.deleted.length > 0) {
+  //           summaryMessages.push(
+  //             `Deleted departments: ${operationSummary.deleted.join(", ")}`
+  //           );
+  //         }
+
+  //         Object.entries(operationSummary.rolesAdded).forEach(
+  //           ([dept, roles]) => {
+  //             summaryMessages.push(
+  //               `Added roles in ${dept}: ${roles.join(", ")}`
+  //             );
+  //           }
+  //         );
+
+  //         Object.entries(operationSummary.rolesDeleted).forEach(
+  //           ([dept, roles]) => {
+  //             summaryMessages.push(
+  //               `Deleted roles in ${dept}: ${roles.join(", ")}`
+  //             );
+  //           }
+  //         );
+
+  //         if (operationSummary.skipped.length > 0) {
+  //           summaryMessages.push(
+  //             `Skipped departments (no changes): ${operationSummary.skipped.join(
+  //               ", "
+  //             )}`
+  //           );
+  //         }
+
+  //         setSnackbar({
+  //           open: true,
+  //           message:
+  //             summaryMessages.length > 0
+  //               ? summaryMessages.join("\n")
+  //               : "No changes were made",
+  //           severity: "success",
+  //         });
+  //       } catch (error) {
+  //         console.error("Error processing file:", error);
+  //         setSnackbar({
+  //           open: true,
+  //           message:
+  //             "Error processing file. Please ensure it matches the template format.",
+  //           severity: "error",
+  //         });
+  //       }
+  //     };
+
+  //     reader.readAsArrayBuffer(file);
+  //   } catch (error) {
+  //     console.error("Error uploading file:", error);
+  //     setSnackbar({
+  //       open: true,
+  //       message: "Error uploading file",
+  //       severity: "error",
+  //     });
+  //   }
+
+  //   event.target.value = "";
+  // };
+
+  // const handleBulkUpload = async (event) => {
+  //   const file = event.target.files[0];
+  //   if (!file) return;
+
+  //   try {
+  //     const reader = new FileReader();
+  //     reader.onload = (e) => {
+  //       try {
+  //         const data = new Uint8Array(e.target.result);
+  //         const workbook = XLSX.read(data, { type: "array" });
+  //         const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+  //         const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+  //         // Define required columns (based on template)
+  //         const requiredColumns = {
+  //           Department: false,
+  //           "Display Name": false,
+  //           "Department Moderator": false,
+  //           "Storage Allocated": false,
+  //           "Storage Consumed": false,
+  //           Role: false,
+  //         };
+
+  //         // Check which required columns are present
+  //         if (jsonData.length > 0) {
+  //           const firstRow = jsonData[0];
+  //           Object.keys(firstRow).forEach((column) => {
+  //             if (requiredColumns.hasOwnProperty(column)) {
+  //               requiredColumns[column] = true;
+  //             }
+  //           });
+  //         }
+
+  //         // Validate missing columns
+  //         const missingColumns = Object.entries(requiredColumns)
+  //           .filter(([_, present]) => !present)
+  //           .map(([column]) => column);
+
+  //         if (missingColumns.length > 0) {
+  //           setSnackbar({
+  //             open: true,
+  //             message: `Invalid file format. Missing required columns: ${missingColumns.join(
+  //               ", "
+  //             )}`,
+  //             severity: "error",
+  //           });
+  //           return;
+  //         }
+
+  //         // Validate each row
+  //         const invalidRows = [];
+  //         jsonData.forEach((row, index) => {
+  //           const rowNumber = index + 2;
+  //           const errors = [];
+
+  //           if (!row.Department) errors.push("Department");
+  //           if (!row["Display Name"]) errors.push("Display Name");
+  //           if (!row["Department Moderator"])
+  //             errors.push("Department Moderator");
+  //           if (!row["Storage Allocated"]) errors.push("Storage Allocated");
+  //           if (row["Storage Consumed"] === undefined)
+  //             row["Storage Consumed"] = 0; // Default to 0
+  //           if (!row.Role) errors.push("Role");
+
+  //           if (errors.length > 0) {
+  //             invalidRows.push(
+  //               `Row ${rowNumber} missing: ${errors.join(", ")}`
+  //             );
+  //           }
+  //         });
+
+  //         if (invalidRows.length > 0) {
+  //           setSnackbar({
+  //             open: true,
+  //             message: `Validation failed:\n${invalidRows.join("\n")}`,
+  //             severity: "error",
+  //           });
+  //           return;
+  //         }
+
+  //         // Group rows by department
+  //         const departmentGroups = {};
+  //         jsonData.forEach((row) => {
+  //           if (!departmentGroups[row.Department]) {
+  //             departmentGroups[row.Department] = [];
+  //           }
+  //           departmentGroups[row.Department].push(row);
+  //         });
+
+  //         let updatedDepartmentsList = [...departments];
+  //         const operationSummary = {
+  //           added: [],
+  //           updated: [],
+  //           skipped: [],
+  //           rolesAdded: {},
+  //         };
+
+  //         // Process each department group
+  //         Object.entries(departmentGroups).forEach(([deptName, rows]) => {
+  //           const existingDeptIndex = updatedDepartmentsList.findIndex(
+  //             (d) => d.name === deptName
+  //           );
+
+  //           const uniqueRoles = Array.from(
+  //             new Set(rows.map((row) => row.Role?.trim()).filter((r) => r))
+  //           );
+
+  //           if (existingDeptIndex !== -1) {
+  //             // Update department
+  //             updatedDepartmentsList[existingDeptIndex] = {
+  //               ...updatedDepartmentsList[existingDeptIndex],
+  //               displayName: rows[0]["Display Name"],
+  //               departmentModerator: rows[0]["Department Moderator"],
+  //               storage: rows[0]["Storage Allocated"],
+  //               usedStorage: rows[0]["Storage Consumed"],
+  //               roles: uniqueRoles,
+  //             };
+  //             operationSummary.updated.push(deptName);
+  //             operationSummary.rolesAdded[deptName] = uniqueRoles;
+  //           } else {
+  //             // New department
+  //             updatedDepartmentsList.push({
+  //               name: deptName,
+  //               displayName: rows[0]["Display Name"],
+  //               departmentModerator: rows[0]["Department Moderator"],
+  //               storage: rows[0]["Storage Allocated"],
+  //               usedStorage: rows[0]["Storage Consumed"],
+  //               roles: uniqueRoles,
+  //             });
+  //             operationSummary.added.push(deptName);
+  //             operationSummary.rolesAdded[deptName] = uniqueRoles;
+  //           }
+  //         });
+
+  //         // Update UI
+  //         setDepartments(updatedDepartmentsList);
+
+  //         // Build summary
+  //         const summaryMessages = [];
+
+  //         if (operationSummary.added.length > 0) {
+  //           summaryMessages.push(
+  //             `Added departments: ${operationSummary.added.join(", ")}`
+  //           );
+  //         }
+  //         if (operationSummary.updated.length > 0) {
+  //           summaryMessages.push(
+  //             `Updated departments: ${operationSummary.updated.join(", ")}`
+  //           );
+  //         }
+  //         Object.entries(operationSummary.rolesAdded).forEach(
+  //           ([dept, roles]) => {
+  //             summaryMessages.push(`Roles in ${dept}: ${roles.join(", ")}`);
+  //           }
+  //         );
+
+  //         setSnackbar({
+  //           open: true,
+  //           message:
+  //             summaryMessages.length > 0
+  //               ? summaryMessages.join("\n")
+  //               : "No changes were made.",
+  //           severity: "success",
+  //         });
+  //       } catch (error) {
+  //         console.error("Error processing file:", error);
+  //         setSnackbar({
+  //           open: true,
+  //           message:
+  //             "Error processing file. Please ensure it matches the template format.",
+  //           severity: "error",
+  //         });
+  //       }
+  //     };
+
+  //     reader.readAsArrayBuffer(file);
+  //   } catch (error) {
+  //     console.error("File read error:", error);
+  //     setSnackbar({
+  //       open: true,
+  //       message: "Error uploading file.",
+  //       severity: "error",
+  //     });
+  //   }
+
+  //   event.target.value = ""; // Reset file input
+  // };
+
+
   const handleBulkUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -716,23 +1207,19 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         try {
           const data = new Uint8Array(e.target.result);
           const workbook = XLSX.read(data, { type: "array" });
-          const sheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[sheetName];
+          const worksheet = workbook.Sheets[workbook.SheetNames[0]];
           const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-          // Required columns
+          // Define required columns based on the template
           const requiredColumns = {
             Department: false,
             "Display Name": false,
-            "Department Moderator": false, // Added Department Owner
+            "Department Moderator": false,
             "Storage Allocated": false,
+            "Storage Consumed": false,
             Role: false,
-            Status: false,
-            Edit: false,
-            Delete: false,
           };
 
-          // Check which columns are present in the first row
           if (jsonData.length > 0) {
             const firstRow = jsonData[0];
             Object.keys(firstRow).forEach((column) => {
@@ -742,7 +1229,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             });
           }
 
-          // Find missing columns
           const missingColumns = Object.entries(requiredColumns)
             .filter(([_, present]) => !present)
             .map(([column]) => column);
@@ -758,25 +1244,25 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             return;
           }
 
-          // Validate data in each row
+          // Validate each row
           const invalidRows = [];
           jsonData.forEach((row, index) => {
-            const rowNumber = index + 2; // Add 2 because Excel rows start at 1 and we skip header
+            const rowNumber = index + 2;
             const errors = [];
 
             if (!row.Department) errors.push("Department");
             if (!row["Display Name"]) errors.push("Display Name");
             if (!row["Department Moderator"])
-              errors.push("Department Moderator"); // Added validation
+              errors.push("Department Moderator");
             if (!row["Storage Allocated"]) errors.push("Storage Allocated");
-            if (row.Role === undefined) errors.push("Role");
-            if (!row.Status) errors.push("Status");
-            if (row.Edit === undefined) errors.push("Edit");
-            if (row.Delete === undefined) errors.push("Delete");
+            if (row["Storage Consumed"] === undefined) {
+              row["Storage Consumed"] = 0;
+            }
+            if (!row.Role) errors.push("Role");
 
             if (errors.length > 0) {
               invalidRows.push(
-                `Row ${rowNumber} missing values for: ${errors.join(", ")}`
+                `Row ${rowNumber} missing: ${errors.join(", ")}`
               );
             }
           });
@@ -784,28 +1270,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           if (invalidRows.length > 0) {
             setSnackbar({
               open: true,
-              message: `Data validation failed:\n${invalidRows.join("\n")}`,
-              severity: "error",
-            });
-            return;
-          }
-
-          // Validation check
-          const isValidData = jsonData.every(
-            (row) =>
-              row.Department &&
-              row["Display Name"] &&
-              row["Storage Allocated"] &&
-              row.Role !== undefined &&
-              row.Status &&
-              row.Edit !== undefined &&
-              row.Delete !== undefined
-          );
-
-          if (!isValidData) {
-            setSnackbar({
-              open: true,
-              message: "Invalid file format. Please use the correct template.",
+              message: `Validation failed:\n${invalidRows.join("\n")}`,
               severity: "error",
             });
             return;
@@ -821,15 +1286,11 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           });
 
           let updatedDepartmentsList = [...departments];
-
-          let operationSummary = {
+          const operationSummary = {
             added: [],
             updated: [],
-            deleted: [],
-            rolesAdded: {},
-            rolesDeleted: {},
-            rolesUpdated: {},
             skipped: [],
+            rolesAdded: {},
           };
 
           // Process each department
@@ -838,99 +1299,42 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               (d) => d.name === deptName
             );
 
+            const uniqueRoles = Array.from(
+              new Set(rows.map((row) => row.Role?.trim()).filter((r) => r))
+            );
+
             if (existingDeptIndex !== -1) {
-              if (rows[0].Edit?.toString().toLowerCase() === "yes") {
-                // Update department details
-                updatedDepartmentsList[existingDeptIndex] = {
-                  ...updatedDepartmentsList[existingDeptIndex],
-                  displayName: rows[0]["Display Name"],
-                  departmentModerator: rows[0]["Department Moderator"],
-                  storage: rows[0]["Storage Allocated"],
-                  isActive: rows[0].Status.toLowerCase() === "active",
-                };
-                operationSummary.updated.push(deptName);
-              } else {
-                operationSummary.skipped.push(deptName);
-              }
-
-              // Track role changes
-              const initialRoles = [
-                ...updatedDepartmentsList[existingDeptIndex].roles,
-              ];
-
-              // Process role deletions
-              const updatedRoles = updatedDepartmentsList[
-                existingDeptIndex
-              ].roles.filter(
-                (role) =>
-                  !rows.some(
-                    (row) =>
-                      row.Role === role &&
-                      row.Delete?.toString().toLowerCase() === "yes"
-                  )
-              );
-
-              // Track deleted roles
-              const deletedRoles = initialRoles.filter(
-                (role) => !updatedRoles.includes(role)
-              );
-              if (deletedRoles.length > 0) {
-                operationSummary.rolesDeleted[deptName] = deletedRoles;
-              }
-
-              // Add new roles
-              const initialRolesCount = updatedRoles.length;
-              rows.forEach((row) => {
-                if (
-                  row.Delete?.toString().toLowerCase() !== "yes" &&
-                  !updatedRoles.includes(row.Role) &&
-                  row.Role
-                ) {
-                  updatedRoles.push(row.Role);
-                }
-              });
-
-              // Track added roles
-              const addedRoles = updatedRoles.slice(initialRolesCount);
-              if (addedRoles.length > 0) {
-                operationSummary.rolesAdded[deptName] = addedRoles;
-              }
-
-              if (updatedRoles.length === 0) {
-                // Remove department if no roles remain
-                updatedDepartmentsList = updatedDepartmentsList.filter(
-                  (_, index) => index !== existingDeptIndex
-                );
-                operationSummary.deleted.push(deptName);
-              } else {
-                updatedDepartmentsList[existingDeptIndex].roles = updatedRoles;
-              }
+              // Update existing department
+              updatedDepartmentsList[existingDeptIndex] = {
+                ...updatedDepartmentsList[existingDeptIndex],
+                displayName: rows[0]["Display Name"],
+                departmentModerator: rows[0]["Department Moderator"],
+                storage: rows[0]["Storage Consumed"], // 👈 used storage
+                manageStorage: rows[0]["Storage Allocated"], // 👈 allocated limit
+                roles: uniqueRoles,
+              };
+              operationSummary.updated.push(deptName);
+              operationSummary.rolesAdded[deptName] = uniqueRoles;
             } else {
-              // New department
-              const newDeptRoles = rows
-                .filter((row) => row.Delete?.toString().toLowerCase() !== "yes")
-                .map((row) => row.Role)
-                .filter((role) => role);
-
-              if (newDeptRoles.length > 0) {
-                updatedDepartmentsList.push({
-                  name: deptName,
-                  displayName: rows[0]["Display Name"],
-                  departmentModerator: rows[0]["Department Moderator"],
-                  storage: rows[0]["Storage Allocated"],
-                  roles: newDeptRoles,
-                  isActive: rows[0].Status.toLowerCase() === "active",
-                });
-                operationSummary.added.push(deptName);
-                operationSummary.rolesAdded[deptName] = newDeptRoles;
-              }
+              // Add new department
+              updatedDepartmentsList.push({
+                name: deptName,
+                displayName: rows[0]["Display Name"],
+                departmentModerator: rows[0]["Department Moderator"],
+                storage: rows[0]["Storage Consumed"],
+                manageStorage: rows[0]["Storage Allocated"],
+                roles: uniqueRoles,
+              });
+              operationSummary.added.push(deptName);
+              operationSummary.rolesAdded[deptName] = uniqueRoles;
             }
           });
 
-          // Update state and localStorage
+          // Update state
           setDepartments(updatedDepartmentsList);
 
-          let summaryMessages = [];
+          // Build operation summary
+          const summaryMessages = [];
 
           if (operationSummary.added.length > 0) {
             summaryMessages.push(
@@ -944,42 +1348,18 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             );
           }
 
-          if (operationSummary.deleted.length > 0) {
-            summaryMessages.push(
-              `Deleted departments: ${operationSummary.deleted.join(", ")}`
-            );
-          }
-
           Object.entries(operationSummary.rolesAdded).forEach(
             ([dept, roles]) => {
-              summaryMessages.push(
-                `Added roles in ${dept}: ${roles.join(", ")}`
-              );
+              summaryMessages.push(`Roles in ${dept}: ${roles.join(", ")}`);
             }
           );
-
-          Object.entries(operationSummary.rolesDeleted).forEach(
-            ([dept, roles]) => {
-              summaryMessages.push(
-                `Deleted roles in ${dept}: ${roles.join(", ")}`
-              );
-            }
-          );
-
-          if (operationSummary.skipped.length > 0) {
-            summaryMessages.push(
-              `Skipped departments (no changes): ${operationSummary.skipped.join(
-                ", "
-              )}`
-            );
-          }
 
           setSnackbar({
             open: true,
             message:
               summaryMessages.length > 0
                 ? summaryMessages.join("\n")
-                : "No changes were made",
+                : "No changes were made.",
             severity: "success",
           });
         } catch (error) {
@@ -995,16 +1375,18 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
       reader.readAsArrayBuffer(file);
     } catch (error) {
-      console.error("Error uploading file:", error);
+      console.error("File read error:", error);
       setSnackbar({
         open: true,
-        message: "Error uploading file",
+        message: "Error uploading file.",
         severity: "error",
       });
     }
 
-    event.target.value = "";
+    event.target.value = ""; // Clear the file input
   };
+
+
 
   // Add pagination handlers
   const handleChangePage = (event, newPage) => {
@@ -1267,48 +1649,71 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     }
   };
 
+  // const handleTemplateDownload = () => {
+  //   const template = [
+  //     {
+  //       Department: "Example Department",
+  //       "Display Name": "EXD",
+  //       "Department Moderator": "John Doe", // Added Department Owner
+  //       "Storage Allocated": "50GB",
+  //       Role: "Role1",
+  //       Status: "Active",
+  //       Edit: "No",
+  //       Delete: "No", // Added Delete column
+  //     },
+  //     {
+  //       Department: "Example Department",
+  //       "Display Name": "EXD",
+  //       "Department Moderator": "John Doe", // Added Department Owner
+  //       "Storage Allocated": "50GB",
+  //       Role: "Role2",
+  //       Status: "Active",
+  //       Edit: "No",
+  //       Delete: "No", // Added Delete column
+  //     },
+  //   ];
+
+  //   const workbook = XLSX.utils.book_new();
+  //   const worksheet = XLSX.utils.json_to_sheet(template);
+
+  //   const wscols = [
+  //     { wch: 25 }, // Department
+  //     { wch: 15 }, // Display Name
+  //     { wch: 25 }, // Department Owner
+  //     { wch: 20 }, // Storage Allocated
+  //     { wch: 30 }, // Role
+  //     { wch: 15 }, // Status
+  //     { wch: 10 }, // Edit
+  //     { wch: 10 }, // Delete
+  //   ];
+  //   worksheet["!cols"] = wscols;
+
+  //   XLSX.utils.book_append_sheet(workbook, worksheet, "Template");
+  //   XLSX.writeFile(workbook, "department_upload_template.xlsx");
+  // };
+
   const handleTemplateDownload = () => {
-    const template = [
-      {
-        Department: "Example Department",
-        "Display Name": "EXD",
-        "Department Moderator": "John Doe", // Added Department Owner
-        "Storage Allocated": "50GB",
-        Role: "Role1",
-        Status: "Active",
-        Edit: "No",
-        Delete: "No", // Added Delete column
-      },
-      {
-        Department: "Example Department",
-        "Display Name": "EXD",
-        "Department Moderator": "John Doe", // Added Department Owner
-        "Storage Allocated": "50GB",
-        Role: "Role2",
-        Status: "Active",
-        Edit: "No",
-        Delete: "No", // Added Delete column
-      },
+    const headers = [
+      "Department", // e.g., "IT"
+      "Display Name", // e.g., "Information Technology"
+      "Department Moderator", // e.g., "john.doe@example.com"
+      "Storage Allocated", // in GB or MB
+      "Storage Consumed", // optional/dummy
+      "Role", // e.g., "Admin, Viewer"
     ];
 
+    const worksheet = XLSX.utils.aoa_to_sheet([headers]);
     const workbook = XLSX.utils.book_new();
-    const worksheet = XLSX.utils.json_to_sheet(template);
-
-    const wscols = [
-      { wch: 25 }, // Department
-      { wch: 15 }, // Display Name
-      { wch: 25 }, // Department Owner
-      { wch: 20 }, // Storage Allocated
-      { wch: 30 }, // Role
-      { wch: 15 }, // Status
-      { wch: 10 }, // Edit
-      { wch: 10 }, // Delete
-    ];
-    worksheet["!cols"] = wscols;
-
     XLSX.utils.book_append_sheet(workbook, worksheet, "Template");
-    XLSX.writeFile(workbook, "department_upload_template.xlsx");
+
+    const excelBuffer = XLSX.write(workbook, {
+      bookType: "xlsx",
+      type: "array",
+    });
+    const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
+    saveAs(blob, "Department_Template.xlsx");
   };
+
 
   const handleBulkDownloadSelected = (selectedItems) => {
     try {

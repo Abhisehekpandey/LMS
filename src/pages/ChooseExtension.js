@@ -115,7 +115,7 @@ const ChooseExtension = () => {
   const handleSaveBatchSize = async () => {
     try {
       const response = await axios.post(
-        `${window.__ENV__.REACT_APP_ROUTE}/tenants/saveFileBatchSize`,
+        `${window.__ENV__.REACT_APP_ROUTE}/tenants/addBatchLimit`,
         { batchSize: parseInt(fileBatchSize, 10) },
         {
           headers: {

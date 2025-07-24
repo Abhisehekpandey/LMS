@@ -98,7 +98,7 @@ export const updateDepartment = async (payload) => {
 
 export const deleteDepartment = async (deptName) => {
   return await axios.delete(
-    `${window.__ENV__.REACT_APP_ROUTE}/dms_service_LM/api/dms_admin_service/department`,
+    `${window.__ENV__.REACT_APP_ROUTE}/tenants/department`,
     {
       headers: {
         "Content-Type": "application/json",
@@ -155,19 +155,19 @@ export const updateDepartmentStoragePermission = async (
 };
 
 
-
 export const deleteRole = async (roleId) => {
-  console.log("roleId",roleId)
-  return await axios.delete(
-    `${window.__ENV__.REACT_APP_ROUTE}/tenants/deleteRole/${roleId}`,
-    {
-      headers: {
-        Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
-        username: `${sessionStorage.getItem("adminEmail")}`,
-      },
-    }
-  );
+  console.log("Deleting roleId:", roleId);
+  return await axios.delete(`${window.__ENV__.REACT_APP_ROUTE}/tenants/role`, {
+    params: {
+      roleId,
+    },
+    headers: {
+      Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+      username: `${sessionStorage.getItem("adminEmail")}`,
+    },
+  });
 };
+
 
 
 

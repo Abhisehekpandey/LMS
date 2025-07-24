@@ -119,34 +119,14 @@ export const fetchUsersByDepartment = async (
 
 
 
-// export const deleteUsers = async (userIds) => {
-//   try {
 
-//    console.log(">>>>uu",userIds)
-//     const response = await axios.delete(
-//       `${window.__ENV__.REACT_APP_ROUTE}/tenants/Deleteusers`, // replace with your actual API endpoint
-//       {
-//         headers: {
-//           Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
-//           "Content-Type": "application/json",
-//         },
-//         data: userIds, // assuming your API expects array of user IDs in body
-//       }
-//     );
-
-//     return response.data;
-//   } catch (error) {
-//     console.error("Error deleting users:", error);
-//     throw error;
-//   }
-// };
 export const deleteUsers = async (userIds) => {
   try {
     const authToken = sessionStorage.getItem("authToken");
     const username = sessionStorage.getItem("adminEmail"); // make sure this is set during login
 
     for (const userId of userIds) {
-      const url = `${window.__ENV__.REACT_APP_ROUTE}/dms_service_LM/api/dms_admin_service/user?userId=${userId}`;
+      const url = `${window.__ENV__.REACT_APP_ROUTE}/tenants/user?userId=${userId}`;
 
       await axios.delete(url, {
         headers: {
