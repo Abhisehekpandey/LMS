@@ -74,24 +74,22 @@ const ChooseExtension = () => {
   const [globalFileSizeUnit, setGlobalFileSizeUnit] = useState("MB");
   const [fileBatchSize, setFileBatchSize] = useState("");
 
-  // const handleSaveGlobalSize = () => {
-  //   const limit = `${globalFileSize} ${globalFileSizeUnit}`;
-  //   console.log("Global File Size Saved:", limit);
-  // };
 
   const handleSaveGlobalSize = async () => {
-    const limit = `${globalFileSize}${globalFileSizeUnit}`;
+    const limit = `${globalFileSize}${globalFileSizeUnit}`; // e.g., "30MB"
 
     try {
       const response = await axios.post(
         `${window.__ENV__.REACT_APP_ROUTE}/tenants/addFileLimit`,
-        { fileSize: limit },
+        {}, // empty body as per updated curl
         {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
             username: `${sessionStorage.getItem("adminEmail")}`,
+            fileSize: limit, // ✅ sent in header
           },
+        
         }
       );
 
@@ -111,12 +109,13 @@ const ChooseExtension = () => {
     }
   };
 
+
  
   const handleSaveBatchSize = async () => {
     try {
       const response = await axios.post(
         `${window.__ENV__.REACT_APP_ROUTE}/tenants/addBatchLimit`,
-        { batchSize: parseInt(fileBatchSize, 10) },
+        { batchSizeLimit: parseInt(fileBatchSize, 10) },
         {
           headers: {
             "Content-Type": "application/json",

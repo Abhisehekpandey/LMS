@@ -149,10 +149,9 @@ export const deleteUsers = async (userIds) => {
 
 
 export const updateUser = async (userData) => {
- 
   try {
     const response = await axios.put(
-      `${window.__ENV__.REACT_APP_ROUTE}/tenants/Updateusers`, // 🔁 Replace with your actual update endpoint
+      `${window.__ENV__.REACT_APP_ROUTE}/tenants/edituser`,
       userData,
       {
         headers: {
@@ -168,6 +167,7 @@ export const updateUser = async (userData) => {
     throw error;
   }
 };
+
 
 
 

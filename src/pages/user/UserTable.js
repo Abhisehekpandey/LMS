@@ -263,6 +263,8 @@ const Transition = React.forwardRef(function Transition(props, ref) {
 });
 
 export default function UserTable() {
+  const [showRoleChange, setShowRoleChange] = useState(false);
+
   const [order, setOrder] = useState("asc");
   const [orderBy, setOrderBy] = useState(""); // column field
 
@@ -338,11 +340,6 @@ export default function UserTable() {
     setOrderBy(property);
   };
 
-  // const getComparator = (order, orderBy) => {
-  //   return order === "desc"
-  //     ? (a, b) => descendingComparator(a, b, orderBy)
-  //     : (a, b) => -descendingComparator(a, b, orderBy);
-  // };
   const getComparator = (order, orderBy) => {
     return (a, b) => {
       // Always show admin at top
@@ -362,7 +359,6 @@ export default function UserTable() {
       return 0;
     };
   };
-
 
   const descendingComparator = (a, b, orderBy) => {
     const valA = extractValue(a, orderBy);
@@ -390,26 +386,58 @@ export default function UserTable() {
     }
   };
 
-
-
-  const handleSaveChanges = async () => {
-    const deptObj = departments.find((d) => d.deptName === editData.department);
-
-    const userPayload = {
-      ...editData,
-      departmentId: deptObj?.id, // Assuming backend expects department ID
-      // other fields as required by backend
-    };
-
+  const fetchFullDepartments = async () => {
     try {
-      await updateUser(userPayload); // 👈 Call the API
-      toast.success("User updated successfully!");
-      setEditDialogOpen(false); // Close dialog
-      refetchUsers(); // Refresh table
+      const res = await getDepartments();
+      console.log("rrrrrr", res);
+      return res.content || [];
     } catch (error) {
-      toast.error("Failed to update user.");
+      console.error("Failed to fetch full departments:", error);
+      return [];
     }
   };
+
+ 
+
+  
+const handleSaveChanges = async () => {
+  console.log("edit",editData)
+  console.log("departments",departments)
+   const fullDepartments = await fetchFullDepartments();
+   console.log("fulldep",fullDepartments)
+  const deptObj = fullDepartments.find((d) => d.deptName === editData.department);
+  console.log("deptObj",deptObj)
+
+  // Ensure valid department and role
+  if (!deptObj) {
+    toast.error("Invalid department selected.");
+    return;
+  }
+
+  const roleObj = deptObj.roles?.find((r) => r.roleName === editData.role);
+
+  if (!roleObj) {
+    toast.error("Invalid role selected.");
+    return;
+  }
+
+  const userPayload = {
+    userId: editData.id,
+    userName: editData.name,
+    phoneNumber: editData.phoneNumber,
+    deptId: deptObj.id,
+    roleId: roleObj.id,
+  };
+
+  try {
+    await updateUser(userPayload);
+    toast.success("User updated successfully!");
+    setEditDialogOpen(false);
+    refetchUsers();
+  } catch (error) {
+    toast.error("Failed to update user.");
+  }
+};
 
   const loadMoreDepartments = async () => {
     if (loadingDepartments.current || !hasMoreDepartments) return;
@@ -723,6 +751,22 @@ export default function UserTable() {
     refetchUsers();
   }, [page, rowsPerPage]);
 
+useEffect(() => {
+  if (editData?.roles?.length > 0) {
+    const dept = editData.roles[0].department;
+    const role = editData.roles[0];
+
+    setSelectedDepartment(dept);
+    setEditData((prev) => ({
+      ...prev,
+      department: dept.deptName,
+      role: role.roleName,
+    }));
+  }
+}, [editData]);
+
+
+
   console.log(">>>rowssss", rowsData);
 
   const handleClose = () => {
@@ -777,8 +821,7 @@ export default function UserTable() {
                     onChange={handleSelectAllClick}
                   />
                 </TableCell>
-                {/* <TableCell align="center">USER NAME</TableCell> */}
-                {/* <TableCell align="center">Name</TableCell> */}
+
                 <TableCell
                   align="center"
                   sortDirection={orderBy === "name" ? order : false}
@@ -792,7 +835,6 @@ export default function UserTable() {
                   </TableSortLabel>
                 </TableCell>
 
-                {/* <TableCell align="center">Department</TableCell> */}
                 <TableCell
                   align="center"
                   sortDirection={orderBy === "department" ? order : false}
@@ -806,7 +848,6 @@ export default function UserTable() {
                   </TableSortLabel>
                 </TableCell>
 
-                {/* <TableCell align="center">Role</TableCell> */}
                 <TableCell
                   align="center"
                   sortDirection={orderBy === "role" ? order : false}
@@ -834,17 +875,6 @@ export default function UserTable() {
                   </TableSortLabel>
                 </TableCell>
 
-                {/* <TableCell
-                  align="center"
-                  sx={{
-                    whiteSpace: "nowrap",
-                    textOverflow: "ellipsis",
-                    overflow: "hidden",
-                    maxWidth: 140,
-                  }}
-                >
-                  Storage used
-                </TableCell> */}
                 <TableCell
                   align="center"
                   sortDirection={orderBy === "name" ? order : false}
@@ -1711,18 +1741,57 @@ export default function UserTable() {
               </Grid>
 
               <Grid item xs={6}>
-                <TextField
-                  size="small"
-                  name="role"
-                  label="Role"
-                  type="text"
-                  fullWidth
-                  variant="outlined"
-                  value={editData.role || ""}
-                  onChange={(e) =>
-                    setEditData((prev) => ({ ...prev, role: e.target.value }))
-                  }
-                />
+                {editData.roles?.length > 0 && !showRoleChange ? (
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <TextField
+                      size="small"
+                      label="Role"
+                      fullWidth
+                      value={editData.roles[0]?.roleName || ""}
+                      InputProps={{ readOnly: true }}
+                    />
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      onClick={() => setShowRoleChange(true)}
+                    >
+                      Change
+                    </Button>
+                  </Box>
+                ) : (
+                  <Autocomplete
+                    size="small"
+                    options={
+                      selectedDepartment?.roles?.length > 0
+                        ? selectedDepartment.roles
+                        : []
+                    }
+                    getOptionLabel={(option) => option.roleName || ""}
+                    value={
+                      selectedDepartment?.roles?.find(
+                        (role) => role.roleName === editData.role
+                      ) || null
+                    }
+                    onChange={(e, value) => {
+                      setEditData((prev) => ({
+                        ...prev,
+                        role: value?.roleName || "",
+                      }));
+                    }}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label={
+                          selectedDepartment?.roles?.length > 0
+                            ? "Select Role"
+                            : "No roles available"
+                        }
+                        fullWidth
+                        disabled={selectedDepartment?.roles?.length === 0}
+                      />
+                    )}
+                  />
+                )}
               </Grid>
 
               <Grid item xs={6}>
@@ -1805,4 +1874,3 @@ export default function UserTable() {
     </Box>
   );
 }
-

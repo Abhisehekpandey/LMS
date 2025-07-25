@@ -1539,6 +1539,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     }
   };
 
+  
+
   const handleAddRole = async () => {
     if (!newRole.trim()) {
       setSnackbar({
@@ -1553,39 +1555,45 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       const payload = {
         department: selectedDepartment.name.trim(),
         role: newRole.trim(),
-        isAdmin: isAdminRole, // ✅ Send boolean value
+        isAdmin: isAdminRole,
       };
 
-      await createRole(payload); // API call
+      await createRole(payload); // ✅ API call
 
-      const departmentData = await getDepartments(page, rowsPerPage);
-      const updatedDepartments = departmentData.content || [];
+      // ✅ Update departments list
+      setDepartments((prev) =>
+        prev.map((dept) =>
+          dept.name === selectedDepartment.name
+            ? {
+                ...dept,
+                roles: [
+                  ...dept.roles,
+                  { roleName: newRole.trim(), isAdmin: isAdminRole },
+                ],
+              }
+            : dept
+        )
+      );
 
-      const mapped = updatedDepartments.map((dept) => ({
-        name: dept.deptName,
-        displayName: dept.deptDisplayName,
-        departmentModerator:
-          dept.deptModerator || dept.permissions?.deptUsername || "",
-        storage: dept.permissions?.displayStorage || "0 GB",
-        allowedStorage:
-          dept.permissions?.allowedStorageInBytesDisplay || "0 GB",
-        roles: dept.roles?.map((r) => r.roleName) || [],
-        userCount: dept.numberOfUsers || 0,
-        isActive: dept.permissions?.active || false,
-        createdAt: dept.createdOn,
+      // ✅ Update selectedDepartment
+      setSelectedDepartment((prev) => ({
+        ...prev,
+        roles: [
+          ...prev.roles,
+          { roleName: newRole.trim(), isAdmin: isAdminRole },
+        ],
       }));
 
-      setDepartments(mapped); // ✅ update UI
-      setTotalDepartments(departmentData.totalElements || 0);
       setSnackbar({
         open: true,
         message: `Role "${newRole}" added successfully.`,
         severity: "success",
       });
 
+      // ✅ Reset form
       setNewRole("");
       setShowAddRoleDialog(false);
-      setIsAdminRole(false); // reset checkbox
+      setIsAdminRole(false);
     } catch (error) {
       console.error("Failed to create role:", error);
       setSnackbar({
@@ -1596,7 +1604,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     }
   };
 
-  // Add after other handler functions
+
+
   const handleDepartmentToggle = (dept) => {
     setDepartments((prev) =>
       prev.map((d) =>
@@ -1808,9 +1817,14 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             dept.deptModerator || dept.permissions?.deptUsername || "",
           // storage: dept.permissions?.allowedStorageInBytesDisplay || "0 GB",
           storage: dept.permissions?.displayStorage || "0 GB",
+          // allowedStorage:
+          //   cleanDisplay(dept.permissions?.allowedStorageInBytesDisplay) ||
+          //   "0 GB", // 🔥
           allowedStorage:
-            cleanDisplay(dept.permissions?.allowedStorageInBytesDisplay) ||
-            "0 GB", // 🔥
+            dept.permissions?.allowedStorageInBytesDisplay === "0.0 bytes"
+              ? "0 GB"
+              : dept.permissions?.allowedStorageInBytesDisplay || "0 GB",
+
           // roles: dept.roles?.map((r) => r.roleName) || [],
           roles: dept.roles || [],
 
