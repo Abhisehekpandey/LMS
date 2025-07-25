@@ -119,31 +119,39 @@ export const fetchUsersByDepartment = async (
 
 
 
-
 export const deleteUsers = async (userIds) => {
-  try {
-    const authToken = sessionStorage.getItem("authToken");
-    const username = sessionStorage.getItem("adminEmail"); // make sure this is set during login
+  const authToken = sessionStorage.getItem("authToken");
+  const username = sessionStorage.getItem("adminEmail");
+  const errors = [];
 
-    for (const userId of userIds) {
-      const url = `${window.__ENV__.REACT_APP_ROUTE}/tenants/user?userId=${userId}`;
+  for (const userId of userIds) {
+    const url = `${window.__ENV__.REACT_APP_ROUTE}/tenants/user?userId=${userId}`;
 
+    try {
       await axios.delete(url, {
         headers: {
           Authorization: `Bearer ${authToken}`,
           username: username,
           "Content-Type": "application/json",
         },
-        // Do NOT pass 'data' for DELETE when using query param
       });
+    } catch (err) {
+      console.error(`Failed to delete user ${userId}:`, err);
+      errors.push({ userId, error: err });
     }
-
-    return { success: true };
-  } catch (error) {
-    console.error("Error deleting users:", error);
-    throw error;
   }
+
+  if (errors.length > 0) {
+    throw {
+      success: false,
+      message: "Some users could not be deleted",
+      details: errors,
+    };
+  }
+
+  return { success: true };
 };
+
 
 
 
