@@ -572,6 +572,7 @@ export default function UserTable() {
   const options = ["10GB", "20GB"];
 
   const handleBulkDownload = () => {
+    console.log("rowData",rowData)
     if (!rowData || rowData.length === 0) {
       alert("No data to download");
       return;

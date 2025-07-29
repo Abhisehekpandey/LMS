@@ -1,7 +1,6 @@
-import React, { useState } from "react";
-import { useRef } from "react";
-
-import axios from "axios"; // Make sure this import exists at the top
+import React, { useState, useRef } from "react";
+import axios from "axios";
+import imageCompression from "browser-image-compression";
 import {
   Box,
   Typography,
@@ -11,7 +10,6 @@ import {
   Snackbar,
   Alert,
   Grid,
-  Divider,
 } from "@mui/material";
 import { Upload, Delete } from "@mui/icons-material";
 
@@ -22,13 +20,14 @@ const ThemeSetting = () => {
     feviconLogo: useRef(),
     mainAppHeaderLogo: useRef(),
   };
+
   const [form, setForm] = useState({
     applicationName: "",
     loginSlogan: "",
     loginLogo: "",
     loginBackground: "",
     mainAppHeaderLogo: "",
-    feviconLogo: "", // <-- Added
+    feviconLogo: "",
   });
 
   const [snackbar, setSnackbar] = useState({
@@ -41,14 +40,29 @@ const ThemeSetting = () => {
     setForm({ ...form, [field]: event.target.value });
   };
 
-  const handleFileUpload = (field) => (event) => {
+  const compressAndConvertToBase64 = async (file) => {
+    const options = {
+      maxSizeMB: 0.5,
+      maxWidthOrHeight: 800,
+      useWebWorker: true,
+    };
+    const compressedFile = await imageCompression(file, options);
+    return await imageCompression.getDataUrlFromFile(compressedFile);
+  };
+
+  const handleFileUpload = (field) => async (event) => {
     const file = event.target.files[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setForm({ ...form, [field]: reader.result }); // Base64 string
-      };
-      reader.readAsDataURL(file);
+      try {
+        const base64 = await compressAndConvertToBase64(file);
+        setForm({ ...form, [field]: base64 });
+      } catch (error) {
+        setSnackbar({
+          open: true,
+          message: "Image compression failed.",
+          severity: "error",
+        });
+      }
     }
   };
 
@@ -110,7 +124,7 @@ const ThemeSetting = () => {
   };
 
   const renderImageUploader = (field, labelText) => (
-    <Grid item xs={12}>
+    <Grid item xs={12} sm={4}>
       <Typography variant="subtitle2" mb={1}>
         {labelText}
       </Typography>
@@ -126,7 +140,7 @@ const ThemeSetting = () => {
             type="file"
             accept="image/*"
             hidden
-            ref={fileInputRefs[field]} // <-- use ref
+            ref={fileInputRefs[field]}
             onChange={handleFileUpload(field)}
           />
         </Button>
@@ -136,7 +150,7 @@ const ThemeSetting = () => {
             onClick={() => {
               handleFileRemove(field);
               if (fileInputRefs[field]?.current) {
-                fileInputRefs[field].current.value = null; // <-- reset input
+                fileInputRefs[field].current.value = null;
               }
             }}
             startIcon={<Delete />}
@@ -195,15 +209,22 @@ const ThemeSetting = () => {
             />
           </Grid>
 
-          {/* Row for logos: 3 items side by side */}
-          <Grid item xs={12} sm={4}>
-            {renderImageUploader("loginLogo", "Login Logo")}
-          </Grid>
-          <Grid item xs={12} sm={4}>
-            {renderImageUploader("loginBackground", "Login Background Image")}
-          </Grid>
-          <Grid item xs={12} sm={4}>
-            {renderImageUploader("feviconLogo", "Favicon Logo")}
+         
+          <Grid item xs={12}>
+            <Box display="flex" gap={2} flexWrap="wrap" alignItems="center">
+              <Box flex={1} minWidth={200}>
+                {renderImageUploader("loginLogo", "Login Logo")}
+              </Box>
+              <Box flex={1} minWidth={200}>
+                {renderImageUploader(
+                  "loginBackground",
+                  "Login Background Image"
+                )}
+              </Box>
+              <Box flex={1} minWidth={200}>
+                {renderImageUploader("feviconLogo", "Favicon Logo")}
+              </Box>
+            </Box>
           </Grid>
         </Grid>
       </Paper>
@@ -213,9 +234,7 @@ const ThemeSetting = () => {
           Main App Header Logo
         </Typography>
         <Grid container spacing={2}>
-          <Grid item xs={12}>
-            {renderImageUploader("mainAppHeaderLogo", "Header Logo")}
-          </Grid>
+          {renderImageUploader("mainAppHeaderLogo", "Header Logo")}
         </Grid>
       </Paper>
 
@@ -250,3 +269,4 @@ const ThemeSetting = () => {
 };
 
 export default ThemeSetting;
+
