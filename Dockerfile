@@ -52,10 +52,12 @@
 
 # # Start Nginx server
 # ENTRYPOINT ["nginx", "-g", "daemon off;"]
-FROM custom_nginx:latest
+FROM custom_nginx_teamsync:base
 COPY ./build/ /usr/share/nginx/html/eoffice
-COPY ./nginx/default.conf /etc/nginx/conf.d/default.conf
-COPY ./nginx/nginx.conf /etc/nginx/nginx.conf
+# COPY ./nginx/default.conf /etc/nginx/conf.d/default.conf
+COPY ./nginx.conf /opt/nginx/conf/nginx.conf
 COPY ./prod-config.js /usr/share/nginx/html/eoffice/env.js
 CMD ["nginx","-g","daemon off;"]
+# Install vim
+# RUN apt-get update && apt-get install -y vim
 

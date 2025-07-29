@@ -724,24 +724,36 @@ const Signup = () => {
     }
   };
 
+  
   // const handleChange = (e) => {
   //   const { name, value } = e.target;
+
   //   setFormData((prev) => ({
   //     ...prev,
   //     [name]: value,
   //   }));
 
-  //   if (errors[name]) {
+  //   // Handle error clearing
+  //   if (name === "emailPrefix" || name === "domain") {
+  //     setErrors((prev) => ({
+  //       ...prev,
+  //       email: "", // email depends on both fields
+  //       domain: name === "domain" ? "" : prev.domain, // only clear domain if it's the one being edited
+  //     }));
+  //   } else if (errors[name]) {
   //     setErrors((prev) => ({
   //       ...prev,
   //       [name]: "",
   //     }));
   //   }
+
+  //   // Update password strength message
   //   if (name === "password") {
   //     const strengthMsg = getPasswordStrengthMessage(value);
   //     setPasswordStrengthMsg(strengthMsg);
   //   }
 
+  //   // Debounced domain availability check
   //   if (name === "domain") {
   //     setDomainAvailable("");
   //     clearTimeout(debounceTimeoutRef.current);
@@ -753,20 +765,24 @@ const Signup = () => {
   //   }
   // };
 
+
   const handleChange = (e) => {
     const { name, value } = e.target;
 
+    // Remove leading and multiple trailing spaces
+    const trimmedValue = value.replace(/^\s+/, ""); // Remove leading spaces
+
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: trimmedValue,
     }));
 
     // Handle error clearing
     if (name === "emailPrefix" || name === "domain") {
       setErrors((prev) => ({
         ...prev,
-        email: "", // email depends on both fields
-        domain: name === "domain" ? "" : prev.domain, // only clear domain if it's the one being edited
+        email: "",
+        domain: name === "domain" ? "" : prev.domain,
       }));
     } else if (errors[name]) {
       setErrors((prev) => ({
@@ -775,23 +791,24 @@ const Signup = () => {
       }));
     }
 
-    // Update password strength message
+    // Password strength logic
     if (name === "password") {
-      const strengthMsg = getPasswordStrengthMessage(value);
+      const strengthMsg = getPasswordStrengthMessage(trimmedValue);
       setPasswordStrengthMsg(strengthMsg);
     }
 
-    // Debounced domain availability check
+    // Debounced domain check
     if (name === "domain") {
       setDomainAvailable("");
       clearTimeout(debounceTimeoutRef.current);
       debounceTimeoutRef.current = setTimeout(() => {
-        if (/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value)) {
-          checkDomain(value);
+        if (/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(trimmedValue)) {
+          checkDomain(trimmedValue);
         }
       }, 600);
     }
   };
+
 
 
 
@@ -803,23 +820,26 @@ const Signup = () => {
       return;
     }
 
+   
+    // const encryptedPassword = encryptFun(
+    //   formData.password,
+    //   formData.emailPrefix.toLowerCase()
+    // );
+
     // const finalData = {
     //   orgName: formData.organization,
     //   adminName: formData.adminName,
-    //   adminEmail: `${formData.emailPrefix}@${formData.domain}`,
-    //   password: formData.password,
+    //   adminEmail: `${formData.emailPrefix.toLowerCase()}@${formData.domain}`,
+    //   password: encryptedPassword,
     // };
-    const encryptedPassword = encryptFun(
-      formData.password,
-      formData.emailPrefix.toLowerCase()
-    );
 
     const finalData = {
       orgName: formData.organization,
       adminName: formData.adminName,
       adminEmail: `${formData.emailPrefix.toLowerCase()}@${formData.domain}`,
-      password: encryptedPassword,
+      password: formData.password, // send raw password
     };
+
 
 
     try {
