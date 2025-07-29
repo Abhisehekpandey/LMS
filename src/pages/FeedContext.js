@@ -15,30 +15,29 @@ import {
   Typography,
   Divider,
 } from "@mui/material";
-
+ 
 function descendingComparator(a, b, orderBy) {
   if (b[orderBy] < a[orderBy]) return -1;
   if (b[orderBy] > a[orderBy]) return 1;
   return 0;
 }
-
+ 
 function getComparator(order, orderBy) {
   return order === "desc"
     ? (a, b) => descendingComparator(a, b, orderBy)
     : (a, b) => -descendingComparator(a, b, orderBy);
 }
-
+ 
 function FeedContext() {
   const [rows, setRows] = useState([]);
   const [order, setOrder] = useState("asc");
   const [orderBy, setOrderBy] = useState("user");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-
+ 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        
         const response = await axios.get(
           `${window.__ENV__.REACT_APP_ROUTE}/mainGpt/getAllUsersChat`,
           {
@@ -48,33 +47,101 @@ function FeedContext() {
             },
           }
         );
-        console.log("chatResponse", response)
-        setRows(response.data);
+ 
+        const rawChats = response.data;
+        console.log("rawChats", rawChats)
+ 
+        // Group chats by username
+        const grouped = {};
+        rawChats.forEach(chat => {
+          const user = chat.username;
+          if (!grouped[user]) grouped[user] = [];
+          grouped[user].push(chat);
+        });
+ 
+        console.log('chatGroup', grouped)
+ 
+        // Process each user's chats
+        const processedData = Object.entries(grouped).map(([username, chats]) => {
+          // Sort chats by newest first
+          chats.sort((a, b) => new Date(b.timestamps) - new Date(a.timestamps));
+ 
+          const immediate = chats[0]; // Most recent chat
+          const historical = chats; // Older chats
+          console.log("Immediate", immediate)
+ 
+          // Flatten sender messages for historical chats
+          const historicalContext = historical
+            .flatMap(c =>
+              c.senderMessageList
+                .filter(msg => msg.sender === "User")
+                .map(msg => `• ${msg.message}`)
+            )
+            .join("\n");
+ 
+          const historicalAnswer = historical
+            .flatMap(c =>
+              c.senderMessageList
+                .filter(msg => msg.sender === "MainGPT")
+                .map(msg => `• ${msg.message}`)
+            )
+            .join("\n");
+ 
+          // Handle immediate messages separately
+          const immediateContext = immediate.senderMessageList
+            .filter(msg => msg.sender === "User")
+            .map(msg => `• ${msg.message}`)
+            .join("\n");
+ 
+          const immediateAnswer = immediate.senderMessageList
+            .filter(msg => msg.sender === "MainGPT")
+            .map(msg => `• ${msg.message}`)
+            .join("\n");
+ 
+          const timestamps = immediate.timestamps.toLocaleString();
+ 
+          return {
+            user: username,
+            feedType: immediate.feedType || "-",
+            immediateContext: immediateContext || "-",
+            immediateAnswer: immediateAnswer || "-",
+            historicalContext: historicalContext || "-",
+            historicalAnswer: historicalAnswer || "-",
+            timestamps,
+          };
+        });
+ 
+ 
+ 
+        console.log('chatprocesseddata', processedData)
+ 
+        setRows(processedData);
       } catch (error) {
         console.error("Error fetching FeedContext data:", error);
       }
     };
     fetchData();
   }, []);
-
+ 
+ 
   const handleRequestSort = (property) => {
     const isAsc = orderBy === property && order === "asc";
     setOrder(isAsc ? "desc" : "asc");
     setOrderBy(property);
   };
-
+ 
   const handleChangePage = (event, newPage) => setPage(newPage);
   const handleChangeRowsPerPage = (event) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
   };
-
+ 
   const sortedRows = rows.sort(getComparator(order, orderBy));
   const paginatedRows = sortedRows.slice(
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
   );
-
+ 
   return (
     <Box sx={{ p: 2, ml: { xs: 0, sm: "70px", md: "75px" } }}>
       <Paper
@@ -96,7 +163,7 @@ function FeedContext() {
           <Table stickyHeader>
             <TableHead>
               <TableRow>
-                {["user", "feedType", "immediateContext", "immediateAnswer", "historicalContext", "historicalAnswer", "timestamp"].map(
+                {["user", "feedType", "immediateContext", "immediateAnswer", "historicalContext", "historicalAnswer", "timestamps"].map(
                   (head) => (
                     <TableCell
                       key={head}
@@ -116,7 +183,7 @@ function FeedContext() {
                           immediateAnswer: "Immediate Feed Answer",
                           historicalContext: "Historical Feed Context",
                           historicalAnswer: "Historical Feed Answer",
-                          timestamp: "Data Time Stamp",
+                          timestamps: "Data Time Stamp",
                         }[head]}
                       </TableSortLabel>
                     </TableCell>
@@ -130,11 +197,11 @@ function FeedContext() {
                   <TableRow key={idx} hover>
                     <TableCell align="center">{row.user}</TableCell>
                     <TableCell align="center">{row.feedType}</TableCell>
-                    <TableCell align="center">{row.immediateContext}</TableCell>
-                    <TableCell align="center">{row.immediateAnswer}</TableCell>
-                    <TableCell align="center">{row.historicalContext}</TableCell>
-                    <TableCell align="center">{row.historicalAnswer}</TableCell>
-                    <TableCell align="center">{row.timestamp}</TableCell>
+                    <TableCell align="left" sx={{ whiteSpace: "pre-line" }}>{row.immediateContext}</TableCell>
+                    <TableCell align="left" sx={{ whiteSpace: "pre-line" }}>{row.immediateAnswer}</TableCell>
+                    <TableCell align="left" sx={{ whiteSpace: "pre-line" }}>{row.historicalContext}</TableCell>
+                    <TableCell align="left" sx={{ whiteSpace: "pre-line" }}>{row.historicalAnswer}</TableCell>
+                    <TableCell align="left" sx={{ whiteSpace: "pre-line" }}>{row.timestamps}</TableCell>
                   </TableRow>
                 ))
               ) : (
@@ -163,8 +230,9 @@ function FeedContext() {
     </Box>
   );
 }
-
+ 
 export default FeedContext;
+ 
 
 
 

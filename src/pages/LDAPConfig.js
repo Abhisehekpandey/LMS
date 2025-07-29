@@ -9,6 +9,8 @@ import SmsIcon from "@mui/icons-material/Sms";
 import WhatsAppIcon from "@mui/icons-material/WhatsApp";
 import EmailIcon from "@mui/icons-material/Email";
 import DnsIcon from "@mui/icons-material/Dns";
+import { useTheme } from "@mui/material/styles";
+
 
 import {
   Box,
@@ -146,6 +148,9 @@ const LDAPConfig = () => {
   const selectedServer = current.selectedServer;
   const servers = current.servers;
   const config = current.configs[selectedServer];
+
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
 
   useEffect(() => {
     if (status.message) {
@@ -534,7 +539,7 @@ const LDAPConfig = () => {
                     name="username"
                     value={config.username}
                     onChange={handleChange}
-                    sx={{ backgroundColor: "#fff9c4" }}
+                    
                   />
                 </Grid>
                 <Grid item xs={7}>
@@ -545,7 +550,6 @@ const LDAPConfig = () => {
                     type="password"
                     value={config.password}
                     onChange={handleChange}
-                    sx={{ backgroundColor: "#fff9c4" }}
                   />
                 </Grid>
                 <Grid
@@ -1529,6 +1533,7 @@ const LDAPConfig = () => {
   };
 
   return (
+ 
     <Box
       sx={{
         display: "flex",
@@ -1539,6 +1544,11 @@ const LDAPConfig = () => {
         py: 3,
         width: "80%",
         margin: "auto",
+        backgroundColor: isDark ? theme.palette.background.paper : "#ffffff",
+       
+        boxShadow: isDark
+          ? "0 0 10px rgba(255,255,255,0.05)"
+          : "0 1px 4px rgba(0,0,0,0.1)",
       }}
     >
       <Box sx={{ width: 230 }}>

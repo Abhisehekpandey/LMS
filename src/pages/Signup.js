@@ -724,24 +724,64 @@ const Signup = () => {
     }
   };
 
+  // const handleChange = (e) => {
+  //   const { name, value } = e.target;
+  //   setFormData((prev) => ({
+  //     ...prev,
+  //     [name]: value,
+  //   }));
+
+  //   if (errors[name]) {
+  //     setErrors((prev) => ({
+  //       ...prev,
+  //       [name]: "",
+  //     }));
+  //   }
+  //   if (name === "password") {
+  //     const strengthMsg = getPasswordStrengthMessage(value);
+  //     setPasswordStrengthMsg(strengthMsg);
+  //   }
+
+  //   if (name === "domain") {
+  //     setDomainAvailable("");
+  //     clearTimeout(debounceTimeoutRef.current);
+  //     debounceTimeoutRef.current = setTimeout(() => {
+  //       if (/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value)) {
+  //         checkDomain(value);
+  //       }
+  //     }, 600);
+  //   }
+  // };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
+
     setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
 
-    if (errors[name]) {
+    // Handle error clearing
+    if (name === "emailPrefix" || name === "domain") {
+      setErrors((prev) => ({
+        ...prev,
+        email: "", // email depends on both fields
+        domain: name === "domain" ? "" : prev.domain, // only clear domain if it's the one being edited
+      }));
+    } else if (errors[name]) {
       setErrors((prev) => ({
         ...prev,
         [name]: "",
       }));
     }
+
+    // Update password strength message
     if (name === "password") {
       const strengthMsg = getPasswordStrengthMessage(value);
       setPasswordStrengthMsg(strengthMsg);
     }
 
+    // Debounced domain availability check
     if (name === "domain") {
       setDomainAvailable("");
       clearTimeout(debounceTimeoutRef.current);
@@ -752,6 +792,8 @@ const Signup = () => {
       }, 600);
     }
   };
+
+
 
   const handleSignup = async (e) => {
     e.preventDefault();

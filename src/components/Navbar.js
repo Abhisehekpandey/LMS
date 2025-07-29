@@ -258,9 +258,13 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
         </Box>
 
         {/* Search Center */}
-        {["/user", "/department", "/data-dictionary","/feed-context"].includes(
-          location.pathname
-        ) && (
+        {[
+          "/user",
+          "/department",
+          "/data-dictionary",
+          "/feed-context",
+          "/department-type-setting",
+        ].includes(location.pathname) && (
           <SearchWrapper>
             <SearchIconWrapper>
               <SearchIcon sx={{ fontSize: "1.2rem", color: "inherit" }} />

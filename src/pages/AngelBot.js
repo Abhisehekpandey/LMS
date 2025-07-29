@@ -497,14 +497,20 @@ const AngelBot = () => {
         return `${params.name}: ${valueFormatted} (${params.percent}%)`;
       },
     },
+   
     legend: {
       orient: "horizontal",
       left: "left",
+      textStyle: {
+        color: isDark ? "#fff" : "#000",
+        // fontWeight: "bold",
+      },
       formatter: function (name) {
         const item = userStatsData.find((d) => d.name === name);
         return `${name} ${item?.value || 0}`;
       },
     },
+
     series: [
       {
         name: "Status",
@@ -547,14 +553,27 @@ const AngelBot = () => {
         return `${params.name}: ${valueFormatted} (${params.percent}%)`;
       },
     },
+    // legend: {
+    //   orient: "horizontal",
+    //   left: "center",
+    //   formatter: function (name) {
+    //     const item = storageStatusData.find((d) => d.name === name);
+    //     return `${name} (${formatSize(item.value)})`;
+    //   },
+    // },
     legend: {
       orient: "horizontal",
       left: "center",
+      textStyle: {
+        color: isDark ? "#fff" : "#000",
+        // fontWeight: "bold",
+      },
       formatter: function (name) {
         const item = storageStatusData.find((d) => d.name === name);
         return `${name} (${formatSize(item.value)})`;
       },
     },
+
     series: [
       {
         name: "Status",
@@ -597,15 +616,28 @@ const AngelBot = () => {
         }%)`;
       },
     },
+    // legend: {
+    //   orient: "horizontal",
+    //   left: "center",
+
+    //   formatter: function (name) {
+    //     const item = storageDistributionData.find((d) => d.name === name);
+    //     return `${name} (${item ? formatSizeGB(item.value) : "0 GB"})`;
+    //   },
+    // },
     legend: {
       orient: "horizontal",
       left: "center",
-
+      textStyle: {
+        color: isDark ? "#fff" : "#000",
+        fontWeight: "bold",
+      },
       formatter: function (name) {
         const item = storageDistributionData.find((d) => d.name === name);
         return `${name} (${item ? formatSizeGB(item.value) : "0 GB"})`;
       },
     },
+
     series: [
       {
         name: "Status",
@@ -1998,7 +2030,7 @@ const AngelBot = () => {
                                 (user.storageUsed / user.storageAllocated) * 100
                               )}%`}
                             </Typography>
-                            <Tooltip title="Increase Storage" arrow>
+                            {/* <Tooltip title="Increase Storage" arrow>
                               <IconButton
                                 size="small"
                                 onClick={() =>
@@ -2026,7 +2058,7 @@ const AngelBot = () => {
                               >
                                 <Add fontSize="inherit" />
                               </IconButton>
-                            </Tooltip>
+                            </Tooltip> */}
                           </Box>
                         ))}
                       <TablePagination
@@ -2209,7 +2241,7 @@ const AngelBot = () => {
                                 (dept.storageUsed / dept.storageAllocated) * 100
                               )}%`}
                             </Typography>
-                            <Tooltip title="Increase Storage" arrow>
+                            {/* <Tooltip title="Increase Storage" arrow>
                               <IconButton
                                 size="small"
                                 onClick={() =>
@@ -2237,7 +2269,7 @@ const AngelBot = () => {
                               >
                                 <Add fontSize="inherit" />
                               </IconButton>
-                            </Tooltip>
+                            </Tooltip> */}
                           </Box>
                         ))}
                       <TablePagination

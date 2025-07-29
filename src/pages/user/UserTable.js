@@ -299,6 +299,8 @@ export default function UserTable() {
   const [Storage, setStorage] = React.useState("");
   const [loading, setLoading] = useState(true);
   const [selectedDepartment, setSelectedDepartment] = useState(null);
+  const [userRoleMap, setUserRoleMap] = useState({});
+  const [fullDepartments, setFullDepartments] = useState([]);
 
   <Autocomplete
     options={departments}
@@ -333,6 +335,12 @@ export default function UserTable() {
       />
     )}
   />;
+
+  const handleCloseDialog = () => {
+    setEditDialogOpen(false);
+    setEditData({});
+    setSelectedDepartment(null);
+  };
 
   const handleRequestSort = (property) => {
     const isAsc = orderBy === property && order === "asc";
@@ -397,47 +405,57 @@ export default function UserTable() {
     }
   };
 
- 
+  const handleSaveChanges = async () => {
+    console.log("editData:", editData);
 
-  
-const handleSaveChanges = async () => {
-  console.log("edit",editData)
-  console.log("departments",departments)
-   const fullDepartments = await fetchFullDepartments();
-   console.log("fulldep",fullDepartments)
-  const deptObj = fullDepartments.find((d) => d.deptName === editData.department);
-  console.log("deptObj",deptObj)
+    try {
+      const fullDepartments = await fetchFullDepartments();
+      console.log("Full Departments:", fullDepartments);
 
-  // Ensure valid department and role
-  if (!deptObj) {
-    toast.error("Invalid department selected.");
-    return;
-  }
+      const deptObj = fullDepartments.find(
+        (d) => d.deptName?.toLowerCase() === editData.department?.toLowerCase()
+      );
 
-  const roleObj = deptObj.roles?.find((r) => r.roleName === editData.role);
+      if (!deptObj) {
+        toast.error("Invalid department selected.");
+        return;
+      }
 
-  if (!roleObj) {
-    toast.error("Invalid role selected.");
-    return;
-  }
+      const roleObj = deptObj.roles?.find(
+        (r) => r.roleName?.toLowerCase() === editData.role?.toLowerCase()
+      );
 
-  const userPayload = {
-    userId: editData.id,
-    userName: editData.name,
-    phoneNumber: editData.phoneNumber,
-    deptId: deptObj.id,
-    roleId: roleObj.id,
+      if (!roleObj) {
+        toast.error("Invalid role selected.");
+        return;
+      }
+
+      const userPayload = {
+        userId: editData.id,
+        userName: editData.name,
+        phoneNumber: editData.phoneNumber,
+        deptId: deptObj.id,
+        roleId: roleObj.id, // ✅ actual roleId saved
+      };
+
+      console.log("Final userPayload:", userPayload);
+
+      await updateUser(userPayload);
+
+      // 🧠 Save selected roleId locally to reuse in handleEdit
+      setUserRoleMap((prev) => ({
+        ...prev,
+        [editData.id]: roleObj.id,
+      }));
+
+      toast.success("User updated successfully!");
+      setEditDialogOpen(false);
+      refetchUsers();
+    } catch (error) {
+      console.error("Error updating user:", error);
+      toast.error("Failed to update user.");
+    }
   };
-
-  try {
-    await updateUser(userPayload);
-    toast.success("User updated successfully!");
-    setEditDialogOpen(false);
-    refetchUsers();
-  } catch (error) {
-    toast.error("Failed to update user.");
-  }
-};
 
   const loadMoreDepartments = async () => {
     if (loadingDepartments.current || !hasMoreDepartments) return;
@@ -474,24 +492,48 @@ const handleSaveChanges = async () => {
     setStorage(event.target.value);
   };
 
-  const handleEdit = (e, row) => {
-    const deptName = row.roles?.[0]?.department?.deptName || "";
-    const roleName = row.roles?.[0]?.roleName || "";
+  const handleEdit = async (e, row) => {
+    console.log("Editing user:", row);
 
-    setEditData({
-      ...row,
-      department: deptName,
-      role: roleName,
-    });
+    try {
+      const fullDepartments = await fetchFullDepartments(); // ✅ call your function
+      setFullDepartments(fullDepartments); // ✅ save it to state
 
-    // ✅ Set selected department object
-    const matchingDept = departments.find((d) => d.deptName === deptName);
-    setSelectedDepartment(matchingDept || null);
+      const savedRoleId = userRoleMap[row.id];
+      const currentRole =
+        row.roles?.find((r) => r.id === savedRoleId) || row.roles?.[0];
 
-    setEditDialogOpen(true);
+      const deptName = currentRole?.department?.deptName || "";
+      const roleName = currentRole?.roleName || "";
+
+      const deptObj =
+        fullDepartments.find(
+          (d) => d.deptName?.toLowerCase() === deptName?.toLowerCase()
+        ) || null;
+
+      const matchedRole =
+        deptObj?.roles?.find(
+          (r) => r.roleName?.toLowerCase() === roleName?.toLowerCase()
+        ) || null;
+
+      const newEditData = {
+        id: row.id,
+        name: row.name || "",
+        email: row.email || "",
+        phoneNumber: row.phone || "",
+        department: deptName,
+        role: matchedRole?.roleName || roleName,
+        roles: row.roles || [],
+      };
+
+      setEditData(newEditData);
+      setSelectedDepartment(deptObj);
+      setEditDialogOpen(true);
+    } catch (error) {
+      console.error("Failed to load departments", error);
+      toast.error("Unable to fetch departments. Please try again.");
+    }
   };
-
-  // console.log(rowData);
 
   const handleMigration = () => {
     setMigrationDialog(true);
@@ -750,22 +792,6 @@ const handleSaveChanges = async () => {
   useEffect(() => {
     refetchUsers();
   }, [page, rowsPerPage]);
-
-useEffect(() => {
-  if (editData?.roles?.length > 0) {
-    const dept = editData.roles[0].department;
-    const role = editData.roles[0];
-
-    setSelectedDepartment(dept);
-    setEditData((prev) => ({
-      ...prev,
-      department: dept.deptName,
-      role: role.roleName,
-    }));
-  }
-}, [editData]);
-
-
 
   console.log(">>>rowssss", rowsData);
 
@@ -1087,9 +1113,6 @@ useEffect(() => {
                                 checked={row.active && row.enabled}
                                 onChange={() => handleStatusToggle(row.name)}
                                 disabled={
-                                  // Disable if:
-                                  // 1. user is pending (active but not enabled), OR
-                                  // 2. storage is not provided
                                   (row.active && !row.enabled) ||
                                   (!row.active &&
                                     (!row.permissions
@@ -1401,16 +1424,7 @@ useEffect(() => {
           </div>
         </div>
 
-        {/* delete Dialog */}
         <Dialog open={deleteUser} onClose={() => setDeleteUser(false)}>
-          {/* <DeleteUser
-            // handleClose={() => setDeleteUser(false)}
-            handleClose={() => {
-              setDeleteUser(false);
-              refetchUsers(); // 👈 Add this to refresh the list after deletion
-            }}
-            rowId={selected}
-          /> */}
           <DeleteUser
             handleClose={() => {
               setDeleteUser(false);
@@ -1514,7 +1528,7 @@ useEffect(() => {
                     // ✅ Select all user IDs
                     const allIds = allUsers.map((u) => u.id);
                     setSelected(allIds);
-                    setRowData(allUsers); // Store all user data in rowData
+                    setRowData(allUsers); // Store all user data in rowDatahandle
                   } catch (error) {
                     console.error("Failed to fetch all users:", error);
                     alert("Something went wrong while selecting all users.");
@@ -1527,7 +1541,6 @@ useEffect(() => {
           </DialogActions>
         </Dialog>
 
-        {/* migration */}
         <Dialog open={migrationDialog} onClose={handleClose} fullWidth>
           <Migration
             handleClos={handleClose}
@@ -1562,10 +1575,8 @@ useEffect(() => {
             },
           }}
         >
-          {/* <CreateUser handleClose={() => setCreateUser(false)} /> */}
           <CreateUser
             handleClose={() => setCreateUser(false)}
-            // onUserCreated={refetchUsers}
             onUserCreated={(page, newUserEmails) => {
               refetchUsers(page, newUserEmails);
             }}
@@ -1576,254 +1587,109 @@ useEffect(() => {
             }}
             allUsers={rowsData} // <-- pass all users here
           />
-          {/* <Department allUsers={rowsData} /> */}
         </Dialog>
 
-        {/* edit dialog */}
         <Dialog
           open={editDialogOpen}
           onClose={() => setEditDialogOpen(false)}
           maxWidth="sm"
-          sx={{
-            animation: "slideInFromLeft 0.2s ease-in-out forwards",
-            opacity: 0, // Start with opacity 0
-            transform: "translateX(-50px)", // Start from left
-            "@keyframes slideInFromLeft": {
-              "0%": {
-                opacity: 0,
-                transform: "translateX(-50px)",
-              },
-              "100%": {
-                opacity: 1,
-                transform: "translateX(0)",
-              },
-            },
-          }}
         >
           <DialogTitle
             sx={{
-              pb: 1,
-              borderBottom: "1px solid #eee",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              p: 1,
-              backgroundColor: "primary.main",
+              backgroundColor: (theme) => theme.palette.primary.main,
+              color: "#fff",
+              fontWeight: "bold",
             }}
           >
-            <Typography
-              variant="h6"
-              sx={{
-                fontFamily: '"Be Vietnam", sans-serif',
-                color: "#ffff",
-              }}
-            >
-              EDIT USER
-            </Typography>
-            <IconButton
-              onClick={() => setEditDialogOpen(false)}
-              size="small"
-              sx={{
-                color: "#ffff",
-                border: "1px solid",
-                borderColor: "#ffff",
-                bgcolor: "error.lighter",
-                borderRadius: "50%",
-                position: "relative",
-                "&:hover": {
-                  color: "#ffff",
-                  borderColor: "#ffff",
-                  bgcolor: "error.lighter",
-                  transform: "rotate(180deg)",
-                },
-                transition: "transform 0.3s ease",
-              }}
-            >
-              <Close
-                sx={{
-                  fontSize: "1.1rem",
-                  transition: "transform 0.2s ease",
-                }}
-              />
-            </IconButton>
+            Edit User
           </DialogTitle>
           <DialogContent dividers>
-            {/* First row */}
             <Grid container spacing={2}>
-              <Grid item xs={4}>
+              <Grid item xs={6}>
                 <TextField
                   size="small"
-                  name="name"
                   label="Full Name"
-                  type="text"
                   fullWidth
-                  variant="outlined"
                   value={editData.name || ""}
                   onChange={(e) =>
                     setEditData((prev) => ({ ...prev, name: e.target.value }))
                   }
                 />
               </Grid>
-
-              <Grid item xs={8}>
-                {showDeptChange ? (
-                  <Autocomplete
-                    options={departments}
-                    getOptionLabel={(option) => option.deptName || ""}
-                    value={selectedDepartment}
-                    onChange={(e, value) => {
-                      if (!value) {
-                        // If no selection made, keep previous department
-                        const existing = departments.find(
-                          (d) => d.deptName === editData.department
-                        );
-                        setSelectedDepartment(existing || null);
-                        return;
-                      }
-
-                      // New department selected
-                      setSelectedDepartment(value);
-                      setEditData((prev) => ({
-                        ...prev,
-                        department: value.deptName || "",
-                      }));
-                    }}
-                    onBlur={() => {
-                      // Restore to previous department if nothing selected and field loses focus
-                      if (!selectedDepartment) {
-                        const existing = departments.find(
-                          (d) => d.deptName === editData.department
-                        );
-                        setSelectedDepartment(existing || null);
-                      }
-                    }}
-                    ListboxProps={{
-                      style: { maxHeight: 300, overflow: "auto" },
-                      onScroll: (event) => {
-                        const listboxNode = event.currentTarget;
-                        const threshold = 50;
-                        if (
-                          listboxNode.scrollTop + listboxNode.clientHeight >=
-                          listboxNode.scrollHeight - threshold
-                        ) {
-                          loadMoreDepartments();
-                        }
-                      },
-                    }}
-                    renderInput={(params) => (
-                      <TextField
-                        {...params}
-                        size="small"
-                        label="Department"
-                        fullWidth
-                        variant="outlined"
-                      />
-                    )}
-                  />
-                ) : (
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <TextField
-                      size="small"
-                      label="Department"
-                      fullWidth
-                      value={editData.department || ""}
-                      InputProps={{ readOnly: true }}
-                    />
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      onClick={() => setShowDeptChange(true)}
-                    >
-                      Change
-                    </Button>
-                  </Box>
-                )}
-              </Grid>
-
-              <Grid item xs={6}>
-                {editData.roles?.length > 0 && !showRoleChange ? (
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <TextField
-                      size="small"
-                      label="Role"
-                      fullWidth
-                      value={editData.roles[0]?.roleName || ""}
-                      InputProps={{ readOnly: true }}
-                    />
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      onClick={() => setShowRoleChange(true)}
-                    >
-                      Change
-                    </Button>
-                  </Box>
-                ) : (
-                  <Autocomplete
-                    size="small"
-                    options={
-                      selectedDepartment?.roles?.length > 0
-                        ? selectedDepartment.roles
-                        : []
-                    }
-                    getOptionLabel={(option) => option.roleName || ""}
-                    value={
-                      selectedDepartment?.roles?.find(
-                        (role) => role.roleName === editData.role
-                      ) || null
-                    }
-                    onChange={(e, value) => {
-                      setEditData((prev) => ({
-                        ...prev,
-                        role: value?.roleName || "",
-                      }));
-                    }}
-                    renderInput={(params) => (
-                      <TextField
-                        {...params}
-                        label={
-                          selectedDepartment?.roles?.length > 0
-                            ? "Select Role"
-                            : "No roles available"
-                        }
-                        fullWidth
-                        disabled={selectedDepartment?.roles?.length === 0}
-                      />
-                    )}
-                  />
-                )}
-              </Grid>
-
-              <Grid item xs={6}>
-                <Tooltip title="Email cannot be edited" placement="top">
-                  <TextField
-                    size="small"
-                    name="email"
-                    label="Email"
-                    type="email"
-                    fullWidth
-                    variant="outlined"
-                    value={editData.email || ""}
-                    disabled
-                    sx={{
-                      backgroundColor: "#f5f5f5",
-                      "& .MuiInputBase-input.Mui-disabled": {
-                        WebkitTextFillColor: "#666",
-                      },
-                      cursor: "not-allowed",
-                    }}
-                  />
-                </Tooltip>
-              </Grid>
-
               <Grid item xs={6}>
                 <TextField
                   size="small"
-                  name="phone"
+                  label="Email"
                   fullWidth
+                  value={editData.email || ""}
+                  disabled
+                />
+              </Grid>
+              <Grid item xs={6}>
+                {console.log("Selected Department Roles:", selectedDepartment)}
+
+                <Autocomplete
+                  size="small"
+                  options={fullDepartments} // ✅ from state
+                  getOptionLabel={(option) => option.deptName}
+                  value={
+                    fullDepartments.find(
+                      (d) => d.deptName === editData.department
+                    ) || null
+                  }
+                  onChange={(e, value) => {
+                    setEditData((prev) => ({
+                      ...prev,
+                      department: value?.deptName || "",
+                      role: "",
+                    }));
+                    setSelectedDepartment(value || null); // updates role dropdown
+                  }}
+                  renderInput={(params) => (
+                    <TextField {...params} label="Department" fullWidth />
+                  )}
+                />
+              </Grid>
+              <Grid item xs={6}>
+                {console.log(
+                  "Roles in selectedDepartment:",
+                  selectedDepartment?.roles
+                )}
+
+                <Autocomplete
+                  size="small"
+                  options={selectedDepartment?.roles || []}
+                  getOptionLabel={(option) => option.roleName || ""}
+                  value={
+                    selectedDepartment?.roles?.find(
+                      (r) => r.roleName === editData.role
+                    ) || null
+                  }
+                  onChange={(e, value) => {
+                    setEditData((prev) => ({
+                      ...prev,
+                      role: value?.roleName || "",
+                    }));
+                  }}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label={
+                        selectedDepartment?.roles?.length > 0
+                          ? "Role"
+                          : "No roles available"
+                      }
+                      fullWidth
+                      disabled={selectedDepartment?.roles?.length === 0}
+                    />
+                  )}
+                />
+              </Grid>
+              <Grid item xs={6}>
+                <TextField
+                  size="small"
                   label="Phone Number"
-                  type="tel"
-                  variant="outlined"
+                  fullWidth
                   value={editData.phoneNumber || ""}
                   onChange={(e) =>
                     setEditData((prev) => ({
@@ -1835,26 +1701,16 @@ useEffect(() => {
               </Grid>
             </Grid>
           </DialogContent>
-
           <DialogActions>
-            <Button
-              variant="contained"
-              color="primary"
-              size="small"
-              sx={{
-                backgroundColor: "rgb(251, 68, 36)",
-                color: "white",
-                "&:hover": {
-                  backgroundColor: "rgb(251, 68, 36)",
-                  color: "white",
-                },
-              }}
-              onClick={handleSaveChanges}
-            >
-              Save Changes
+            <Button onClick={handleCloseDialog} color="primary">
+              Cancel
+            </Button>
+            <Button onClick={handleSaveChanges} color="secondary">
+              Save
             </Button>
           </DialogActions>
         </Dialog>
+
         <Snackbar
           open={snackbarOpen}
           autoHideDuration={3000}

@@ -1,7 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
-  Box,
-  Typography,
   Paper,
   Table,
   TableBody,
@@ -10,36 +8,33 @@ import {
   TableHead,
   TableRow,
   TablePagination,
+  Box,
+  Checkbox,
+  IconButton,
+  Tooltip,
+  Snackbar,
   Alert,
-  Button,
+  TableSortLabel,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
   TextField,
-  Snackbar,
-  IconButton,
-  Tabs,
-  Tab,
+  Button,
+  Grid,
+  MenuItem,
   FormControlLabel,
   Switch,
-  MenuItem,
-  Grid,
+  Select,
+  InputLabel,
+  FormControl,
+  RadioGroup,
+  FormControlLabel as MuiFormControlLabel,
+  Radio,
+  CircularProgress,
 } from "@mui/material";
-import MuiAlert from "@mui/material/Alert";
-import AddIcon from "@mui/icons-material/Add";
-import DeleteIcon from "@mui/icons-material/Delete";
-import PeopleIcon from "@mui/icons-material/People";
-import CategoryIcon from "@mui/icons-material/Category";
-import AddBusinessIcon from "@mui/icons-material/AddBusiness";
-import { saveFileType, saveUserFileType } from "../api/type";
-import { getDepartments } from "../api/departmentService";
-import { fetchUsers } from "../api/userService";
-import Loading from "../components/Loading";
-
-const CustomAlert = React.forwardRef(function CustomAlert(props, ref) {
-  return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
-});
+import { Add, Delete } from "@mui/icons-material";
+import axios from "axios";
 
 const attributeTemplate = {
   name: "",
@@ -52,466 +47,424 @@ const attributeTemplate = {
 const attributeTypes = ["STRING", "NUMBER", "DATE", "BOOLEAN"];
 
 const DepartmentTypeSetting = () => {
-  const [tabValue, setTabValue] = useState(0);
-  const [departments, setDepartments] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [fileTypes, setFileTypes] = useState([]);
+  const [selected, setSelected] = useState([]);
   const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(10);
-  const [totalDepartments, setTotalDepartments] = useState(0);
-  const [userPage, setUserPage] = useState(0);
-  const [userPageSize, setUserPageSize] = useState(10);
-  const [totalUsers, setTotalUsers] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [orderBy, setOrderBy] = useState("typeName");
+  const [order, setOrder] = useState("asc");
   const [openDialog, setOpenDialog] = useState(false);
-  const [dialogTarget, setDialogTarget] = useState("department");
-  const [selectedEntity, setSelectedEntity] = useState(null);
   const [documentType, setDocumentType] = useState("");
   const [attributes, setAttributes] = useState([attributeTemplate]);
-  const [globalDocumentType, setGlobalDocumentType] = useState("");
-  const [globalAttributes, setGlobalAttributes] = useState([attributeTemplate]);
+  const [typeScope, setTypeScope] = useState("global");
+  const [users, setUsers] = useState([]);
+  const [userPage, setUserPage] = useState(0);
+  const [hasMoreUsers, setHasMoreUsers] = useState(true);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [departments, setDepartments] = useState([]);
+  const [departmentPage, setDepartmentPage] = useState(0);
+  const [hasMoreDepartments, setHasMoreDepartments] = useState(true);
+  const [loadingDepartments, setLoadingDepartments] = useState(false);
+  const [selectedEntityId, setSelectedEntityId] = useState("");
+  const [typeNames, setTypeNames] = useState([]);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
     severity: "success",
   });
 
+
+  const fetchUsers = async (page = 0) => {
+    try {
+      setLoadingUsers(true);
+      const res = await axios.get(
+        `${window.__ENV__.REACT_APP_ROUTE}/tenants/users`,
+        {
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+            username: `${sessionStorage.getItem("adminEmail")}`,
+            pageNumber: page.toString(),
+          },
+        }
+      );
+      if (res.data?.content?.length) {
+        setUsers((prev) => [...prev, ...res.data.content]);
+        setUserPage(page);
+        setHasMoreUsers(true);
+      } else {
+        setHasMoreUsers(false);
+      }
+    } catch (error) {
+      console.error("Failed to fetch users", error);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+  const fetchDepartments = async (page = 0) => {
+    try {
+      setLoadingDepartments(true);
+      const res = await axios.get(
+        `${window.__ENV__.REACT_APP_ROUTE}/tenants/departments`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+            username: `${sessionStorage.getItem("adminEmail")}`,
+          },
+          params: {
+            pageNumber: page,
+            pageSize: 10,
+            search: "",
+          },
+        }
+      );
+      if (res.data?.content?.length) {
+        setDepartments((prev) => [...prev, ...res.data.content]);
+        setDepartmentPage(page);
+        setHasMoreDepartments(true);
+      } else {
+        setHasMoreDepartments(false);
+      }
+    } catch (error) {
+      console.error("Failed to fetch departments", error);
+    } finally {
+      setLoadingDepartments(false);
+    }
+  };
+
   useEffect(() => {
+    fetchUsers();
     fetchDepartments();
-  }, [page, pageSize]);
+  }, []);
+  const handleRequestSort = (property) => {
+    const isAsc = orderBy === property && order === "asc";
+    setOrder(isAsc ? "desc" : "asc");
+    setOrderBy(property);
+  };
+
+  const getComparator = (order, orderBy) => {
+    return order === "desc"
+      ? (a, b) => descendingComparator(a, b, orderBy)
+      : (a, b) => -descendingComparator(a, b, orderBy);
+  };
+
+  const descendingComparator = (a, b, orderBy) => {
+    if (orderBy === "typeName") {
+      if (b.toLowerCase() < a.toLowerCase()) return -1;
+      if (b.toLowerCase() > a.toLowerCase()) return 1;
+    }
+    return 0;
+  };
+
+  const stableSort = (array, comparator) => {
+    if (orderBy === "sno") {
+      return [...array]
+        .map((el, idx) => ({ idx, el }))
+        .sort((a, b) => (order === "asc" ? a.idx - b.idx : b.idx - a.idx))
+        .map((obj) => obj.el);
+    }
+    const stabilizedThis = array.map((el, index) => [el, index]);
+    stabilizedThis.sort((a, b) => {
+      const order = comparator(a[0], b[0]);
+      if (order !== 0) return order;
+      return a[1] - b[1];
+    });
+    return stabilizedThis.map((el) => el[0]);
+  };
+
+  const isSelected = (index) => selected.indexOf(index) !== -1;
+
+  const handleClick = (index) => {
+    const selectedIndex = selected.indexOf(index);
+    let newSelected = [];
+    if (selectedIndex === -1) {
+      newSelected = [...selected, index];
+    } else {
+      newSelected = [
+        ...selected.slice(0, selectedIndex),
+        ...selected.slice(selectedIndex + 1),
+      ];
+    }
+    setSelected(newSelected);
+  };
+
+  const handleSelectAllClick = (event) => {
+    if (event.target.checked) {
+      const newSelected = fileTypes.map((_, index) => index);
+      setSelected(newSelected);
+    } else {
+      setSelected([]);
+    }
+  };
+
+  const fetchFileTypes = async () => {
+    try {
+      const response = await axios.get(
+        `${window.__ENV__.REACT_APP_ROUTE}/dms_service_LM/api/getAllFileType`,
+        {
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+            username: `${sessionStorage.getItem("adminEmail")}`,
+          },
+        }
+      );
+      setFileTypes(response.data?.data || []);
+    } catch (error) {
+      console.error("Failed to fetch file types", error);
+    }
+  };
+
   useEffect(() => {
-    fetchUsersData();
-  }, [userPage, userPageSize]);
+    fetchFileTypes();
+  }, []);
 
-  const fetchDepartments = async () => {
-    setLoading(true);
-    try {
-      const res = await getDepartments(page, pageSize);
-      setDepartments(res.content || []);
-      setTotalDepartments(res.totalElements || 0);
-    } catch (err) {
-      setError("Failed to fetch departments");
-    } finally {
-      setLoading(false);
+  const sortedRows = stableSort(fileTypes, getComparator(order, orderBy));
+  const paginatedRows = sortedRows.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
+
+  const handleUserDropdownScroll = (event) => {
+    const { scrollTop, scrollHeight, clientHeight } = event.target;
+    if (
+      scrollTop + clientHeight >= scrollHeight - 5 &&
+      hasMoreUsers &&
+      !loadingUsers
+    ) {
+      fetchUsers(userPage + 1);
     }
   };
 
-  const fetchUsersData = async () => {
-    setLoading(true);
-    try {
-      const res = await fetchUsers(userPage);
-      setUsers(res.content || []);
-      setTotalUsers(res.totalElements || 0);
-    } catch (err) {
-      setError("Failed to fetch users");
-    } finally {
-      setLoading(false);
+  const handleDepartmentDropdownScroll = (event) => {
+    const { scrollTop, scrollHeight, clientHeight } = event.target;
+    if (
+      scrollTop + clientHeight >= scrollHeight - 5 &&
+      hasMoreDepartments &&
+      !loadingDepartments
+    ) {
+      fetchDepartments(departmentPage + 1);
     }
   };
 
-  const handleOpenDialog = (entity, target) => {
-    setSelectedEntity(entity);
-    setDialogTarget(target);
+  const handleDialogSubmit = () => {
+    console.log(
+      "Submit New Type:",
+      documentType,
+      attributes,
+      typeScope,
+      selectedEntityId
+    );
+    setSnackbarOpen(true);
+    setOpenDialog(false);
     setDocumentType("");
     setAttributes([attributeTemplate]);
-    setOpenDialog(true);
+    setTypeScope("global");
+    setSelectedEntityId("");
   };
 
-  const handleSaveClick = async () => {
-    const token = sessionStorage.getItem("authToken");
-    const username = sessionStorage.getItem("adminEmail");
-    if (!username || !token) return;
-    try {
-      if (dialogTarget === "user") {
-        await saveUserFileType({
-          documentType,
-          username,
-          attributes,
-          token,
-          userId: selectedEntity?.id,
-        });
-      } else {
-        await saveFileType({
-          documentType,
-          username,
-          attributes,
-          token,
-          departmentId: selectedEntity?.id,
-        });
-      }
-      setSnackbar({
-        open: true,
-        message: "File type created successfully!",
-        severity: "success",
-      });
-      setOpenDialog(false);
-    } catch (error) {
-      console.error(error);
-      setSnackbar({
-        open: true,
-        message: "Failed to create file type",
-        severity: "error",
-      });
-    }
+  const handleAttributeChange = (index, field, value) => {
+    const updated = [...attributes];
+    updated[index][field] = value;
+    setAttributes(updated);
   };
 
-  const handleSaveGlobalTypes = async () => {
-    const token = sessionStorage.getItem("authToken");
-    const username = sessionStorage.getItem("adminEmail");
-    if (!username || !token || !globalDocumentType.trim()) return;
-    try {
-      await saveFileType({
-        documentType: globalDocumentType,
-        username,
-        attributes: globalAttributes,
-        token,
-      });
-      setSnackbar({
-        open: true,
-        message: "Global types saved successfully!",
-        severity: "success",
-      });
-      setGlobalDocumentType("");
-      setGlobalAttributes([attributeTemplate]);
-    } catch (error) {
-      console.error(error);
-      setSnackbar({
-        open: true,
-        message: "Failed to save global types",
-        severity: "error",
-      });
-    }
+  const handleAttributeRemove = (index) => {
+    const updated = [...attributes];
+    updated.splice(index, 1);
+    setAttributes(updated);
   };
 
-  const renderAttributeFields = (data, handlerChange, handlerRemove) =>
-    data.map((attr, index) => (
-      <Box
-        key={index}
-        display="flex"
-        flexDirection="column"
-        gap={1}
-        mb={2}
-        p={2}
-        borderRadius={2}
-        border="1px solid #ccc"
-      >
-        <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} sm={4}>
-            <TextField
-              label="Attribute Name"
-              fullWidth
-              size="small"
-              value={attr.name}
-              onChange={(e) => handlerChange(index, "name", e.target.value)}
-            />
-          </Grid>
-          <Grid item xs={12} sm={3}>
-            <TextField
-              label="Type"
-              select
-              fullWidth
-              size="small"
-              value={attr.type}
-              onChange={(e) => handlerChange(index, "type", e.target.value)}
-            >
-              {attributeTypes.map((type) => (
-                <MenuItem key={type} value={type}>
-                  {type}
-                </MenuItem>
-              ))}
-            </TextField>
-          </Grid>
-          <Grid item xs={12} sm={3}>
-            <TextField
-              label="Default Value"
-              fullWidth
-              size="small"
-              value={attr.defaultValue}
-              onChange={(e) =>
-                handlerChange(index, "defaultValue", e.target.value)
-              }
-            />
-          </Grid>
-          <Grid item xs={12} sm={2}>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={attr.mandatory}
-                  onChange={(e) =>
-                    handlerChange(index, "mandatory", e.target.checked)
-                  }
-                />
-              }
-              label="Mandatory"
-            />
-          </Grid>
-          <Grid item xs={12}>
-            <TextField
-              label="Description"
-              fullWidth
-              size="small"
-              value={attr.description}
-              onChange={(e) =>
-                handlerChange(index, "description", e.target.value)
-              }
-            />
-          </Grid>
-        </Grid>
-        <Box display="flex" justifyContent="flex-end">
-          <IconButton
-            color="error"
-            onClick={() => handlerRemove(index)}
-            disabled={data.length === 1}
-          >
-            <DeleteIcon />
-          </IconButton>
-        </Box>
-      </Box>
-    ));
+  const handleAddAttribute = () => {
+    setAttributes([...attributes, attributeTemplate]);
+  };
+ const handleDeleteType = (typeNameToDelete) => {
+   const confirm = window.confirm(
+     `Are you sure you want to delete "${typeNameToDelete}"?`
+   );
+   if (!confirm) return;
+
+   const updatedTypes = typeNames.filter((name) => name !== typeNameToDelete);
+   setTypeNames(updatedTypes);
+
+   setSnackbar({
+     open: true,
+     message: `"${typeNameToDelete}" deleted successfully`,
+     severity: "success",
+   });
+ };
+
+
 
   return (
-    <Box p={3} maxWidth="1200px" mx="auto">
-      <Paper elevation={3} sx={{ mb: 1,  }}>
-        <Tabs
-          value={tabValue}
-          onChange={(e, newValue) => setTabValue(newValue)}
-          variant="fullWidth"
-        >
-          <Tab icon={<PeopleIcon />} iconPosition="start" label="Users" />
-          <Tab
-            icon={<CategoryIcon />}
-            iconPosition="start"
-            label="Departments"
-          />
-          <Tab
-            icon={<AddBusinessIcon />}
-            iconPosition="start"
-            label="Global Types"
-          />
-        </Tabs>
+    <Box sx={{ pt: 1.5, px: 3, ml: "72px" }}>
+      <Paper
+        elevation={20}
+        sx={{
+          width: "100%",
+          overflow: "hidden",
+          borderRadius: "20px",
+          animation: "slideInFromLeft 0.3s ease-in-out forwards",
+          opacity: 0,
+          transform: "translateX(-50px)",
+          "@keyframes slideInFromLeft": {
+            "0%": { opacity: 0, transform: "translateX(-50px)" },
+            "100%": { opacity: 1, transform: "translateX(0)" },
+          },
+        }}
+      >
+       
+        <TableContainer sx={{ maxHeight: "80vh", height: "80vh" }}>
+          <Table stickyHeader>
+            <TableHead>
+              <TableRow
+                sx={{
+                  height: 36,
+                  backgroundColor: "#1976d2",
+                  "& td, & th": {
+                    padding: "6px 8px",
+                    textAlign: "center",
+                    color: "black",
+                    fontWeight: "bold",
+                    fontFamily: '"Be Vietnam", sans-serif',
+                  },
+                }}
+              >
+                <TableCell padding="checkbox">
+                  <Checkbox
+                    indeterminate={
+                      selected.length > 0 &&
+                      selected.length < paginatedRows.length
+                    }
+                    checked={
+                      paginatedRows.length > 0 &&
+                      selected.length === paginatedRows.length
+                    }
+                    onChange={handleSelectAllClick}
+                    sx={{ color: "black" }}
+                  />
+                </TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={orderBy === "sno"}
+                    direction={orderBy === "sno" ? order : "asc"}
+                    onClick={() => handleRequestSort("sno")}
+                  >
+                    S.No
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={orderBy === "typeName"}
+                    direction={orderBy === "typeName" ? order : "asc"}
+                    onClick={() => handleRequestSort("typeName")}
+                  >
+                    Type Name
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell sx={{ textAlign: "center" }}>For</TableCell>
+                <TableCell sx={{ textAlign: "center" }}>Created By</TableCell>
+                <TableCell sx={{ textAlign: "center" }}>Created On</TableCell>
+                <TableCell sx={{ textAlign: "center" }}>Action</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {paginatedRows.map((typeName, index) => (
+                <TableRow
+                  key={index}
+                  hover
+                  selected={isSelected(index)}
+                  sx={{ height: 36, "& td": { padding: "6px 8px" } }}
+                >
+                  <TableCell padding="checkbox" sx={{ textAlign: "center" }}>
+                    <Checkbox
+                      checked={isSelected(index)}
+                      onChange={() => handleClick(index)}
+                      size="small"
+                    />
+                  </TableCell>
+                  <TableCell sx={{ textAlign: "center" }}>
+                    {page * rowsPerPage + index + 1}
+                  </TableCell>
+                  <TableCell sx={{ textAlign: "center" }}>{typeName}</TableCell>
+                  <TableCell sx={{ textAlign: "center" }}>—</TableCell>
+                  <TableCell sx={{ textAlign: "center" }}>—</TableCell>
+                  <TableCell sx={{ textAlign: "center" }}>—</TableCell>
+                  <TableCell sx={{ textAlign: "center" }}>
+                    <IconButton
+                      color="error"
+                      onClick={() => handleDeleteType(typeName)}
+                    >
+                      <Delete fontSize="small" />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {paginatedRows.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={7} sx={{ textAlign: "center" }}>
+                    No entries found.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+
+        <TablePagination
+          rowsPerPageOptions={[10, 15]}
+          count={fileTypes.length}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={(e, newPage) => setPage(newPage)}
+          onRowsPerPageChange={(e) => {
+            setRowsPerPage(parseInt(e.target.value, 10));
+            setPage(0);
+          }}
+          sx={{
+            "& .MuiTablePagination-toolbar": {
+              px: 2,
+              py: 1,
+              justifyContent: "flex-start",
+            },
+          }}
+        />
       </Paper>
 
-      {tabValue === 0 && (
-        <Paper elevation={3}>
-          <Box
-            p={2}
-            display="flex"
-            alignItems="center"
-            gap={1}
-            sx={{ backgroundColor: "background.paper" }}
-            borderTopRadius={10}
-          >
-            <PeopleIcon color="primary" />
-            <Typography variant="h6">Users</Typography>
-          </Box>
-          <Box sx={{ borderTop: "1px solid #e0e0e0" }} />
-          <TableContainer>
-            <Table size="small">
-              <TableHead>
-                <TableRow sx={{ backgroundColor: "background.default" }}>
-                  <TableCell align="center">
-                    <strong>Name</strong>
-                  </TableCell>
-                  <TableCell align="center">
-                    <strong>Email</strong>
-                  </TableCell>
-                  <TableCell align="center">
-                    <strong>Created On</strong>
-                  </TableCell>
-                  <TableCell align="center">
-                    <strong>Action</strong>
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {users.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={4} align="center">
-                      No users found
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  users.map((user) => (
-                    <TableRow key={user.id} hover>
-                      <TableCell align="center">{user.name || "N/A"}</TableCell>
-                      <TableCell align="center">
-                        {user.email || "N/A"}
-                      </TableCell>
-                      <TableCell align="center">
-                        {new Date(user.createdOn).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell align="center">
-                        <Button
-                          variant="contained"
-                          size="small"
-                          onClick={() => handleOpenDialog(user, "user")}
-                        >
-                          Add Type
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-          <TablePagination
-            // component="div"
-            count={totalUsers}
-            page={userPage}
-            onPageChange={(e, newPage) => setUserPage(newPage)}
-            rowsPerPage={userPageSize}
-            onRowsPerPageChange={(e) =>
-              setUserPageSize(parseInt(e.target.value, 10))
-            }
-            rowsPerPageOptions={[5, 10, 25]}
-          />
-        </Paper>
-      )}
-
-      {tabValue === 1 && (
-        <Paper elevation={3}>
-          <Box
-            p={2}
-            display="flex"
-            alignItems="center"
-            gap={1}
-            sx={{ backgroundColor: "background.paper" }}
-            borderTopRadius={2}
-          >
-            <CategoryIcon color="primary" />
-            <Typography variant="h6">Departments</Typography>
-          </Box>
-          <Box sx={{ borderTop: "1px solid #e0e0e0" }} />
-          <TableContainer>
-            <Table size="small">
-              <TableHead>
-                <TableRow sx={{ backgroundColor: "background.default" }}>
-                  <TableCell align="center">
-                    <strong>Department Name</strong>
-                  </TableCell>
-                  <TableCell align="center">
-                    <strong>Display Name</strong>
-                  </TableCell>
-                  <TableCell align="center">
-                    <strong>Created On</strong>
-                  </TableCell>
-                  <TableCell align="center">
-                    <strong>Action</strong>
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {departments.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={4} align="center">
-                      No departments found
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  departments.map((dept) => (
-                    <TableRow key={dept.id} hover>
-                      <TableCell align="center">{dept.deptName}</TableCell>
-                      <TableCell align="center">
-                        {dept.deptDisplayName}
-                      </TableCell>
-                      <TableCell align="center">
-                        {new Date(dept.createdOn).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell align="center">
-                        <Button
-                          variant="contained"
-                          size="small"
-                          onClick={() => handleOpenDialog(dept, "department")}
-                        >
-                          Add Type
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-          <TablePagination
-            // component="div"
-            count={totalDepartments}
-            page={page}
-            onPageChange={(e, newPage) => setPage(newPage)}
-            rowsPerPage={pageSize}
-            onRowsPerPageChange={(e) =>
-              setPageSize(parseInt(e.target.value, 10))
-            }
-            rowsPerPageOptions={[5, 10, 25]}
-          />
-        </Paper>
-      )}
-
-      {tabValue === 2 && (
-        <Paper elevation={3}>
-          <Box
-            p={2}
-            display="flex"
-            alignItems="center"
-            gap={1}
-            sx={{ backgroundColor: "background.paper" }}
-            borderTopRadius={2}
-          >
-            <AddBusinessIcon color="primary" />
-            <Typography variant="h6">Global Types</Typography>
-          </Box>
-          <Box sx={{ borderTop: "1px solid #e0e0e0" }} />
-          <Box p={3}>
-            <TextField
-              label="Global Document Type"
-              fullWidth
-              size="small"
-              sx={{ mb: 2 }}
-              value={globalDocumentType}
-              onChange={(e) => setGlobalDocumentType(e.target.value)}
-            />
-            {renderAttributeFields(
-              globalAttributes,
-              (i, k, v) => {
-                const updated = [...globalAttributes];
-                updated[i][k] = v;
-                setGlobalAttributes(updated);
+      <Tooltip title="Add New Type">
+        <IconButton
+          onClick={() => setOpenDialog(true)}
+          sx={{
+            position: "fixed",
+            bottom: 20,
+            right: 38,
+            backgroundColor: "orange",
+            color: "white",
+            boxShadow:
+              "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.6)",
+            "&:hover": {
+              backgroundColor: "orange",
+              animation: "glowBorder 1.5s ease-in-out infinite",
+            },
+            "@keyframes glowBorder": {
+              "0%": {
+                boxShadow: "0 0 0px 2px rgba(251, 68, 36, 0.5)",
+                borderColor: "transparent",
               },
-              (i) => {
-                const updated = [...globalAttributes];
-                updated.splice(i, 1);
-                setGlobalAttributes(updated);
-              }
-            )}
-            <Box
-              display="flex"
-              justifyContent="space-between"
-              alignItems="center"
-              mt={2}
-            >
-              <Button
-                startIcon={<AddIcon />}
-                onClick={() =>
-                  setGlobalAttributes([...globalAttributes, attributeTemplate])
-                }
-              >
-                Add Attribute
-              </Button>
-              <Button
-                variant="contained"
-                onClick={handleSaveGlobalTypes}
-                disabled={!globalDocumentType.trim()}
-              >
-                Save Global Type
-              </Button>
-            </Box>
-          </Box>
-        </Paper>
-      )}
-
-      {/* Departments and Global tab layouts should follow same table structure for consistency */}
-
-      {/* Dialog */}
+              "50%": {
+                boxShadow: "0 0 20px 5px rgba(251, 68, 36, 0.8)",
+                borderColor: "rgb(251, 68, 36)",
+              },
+              "100%": {
+                boxShadow: "0 0 0px 2px rgba(251, 68, 36, 0.5)",
+                borderColor: "transparent",
+              },
+            },
+          }}
+        >
+          <Add fontSize="medium" />
+        </IconButton>
+      </Tooltip>
       <Dialog
         open={openDialog}
         onClose={() => setOpenDialog(false)}
@@ -519,42 +472,182 @@ const DepartmentTypeSetting = () => {
         maxWidth="md"
       >
         <DialogTitle sx={{ bgcolor: "primary.main", color: "white" }}>
-          {dialogTarget === "user" ? "Type for User" : "Type for Department"}
+          Add New Type
         </DialogTitle>
         <DialogContent dividers>
-          <TextField
-            label="Document Type"
-            fullWidth
-            size="small"
-            sx={{ my: 2 }}
-            value={documentType}
-            onChange={(e) => setDocumentType(e.target.value)}
-          />
-          {renderAttributeFields(
-            attributes,
-            (i, k, v) => {
-              const updated = [...attributes];
-              updated[i][k] = v;
-              setAttributes(updated);
-            },
-            (i) => {
-              const updated = [...attributes];
-              updated.splice(i, 1);
-              setAttributes(updated);
-            }
-          )}
-          <Button
-            startIcon={<AddIcon />}
-            onClick={() => setAttributes([...attributes, attributeTemplate])}
-          >
-            Add Attribute
-          </Button>
+          <Box>
+            <FormControl component="fieldset" fullWidth sx={{ mb: 2 }}>
+              <RadioGroup
+                row
+                value={typeScope}
+                onChange={(e) => setTypeScope(e.target.value)}
+              >
+                <FormControlLabel
+                  value="user"
+                  control={<Radio />}
+                  label="User"
+                />
+                <FormControlLabel
+                  value="department"
+                  control={<Radio />}
+                  label="Department"
+                />
+                <FormControlLabel
+                  value="global"
+                  control={<Radio />}
+                  label="Global"
+                />
+              </RadioGroup>
+            </FormControl>
+
+            {(typeScope === "user" || typeScope === "department") && (
+              <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+                <InputLabel>
+                  Select {typeScope === "user" ? "User" : "Department"}
+                </InputLabel>
+                <Select
+                  value={selectedEntityId}
+                  label={`Select ${
+                    typeScope === "user" ? "User" : "Department"
+                  }`}
+                  onChange={(e) => setSelectedEntityId(e.target.value)}
+                  MenuProps={{
+                    PaperProps: {
+                      style: { maxHeight: 300 },
+                      onScroll:
+                        typeScope === "user"
+                          ? handleUserDropdownScroll
+                          : typeScope === "department"
+                          ? handleDepartmentDropdownScroll
+                          : undefined,
+                    },
+                  }}
+                >
+                  {(typeScope === "user" ? users : departments).map(
+                    (entity) => (
+                      <MenuItem key={entity.id} value={entity.id}>
+                        {entity.name || entity.deptName}
+                      </MenuItem>
+                    )
+                  )}
+                  {(typeScope === "user" && loadingUsers) ||
+                  (typeScope === "department" && loadingDepartments) ? (
+                    <MenuItem disabled>
+                      <CircularProgress size={20} />
+                    </MenuItem>
+                  ) : null}
+                </Select>
+              </FormControl>
+            )}
+
+            <TextField
+              fullWidth
+              label="Document Type"
+              value={documentType}
+              onChange={(e) => setDocumentType(e.target.value)}
+              sx={{ mb: 2 }}
+            />
+
+            {attributes.map((attr, index) => (
+              <Grid container spacing={2} key={index} mb={2}>
+                <Grid item xs={12} sm={4}>
+                  <TextField
+                    fullWidth
+                    label="Attribute Name"
+                    value={attr.name}
+                    onChange={(e) =>
+                      handleAttributeChange(index, "name", e.target.value)
+                    }
+                  />
+                </Grid>
+                <Grid item xs={12} sm={3}>
+                  <TextField
+                    select
+                    fullWidth
+                    label="Type"
+                    value={attr.type}
+                    onChange={(e) =>
+                      handleAttributeChange(index, "type", e.target.value)
+                    }
+                  >
+                    {attributeTypes.map((type) => (
+                      <MenuItem key={type} value={type}>
+                        {type}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </Grid>
+                <Grid item xs={12} sm={3}>
+                  <TextField
+                    fullWidth
+                    label="Default Value"
+                    value={attr.defaultValue}
+                    onChange={(e) =>
+                      handleAttributeChange(
+                        index,
+                        "defaultValue",
+                        e.target.value
+                      )
+                    }
+                  />
+                </Grid>
+                <Grid item xs={12} sm={2}>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={attr.mandatory}
+                        onChange={(e) =>
+                          handleAttributeChange(
+                            index,
+                            "mandatory",
+                            e.target.checked
+                          )
+                        }
+                      />
+                    }
+                    label="Mandatory"
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label="Description"
+                    value={attr.description}
+                    onChange={(e) =>
+                      handleAttributeChange(
+                        index,
+                        "description",
+                        e.target.value
+                      )
+                    }
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <IconButton
+                    color="error"
+                    onClick={() => handleAttributeRemove(index)}
+                    disabled={attributes.length === 1}
+                  >
+                    <Delete />
+                  </IconButton>
+                </Grid>
+              </Grid>
+            ))}
+
+            <Button
+              onClick={handleAddAttribute}
+              startIcon={<Add />}
+              sx={{ mt: 2 }}
+            >
+              Add Attribute
+            </Button>
+          </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
           <Button
             variant="contained"
-            onClick={handleSaveClick}
+            onClick={handleDialogSubmit}
             disabled={!documentType.trim()}
           >
             Save
@@ -563,18 +656,34 @@ const DepartmentTypeSetting = () => {
       </Dialog>
 
       <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={3000}
+        onClose={() => setSnackbarOpen(false)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+      >
+        <Alert
+          onClose={() => setSnackbarOpen(false)}
+          severity="success"
+          variant="filled"
+          sx={{ width: "100%" }}
+        >
+          Operation successful!
+        </Alert>
+      </Snackbar>
+      <Snackbar
         open={snackbar.open}
         autoHideDuration={3000}
         onClose={() => setSnackbar({ ...snackbar, open: false })}
         anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       >
-        <CustomAlert
+        <Alert
           onClose={() => setSnackbar({ ...snackbar, open: false })}
           severity={snackbar.severity}
+          variant="filled"
           sx={{ width: "100%" }}
         >
           {snackbar.message}
-        </CustomAlert>
+        </Alert>
       </Snackbar>
     </Box>
   );

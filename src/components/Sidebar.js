@@ -14,6 +14,8 @@ import {
 import { Settings as SettingsIcon } from "@mui/icons-material";
 import { MenuBook as DictionaryIcon } from "@mui/icons-material";
 import { DynamicFeed as FeedContextIcon } from "@mui/icons-material";
+import { Palette as PaletteIcon } from "@mui/icons-material";
+
 
 
 import {
@@ -131,39 +133,45 @@ const Sidebar = () => {
   const userInitial = user.initial || "U";
 
   
-  const menuItems = React.useMemo(
-    () => [
-      { path: "/angelbot", icon: <TimelineIcon />, text: "AngelBot" },
-      { path: "/user", icon: <UserIcon />, text: "User" },
-      {
-        path: "/department",
-        icon: <DepartmentRolesIcon />,
-        text: "Department",
-      },
-      { path: "/ldap-config", icon: <LDAPIcon />, text: "LDAP Settings" },
-      {
-        path: "/choose-extension",
-        icon: <DashboardIcon />,
-        text: "Choose Extension",
-      },
-      {
-        path: "/department-type-setting",
-        icon: <SettingsIcon />,
-        text: "Department Type Setting",
-      },
-      {
-        path: "/data-dictionary",
-        icon: <DictionaryIcon />,
-        text: "Data Dictionary",
-      },
-      {
-        path: "/feed-context",
-        icon: <FeedContextIcon />,
-        text: "Feed Context",
-      },
-    ],
-    []
-  );
+ const menuItems = React.useMemo(
+   () => [
+     { path: "/angelbot", icon: <TimelineIcon />, text: "AngelBot" },
+     { path: "/user", icon: <UserIcon />, text: "User" },
+     {
+       path: "/department",
+       icon: <DepartmentRolesIcon />,
+       text: "Department",
+     },
+     { path: "/ldap-config", icon: <LDAPIcon />, text: "LDAP Settings" },
+     {
+       path: "/choose-extension",
+       icon: <DashboardIcon />,
+       text: "Choose Extension",
+     },
+     {
+       path: "/department-type-setting",
+       icon: <SettingsIcon />,
+       text: "Type Creation",
+     },
+     {
+       path: "/data-dictionary",
+       icon: <DictionaryIcon />,
+       text: "Data Dictionary",
+     },
+     {
+       path: "/feed-context",
+       icon: <FeedContextIcon />,
+       text: "Feed Context",
+     },
+     {
+       path: "/theme-setting",
+       icon: <PaletteIcon />,
+       text: "Theme and Slogan Setting",
+     },
+   ],
+   []
+ );
+
 
 
   const handleMouseEnter = () => {

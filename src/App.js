@@ -26,6 +26,7 @@ import ChooseExtension from "./pages/ChooseExtension";
 import DepartmentTypeSetting from "./pages/DepartmentTypeSetting";
 import DataDictionary from "./pages/DataDictionary";
 import FeedContext from "./pages/FeedContext";
+import ThemeSetting from "./pages/ThemeSetting";
 
 function App() {
   const [dictionarySearchResults, setDictionarySearchResults] = useState([]);
@@ -128,7 +129,7 @@ function App() {
               </Layout>
             }
           />
-        
+
           <Route
             path="/data-dictionary"
             element={
@@ -144,10 +145,17 @@ function App() {
           <Route
             path="/feed-context"
             element={
-              <Layout
-                onThemeToggle={toggleTheme}
-              >
-                <FeedContext/>
+              <Layout onThemeToggle={toggleTheme}>
+                <FeedContext />
+              </Layout>
+            }
+          />
+
+          <Route
+            path="/theme-setting"
+            element={
+              <Layout onThemeToggle={toggleTheme}>
+                <ThemeSetting />
               </Layout>
             }
           />

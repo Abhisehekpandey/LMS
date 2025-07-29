@@ -76,6 +76,7 @@ const CreateUser = ({
     deptDisplayName: "",
     storage: "",
     role: "",
+    selectedUsers: [], // <-- new field
   });
 
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -1109,6 +1110,7 @@ const CreateUser = ({
                 }
               />
             </Grid>
+           
             <Grid item xs={6}>
               <Autocomplete
                 fullWidth
@@ -1136,7 +1138,7 @@ const CreateUser = ({
                       listboxNode.scrollTop + listboxNode.clientHeight >=
                       listboxNode.scrollHeight - threshold
                     ) {
-                      loadMoreUsers(); // 👈 Trigger pagination
+                      loadMoreUsers();
                     }
                   },
                 }}
@@ -1155,6 +1157,62 @@ const CreateUser = ({
                 )}
               />
             </Grid>
+
+            <Grid item xs={6}>
+              <Autocomplete
+                multiple
+                fullWidth
+                size="small"
+                options={userOptions}
+                getOptionLabel={(option) => option.name || ""}
+                value={
+                  Array.isArray(newDepartment.selectedUsers)
+                    ? userOptions.filter((user) =>
+                        newDepartment.selectedUsers.includes(user.name)
+                      )
+                    : []
+                }
+                onChange={(event, selectedValues) =>
+                  setNewDepartment({
+                    ...newDepartment,
+                    selectedUsers: selectedValues.map((user) => user.name),
+                  })
+                }
+                ListboxProps={{
+                  style: { maxHeight: 300, overflow: "auto" },
+                  onScroll: (event) => {
+                    const listboxNode = event.currentTarget;
+                    const threshold = 50;
+                    if (
+                      listboxNode.scrollTop + listboxNode.clientHeight >=
+                      listboxNode.scrollHeight - threshold
+                    ) {
+                      loadMoreUsers();
+                    }
+                  },
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Select Users"
+                    placeholder="Choose multiple users"
+                    error={
+                      departmentSubmitted &&
+                      (!newDepartment.selectedUsers ||
+                        newDepartment.selectedUsers.length === 0)
+                    }
+                    helperText={
+                      departmentSubmitted &&
+                      (!newDepartment.selectedUsers ||
+                        newDepartment.selectedUsers.length === 0)
+                        ? "At least one user must be selected"
+                        : ""
+                    }
+                  />
+                )}
+              />
+            </Grid>
+
             <Grid item xs={4}>
               <TextField
                 fullWidth
@@ -1223,8 +1281,24 @@ const CreateUser = ({
               const { deptName, deptModerator, deptDisplayName, storage } =
                 newDepartment;
 
-              if (!deptName || !deptModerator || !deptDisplayName || !storage)
+              // if (!deptName || !deptModerator || !deptDisplayName || !storage)
+              //   return;
+              if (
+                !deptName ||
+                !deptModerator ||
+                !deptDisplayName ||
+                !storage ||
+                !Array.isArray(newDepartment.selectedUsers) ||
+                newDepartment.selectedUsers.length === 0
+              ) {
+                setSnackbarMessage(
+                  "Please fill all mandatory fields before creating department."
+                );
+                setSnackbarSeverity("warning");
+                setSnackbarOpen(true);
                 return;
+              }
+
               try {
                 if (
                   !newDepartment.deptName.trim() ||
@@ -1246,6 +1320,7 @@ const CreateUser = ({
                     newDepartment.role.trim() === ""
                       ? null
                       : newDepartment.role,
+                  selectedUsers: newDepartment.selectedUsers || [], // ✅ optional
                 };
                 console.log("pppppp", payload);
                 const createdDept = await createDepartment(payload);
@@ -1493,3 +1568,4 @@ const CreateUser = ({
 };
 
 export default CreateUser;
+

@@ -348,7 +348,7 @@ const DataDictionary = ({ searchResults = [] }) => {
   };
 
   return (
-    // <Box sx={{ p: 3, ml: "72px" }}>
+   
     <Box sx={{ pt: 1.5, px: 3, ml: "72px" }}>
       <Paper
         elevation={20}
@@ -375,18 +375,19 @@ const DataDictionary = ({ searchResults = [] }) => {
           <Table stickyHeader>
             <TableHead>
               <TableRow
-                // sx={{
-                //   backgroundColor: "#1976d2",
-                // }}
                 sx={{
-                  height: 36, // ⬅️ reduce row height
+                  height: 36,
                   backgroundColor: "#1976d2",
-                  "& td": {
-                    padding: "6px 8px", // ⬅️ reduce cell padding
+                  "& td, & th": {
+                    padding: "6px 8px",
+                    textAlign: "center",
+                    color: "black",
+                    fontWeight: "bold",
+                    fontFamily: '"Be Vietnam", sans-serif',
                   },
                 }}
               >
-                <TableCell padding="checkbox" align="center">
+                <TableCell padding="checkbox">
                   <Checkbox
                     indeterminate={
                       selected.length > 0 &&
@@ -402,12 +403,8 @@ const DataDictionary = ({ searchResults = [] }) => {
                 </TableCell>
 
                 <TableCell
-                  sx={{
-                    color: "black",
-                    fontWeight: "bold",
-                    fontFamily: '"Be Vietnam", sans-serif',
-                  }}
-                  align="center"
+                 
+                 
                   sortDirection={
                     sortConfig.key === "id" ? sortConfig.direction : false
                   }
@@ -424,12 +421,7 @@ const DataDictionary = ({ searchResults = [] }) => {
                 </TableCell>
 
                 <TableCell
-                  sx={{
-                    color: "black",
-                    fontWeight: "bold",
-                    fontFamily: '"Be Vietnam", sans-serif',
-                  }}
-                  align="center"
+                
                   sortDirection={
                     sortConfig.key === "key" ? sortConfig.direction : false
                   }
@@ -446,12 +438,7 @@ const DataDictionary = ({ searchResults = [] }) => {
                 </TableCell>
 
                 <TableCell
-                  sx={{
-                    color: "black",
-                    fontWeight: "bold",
-                    fontFamily: '"Be Vietnam", sans-serif',
-                  }}
-                  align="center"
+                 
                   sortDirection={
                     sortConfig.key === "value" ? sortConfig.direction : false
                   }
@@ -468,12 +455,7 @@ const DataDictionary = ({ searchResults = [] }) => {
                 </TableCell>
 
                 <TableCell
-                  sx={{
-                    color: "black",
-                    fontWeight: "bold",
-                    fontFamily: '"Be Vietnam", sans-serif',
-                  }}
-                  align="center"
+                
                   sortDirection={
                     sortConfig.key === "applicableTo"
                       ? sortConfig.direction
@@ -494,12 +476,7 @@ const DataDictionary = ({ searchResults = [] }) => {
                 </TableCell>
 
                 <TableCell
-                  align="center"
-                  sx={{
-                    color: "black",
-                    fontWeight: "bold",
-                    fontFamily: '"Be Vietnam", sans-serif',
-                  }}
+                  
                 >
                   ACTIONS
                 </TableCell>
@@ -521,20 +498,26 @@ const DataDictionary = ({ searchResults = [] }) => {
                       },
                     }}
                   >
-                    <TableCell padding="checkbox" align="center">
+                    <TableCell padding="checkbox" sx={{ textAlign: "center" }}>
                       <Checkbox
                         checked={isSelected(globalIndex)}
                         onChange={() => handleClick(globalIndex)}
                         size="small" // ⬅️ smaller checkbox
                       />
                     </TableCell>
-                    <TableCell align="center">{globalIndex + 1}</TableCell>
-                    <TableCell align="center">{row.key}</TableCell>
-                    <TableCell align="center">{row.value}</TableCell>
-                    <TableCell align="center">
+                    <TableCell sx={{ textAlign: "center" }}>
+                      {globalIndex + 1}
+                    </TableCell>
+                    <TableCell sx={{ textAlign: "center" }}>
+                      {row.key}
+                    </TableCell>
+                    <TableCell sx={{ textAlign: "center" }}>
+                      {row.value}
+                    </TableCell>
+                    <TableCell sx={{ textAlign: "center" }}>
                       {getApplicableToText(row)}
                     </TableCell>
-                    <TableCell align="center">
+                    <TableCell sx={{ textAlign: "center" }}>
                       <Tooltip title="Edit">
                         <IconButton
                           color="primary"
@@ -563,7 +546,7 @@ const DataDictionary = ({ searchResults = [] }) => {
               })}
               {paginatedRows.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} align="center">
+                  <TableCell colSpan={7} sx={{ textAlign: "center" }}>
                     No entries found.
                   </TableCell>
                 </TableRow>

@@ -80,6 +80,7 @@ export const resetPassword = async (newPassword, resetToken) => {
       headers: {
         token: resetToken, // custom header for reset token
         password: newPassword, // custom header for password
+        username: `${sessionStorage.getItem("adminEmail")}`,
       },
     }
   );
@@ -114,6 +115,7 @@ export const resetAdminPassword = async (newPassword, resetToken) => {
       headers: {
         token: resetToken, // custom header for reset token
         password: newPassword, // custom header for password
+        username: `${sessionStorage.getItem("adminEmail")}`,
       },
     }
   );

@@ -74,7 +74,6 @@ const ChooseExtension = () => {
   const [globalFileSizeUnit, setGlobalFileSizeUnit] = useState("MB");
   const [fileBatchSize, setFileBatchSize] = useState("");
 
-
   const handleSaveGlobalSize = async () => {
     const limit = `${globalFileSize}${globalFileSizeUnit}`; // e.g., "30MB"
 
@@ -89,7 +88,6 @@ const ChooseExtension = () => {
             username: `${sessionStorage.getItem("adminEmail")}`,
             fileSize: limit, // ✅ sent in header
           },
-        
         }
       );
 
@@ -109,8 +107,6 @@ const ChooseExtension = () => {
     }
   };
 
-
- 
   const handleSaveBatchSize = async () => {
     try {
       const response = await axios.post(
@@ -141,7 +137,6 @@ const ChooseExtension = () => {
     }
   };
 
-
   const isGroupFullySelected = (groupValues) =>
     groupValues.every((ext) => selectedExtensions.includes(ext));
 
@@ -165,21 +160,29 @@ const ChooseExtension = () => {
       archives: [],
       images: [],
       audio: [],
-      video: [],
+      videos: [],
     };
 
-    console.log(">>pay",payload)
+    const groupKeyMap = {
+      Documents: "documents",
+      Archives: "archives",
+      Images: "images",
+      Audio: "audio",
+      Video: "videos",
+    };
 
-   EXTENSION_GROUPS.forEach((group) => {
-     const key = group.label.toLowerCase(); // 'Documents' -> 'documents'
-     payload[key] = group.values.filter((ext) =>
-       selectedExtensions.includes(ext)
-     );
-   });
+    EXTENSION_GROUPS.forEach((group) => {
+      const key = groupKeyMap[group.label];
+      if (key) {
+        payload[key] = group.values.filter((ext) =>
+          selectedExtensions.includes(ext)
+        );
+      }
+    });
 
     try {
       const response = await axios.post(
-        `${window.__ENV__.REACT_APP_ROUTE}/tenants/addExtensions`, // 🔁 Replace with actual endpoint
+        `${window.__ENV__.REACT_APP_ROUTE}/tenants/addExtensions`,
         payload,
         {
           headers: {
@@ -190,12 +193,12 @@ const ChooseExtension = () => {
         }
       );
       console.log("Extensions saved successfully:", response.data);
-       setSelectedExtensions([]);
       setSnackbar({
         open: true,
         message: "Extensions saved successfully!",
         severity: "success",
       });
+      return true; // ✅ indicate success
     } catch (error) {
       console.error("Error saving extensions:", error);
       setSnackbar({
@@ -203,69 +206,64 @@ const ChooseExtension = () => {
         message: "Failed to save extensions. Please try again.",
         severity: "error",
       });
+      return false; // ❌ failed
     }
   };
 
-    useEffect(() => {
-    const fetchAllowedExtensions = async () => {
-      try {
-        const response = await axios.get(
-          `${window.__ENV__.REACT_APP_ROUTE}/tenants/getExtensionsAllowed`,
-          {
-            headers: {
-              Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
-              username: `${sessionStorage.getItem("adminEmail")}`,
-            },
+  const fetchAllowedExtensions = async () => {
+    try {
+      const response = await axios.get(
+        `${window.__ENV__.REACT_APP_ROUTE}/tenants/getExtensionsAllowed`,
+        {
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+            username: `${sessionStorage.getItem("adminEmail")}`,
+          },
+        }
+      );
+
+      const data = response.data;
+      console.log("Extension response", data);
+
+      const allPreChecked = Object.values(data).flat();
+      setSelectedExtensions(allPreChecked);
+      setPreCheckedExtensions(allPreChecked);
+
+      const knownExtensions = EXTENSION_GROUPS.flatMap((group) => group.values);
+      const newExtensionsMap = {};
+
+      Object.entries(data).forEach(([category, extArray]) => {
+        const groupLabel =
+          category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
+
+        extArray.forEach((ext) => {
+          if (!knownExtensions.includes(ext)) {
+            if (!newExtensionsMap[groupLabel]) {
+              newExtensionsMap[groupLabel] = [];
+            }
+            newExtensionsMap[groupLabel].push(ext);
           }
-        );
+        });
+      });
 
-        const data = response.data;
-        console.log("Extension response", data);
-
-        const allPreChecked = Object.values(data).flat();
-        setSelectedExtensions(allPreChecked);
-        setPreCheckedExtensions(allPreChecked);
-
-        // Add new extensions (not defined in EXTENSION_GROUPS)
-        const knownExtensions = EXTENSION_GROUPS.flatMap(
-          (group) => group.values
-        );
-        const newExtensionsMap = {};
-
-        Object.entries(data).forEach(([category, extArray]) => {
-          const groupLabel =
-            category.charAt(0).toUpperCase() + category.slice(1).toLowerCase(); // e.g., "documents" -> "Documents"
-
-          extArray.forEach((ext) => {
-            if (!knownExtensions.includes(ext)) {
-              if (!newExtensionsMap[groupLabel]) {
-                newExtensionsMap[groupLabel] = [];
-              }
-              newExtensionsMap[groupLabel].push(ext);
+      EXTENSION_GROUPS.forEach((group) => {
+        const newExts = newExtensionsMap[group.label];
+        if (newExts && newExts.length) {
+          newExts.forEach((ext) => {
+            if (!group.values.includes(ext)) {
+              group.values.push(ext);
             }
           });
-        });
+        }
+      });
+    } catch (error) {
+      console.error("Failed to fetch allowed extensions:", error);
+    }
+  };
 
-        // Add new extensions to appropriate EXTENSION_GROUPS
-        EXTENSION_GROUPS.forEach((group) => {
-          const newExts = newExtensionsMap[group.label];
-          if (newExts && newExts.length) {
-            newExts.forEach((ext) => {
-              if (!group.values.includes(ext)) {
-                group.values.push(ext); // mutate in-place to reflect in UI
-              }
-            });
-          }
-        });
-      } catch (error) {
-        console.error("Failed to fetch allowed extensions:", error);
-      }
-    };
-
+  useEffect(() => {
     fetchAllowedExtensions();
   }, []);
-
-
 
   const handleAddClick = (groupLabel) => {
     setActiveGroup(groupLabel);
@@ -273,7 +271,7 @@ const ChooseExtension = () => {
     setOpenDialog(true);
   };
 
-  const handleAddExtension = () => {
+  const handleAddExtension = async () => {
     if (!newExtension || !activeGroup) return;
 
     EXTENSION_GROUPS.forEach((group) => {
@@ -286,6 +284,11 @@ const ChooseExtension = () => {
     });
 
     setOpenDialog(false);
+
+    const success = await handleSave(); // wait for success
+    if (success) {
+      await fetchAllowedExtensions(); // ✅ only refresh if saved
+    }
   };
 
   return (
@@ -391,7 +394,6 @@ const ChooseExtension = () => {
 
               <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
                 {group.values.map((ext) => (
-                  
                   <Tooltip
                     title={
                       preCheckedExtensions.includes(ext) ? "Already added" : ""
