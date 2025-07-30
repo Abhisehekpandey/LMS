@@ -180,12 +180,14 @@ const AngelBot = () => {
     message: "",
     severity: "success", // or "error"
   });
+
   const [licenses, setLicenses] = useState([
-    { id: 1, name: "License A", expiryDate: "2025-05-10" },
-    { id: 2, name: "License B", expiryDate: "2025-08-01" },
-    { id: 3, name: "License C", expiryDate: "2025-06-10" },
-    { id: 4, name: "License D", expiryDate: "2025-12-31" },
-    { id: 5, name: "License E", expiryDate: "2025-07-05" },
+    {
+      id: 1,
+      name: "IAF-38M-15TB",
+      issueDate: "2025-07-30",
+      expiryDate: "2028-09-30", // 38 months later
+    },
   ]);
 
   const [nextExpiringLicense, setNextExpiringLicense] = useState("");
@@ -497,7 +499,7 @@ const AngelBot = () => {
         return `${params.name}: ${valueFormatted} (${params.percent}%)`;
       },
     },
-   
+
     legend: {
       orient: "horizontal",
       left: "left",
@@ -1146,7 +1148,7 @@ const AngelBot = () => {
                           }}
                         >
                           <Group color="primary" />
-                          <Typography variant="h6">User Stats</Typography>
+                          <Typography variant="h6">User Status</Typography>
                         </div>
                       }
                     />
@@ -1386,7 +1388,7 @@ const AngelBot = () => {
                             }}
                           >
                             <Dashboard color="primary" />
-                            <Typography variant="h6">License Stats</Typography>
+                            <Typography variant="h6">License Status</Typography>
                           </Box>
 
                           <Tooltip title="Add License" arrow>
@@ -1539,6 +1541,7 @@ const AngelBot = () => {
                             >
                               {[
                                 "Name",
+                                "Issue Date",
                                 "Expiry Date",
                                 "Status",
                                 "Days Left",
@@ -1555,18 +1558,47 @@ const AngelBot = () => {
                                   }}
                                 >
                                   {header === "Alert" ? (
-                                    <div
-                                      style={{
+                                    <Box
+                                      sx={{
                                         display: "flex",
                                         justifyContent: "center",
                                         alignItems: "center",
-                                        gap: "4px",
+                                        gap: 1,
                                       }}
                                     >
-                                      Alert
+                                      <Typography
+                                        variant="body2"
+                                        sx={{
+                                          fontWeight: 600,
+                                          color: isDark ? "#fff" : "#000",
+                                        }}
+                                      >
+                                        Alert
+                                      </Typography>
+
                                       <FormControl
                                         size="small"
-                                        sx={{ width: "50px" }}
+                                        sx={{
+                                          width: 100,
+                                          "& .MuiOutlinedInput-root": {
+                                            height: 32,
+                                            fontSize: "0.75rem",
+                                            paddingRight: "32px", // Make space for icon
+                                            backgroundColor: isDark
+                                              ? "#424242"
+                                              : "#fff",
+                                          },
+                                          "& .MuiSelect-select": {
+                                            padding: "4px 8px",
+                                            display: "flex",
+                                            alignItems: "center",
+                                          },
+                                          "& .MuiSelect-icon": {
+                                            right: 8,
+                                            top: "calc(50% - 12px)", // center vertically
+                                            color: isDark ? "#ccc" : "#555",
+                                          },
+                                        }}
                                       >
                                         <Select
                                           value={licenseFilter}
@@ -1575,14 +1607,6 @@ const AngelBot = () => {
                                           }
                                           displayEmpty
                                           renderValue={() => ""}
-                                          sx={{
-                                            fontSize: "0.75rem",
-                                            minHeight: "20px",
-                                            backgroundColor: isDark
-                                              ? "#424242"
-                                              : "#fff",
-                                            color: isDark ? "#fff" : "#000",
-                                          }}
                                         >
                                           <MenuItem value="all">All</MenuItem>
                                           <MenuItem value="active">
@@ -1596,7 +1620,7 @@ const AngelBot = () => {
                                           </MenuItem>
                                         </Select>
                                       </FormControl>
-                                    </div>
+                                    </Box>
                                   ) : (
                                     header
                                   )}
@@ -1652,6 +1676,14 @@ const AngelBot = () => {
                                     }}
                                   >
                                     {license.name}
+                                  </td>
+                                  <td
+                                    style={{
+                                      padding: "8px",
+                                      fontSize: "0.875rem",
+                                    }}
+                                  >
+                                    {license.issueDate || "—"}
                                   </td>
                                   <td
                                     style={{

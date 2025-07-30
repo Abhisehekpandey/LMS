@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import {
   BrowserRouter as Router,
@@ -30,9 +31,7 @@ import ThemeSetting from "./pages/ThemeSetting";
 
 function App() {
   const [dictionarySearchResults, setDictionarySearchResults] = useState([]);
-
   const [darkMode, setDarkMode] = useState(false);
-
   const [departments, setDepartments] = useState([]);
 
   const theme = createTheme({
@@ -49,18 +48,17 @@ function App() {
     <ThemeProvider theme={theme}>
       <Router>
         <Routes>
-          {/* Public routes — without Layout */}
+          {/* Public routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/set-password" element={<ResetPassword />} />
           <Route path="/forget-password" element={<ForgetPassword />} />
-
           <Route
             path="/reset-password/:token"
             element={<ResetAdminPassword />}
           />
 
-          {/* Protected routes — with Layout */}
+          {/* Protected routes — wrapped in Layout and ProtectedRoute */}
           <Route
             path="/user"
             element={
@@ -93,7 +91,9 @@ function App() {
             path="/angelbot"
             element={
               <Layout onThemeToggle={toggleTheme}>
-                <AngelBot onThemeToggle={toggleTheme} />
+                <ProtectedRoute>
+                  <AngelBot onThemeToggle={toggleTheme} />
+                </ProtectedRoute>
               </Layout>
             }
           />
@@ -101,7 +101,9 @@ function App() {
             path="/company-dashboard"
             element={
               <Layout>
-                <CompanyDashboard onThemeToggle={toggleTheme} />
+                <ProtectedRoute>
+                  <CompanyDashboard onThemeToggle={toggleTheme} />
+                </ProtectedRoute>
               </Layout>
             }
           />
@@ -109,7 +111,9 @@ function App() {
             path="/ldap-config"
             element={
               <Layout onThemeToggle={toggleTheme}>
-                <LDAPConfig />
+                <ProtectedRoute>
+                  <LDAPConfig />
+                </ProtectedRoute>
               </Layout>
             }
           />
@@ -117,7 +121,9 @@ function App() {
             path="/choose-extension"
             element={
               <Layout onThemeToggle={toggleTheme}>
-                <ChooseExtension />
+                <ProtectedRoute>
+                  <ChooseExtension />
+                </ProtectedRoute>
               </Layout>
             }
           />
@@ -125,11 +131,12 @@ function App() {
             path="/department-type-setting"
             element={
               <Layout onThemeToggle={toggleTheme}>
-                <DepartmentTypeSetting />
+                <ProtectedRoute>
+                  <DepartmentTypeSetting />
+                </ProtectedRoute>
               </Layout>
             }
           />
-
           <Route
             path="/data-dictionary"
             element={
@@ -137,34 +144,39 @@ function App() {
                 onThemeToggle={toggleTheme}
                 onSearch={setDictionarySearchResults}
               >
-                <DataDictionary searchResults={dictionarySearchResults} />
+                <ProtectedRoute>
+                  <DataDictionary searchResults={dictionarySearchResults} />
+                </ProtectedRoute>
               </Layout>
             }
           />
-
           <Route
             path="/feed-context"
             element={
               <Layout onThemeToggle={toggleTheme}>
-                <FeedContext />
+                <ProtectedRoute>
+                  <FeedContext />
+                </ProtectedRoute>
               </Layout>
             }
           />
-
           <Route
             path="/theme-setting"
             element={
               <Layout onThemeToggle={toggleTheme}>
-                <ThemeSetting />
+                <ProtectedRoute>
+                  <ThemeSetting />
+                </ProtectedRoute>
               </Layout>
             }
           />
-
           <Route
             path="/activate/:token"
             element={
               <Layout>
-                <ActivateAccount />
+                <ProtectedRoute>
+                  <ActivateAccount />
+                </ProtectedRoute>
               </Layout>
             }
           />
@@ -178,3 +190,4 @@ function App() {
 }
 
 export default App;
+
