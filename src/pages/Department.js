@@ -190,7 +190,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
   const [selectedUser, setSelectedUser] = useState(null);
 
-
   const [allDepartments, setAllDepartments] = useState([]);
   const [migrationPage, setMigrationPage] = useState(0);
   const [hasMoreDepartments, setHasMoreDepartments] = useState(true);
@@ -1051,97 +1050,98 @@ function Department({ departments, setDepartments, onThemeToggle }) {
   //     });
   //   }
   // };
-const handleAddDepartment = async () => {
-  setNewDepartment((prev) => ({ ...prev, submitted: true }));
+  const handleAddDepartment = async () => {
+    setNewDepartment((prev) => ({ ...prev, submitted: true }));
 
- const {
-   name,
-   displayName,
-   departmentModerator,
-   initialRole,
-   storage,
-   selectedUser,
- } = newDepartment;
+    const {
+      name,
+      displayName,
+      departmentModerator,
+      initialRole,
+      storage,
+      selectedUser,
+    } = newDepartment;
 
-if (
-  !name ||
-  !displayName ||
-  !departmentModerator ||
-  !storage ||
-  selectedUser.length === 0
-) {
-  setSnackbar({
-    open: true,
-    message: "Please fill all required fields",
-    severity: "error",
-  });
-  return;
-}
-
-const payload = {
-  deptName: name.trim(),
-  deptDisplayName: displayName.trim(),
-  deptModerator: departmentModerator.trim(),
-  storage: storage.trim(),
-  role: initialRole.trim(),
-  selectedUsers: selectedUser.map((u) => u.name), // ✅ send names of selected users
-};
-
-  try {
-    await createDepartment(payload);
-
-    const refreshed = await getDepartments();
-    const mapped = refreshed.content.map((dept) => ({
-      name: dept.deptName,
-      displayName: dept.deptDisplayName,
-      departmentModerator:
-        dept.deptModerator || dept.permissions?.deptUsername || "",
-      storage: dept.permissions?.displayStorage || "0 GB",
-      allowedStorage:
-        cleanDisplay(dept.permissions?.allowedStorageInBytesDisplay) || "0 GB",
-      roles: dept.roles?.map((r) => r.roleName) || [],
-      userCount: dept.numberOfUsers || 0,
-      isActive: dept.permissions?.active || false,
-      createdAt: dept.createdOn,
-    }));
-    setDepartments(mapped);
-    setTotalDepartments(refreshed.totalElements);
-    setShowAddDepartment(false);
-
-   setNewDepartment({
-     name: "",
-     displayName: "",
-     initialRole: "",
-     storage: "",
-     departmentModerator: "",
-     selectedUser: [], // ✅ reset
-     submitted: false,
-   });
-
-    setSnackbar({
-      open: true,
-      message: `Department "${payload.deptName}" created successfully.`,
-      severity: "success",
-    });
-  } catch (error) {
-    const errorMessage =
-      error?.response?.data?.error ||
-      "Failed to create department. Please try again.";
-
-    console.log("errrrrr", errorMessage);
-
-    if (/already exists/i.test(errorMessage)) {
-      console.log("Duplicate department detected");
-      setDuplicateDepartmentError(true);
+    if (
+      !name ||
+      !displayName ||
+      !departmentModerator ||
+      !storage ||
+      selectedUser.length === 0
+    ) {
+      setSnackbar({
+        open: true,
+        message: "Please fill all required fields",
+        severity: "error",
+      });
+      return;
     }
 
-    setSnackbar({
-      open: true,
-      message: errorMessage,
-      severity: "error",
-    });
-  }
-};
+    const payload = {
+      deptName: name.trim(),
+      deptDisplayName: displayName.trim(),
+      deptModerator: departmentModerator.trim(),
+      storage: storage.trim(),
+      role: initialRole.trim(),
+      selectedUsers: selectedUser.map((u) => u.name), // ✅ send names of selected users
+    };
+
+    try {
+      await createDepartment(payload);
+
+      const refreshed = await getDepartments();
+      const mapped = refreshed.content.map((dept) => ({
+        name: dept.deptName,
+        displayName: dept.deptDisplayName,
+        departmentModerator:
+          dept.deptModerator || dept.permissions?.deptUsername || "",
+        storage: dept.permissions?.displayStorage || "0 GB",
+        allowedStorage:
+          cleanDisplay(dept.permissions?.allowedStorageInBytesDisplay) ||
+          "0 GB",
+        roles: dept.roles?.map((r) => r.roleName) || [],
+        userCount: dept.numberOfUsers || 0,
+        isActive: dept.permissions?.active || false,
+        createdAt: dept.createdOn,
+      }));
+      setDepartments(mapped);
+      setTotalDepartments(refreshed.totalElements);
+      setShowAddDepartment(false);
+
+      setNewDepartment({
+        name: "",
+        displayName: "",
+        initialRole: "",
+        storage: "",
+        departmentModerator: "",
+        selectedUser: [], // ✅ reset
+        submitted: false,
+      });
+
+      setSnackbar({
+        open: true,
+        message: `Department "${payload.deptName}" created successfully.`,
+        severity: "success",
+      });
+    } catch (error) {
+      const errorMessage =
+        error?.response?.data?.error ||
+        "Failed to create department. Please try again.";
+
+      console.log("errrrrr", errorMessage);
+
+      if (/already exists/i.test(errorMessage)) {
+        console.log("Duplicate department detected");
+        setDuplicateDepartmentError(true);
+      }
+
+      setSnackbar({
+        open: true,
+        message: errorMessage,
+        severity: "error",
+      });
+    }
+  };
 
   const handleAddRole = async () => {
     if (!newRole.trim()) {
@@ -2180,16 +2180,15 @@ const payload = {
             borderRadius: "8px",
             boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
             position: "absolute",
-            top: "3%",
-            left: "35%",
-            // transform: "translate(-50%, -50%)",
-            m: 0,
-            height: "auto", // dynamic height
-            maxHeight: "95vh", // prevent it from overflowin
-            overflow: "hidden", // avoid extra scrollbars
+            top: "9%",
+            left: "23%",
+            width: "800px",
+            height: "80vh", // ✅ fixed height
+            maxHeight: "80vh",
+            overflow: "hidden", // ✅ scroll handled inside
             animation: "slideInFromLeft 0.2s ease-in-out forwards",
-            opacity: 0, // Start with opacity 0
-            transform: "translateX(-50px)", // Start from left
+            opacity: 0,
+            transform: "translateX(-50px)",
             "@keyframes slideInFromLeft": {
               "0%": {
                 opacity: 0,
@@ -2203,7 +2202,7 @@ const payload = {
           },
         }}
       >
-        <Box sx={{ height: "70%", display: "flex", flexDirection: "column" }}>
+        <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
           <Box
             sx={{
               borderBottom: "1px solid #eee",
@@ -2322,150 +2321,103 @@ const payload = {
                       helperText: "Optional: You can add roles later",
                     },
                   ].map((field, index) => {
-                    // if (field.label === "Department Moderator") {
-                    //   return (
-                    //     <Autocomplete
-                    //       key={index}
-                    //       size="small"
-                    //       fullWidth
-                    //       options={userOptions}
-                    //       getOptionLabel={(option) => option.name || ""}
-                    //       value={
-                    //         userOptions.find((u) => u.name === field.value) ||
-                    //         null
-                    //       }
-                    //       onChange={(event, newValue) =>
-                    //         setNewDepartment((prev) => ({
-                    //           ...prev,
-                    //           departmentModerator: newValue?.name || "",
-                    //         }))
-                    //       }
-                    //       ListboxProps={{
-                    //         style: { maxHeight: 300, overflow: "auto" },
-                    //         onScroll: (event) => {
-                    //           const listboxNode = event.currentTarget;
-                    //           const threshold = 50;
-                    //           if (
-                    //             listboxNode.scrollTop +
-                    //               listboxNode.clientHeight >=
-                    //             listboxNode.scrollHeight - threshold
-                    //           ) {
-                    //             loadMoreUsers();
-                    //           }
-                    //         },
-                    //       }}
-                    //       renderInput={(params) => (
-                    //         <TextField
-                    //           {...params}
-                    //           label="Department Moderator"
-                    //           FormHelperTextProps={{ sx: { ml: 0 } }}
-                    //           error={field.error}
-                    //           helperText={field.helperText}
-                    //           required
-                    //         />
-                    //       )}
-                    //     />
-                    //   );
-                    // }
+                    if (field.label === "Department Moderator") {
+                      return (
+                        <React.Fragment key={index}>
+                          <Autocomplete
+                            size="small"
+                            fullWidth
+                            options={userOptions}
+                            getOptionLabel={(option) => option.name || ""}
+                            value={
+                              userOptions.find((u) => u.name === field.value) ||
+                              null
+                            }
+                            onChange={(event, newValue) =>
+                              setNewDepartment((prev) => ({
+                                ...prev,
+                                departmentModerator: newValue?.name || "",
+                              }))
+                            }
+                            ListboxProps={{
+                              style: { maxHeight: 300, overflow: "auto" },
+                              onScroll: (event) => {
+                                const listboxNode = event.currentTarget;
+                                const threshold = 50;
+                                if (
+                                  listboxNode.scrollTop +
+                                    listboxNode.clientHeight >=
+                                  listboxNode.scrollHeight - threshold
+                                ) {
+                                  loadMoreUsers();
+                                }
+                              },
+                            }}
+                            renderInput={(params) => (
+                              <TextField
+                                {...params}
+                                label="Department Moderator"
+                                FormHelperTextProps={{ sx: { ml: 0 } }}
+                                error={field.error}
+                                helperText={field.helperText}
+                                required
+                              />
+                            )}
+                          />
 
-                    // Default rendering for other fields
-                   if (field.label === "Department Moderator") {
-                     return (
-                       <React.Fragment key={index}>
-                         <Autocomplete
-                           size="small"
-                           fullWidth
-                           options={userOptions}
-                           getOptionLabel={(option) => option.name || ""}
-                           value={
-                             userOptions.find((u) => u.name === field.value) ||
-                             null
-                           }
-                           onChange={(event, newValue) =>
-                             setNewDepartment((prev) => ({
-                               ...prev,
-                               departmentModerator: newValue?.name || "",
-                             }))
-                           }
-                           ListboxProps={{
-                             style: { maxHeight: 300, overflow: "auto" },
-                             onScroll: (event) => {
-                               const listboxNode = event.currentTarget;
-                               const threshold = 50;
-                               if (
-                                 listboxNode.scrollTop +
-                                   listboxNode.clientHeight >=
-                                 listboxNode.scrollHeight - threshold
-                               ) {
-                                 loadMoreUsers();
-                               }
-                             },
-                           }}
-                           renderInput={(params) => (
-                             <TextField
-                               {...params}
-                               label="Department Moderator"
-                               FormHelperTextProps={{ sx: { ml: 0 } }}
-                               error={field.error}
-                               helperText={field.helperText}
-                               required
-                             />
-                           )}
-                         />
-
-                         {/* ✅ New Select User Field */}
-                         <Autocomplete
-                           multiple
-                           size="small"
-                           fullWidth
-                           options={userOptions}
-                           getOptionLabel={(option) => option.name || ""}
-                           value={newDepartment.selectedUser}
-                           onChange={(event, newValue) =>
-                             setNewDepartment((prev) => ({
-                               ...prev,
-                               selectedUser: newValue,
-                             }))
-                           }
-                           isOptionEqualToValue={(option, value) =>
-                             option.id === value.id
-                           }
-                           ListboxProps={{
-                             style: { maxHeight: 300, overflow: "auto" },
-                             onScroll: (event) => {
-                               const listboxNode = event.currentTarget;
-                               const threshold = 50;
-                               if (
-                                 listboxNode.scrollTop +
-                                   listboxNode.clientHeight >=
-                                 listboxNode.scrollHeight - threshold
-                               ) {
-                                 loadMoreUsers();
-                               }
-                             },
-                           }}
-                           renderInput={(params) => (
-                             <TextField
-                               {...params}
-                               label="Select Users"
-                               FormHelperTextProps={{ sx: { ml: 0 } }}
-                               error={
-                                 newDepartment.submitted &&
-                                 newDepartment.selectedUser.length === 0
-                               }
-                               helperText={
-                                 newDepartment.submitted &&
-                                 newDepartment.selectedUser.length === 0
-                                   ? "At least one user must be selected"
-                                   : ""
-                               }
-                               required
-                             />
-                           )}
-                         />
-                       </React.Fragment>
-                     );
-                   }
+                          {/* ✅ New Select User Field */}
+                          <Autocomplete
+                            multiple
+                            size="small"
+                            fullWidth
+                            options={userOptions}
+                            getOptionLabel={(option) => option.name || ""}
+                            value={newDepartment.selectedUser}
+                            onChange={(event, newValue) =>
+                              setNewDepartment((prev) => ({
+                                ...prev,
+                                selectedUser: newValue,
+                              }))
+                            }
+                            isOptionEqualToValue={(option, value) =>
+                              option.id === value.id
+                            }
+                            ListboxProps={{
+                              style: { maxHeight: 300, overflow: "auto" },
+                              onScroll: (event) => {
+                                const listboxNode = event.currentTarget;
+                                const threshold = 50;
+                                if (
+                                  listboxNode.scrollTop +
+                                    listboxNode.clientHeight >=
+                                  listboxNode.scrollHeight - threshold
+                                ) {
+                                  loadMoreUsers();
+                                }
+                              },
+                            }}
+                            renderInput={(params) => (
+                              <TextField
+                                {...params}
+                                label="Select Users"
+                                FormHelperTextProps={{ sx: { ml: 0 } }}
+                                error={
+                                  newDepartment.submitted &&
+                                  newDepartment.selectedUser.length === 0
+                                }
+                                helperText={
+                                  newDepartment.submitted &&
+                                  newDepartment.selectedUser.length === 0
+                                    ? "At least one user must be selected"
+                                    : ""
+                                }
+                                required
+                              />
+                            )}
+                          />
+                        </React.Fragment>
+                      );
+                    }
 
                     return (
                       <TextField

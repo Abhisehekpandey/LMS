@@ -520,7 +520,7 @@ export default function UserTable() {
         id: row.id,
         name: row.name || "",
         email: row.email || "",
-        phoneNumber: row.phone || "",
+        phoneNumber: row.phoneNumber || "",
         department: deptName,
         role: matchedRole?.roleName || roleName,
         roles: row.roles || [],
@@ -589,7 +589,7 @@ export default function UserTable() {
       Department: row.roles?.[0]?.department?.deptName || "N/A",
       Role: row.roles?.[0]?.roleName || "N/A",
       "User Email": row.email || "N/A",
-      "Phone Number": row.phone || "N/A",
+      "Phone Number": row.phoneNumber || "N/A",
       "Reporting Manager": row.reportingManager?.name || "N/A",
       "Storage Used": row.permissions?.displayStorage || "N/A",
       "Manage Storage": row.permissions?.allowedStorageInBytesDisplay || "N/A",
@@ -630,9 +630,26 @@ export default function UserTable() {
 
   const label = { inputProps: { "aria-label": "Switch demo" } };
 
+ 
   const handleDelete = (e, row) => {
-    setDeleteUser(true);
+    // If a specific row is passed (single user delete)
+    if (row) {
+      setDeleteUser(true);
+      setRowData([row]);
+      setSelected([row.id]);
+    } else {
+      // Bulk delete: selected rows
+      if (selected.length === 0) {
+        toast.warning("No users selected for deletion.");
+        return;
+      }
+
+      const selectedFullRows = rowsData.filter((r) => selected.includes(r.id));
+      setDeleteUser(true);
+      setRowData(selectedFullRows); // send all selected users
+    }
   };
+
 
   const toBytes = (display) => {
     if (!display || typeof display !== "string") return 0;
@@ -1162,14 +1179,25 @@ export default function UserTable() {
                           }
                         >
                           <span>
-                            <IconButton
-                              size="small"
-                              color="error"
-                              onClick={handleDelete}
-                              disabled={row.email === adminEmail}
+                          
+                            <Tooltip
+                              title={
+                                row.email === adminEmail
+                                  ? "Admin user cannot be deleted"
+                                  : "Delete User"
+                              }
                             >
-                              <Delete />
-                            </IconButton>
+                              <span>
+                                <IconButton
+                                  size="small"
+                                  color="error"
+                                  onClick={(e) => handleDelete(e, row)}
+                                  disabled={row.email === adminEmail}
+                                >
+                                  <Delete />
+                                </IconButton>
+                              </span>
+                            </Tooltip>
                           </span>
                         </Tooltip>
                       </>
@@ -1618,13 +1646,25 @@ export default function UserTable() {
                 />
               </Grid>
               <Grid item xs={6}>
-                <TextField
+                {/* <TextField
                   size="small"
                   label="Email"
                   fullWidth
                   value={editData.email || ""}
                   disabled
-                />
+                /> */}
+                <Tooltip title="Email cannot be edited">
+                  <span>
+                    <TextField
+                      size="small"
+                      label="Email"
+                      fullWidth
+                      value={editData.email || ""}
+                      disabled
+                      sx={{ pointerEvents: "none" }} // ensures tooltip still shows
+                    />
+                  </span>
+                </Tooltip>
               </Grid>
               <Grid item xs={6}>
                 {console.log("Selected Department Roles:", selectedDepartment)}
