@@ -270,13 +270,13 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
   const getStorageOptions = (deptAllowedValue) => {
     const baseOptions = [
-      "0GB",
-      "25GB",
-      "50GB",
-      "75GB",
-      "100GB",
-      "150GB",
-      "200GB",
+      "0 GB",
+      "25 GB",
+      "50 GB",
+      "75 GB",
+      "100 GB",
+      "150 GB",
+      "200 GB",
     ];
 
     // Include dept value if not already in the list
@@ -1377,7 +1377,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           //   cleanDisplay(dept.permissions?.allowedStorageInBytesDisplay) ||
           //   "0 GB", // 🔥
           allowedStorage:
-            dept.permissions?.allowedStorageInBytesDisplay === "0.0 bytes"
+            dept.permissions?.allowedStorageInBytesDisplay === "0 bytes"
               ? "0 GB"
               : dept.permissions?.allowedStorageInBytesDisplay || "0 GB",
 

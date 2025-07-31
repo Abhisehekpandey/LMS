@@ -127,7 +127,7 @@ const Sidebar = () => {
   const timeoutRef = useRef(null);
   const location = useLocation();
 
-  const user = JSON.parse(localStorage.getItem("user")) || {};
+  const user = JSON.parse(sessionStorage.getItem("user")) || {};
   const userName = user.name || "User";
   const userRole = user.role || "Role";
   const userInitial = user.initial || "U";

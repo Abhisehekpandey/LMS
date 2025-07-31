@@ -218,10 +218,41 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
     setSearchAnchorEl(null);
   };
 
-  const handleLogout = () => {
-    sessionStorage.removeItem("user");
-    navigate("/login");
+  
+  const handleLogout = async () => {
+    try {
+      const formData = new FormData();
+      formData.append("refreshToken", sessionStorage.getItem("refreshToken"));
+
+      const response = await fetch(
+        `${window.__ENV__.REACT_APP_ROUTE}/tenants/logout`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+            username: `${sessionStorage.getItem("adminEmail")}`,
+            Accept: "application/json",
+          },
+          body: formData,
+        }
+      );
+
+      if (!response.ok) {
+        console.warn("⚠️ Logout API call failed:", await response.text());
+      }
+
+      // Always clear session (even if API fails)
+      sessionStorage.clear();
+      localStorage.clear();
+      navigate("/login");
+    } catch (error) {
+      console.error("❌ Logout error:", error);
+      sessionStorage.clear();
+      localStorage.clear();
+      navigate("/login");
+    }
   };
+
 
   return (
     <StyledAppBar position="static">

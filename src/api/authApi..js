@@ -37,7 +37,7 @@ export const loginUser = async (username, password) => {
     const displayName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
 
     // ✅ Store derived info in localStorage
-    localStorage.setItem(
+    sessionStorage.setItem(
       "user",
       JSON.stringify({
         name: displayName,

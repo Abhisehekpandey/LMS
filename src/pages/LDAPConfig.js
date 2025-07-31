@@ -782,7 +782,7 @@ const LDAPConfig = () => {
                             configId: result.id, // ✅ save config ID for later
                           },
                         }));
-                        localStorage.setItem("ldapConfigId", result.id);
+                        sessionStorage.setItem("ldapConfigId", result.id);
                       }
 
                       setStatus({
@@ -832,7 +832,7 @@ const LDAPConfig = () => {
                         setSelectedObjectClass(value);
 
                         if (value === "group") {
-                          const configId = localStorage.getItem("ldapConfigId");
+                          const configId = sessionStorage.getItem("ldapConfigId");
 
                           if (!configId) {
                             setStatus({
@@ -968,7 +968,7 @@ const LDAPConfig = () => {
                       <Button
                         variant="outlined"
                         onClick={async () => {
-                          const ldapId = localStorage.getItem("ldapConfigId");
+                          const ldapId = sessionStorage.getItem("ldapConfigId");
 
                           if (!ldapId) {
                             setStatus({
@@ -1053,7 +1053,7 @@ const LDAPConfig = () => {
                         setSelectedGroupObjectClass(value);
 
                         if (value === "group") {
-                          const configId = localStorage.getItem("ldapConfigId");
+                          const configId = sessionStorage.getItem("ldapConfigId");
 
                           if (!configId) {
                             setStatus({
