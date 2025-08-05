@@ -572,7 +572,7 @@ export default function UserTable() {
   const options = ["10GB", "20GB"];
 
   const handleBulkDownload = () => {
-    console.log("rowData",rowData)
+    console.log("rowData", rowData);
     if (!rowData || rowData.length === 0) {
       alert("No data to download");
       return;
@@ -617,7 +617,13 @@ export default function UserTable() {
 
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Selected Users");
-    XLSX.writeFile(workbook, "selected-users.xlsx");
+    // XLSX.writeFile(workbook, "selected-users.xlsx");
+    const fileName =
+      rowData.length === 1
+        ? `${rowData[0].name?.replace(/\s+/g, "_")}-user.xlsx`
+        : "selected-users.xlsx";
+
+    XLSX.writeFile(workbook, fileName);
 
     setSelected([]);
     setRowData([]);
@@ -630,7 +636,6 @@ export default function UserTable() {
 
   const label = { inputProps: { "aria-label": "Switch demo" } };
 
- 
   const handleDelete = (e, row) => {
     // If a specific row is passed (single user delete)
     if (row) {
@@ -649,7 +654,6 @@ export default function UserTable() {
       setRowData(selectedFullRows); // send all selected users
     }
   };
-
 
   const toBytes = (display) => {
     if (!display || typeof display !== "string") return 0;
@@ -735,23 +739,22 @@ export default function UserTable() {
 
   const handleSelectAllClick = (event) => {
     if (event.target.checked) {
-      const allIds = rowsData.map((row) => row.id);
-      // setSelected(allIds);
+      const allIds = rowsData
+        .filter((row) => row.email !== adminEmail) // exclude current admin
+        .map((row) => row.id);
+
+      setSelected(allIds);
 
       const selectedFullRows = rowsData.filter((r) => allIds.includes(r.id));
       setRowData(selectedFullRows);
 
-      // Set selectAllData flag
       setSelectAllData(true);
     } else {
-      // Deselect all rows
-      setSelected([]); // Clear selected ids
+      setSelected([]);
 
-      // Directly get the full data of rows that were selected
       const selectedFullRows = rowsData.filter((r) => selected.includes(r.id));
-      setRowData(selectedFullRows); // Update row data with the selected rows
+      setRowData(selectedFullRows);
 
-      // Set selectAllData flag to false
       setSelectAllData(false);
     }
   };
@@ -781,13 +784,53 @@ export default function UserTable() {
   };
 
   const isSelected = (id) => selected.indexOf(id) !== -1;
+  // const refetchUsers = async () => {
+  //   setLoading(true);
+  //   try {
+  //     const users = await fetchUsers(page);
+  //     const adminEmail = sessionStorage.getItem("adminEmail");
+
+  //     const sortedUsers = [...users.content].sort((a, b) => {
+  //       if (a.email === adminEmail) return -1;
+  //       if (b.email === adminEmail) return 1;
+  //       return 0;
+  //     });
+
+  //     setRowsData(sortedUsers);
+  //     setTotalCount(users.totalElements);
+  //   } catch (error) {
+  //     console.error("Error loading users", error);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
   const refetchUsers = async () => {
     setLoading(true);
     try {
       const users = await fetchUsers(page);
       const adminEmail = sessionStorage.getItem("adminEmail");
 
-      const sortedUsers = [...users.content].sort((a, b) => {
+      // Normalize storage format like "1.00 GB" to "1GB"
+  const normalizedUsers = users.content.map((user) => {
+    const display = user.permissions?.allowedStorageInBytesDisplay;
+    if (display) {
+      const fixedDisplay = display
+        .replace(/\.00\s?([A-Z]+)/, "$1") // remove ".00" before GB/MB/etc.
+        .replace(/\s+/g, ""); // remove all spaces
+      return {
+        ...user,
+        permissions: {
+          ...user.permissions,
+          allowedStorageInBytesDisplay: fixedDisplay,
+        },
+      };
+    }
+    return user;
+  });
+
+
+      const sortedUsers = [...normalizedUsers].sort((a, b) => {
         if (a.email === adminEmail) return -1;
         if (b.email === adminEmail) return 1;
         return 0;
@@ -801,6 +844,7 @@ export default function UserTable() {
       setLoading(false);
     }
   };
+
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 300);
@@ -1179,7 +1223,6 @@ export default function UserTable() {
                           }
                         >
                           <span>
-                          
                             <Tooltip
                               title={
                                 row.email === adminEmail
@@ -1515,15 +1558,18 @@ export default function UserTable() {
                   borderRadius: "4px",
                 }}
                 onClick={() => {
-                  const currentPageRows = rowsData.map((n) => n.id);
-                  setSelected(currentPageRows); // Select only the current page
-                  setRowData(rowsData); // Store current page data
-                  setSelectAllData(false);
+                  const filteredPageRows = rowsData.filter(
+                    (n) => n.email !== adminEmail
+                  );
+                  const currentPageIds = filteredPageRows.map((n) => n.id);
+
+                  setSelected(currentPageIds); // Select only non-admin users
+                  setRowData(filteredPageRows); // Store current page data without admin
+                  setSelectAllData(false); // Mark selectAllData as false
                 }}
               >
                 Select Current Page ({rowsData.length} rows)
               </Button>
-
               <Button
                 style={{
                   backgroundColor: "#d32f2f",

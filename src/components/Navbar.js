@@ -292,9 +292,9 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
         {[
           "/user",
           "/department",
-          "/data-dictionary",
-          "/feed-context",
-          "/department-type-setting",
+          // "/data-dictionary",
+          // "/feed-context",
+          // "/department-type-setting",
         ].includes(location.pathname) && (
           <SearchWrapper>
             <SearchIconWrapper>

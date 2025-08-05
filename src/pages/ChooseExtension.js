@@ -564,13 +564,22 @@ const ChooseExtension = () => {
         </DialogTitle>
 
         <DialogContent sx={{ mt: 2 }}>
+         
           <TextField
-            label="Extension"
+            placeholder="Enter extension (e.g., mp5)"
             fullWidth
             size="small"
             value={newExtension}
-            onChange={(e) => setNewExtension(e.target.value.trim())}
-            helperText="Enter file extension without dot (e.g., mp5)"
+            onChange={(e) => setNewExtension(e.target.value)}
+            variant="outlined"
+            sx={{
+              "& .MuiOutlinedInput-input": {
+                padding: "10px 14px",
+              },
+              "& .MuiFormHelperText-root": {
+                marginLeft: 0,
+              },
+            }}
           />
         </DialogContent>
         <DialogActions>

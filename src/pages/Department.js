@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { saveAs } from "file-saver";
+import axios from "axios";
 
 import PropTypes from "prop-types";
 import {
@@ -399,7 +400,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
       // ✅ store only name and id (or just name if id not needed)
       const simplifiedUsers = users.map((u) => ({
-        name: u.name,
+        name: u.email,
         id: u.id, // optional, if you need it later
       }));
 
@@ -717,14 +718,14 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
     try {
       const reader = new FileReader();
-      reader.onload = (e) => {
+      reader.onload = async (e) => {
         try {
           const data = new Uint8Array(e.target.result);
           const workbook = XLSX.read(data, { type: "array" });
           const worksheet = workbook.Sheets[workbook.SheetNames[0]];
           const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-          // Define required columns based on the template
+          // Required columns
           const requiredColumns = {
             Department: false,
             "Display Name": false,
@@ -790,92 +791,47 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             return;
           }
 
-          // Group rows by department
-          const departmentGroups = {};
-          jsonData.forEach((row) => {
-            if (!departmentGroups[row.Department]) {
-              departmentGroups[row.Department] = [];
-            }
-            departmentGroups[row.Department].push(row);
-          });
+          // ✅ Transform rows to API payload
+          const apiPayload = jsonData.map((row) => ({
+            deptName: row["Department"],
+            deptDisplayName: row["Display Name"],
+            deptModerator: row["Department Moderator"],
+            role: row["Role"],
+            storage: row["Storage Allocated"],
+          }));
 
-          let updatedDepartmentsList = [...departments];
-          const operationSummary = {
-            added: [],
-            updated: [],
-            skipped: [],
-            rolesAdded: {},
-          };
-
-          // Process each department
-          Object.entries(departmentGroups).forEach(([deptName, rows]) => {
-            const existingDeptIndex = updatedDepartmentsList.findIndex(
-              (d) => d.name === deptName
+          // ✅ Send API request
+          try {
+            await axios.post(
+              `${window.__ENV__.REACT_APP_ROUTE}/tenants/BulkUpload`,
+              apiPayload,
+              {
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${sessionStorage.getItem(
+                    "authToken"
+                  )}`,
+                  username: `${sessionStorage.getItem("adminEmail")}`,
+                },
+              }
             );
 
-            const uniqueRoles = Array.from(
-              new Set(rows.map((row) => row.Role?.trim()).filter((r) => r))
-            );
+            setSnackbar({
+              open: true,
+              message: "Bulk department upload successful",
+              severity: "success",
+            });
 
-            if (existingDeptIndex !== -1) {
-              // Update existing department
-              updatedDepartmentsList[existingDeptIndex] = {
-                ...updatedDepartmentsList[existingDeptIndex],
-                displayName: rows[0]["Display Name"],
-                departmentModerator: rows[0]["Department Moderator"],
-                storage: rows[0]["Storage Consumed"], // 👈 used storage
-                manageStorage: rows[0]["Storage Allocated"], // 👈 allocated limit
-                roles: uniqueRoles,
-              };
-              operationSummary.updated.push(deptName);
-              operationSummary.rolesAdded[deptName] = uniqueRoles;
-            } else {
-              // Add new department
-              updatedDepartmentsList.push({
-                name: deptName,
-                displayName: rows[0]["Display Name"],
-                departmentModerator: rows[0]["Department Moderator"],
-                storage: rows[0]["Storage Consumed"],
-                manageStorage: rows[0]["Storage Allocated"],
-                roles: uniqueRoles,
-              });
-              operationSummary.added.push(deptName);
-              operationSummary.rolesAdded[deptName] = uniqueRoles;
-            }
-          });
-
-          // Update state
-          setDepartments(updatedDepartmentsList);
-
-          // Build operation summary
-          const summaryMessages = [];
-
-          if (operationSummary.added.length > 0) {
-            summaryMessages.push(
-              `Added departments: ${operationSummary.added.join(", ")}`
-            );
+            // Optionally: refresh department list after upload
+            // fetchDepartments();
+          } catch (apiError) {
+            console.error("API error:", apiError);
+            setSnackbar({
+              open: true,
+              message: "Bulk upload failed. Please try again.",
+              severity: "error",
+            });
           }
-
-          if (operationSummary.updated.length > 0) {
-            summaryMessages.push(
-              `Updated departments: ${operationSummary.updated.join(", ")}`
-            );
-          }
-
-          Object.entries(operationSummary.rolesAdded).forEach(
-            ([dept, roles]) => {
-              summaryMessages.push(`Roles in ${dept}: ${roles.join(", ")}`);
-            }
-          );
-
-          setSnackbar({
-            open: true,
-            message:
-              summaryMessages.length > 0
-                ? summaryMessages.join("\n")
-                : "No changes were made.",
-            severity: "success",
-          });
         } catch (error) {
           console.error("Error processing file:", error);
           setSnackbar({
@@ -900,7 +856,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     event.target.value = ""; // Clear the file input
   };
 
-  // Add pagination handlers
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
   };
@@ -1257,18 +1212,28 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       setDepartmentToDelete(null);
     }
   };
-
   const handleTemplateDownload = () => {
     const headers = [
       "Department", // e.g., "IT"
       "Display Name", // e.g., "Information Technology"
       "Department Moderator", // e.g., "john.doe@example.com"
-      "Storage Allocated", // in GB or MB
-      "Storage Consumed", // optional/dummy
-      "Role", // e.g., "Admin, Viewer"
+      "Storage Allocated", // e.g., "50 GB"
+      "Storage Consumed", // e.g., "10 GB"
+      "Role", // e.g., "Admin"
     ];
 
-    const worksheet = XLSX.utils.aoa_to_sheet([headers]);
+    const dummyData = [
+      [
+        "IT",
+        "Information Technology",
+        "john.doe@example.com",
+        "50 GB",
+        "10 GB",
+        "Admin",
+      ],
+    ];
+
+    const worksheet = XLSX.utils.aoa_to_sheet([headers, ...dummyData]);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Template");
 
@@ -1276,6 +1241,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       bookType: "xlsx",
       type: "array",
     });
+
     const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
     saveAs(blob, "Department_Template.xlsx");
   };
@@ -2328,7 +2294,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                             size="small"
                             fullWidth
                             options={userOptions}
-                            getOptionLabel={(option) => option.name || ""}
+                            getOptionLabel={(option) => option.email || ""}
                             value={
                               userOptions.find((u) => u.name === field.value) ||
                               null
@@ -2336,7 +2302,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                             onChange={(event, newValue) =>
                               setNewDepartment((prev) => ({
                                 ...prev,
-                                departmentModerator: newValue?.name || "",
+                                departmentModerator: newValue?.email || "",
                               }))
                             }
                             ListboxProps={{
@@ -2646,7 +2612,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 onChange={(e) => setNewRole(e.target.value)}
                 sx={{ mb: 2 }}
               />
-              <FormControlLabel
+              {/* <FormControlLabel
                 control={
                   <Checkbox
                     checked={isAdminRole}
@@ -2655,7 +2621,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                   />
                 }
                 label="Admin Role"
-              />
+              /> */}
             </CardContent>
           </Card>
         </Box>

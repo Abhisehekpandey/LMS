@@ -161,7 +161,7 @@ const Sidebar = () => {
      {
        path: "/feed-context",
        icon: <FeedContextIcon />,
-       text: "Feed Context",
+       text: "Docutalk Feedback",
      },
      {
        path: "/theme-setting",

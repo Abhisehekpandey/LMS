@@ -30,12 +30,16 @@ import {
   Autocomplete,
   Chip,
   Checkbox, // ✅ ADD THIS LINE
+  Menu,
+  InputAdornment,
 } from "@mui/material";
 
 import {
   AddCircle as AddCircleIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
+  Clear as ClearIcon,
+  Search as SearchIcon,
 } from "@mui/icons-material";
 import { Add } from "@mui/icons-material";
 import axios from "axios";
@@ -74,6 +78,18 @@ const DataDictionary = ({ searchResults = [] }) => {
   const [deptPage, setDeptPage] = useState(0);
   const [loadingDepts, setLoadingDepts] = useState(false);
 
+  const [anchorEl, setAnchorEl] = useState(null);
+  const handleOpenMenu = (event) => setAnchorEl(event.currentTarget);
+  const handleCloseMenu = () => setAnchorEl(null);
+
+  const [searchColumn, setSearchColumn] = useState("key");
+  const [searchText, setSearchText] = useState("");
+  const [columnFilters, setColumnFilters] = useState({
+    key: "",
+    value: "",
+    applicableTo: "",
+  });
+
   const isSelected = (id) => selected.indexOf(id) !== -1;
 
   const handleSort = (columnKey) => {
@@ -82,6 +98,11 @@ const DataDictionary = ({ searchResults = [] }) => {
       direction = "desc";
     }
     setSortConfig({ key: columnKey, direction });
+  };
+
+  const getUniqueValues = (key) => {
+    const values = filteredRows.map((r) => r[key]).filter(Boolean);
+    return [...new Set(values)];
   };
 
   const fetchDataDictionary = async () => {
@@ -279,19 +300,29 @@ const DataDictionary = ({ searchResults = [] }) => {
     }
   };
 
-  const filteredRows =
+  const filteredRows = (
     Array.isArray(searchResults) && searchResults.length > 0
       ? searchResults
       : Array.isArray(data)
       ? data
-      : [];
+      : []
+  ).filter((row) => {
+    const match = row[searchColumn]
+      ?.toLowerCase()
+      .includes(searchText.toLowerCase());
+    const columnMatch = Object.entries(columnFilters).every(
+      ([colKey, filterVal]) => {
+        if (!filterVal) return true;
+        return row[colKey]?.toLowerCase().includes(filterVal.toLowerCase());
+      }
+    );
+    return match && columnMatch;
+  });
 
   const sortedRows = [...filteredRows].sort((a, b) => {
     if (!sortConfig.key) return 0;
-
     const aVal = a[sortConfig.key]?.toString().toLowerCase() ?? "";
     const bVal = b[sortConfig.key]?.toString().toLowerCase() ?? "";
-
     if (aVal < bVal) return sortConfig.direction === "asc" ? -1 : 1;
     if (aVal > bVal) return sortConfig.direction === "asc" ? 1 : -1;
     return 0;
@@ -326,6 +357,12 @@ const DataDictionary = ({ searchResults = [] }) => {
     fetchDataDictionary();
   }, []);
 
+  const searchableColumns = [
+    { value: "key", label: "Key" },
+    { value: "value", label: "Value" },
+    { value: "applicableTo", label: "Applicable To" },
+  ];
+
   const handleDeptScroll = (e) => {
     const bottom =
       e.target.scrollTop + e.target.clientHeight >= e.target.scrollHeight - 10;
@@ -348,7 +385,6 @@ const DataDictionary = ({ searchResults = [] }) => {
   };
 
   return (
-   
     <Box sx={{ pt: 1.5, px: 3, ml: "72px" }}>
       <Paper
         elevation={20}
@@ -371,23 +407,76 @@ const DataDictionary = ({ searchResults = [] }) => {
           },
         }}
       >
+        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, p: 2 }}>
+          <TextField
+            select
+            size="small"
+            label="By"
+            value={searchColumn}
+            onChange={(e) => setSearchColumn(e.target.value)}
+            sx={{ minWidth: 130 }}
+          >
+            {searchableColumns.map((col) => (
+              <MenuItem key={col.value} value={col.value}>
+                {col.label}
+              </MenuItem>
+            ))}
+          </TextField>
+          <TextField
+            size="small"
+            label="Search"
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" />
+                </InputAdornment>
+              ),
+            }}
+            sx={{ minWidth: 180 }}
+          />
+          <Tooltip title="Clear All Filters">
+            <Button
+              variant="outlined"
+              size="small"
+              color="error"
+              startIcon={<ClearIcon />}
+              onClick={() => {
+                setSearchText("");
+                setColumnFilters({ key: "", value: "", applicableTo: "" });
+              }}
+            >
+              Clear
+            </Button>
+          </Tooltip>
+
+          <Menu
+            anchorEl={anchorEl}
+            open={Boolean(anchorEl)}
+            onClose={handleCloseMenu}
+          ></Menu>
+        </Box>
         <TableContainer sx={{ maxHeight: "80vh", height: "80vh" }}>
           <Table stickyHeader>
             <TableHead>
+             
               <TableRow
-                sx={{
-                  height: 36,
-                  backgroundColor: "#1976d2",
+                sx={(theme) => ({
+                  height: 64,
+                  backgroundColor: theme.palette.primary.main,
                   "& td, & th": {
                     padding: "6px 8px",
-                    textAlign: "center",
-                    color: "black",
+                    color: theme.palette.primary.contrastText,
                     fontWeight: "bold",
                     fontFamily: '"Be Vietnam", sans-serif',
+                    textAlign: "center",
                   },
-                }}
+                })}
               >
-                <TableCell padding="checkbox">
+                {/* Checkbox column */}
+                <TableCell padding="checkbox" sx={{ textAlign: "center" }}>
+                 
                   <Checkbox
                     indeterminate={
                       selected.length > 0 &&
@@ -398,88 +487,156 @@ const DataDictionary = ({ searchResults = [] }) => {
                       selected.length === paginatedRows.length
                     }
                     onChange={handleSelectAllClick}
-                    sx={{ color: "black" }}
+                    sx={{
+                      color: (theme) => theme.palette.text.primary, // ✅ dynamic color
+                      "&.Mui-checked": {
+                        color: (theme) => theme.palette.primary.main,
+                      },
+                      "&.MuiCheckbox-indeterminate": {
+                        color: (theme) => theme.palette.primary.main,
+                      },
+                    }}
                   />
                 </TableCell>
 
-                <TableCell
-                 
-                 
-                  sortDirection={
-                    sortConfig.key === "id" ? sortConfig.direction : false
-                  }
-                >
-                  <TableSortLabel
-                    active={sortConfig.key === "id"}
-                    direction={
-                      sortConfig.key === "id" ? sortConfig.direction : "asc"
-                    }
-                    onClick={() => handleSort("id")}
+                {/* S.No column */}
+                <TableCell align="center">S.No</TableCell>
+
+                {/* Key column */}
+                <TableCell align="center">
+                  <Box
+                    sx={{
+                      display: "grid",
+                      gridTemplateColumns: "auto auto",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 1,
+                    }}
                   >
-                    S.No
-                  </TableSortLabel>
+                    <TableSortLabel
+                      active={sortConfig.key === "key"}
+                      direction={
+                        sortConfig.key === "key" ? sortConfig.direction : "asc"
+                      }
+                      onClick={() => handleSort("key")}
+                    >
+                      Key
+                    </TableSortLabel>
+                    <Select
+                      value={columnFilters.key}
+                      onChange={(e) =>
+                        setColumnFilters((prev) => ({
+                          ...prev,
+                          key: e.target.value,
+                        }))
+                      }
+                      displayEmpty
+                      variant="standard"
+                      disableUnderline
+                      sx={{ fontSize: "0.75rem", minWidth: 70 }}
+                    >
+                      <MenuItem value="">All</MenuItem>
+                      {getUniqueValues("key").map((val) => (
+                        <MenuItem key={val} value={val}>
+                          {val}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </Box>
                 </TableCell>
 
-                <TableCell
-                
-                  sortDirection={
-                    sortConfig.key === "key" ? sortConfig.direction : false
-                  }
-                >
-                  <TableSortLabel
-                    active={sortConfig.key === "key"}
-                    direction={
-                      sortConfig.key === "key" ? sortConfig.direction : "asc"
-                    }
-                    onClick={() => handleSort("key")}
+                {/* Value column */}
+                <TableCell align="center">
+                  <Box
+                    sx={{
+                      display: "grid",
+                      gridTemplateColumns: "auto auto",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 1,
+                    }}
                   >
-                    KEY
-                  </TableSortLabel>
+                    <TableSortLabel
+                      active={sortConfig.key === "value"}
+                      direction={
+                        sortConfig.key === "value"
+                          ? sortConfig.direction
+                          : "asc"
+                      }
+                      onClick={() => handleSort("value")}
+                    >
+                      Value
+                    </TableSortLabel>
+                    <Select
+                      value={columnFilters.value}
+                      onChange={(e) =>
+                        setColumnFilters((prev) => ({
+                          ...prev,
+                          value: e.target.value,
+                        }))
+                      }
+                      displayEmpty
+                      variant="standard"
+                      disableUnderline
+                      sx={{ fontSize: "0.75rem", minWidth: 70 }}
+                    >
+                      <MenuItem value="">All</MenuItem>
+                      {getUniqueValues("value").map((val) => (
+                        <MenuItem key={val} value={val}>
+                          {val}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </Box>
                 </TableCell>
 
-                <TableCell
-                 
-                  sortDirection={
-                    sortConfig.key === "value" ? sortConfig.direction : false
-                  }
-                >
-                  <TableSortLabel
-                    active={sortConfig.key === "value"}
-                    direction={
-                      sortConfig.key === "value" ? sortConfig.direction : "asc"
-                    }
-                    onClick={() => handleSort("value")}
+                {/* Applicable To column */}
+                <TableCell align="center">
+                  <Box
+                    sx={{
+                      display: "grid",
+                      gridTemplateColumns: "auto auto",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 1,
+                    }}
                   >
-                    VALUE
-                  </TableSortLabel>
+                    <TableSortLabel
+                      active={sortConfig.key === "applicableTo"}
+                      direction={
+                        sortConfig.key === "applicableTo"
+                          ? sortConfig.direction
+                          : "asc"
+                      }
+                      onClick={() => handleSort("applicableTo")}
+                    >
+                      Applicable To
+                    </TableSortLabel>
+                    <Select
+                      value={columnFilters.applicableTo}
+                      onChange={(e) =>
+                        setColumnFilters((prev) => ({
+                          ...prev,
+                          applicableTo: e.target.value,
+                        }))
+                      }
+                      displayEmpty
+                      variant="standard"
+                      disableUnderline
+                      sx={{ fontSize: "0.75rem", minWidth: 70 }}
+                    >
+                      <MenuItem value="">All</MenuItem>
+                      {getUniqueValues("applicableTo").map((val) => (
+                        <MenuItem key={val} value={val}>
+                          {val}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </Box>
                 </TableCell>
 
-                <TableCell
-                
-                  sortDirection={
-                    sortConfig.key === "applicableTo"
-                      ? sortConfig.direction
-                      : false
-                  }
-                >
-                  <TableSortLabel
-                    active={sortConfig.key === "applicableTo"}
-                    direction={
-                      sortConfig.key === "applicableTo"
-                        ? sortConfig.direction
-                        : "asc"
-                    }
-                    onClick={() => handleSort("applicableTo")}
-                  >
-                    APPLICABLE TO
-                  </TableSortLabel>
-                </TableCell>
-
-                <TableCell
-                  
-                >
-                  ACTIONS
-                </TableCell>
+                {/* Actions column */}
+                <TableCell align="center">Actions</TableCell>
               </TableRow>
             </TableHead>
 

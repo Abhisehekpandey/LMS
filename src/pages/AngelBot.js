@@ -476,6 +476,7 @@ const AngelBot = () => {
   const formatSizeGB = (val) => {
     return `${val.toFixed(2)} GB`;
   };
+
   const getLicenseStatus = (expiryDate) => {
     const today = new Date();
     const expDate = new Date(expiryDate);
@@ -555,14 +556,7 @@ const AngelBot = () => {
         return `${params.name}: ${valueFormatted} (${params.percent}%)`;
       },
     },
-    // legend: {
-    //   orient: "horizontal",
-    //   left: "center",
-    //   formatter: function (name) {
-    //     const item = storageStatusData.find((d) => d.name === name);
-    //     return `${name} (${formatSize(item.value)})`;
-    //   },
-    // },
+  
     legend: {
       orient: "horizontal",
       left: "center",
@@ -608,6 +602,8 @@ const AngelBot = () => {
     ],
   };
 
+ 
+
   const storageDistribution = {
     tooltip: {
       trigger: "item",
@@ -618,15 +614,7 @@ const AngelBot = () => {
         }%)`;
       },
     },
-    // legend: {
-    //   orient: "horizontal",
-    //   left: "center",
-
-    //   formatter: function (name) {
-    //     const item = storageDistributionData.find((d) => d.name === name);
-    //     return `${name} (${item ? formatSizeGB(item.value) : "0 GB"})`;
-    //   },
-    // },
+   
     legend: {
       orient: "horizontal",
       left: "center",

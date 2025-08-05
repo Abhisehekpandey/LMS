@@ -35,6 +35,8 @@ import {
 } from "@mui/material";
 import { Add, Delete } from "@mui/icons-material";
 import axios from "axios";
+import { Search as SearchIcon, Clear as ClearIcon } from "@mui/icons-material";
+import { InputAdornment } from "@mui/material";
 
 const attributeTemplate = {
   name: "",
@@ -42,6 +44,7 @@ const attributeTemplate = {
   defaultValue: "",
   mandatory: false,
   description: "",
+  mandatory: false, // ✅ ensure this is present
 };
 
 const attributeTypes = ["STRING", "NUMBER", "DATE", "BOOLEAN"];
@@ -74,6 +77,9 @@ const DepartmentTypeSetting = () => {
     severity: "success",
   });
 
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchColumn, setSearchColumn] = useState("typeName");
+  const [searchText, setSearchText] = useState("");
 
   const fetchUsers = async (page = 0) => {
     try {
@@ -219,7 +225,22 @@ const DepartmentTypeSetting = () => {
     fetchFileTypes();
   }, []);
 
-  const sortedRows = stableSort(fileTypes, getComparator(order, orderBy));
+  // const sortedRows = stableSort(fileTypes, getComparator(order, orderBy));
+  const filteredRows = fileTypes.filter((row) => {
+    const value =
+      searchColumn === "typeName"
+        ? row
+        : searchColumn === "createdBy"
+        ? row.createdBy || ""
+        : searchColumn === "for"
+        ? row.scope || ""
+        : "";
+
+    return value.toLowerCase().includes(searchText.toLowerCase());
+  });
+
+  const sortedRows = stableSort(filteredRows, getComparator(order, orderBy));
+
   const paginatedRows = sortedRows.slice(
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
@@ -247,20 +268,57 @@ const DepartmentTypeSetting = () => {
     }
   };
 
-  const handleDialogSubmit = () => {
-    console.log(
-      "Submit New Type:",
-      documentType,
-      attributes,
-      typeScope,
-      selectedEntityId
-    );
-    setSnackbarOpen(true);
-    setOpenDialog(false);
-    setDocumentType("");
-    setAttributes([attributeTemplate]);
-    setTypeScope("global");
-    setSelectedEntityId("");
+  const handleDialogSubmit = async () => {
+    const payload = {
+      type: documentType,
+      attributeList: attributes.map((attr) => ({
+        attributeName: attr.name,
+        attributeType: attr.type.toLowerCase(),
+        value: attr.defaultValue,
+        fileTypeDescription: attr.description,
+        isMandatory: attr.mandatory, // ✅ Add this line
+      })),
+      users: typeScope === "user" ? [selectedEntityId] : [],
+      departments: typeScope === "department" ? [selectedEntityId] : [],
+      global: typeScope === "global",
+    };
+
+    try {
+      const res = await axios.post(
+        `${window.__ENV__.REACT_APP_ROUTE}/tenants/createType`,
+        payload,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+            username: sessionStorage.getItem("adminEmail"),
+          },
+        }
+      );
+
+      setSnackbar({
+        open: true,
+        message: "New type created successfully",
+        severity: "success",
+      });
+
+      // Reset form state
+      setOpenDialog(false);
+      setDocumentType("");
+      setAttributes([{ ...attributeTemplate }]);
+      setTypeScope("global");
+      setSelectedEntityId("");
+
+      // Refetch data if needed
+      fetchFileTypes();
+    } catch (error) {
+      console.error("Error creating new type:", error);
+      setSnackbar({
+        open: true,
+        message: "Failed to create type",
+        severity: "error",
+      });
+    }
   };
 
   const handleAttributeChange = (index, field, value) => {
@@ -276,25 +334,23 @@ const DepartmentTypeSetting = () => {
   };
 
   const handleAddAttribute = () => {
-    setAttributes([...attributes, attributeTemplate]);
+    setAttributes([...attributes, { ...attributeTemplate }]);
   };
- const handleDeleteType = (typeNameToDelete) => {
-   const confirm = window.confirm(
-     `Are you sure you want to delete "${typeNameToDelete}"?`
-   );
-   if (!confirm) return;
+  const handleDeleteType = (typeNameToDelete) => {
+    const confirm = window.confirm(
+      `Are you sure you want to delete "${typeNameToDelete}"?`
+    );
+    if (!confirm) return;
 
-   const updatedTypes = typeNames.filter((name) => name !== typeNameToDelete);
-   setTypeNames(updatedTypes);
+    const updatedTypes = typeNames.filter((name) => name !== typeNameToDelete);
+    setTypeNames(updatedTypes);
 
-   setSnackbar({
-     open: true,
-     message: `"${typeNameToDelete}" deleted successfully`,
-     severity: "success",
-   });
- };
-
-
+    setSnackbar({
+      open: true,
+      message: `"${typeNameToDelete}" deleted successfully`,
+      severity: "success",
+    });
+  };
 
   return (
     <Box sx={{ pt: 1.5, px: 3, ml: "72px" }}>
@@ -313,7 +369,51 @@ const DepartmentTypeSetting = () => {
           },
         }}
       >
-       
+        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, p: 2 }}>
+          <TextField
+            select
+            size="small"
+            label="By"
+            value={searchColumn}
+            onChange={(e) => setSearchColumn(e.target.value)}
+            sx={{ minWidth: 130 }}
+          >
+            <MenuItem value="typeName">Type Name</MenuItem>
+            <MenuItem value="createdBy">Created By</MenuItem>
+            <MenuItem value="for">For</MenuItem>
+          </TextField>
+
+          <TextField
+            size="small"
+            label="Search"
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" />
+                </InputAdornment>
+              ),
+            }}
+            sx={{ minWidth: 200 }}
+          />
+
+          <Tooltip title="Clear All Filters">
+            <Button
+              variant="outlined"
+              size="small"
+              color="error"
+              startIcon={<ClearIcon />}
+              onClick={() => {
+                setSearchText("");
+                setSearchColumn("typeName");
+              }}
+            >
+              Clear
+            </Button>
+          </Tooltip>
+        </Box>
+
         <TableContainer sx={{ maxHeight: "80vh", height: "80vh" }}>
           <Table stickyHeader>
             <TableHead>
@@ -413,7 +513,7 @@ const DepartmentTypeSetting = () => {
 
         <TablePagination
           rowsPerPageOptions={[10, 15]}
-          count={fileTypes.length}
+          count={filteredRows.length}
           rowsPerPage={rowsPerPage}
           page={page}
           onPageChange={(e, newPage) => setPage(newPage)}

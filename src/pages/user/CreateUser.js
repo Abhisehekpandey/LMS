@@ -645,7 +645,12 @@ const CreateUser = ({
                               <Grid item xs={4}>
                                 <TextField
                                   autoComplete="off"
-                                  label="Full Name"
+                                  label={
+                                    <>
+                                      Full Name
+                                      <span style={{ color: "red" }}> *</span>
+                                    </>
+                                  }
                                   FormHelperTextProps={{ sx: { ml: 0 } }}
                                   name={`users[${index}].name`}
                                   value={user.name}
@@ -664,7 +669,12 @@ const CreateUser = ({
                               </Grid>
                               <Grid item xs={4}>
                                 <TextField
-                                  label="Email"
+                                  label={
+                                    <>
+                                      Email
+                                      <span style={{ color: "red" }}> *</span>
+                                    </>
+                                  }
                                   autoComplete="off"
                                   name={`users[${index}].email`}
                                   value={user.email?.split("@")[0] || ""}
@@ -680,7 +690,6 @@ const CreateUser = ({
                                       fullEmail
                                     );
 
-                                    // Validate domain
                                     const emailDomain = fullEmail.split("@")[1];
                                     if (emailDomain !== adminDomain) {
                                       formik.setFieldError(
@@ -688,7 +697,6 @@ const CreateUser = ({
                                         "Email domain must match admin domain"
                                       );
                                     } else {
-                                      // Clear domain error only (do not clear backend error like 'email already exists')
                                       if (
                                         formik.errors.users?.[index]?.email ===
                                         "Email domain must match admin domain"
@@ -721,7 +729,12 @@ const CreateUser = ({
                               </Grid>
                               <Grid item xs={4}>
                                 <TextField
-                                  label="Phone Number"
+                                  label={
+                                    <>
+                                      Phone Number
+                                      <span style={{ color: "red" }}> *</span>
+                                    </>
+                                  }
                                   name={`users[${index}].phone`}
                                   FormHelperTextProps={{ sx: { ml: 0 } }}
                                   value={user.phone || ""}
@@ -1084,7 +1097,7 @@ const CreateUser = ({
         <DialogContent dividers padding="0 !important">
           <Grid container spacing={2}>
             <Grid item xs={6}>
-              <TextField
+              {/* <TextField
                 fullWidth
                 size="small"
                 label="Department Name"
@@ -1108,16 +1121,45 @@ const CreateUser = ({
                     ? "Department with this name already exists"
                     : ""
                 }
+              /> */}
+              <TextField
+                fullWidth
+                size="small"
+                label={
+                  <>
+                    Department Name<span style={{ color: "red" }}> *</span>
+                  </>
+                }
+                FormHelperTextProps={{ sx: { ml: 0 } }}
+                value={newDepartment.deptName}
+                onChange={(e) => {
+                  setNewDepartment({
+                    ...newDepartment,
+                    deptName: e.target.value,
+                  });
+                  setDuplicateDeptError(false); // 👈 Clear error on change
+                }}
+                error={
+                  (departmentSubmitted && !newDepartment.deptName) ||
+                  duplicateDeptError
+                }
+                helperText={
+                  departmentSubmitted && !newDepartment.deptName
+                    ? "Department Name is required"
+                    : duplicateDeptError
+                    ? "Department with this name already exists"
+                    : ""
+                }
               />
             </Grid>
-           
+
             <Grid item xs={6}>
               <Autocomplete
                 fullWidth
                 size="small"
                 FormHelperTextProps={{ sx: { ml: 0 } }}
                 options={userOptions}
-                getOptionLabel={(option) => option.name || ""}
+                getOptionLabel={(option) => option.email || ""}
                 value={
                   userOptions.find(
                     (user) => user.name === newDepartment.deptModerator
@@ -1126,7 +1168,7 @@ const CreateUser = ({
                 onChange={(event, value) =>
                   setNewDepartment({
                     ...newDepartment,
-                    deptModerator: value ? value.name : "",
+                    deptModerator: value ? value.email : "",
                   })
                 }
                 ListboxProps={{
@@ -1143,9 +1185,25 @@ const CreateUser = ({
                   },
                 }}
                 renderInput={(params) => (
+                  // <TextField
+                  //   {...params}
+                  //   label="Department Moderator"
+                  //   FormHelperTextProps={{ sx: { ml: 0 } }}
+                  //   error={departmentSubmitted && !newDepartment.deptModerator}
+                  //   helperText={
+                  //     departmentSubmitted && !newDepartment.deptModerator
+                  //       ? "Department Moderator is required"
+                  //       : ""
+                  //   }
+                  // />
                   <TextField
                     {...params}
-                    label="Department Moderator"
+                    label={
+                      <>
+                        Department Moderator
+                        <span style={{ color: "red" }}> *</span>
+                      </>
+                    }
                     FormHelperTextProps={{ sx: { ml: 0 } }}
                     error={departmentSubmitted && !newDepartment.deptModerator}
                     helperText={
@@ -1192,9 +1250,30 @@ const CreateUser = ({
                   },
                 }}
                 renderInput={(params) => (
+                  // <TextField
+                  //   {...params}
+                  //   label="Select Users"
+                  //   placeholder="Choose multiple users"
+                  //   error={
+                  //     departmentSubmitted &&
+                  //     (!newDepartment.selectedUsers ||
+                  //       newDepartment.selectedUsers.length === 0)
+                  //   }
+                  //   helperText={
+                  //     departmentSubmitted &&
+                  //     (!newDepartment.selectedUsers ||
+                  //       newDepartment.selectedUsers.length === 0)
+                  //       ? "At least one user must be selected"
+                  //       : ""
+                  //   }
+                  // />
                   <TextField
                     {...params}
-                    label="Select Users"
+                    label={
+                      <>
+                        Select Users<span style={{ color: "red" }}> *</span>
+                      </>
+                    }
                     placeholder="Choose multiple users"
                     error={
                       departmentSubmitted &&
@@ -1214,10 +1293,33 @@ const CreateUser = ({
             </Grid>
 
             <Grid item xs={4}>
-              <TextField
+              {/* <TextField
                 fullWidth
                 size="small"
                 label="Short Name"
+                FormHelperTextProps={{ sx: { ml: 0 } }}
+                value={newDepartment.deptDisplayName}
+                onChange={(e) =>
+                  setNewDepartment({
+                    ...newDepartment,
+                    deptDisplayName: e.target.value,
+                  })
+                }
+                error={departmentSubmitted && !newDepartment.deptDisplayName}
+                helperText={
+                  departmentSubmitted && !newDepartment.deptDisplayName
+                    ? "Short Name is required"
+                    : ""
+                }
+              /> */}
+              <TextField
+                fullWidth
+                size="small"
+                label={
+                  <>
+                    Short Name<span style={{ color: "red" }}> *</span>
+                  </>
+                }
                 FormHelperTextProps={{ sx: { ml: 0 } }}
                 value={newDepartment.deptDisplayName}
                 onChange={(e) =>
@@ -1242,9 +1344,25 @@ const CreateUser = ({
                   setNewDepartment({ ...newDepartment, storage: value })
                 }
                 renderInput={(params) => (
+                  // <TextField
+                  //   {...params}
+                  //   label="Storage"
+                  //   FormHelperTextProps={{ sx: { ml: 0 } }}
+                  //   size="small"
+                  //   error={departmentSubmitted && !newDepartment.storage}
+                  //   helperText={
+                  //     departmentSubmitted && !newDepartment.storage
+                  //       ? "Storage is required"
+                  //       : ""
+                  //   }
+                  // />
                   <TextField
                     {...params}
-                    label="Storage"
+                    label={
+                      <>
+                        Storage<span style={{ color: "red" }}> *</span>
+                      </>
+                    }
                     FormHelperTextProps={{ sx: { ml: 0 } }}
                     size="small"
                     error={departmentSubmitted && !newDepartment.storage}
@@ -1444,7 +1562,7 @@ const CreateUser = ({
             </Grid>
             <Grid item xs={4}>
               <FormControl>
-                <label
+                {/* <label
                   style={{ display: "flex", alignItems: "center", gap: "8px" }}
                 >
                   <input
@@ -1453,7 +1571,7 @@ const CreateUser = ({
                     onChange={(e) => setIsAdminRole(e.target.checked)}
                   />
                   Admin Role
-                </label>
+                </label> */}
               </FormControl>
             </Grid>
           </Grid>
