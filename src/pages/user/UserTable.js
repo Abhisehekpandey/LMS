@@ -405,57 +405,57 @@ export default function UserTable() {
     }
   };
 
-  const handleSaveChanges = async () => {
-    console.log("editData:", editData);
+  
+const handleSaveChanges = async () => {
+  console.log("editData:", editData);
 
-    try {
-      const fullDepartments = await fetchFullDepartments();
-      console.log("Full Departments:", fullDepartments);
+  try {
+    const fullDepartments = await fetchFullDepartments();
 
-      const deptObj = fullDepartments.find(
-        (d) => d.deptName?.toLowerCase() === editData.department?.toLowerCase()
-      );
+    const deptObj = fullDepartments.find(
+      (d) => d.deptName?.toLowerCase() === editData.department?.toLowerCase()
+    );
 
-      if (!deptObj) {
-        toast.error("Invalid department selected.");
-        return;
-      }
-
-      const roleObj = deptObj.roles?.find(
-        (r) => r.roleName?.toLowerCase() === editData.role?.toLowerCase()
-      );
-
-      if (!roleObj) {
-        toast.error("Invalid role selected.");
-        return;
-      }
-
-      const userPayload = {
-        userId: editData.id,
-        userName: editData.name,
-        phoneNumber: editData.phoneNumber,
-        deptId: deptObj.id,
-        roleId: roleObj.id, // ✅ actual roleId saved
-      };
-
-      console.log("Final userPayload:", userPayload);
-
-      await updateUser(userPayload);
-
-      // 🧠 Save selected roleId locally to reuse in handleEdit
-      setUserRoleMap((prev) => ({
-        ...prev,
-        [editData.id]: roleObj.id,
-      }));
-
-      toast.success("User updated successfully!");
-      setEditDialogOpen(false);
-      refetchUsers();
-    } catch (error) {
-      console.error("Error updating user:", error);
-      toast.error("Failed to update user.");
+    if (!deptObj) {
+      toast.error("Invalid department selected.");
+      return;
     }
-  };
+
+    const roleObj = deptObj.roles?.find(
+      (r) => r.roleName?.toLowerCase() === editData.role?.toLowerCase()
+    );
+
+    if (!roleObj) {
+      toast.error("Invalid role selected.");
+      return;
+    }
+
+    const userPayload = {
+      userId: editData.id,
+      userName: editData.name.trim(),
+      phoneNumber: editData.phoneNumber.trim(),
+      deptId: deptObj.id,
+      roleId: roleObj.id,
+    };
+
+    console.log("Final userPayload:", userPayload);
+
+    await updateUser(userPayload);
+
+    // Update the saved role for this user
+    setUserRoleMap((prev) => ({
+      ...prev,
+      [editData.id]: roleObj.id,
+    }));
+
+    toast.success("User updated successfully!");
+    setEditDialogOpen(false);
+    refetchUsers();
+  } catch (error) {
+    console.error("Error updating user:", error);
+    toast.error("Failed to update user.");
+  }
+};
 
   const loadMoreDepartments = async () => {
     if (loadingDepartments.current || !hasMoreDepartments) return;
@@ -492,50 +492,91 @@ export default function UserTable() {
     setStorage(event.target.value);
   };
 
-  const handleEdit = async (e, row) => {
-    console.log("Editing user:", row);
+  // const handleEdit = async (e, row) => {
+  //   console.log("Editing user:", row);
 
-    try {
-      const fullDepartments = await fetchFullDepartments(); // ✅ call your function
-      setFullDepartments(fullDepartments); // ✅ save it to state
+  //   try {
+  //     const fullDepartments = await fetchFullDepartments(); // ✅ call your function
+  //     setFullDepartments(fullDepartments); // ✅ save it to state
 
-      const savedRoleId = userRoleMap[row.id];
+  //     const savedRoleId = userRoleMap[row.id];
+  //     console.log("saveRoleId", savedRoleId);
 
-      const currentRole =
-        row.roles?.find((r) => r.id === savedRoleId) || row.roles?.[0];
-        console.log("current",currentRole)
+  //     const currentRole =
+  //       row.roles?.find((r) => r.id === savedRoleId) || row.roles?.[0];
+  //     console.log("current", currentRole);
 
-      const deptName = currentRole?.department?.deptName || "";
-      const roleName = currentRole?.roleName || "";
+  //     const deptName = currentRole?.department?.deptName || "";
+  //     const roleName = currentRole?.roleName || "";
 
-      const deptObj =
-        fullDepartments.find(
-          (d) => d.deptName?.toLowerCase() === deptName?.toLowerCase()
-        ) || null;
+  //     const deptObj =
+  //       fullDepartments.find(
+  //         (d) => d.deptName?.toLowerCase() === deptName?.toLowerCase()
+  //       ) || null;
 
-      const matchedRole =
-        deptObj?.roles?.find(
-          (r) => r.roleName?.toLowerCase() === roleName?.toLowerCase()
-        ) || null;
+  //     const matchedRole =
+  //       deptObj?.roles?.find(
+  //         (r) => r.roleName?.toLowerCase() === roleName?.toLowerCase()
+  //       ) || null;
 
-      const newEditData = {
-        id: row.id,
-        name: row.name || "",
-        email: row.email || "",
-        phoneNumber: row.phoneNumber || "",
-        department: deptName,
-        role: matchedRole?.roleName || roleName,
-        roles: row.roles || [],
-      };
+  //     const newEditData = {
+  //       id: row.id,
+  //       name: row.name || "",
+  //       email: row.email || "",
+  //       phoneNumber: row.phoneNumber || "",
+  //       department: deptName,
+  //       role: matchedRole?.roleName || roleName,
+  //       roles: row.roles || [],
+  //     };
 
-      setEditData(newEditData);
-      setSelectedDepartment(deptObj);
-      setEditDialogOpen(true);
-    } catch (error) {
-      console.error("Failed to load departments", error);
-      toast.error("Unable to fetch departments. Please try again.");
-    }
-  };
+  //     setEditData(newEditData);
+  //     setSelectedDepartment(deptObj);
+  //     setEditDialogOpen(true);
+  //   } catch (error) {
+  //     console.error("Failed to load departments", error);
+  //     toast.error("Unable to fetch departments. Please try again.");
+  //   }
+  // };
+const handleEdit = async (e, row) => {
+  console.log("Editing user:", row);
+
+  try {
+    const fullDepartments = await fetchFullDepartments();
+    setFullDepartments(fullDepartments);
+
+    const savedRoleId = userRoleMap[row.id];
+    const currentRole =
+      row.roles?.find((r) => r.id === savedRoleId) || row.roles?.[0];
+
+    const deptName = currentRole?.department?.deptName || "";
+    const roleName = currentRole?.roleName || "";
+
+    const deptObj = fullDepartments.find(
+      (d) => d.deptName?.toLowerCase() === deptName?.toLowerCase()
+    );
+
+    const matchedRole = deptObj?.roles?.find(
+      (r) => r.roleName?.toLowerCase() === roleName?.toLowerCase()
+    );
+
+    const newEditData = {
+      id: row.id,
+      name: row.name || "",
+      email: row.email || "",
+      phoneNumber: row.phoneNumber || "",
+      department: deptName,
+      role: matchedRole?.roleName || roleName,
+      roles: row.roles || [],
+    };
+
+    setEditData(newEditData);
+    setSelectedDepartment(deptObj || null);
+    setEditDialogOpen(true);
+  } catch (error) {
+    console.error("Failed to load departments", error);
+    toast.error("Unable to fetch departments. Please try again.");
+  }
+};
 
   const handleMigration = () => {
     setMigrationDialog(true);
@@ -786,7 +827,7 @@ export default function UserTable() {
   };
 
   const isSelected = (id) => selected.indexOf(id) !== -1;
-  
+
   const refetchUsers = async () => {
     setLoading(true);
     try {
@@ -794,23 +835,22 @@ export default function UserTable() {
       const adminEmail = sessionStorage.getItem("adminEmail");
 
       // Normalize storage format like "1.00 GB" to "1GB"
-  const normalizedUsers = users.content.map((user) => {
-    const display = user.permissions?.allowedStorageInBytesDisplay;
-    if (display) {
-      const fixedDisplay = display
-        .replace(/\.00\s?([A-Z]+)/, "$1") // remove ".00" before GB/MB/etc.
-        .replace(/\s+/g, ""); // remove all spaces
-      return {
-        ...user,
-        permissions: {
-          ...user.permissions,
-          allowedStorageInBytesDisplay: fixedDisplay,
-        },
-      };
-    }
-    return user;
-  });
-
+      const normalizedUsers = users.content.map((user) => {
+        const display = user.permissions?.allowedStorageInBytesDisplay;
+        if (display) {
+          const fixedDisplay = display
+            .replace(/\.00\s?([A-Z]+)/, "$1") // remove ".00" before GB/MB/etc.
+            .replace(/\s+/g, ""); // remove all spaces
+          return {
+            ...user,
+            permissions: {
+              ...user.permissions,
+              allowedStorageInBytesDisplay: fixedDisplay,
+            },
+          };
+        }
+        return user;
+      });
 
       const sortedUsers = [...normalizedUsers].sort((a, b) => {
         if (a.email === adminEmail) return -1;
@@ -826,7 +866,6 @@ export default function UserTable() {
       setLoading(false);
     }
   };
-
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 300);
@@ -941,7 +980,7 @@ export default function UserTable() {
                     direction={orderBy === "email" ? order : "asc"}
                     onClick={() => handleRequestSort("email")}
                   >
-                    Name
+                    Email
                   </TableSortLabel>
                 </TableCell>
 
@@ -1011,24 +1050,53 @@ export default function UserTable() {
                       {row.name}
                       {row.email === adminEmail && " (admin)"}
                     </TableCell>
+
+                    
+
                     <TableCell
                       align="center"
                       sx={{ padding: "10px 10px 10px 10px !important" }}
                     >
-                      {/* {row.department} */}
-                      {row.roles && row.roles.length > 0
-                        ? row.roles[0].department?.deptName || "N/A"
-                        : "N/A"}
+                      {(() => {
+                        const selectedRoleId = userRoleMap[row.id];
+                        const selectedRole = row.roles?.find(
+                          (role) => role.id === selectedRoleId
+                        );
+                        const deptName =
+                          selectedRole?.department?.deptName ||
+                          row.roles?.[0]?.department?.deptName;
+                        return deptName || "N/A";
+                      })()}
                     </TableCell>
+
                     <TableCell
                       align="center"
                       sx={{ padding: "10px 10px 10px 10px !important" }}
                     >
-                      {/* {row.role} */}
-                      {row.roles && row.roles.length > 0
-                        ? row.roles[0].roleName || "N/A"
-                        : "N/A"}
+                      {(() => {
+                        const selectedRoleId = userRoleMap[row.id];
+                        const selectedRole = row.roles?.find(
+                          (role) => role.id === selectedRoleId
+                        );
+                        const deptId = selectedRole?.department?.id;
+
+                        if (!deptId) return row.roles?.[0]?.roleName || "N/A";
+
+                        const rolesInSameDept = row.roles.filter(
+                          (role) => role.department?.id === deptId
+                        );
+                        const uniqueRoleNames = [
+                          ...new Set(
+                            rolesInSameDept.map((role) => role.roleName)
+                          ),
+                        ];
+
+                        return uniqueRoleNames.length > 0
+                          ? uniqueRoleNames.join(", ")
+                          : "N/A";
+                      })()}
                     </TableCell>
+
                     <TableCell
                       align="center"
                       sx={{ padding: "10px 10px 10px 10px !important" }}
@@ -1799,3 +1867,4 @@ export default function UserTable() {
     </Box>
   );
 }
+
