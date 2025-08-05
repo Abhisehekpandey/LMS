@@ -500,8 +500,10 @@ export default function UserTable() {
       setFullDepartments(fullDepartments); // ✅ save it to state
 
       const savedRoleId = userRoleMap[row.id];
+
       const currentRole =
         row.roles?.find((r) => r.id === savedRoleId) || row.roles?.[0];
+        console.log("current",currentRole)
 
       const deptName = currentRole?.department?.deptName || "";
       const roleName = currentRole?.roleName || "";
@@ -784,27 +786,7 @@ export default function UserTable() {
   };
 
   const isSelected = (id) => selected.indexOf(id) !== -1;
-  // const refetchUsers = async () => {
-  //   setLoading(true);
-  //   try {
-  //     const users = await fetchUsers(page);
-  //     const adminEmail = sessionStorage.getItem("adminEmail");
-
-  //     const sortedUsers = [...users.content].sort((a, b) => {
-  //       if (a.email === adminEmail) return -1;
-  //       if (b.email === adminEmail) return 1;
-  //       return 0;
-  //     });
-
-  //     setRowsData(sortedUsers);
-  //     setTotalCount(users.totalElements);
-  //   } catch (error) {
-  //     console.error("Error loading users", error);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
+  
   const refetchUsers = async () => {
     setLoading(true);
     try {

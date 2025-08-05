@@ -239,7 +239,10 @@ const CreateUser = ({
         phone: yup
           .string()
           .required("Phone number is required")
-          .matches(/^\d{10}$/, "Phone number must be exactly 10 digits"),
+          .matches(
+            /^[1-9]\d{9}$/,
+            "Phone number must be 10 digits and not start with 0"
+          ),
       })
     ),
   });
@@ -748,8 +751,18 @@ const CreateUser = ({
                                         value
                                       );
 
-                                      // Check for exact 10 digits when value is present
-                                      if (value && value.length !== 10) {
+                                      if (
+                                        value.length > 0 &&
+                                        value[0] === "0"
+                                      ) {
+                                        formik.setFieldError(
+                                          `users[${index}].phone`,
+                                          "Phone number should not start with 0"
+                                        );
+                                      } else if (
+                                        value.length > 0 &&
+                                        value.length !== 10
+                                      ) {
                                         formik.setFieldError(
                                           `users[${index}].phone`,
                                           "Phone number must be exactly 10 digits"

@@ -58,6 +58,7 @@ const EXTENSION_GROUPS = [
 
 const ChooseExtension = () => {
   const [preCheckedExtensions, setPreCheckedExtensions] = useState([]);
+  const [extensionGroups, setExtensionGroups] = useState(EXTENSION_GROUPS);
 
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -171,7 +172,7 @@ const ChooseExtension = () => {
       Video: "videos",
     };
 
-    EXTENSION_GROUPS.forEach((group) => {
+    extensionGroups.forEach((group) => {
       const key = groupKeyMap[group.label];
       if (key) {
         payload[key] = group.values.filter((ext) =>
@@ -210,60 +211,62 @@ const ChooseExtension = () => {
     }
   };
 
-  const fetchAllowedExtensions = async () => {
-    try {
-      const response = await axios.get(
-        `${window.__ENV__.REACT_APP_ROUTE}/tenants/getExtensionsAllowed`,
-        {
-          headers: {
-            Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
-            username: `${sessionStorage.getItem("adminEmail")}`,
-          },
+const fetchAllowedExtensions = async () => {
+  try {
+    const response = await axios.get(
+      `${window.__ENV__.REACT_APP_ROUTE}/tenants/getExtensionsAllowed`,
+      {
+        headers: {
+          Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+          username: `${sessionStorage.getItem("adminEmail")}`,
+        },
+      }
+    );
+
+    const data = response.data;
+    console.log("Extension response", data);
+
+    const allPreChecked = Object.values(data).flat();
+    setSelectedExtensions(allPreChecked);
+    setPreCheckedExtensions(allPreChecked);
+
+    const groupMap = {
+      documents: "Documents",
+      archives: "Archives",
+      images: "Images",
+      audio: "Audio",
+      videos: "Video",
+    };
+
+    // 🔁 Start from a clone of default categories
+    const updatedGroups = EXTENSION_GROUPS.map((group) => ({
+      label: group.label,
+      values: [...group.values],
+    }));
+
+    // 🧠 Append backend extensions into correct group
+    Object.entries(data).forEach(([categoryKey, extArray]) => {
+      const groupLabel = groupMap[categoryKey.toLowerCase()];
+      if (!groupLabel) return;
+
+      const group = updatedGroups.find((g) => g.label === groupLabel);
+      if (!group) return;
+
+      extArray.forEach((ext) => {
+        const extLower = ext.toLowerCase();
+        if (!group.values.includes(extLower)) {
+          group.values.push(extLower); // ✅ Add new ones
         }
-      );
-
-      const data = response.data;
-      console.log("Extension response", data);
-
-      const allPreChecked = Object.values(data).flat();
-      setSelectedExtensions(allPreChecked);
-      setPreCheckedExtensions(allPreChecked);
-
-      const knownExtensions = EXTENSION_GROUPS.flatMap((group) => group.values);
-      const newExtensionsMap = {};
-
-      Object.entries(data).forEach(([category, extArray]) => {
-        const groupLabel =
-          category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
-
-        extArray.forEach((ext) => {
-          if (!knownExtensions.includes(ext)) {
-            if (!newExtensionsMap[groupLabel]) {
-              newExtensionsMap[groupLabel] = [];
-            }
-            newExtensionsMap[groupLabel].push(ext);
-          }
-        });
       });
+    });
 
-      EXTENSION_GROUPS.forEach((group) => {
-        const newExts = newExtensionsMap[group.label];
-        if (newExts && newExts.length) {
-          newExts.forEach((ext) => {
-            if (!group.values.includes(ext)) {
-              group.values.push(ext);
-            }
-          });
-        }
-      });
-    } catch (error) {
-      console.error("Failed to fetch allowed extensions:", error);
-    }
-  };
+    setExtensionGroups(updatedGroups); // ✅ this now includes all new + old
+  } catch (error) {
+    console.error("Failed to fetch allowed extensions:", error);
+  }
+};
 
-  useEffect(() => {
-    fetchAllowedExtensions();
-  }, []);
+  
 
   const handleAddClick = (groupLabel) => {
     setActiveGroup(groupLabel);
@@ -271,25 +274,39 @@ const ChooseExtension = () => {
     setOpenDialog(true);
   };
 
-  const handleAddExtension = async () => {
-    if (!newExtension || !activeGroup) return;
+ const handleAddExtension = async () => {
+   if (!newExtension || !activeGroup) return;
 
-    EXTENSION_GROUPS.forEach((group) => {
-      if (
-        group.label === activeGroup &&
-        !group.values.includes(newExtension.toLowerCase())
-      ) {
-        group.values.push(newExtension.toLowerCase());
-      }
-    });
+   const extLower = newExtension.trim().replace(/^\./, "").toLowerCase();
 
-    setOpenDialog(false);
+  setExtensionGroups((prevGroups) =>
+    prevGroups.map((group) =>
+      group.label === activeGroup && !group.values.includes(extLower)
+        ? { ...group, values: [...group.values, extLower] }
+        : group
+    )
+  );
 
-    const success = await handleSave(); // wait for success
-    if (success) {
-      await fetchAllowedExtensions(); // ✅ only refresh if saved
-    }
-  };
+   // ✅ Select the new extension so it's checked by default
+   setSelectedExtensions((prev) =>
+     prev.includes(extLower) ? prev : [...prev, extLower]
+   );
+
+   setOpenDialog(false);
+
+   // Show success for creation, not saving
+   setSnackbar({
+     open: true,
+     message: `New extension '${extLower}' created!`,
+     severity: "success",
+   });
+ };
+
+
+ useEffect(() => {
+   fetchAllowedExtensions();
+ }, []);
+
 
   return (
     <Box
@@ -361,7 +378,7 @@ const ChooseExtension = () => {
             scrollbarColor: "rgba(0, 0, 0, 0.2) transparent",
           })}
         >
-          {EXTENSION_GROUPS.map((group) => (
+          {extensionGroups.map((group) => (
             <Box key={group.label} sx={{ mb: 3 }}>
               <Box
                 sx={{
@@ -564,7 +581,6 @@ const ChooseExtension = () => {
         </DialogTitle>
 
         <DialogContent sx={{ mt: 2 }}>
-         
           <TextField
             placeholder="Enter extension (e.g., mp5)"
             fullWidth

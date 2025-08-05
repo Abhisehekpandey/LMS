@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { saveAs } from "file-saver";
 import axios from "axios";
+import { Portal } from "@mui/material";
 
 import PropTypes from "prop-types";
 import {
@@ -187,6 +188,7 @@ const CustomSpinner = styled(CircularProgress)(({ theme }) => ({
 }));
 
 function Department({ departments, setDepartments, onThemeToggle }) {
+  const [bulkUploadDialogOpen, setBulkUploadDialogOpen] = useState(false);
   const [tabValue, setTabValue] = useState(0);
 
   const [selectedUser, setSelectedUser] = useState(null);
@@ -323,6 +325,54 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     setMigrationPage(0);
     setHasMoreDepartments(true);
     loadMoreDepartments();
+  };
+
+  const fetchDepartments = async () => {
+    try {
+      setLoading(true);
+      // const apiDepartments = await getDepartments();
+      console.log("ppppp", page);
+      const departmentData = await getDepartments(page, rowsPerPage);
+      const apiDepartments = departmentData.content || [];
+      console.log("apiDepartment", apiDepartments);
+
+      setTotalDepartments(departmentData.totalElements || 0);
+
+      // Map backend data to expected frontend format
+      const mapped = apiDepartments.map((dept) => ({
+        name: dept.deptName,
+        displayName: dept.deptDisplayName,
+        departmentModerator:
+          dept.deptModerator || dept.permissions?.deptUsername || "",
+        // storage: dept.permissions?.allowedStorageInBytesDisplay || "0 GB",
+        storage: dept.permissions?.displayStorage || "0 GB",
+        // allowedStorage:
+        //   cleanDisplay(dept.permissions?.allowedStorageInBytesDisplay) ||
+        //   "0 GB", // 🔥
+        allowedStorage:
+          dept.permissions?.allowedStorageInBytesDisplay === "0 bytes"
+            ? "0 GB"
+            : dept.permissions?.allowedStorageInBytesDisplay || "0 GB",
+
+        // roles: dept.roles?.map((r) => r.roleName) || [],
+        roles: dept.roles || [],
+
+        userCount: dept.numberOfUsers || 0,
+        isActive: dept.permissions?.active || false,
+        createdAt: dept.createdOn,
+      }));
+
+      setDepartments(mapped);
+    } catch (error) {
+      console.error("Error fetching departments:", error);
+      setSnackbar({
+        open: true,
+        message: "Failed to fetch departments",
+        severity: "error",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleUpdateDepartment = async () => {
@@ -803,7 +853,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           // ✅ Send API request
           try {
             await axios.post(
-              `${window.__ENV__.REACT_APP_ROUTE}/tenants/BulkUpload`,
+              `${window.__ENV__.REACT_APP_ROUTE}/tenants/departments/bulk`,
               apiPayload,
               {
                 headers: {
@@ -816,14 +866,17 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               }
             );
 
+            // ✅ SUCCESS: Show snackbar + refresh data + close dialog
             setSnackbar({
               open: true,
               message: "Bulk department upload successful",
               severity: "success",
             });
+            setShowAddDepartment(false);
 
-            // Optionally: refresh department list after upload
-            // fetchDepartments();
+            fetchDepartments(); // ✅ Refresh the department list
+            setBulkUploadDialogOpen(false); // ✅ Close the upload dialog
+            // setBulkDepartments([]); // Optional: reset state if using
           } catch (apiError) {
             console.error("API error:", apiError);
             setSnackbar({
@@ -924,87 +977,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     transition: "background-color 0.2s ease",
   }));
 
-  // const handleAddDepartment = async () => {
-  //   setNewDepartment((prev) => ({ ...prev, submitted: true }));
-
-  //   const { name, displayName, departmentModerator, initialRole, storage } =
-  //     newDepartment;
-
-  //   if (!name || !displayName || !departmentModerator || !storage) {
-  //     setSnackbar({
-  //       open: true,
-  //       message: "Please fill all required fields",
-  //       severity: "error",
-  //     });
-  //     return;
-  //   }
-
-  //   const payload = {
-  //     deptName: name.trim(),
-  //     deptDisplayName: displayName.trim(),
-  //     deptModerator: departmentModerator.trim(),
-  //     storage: storage.trim(),
-  //     role: initialRole.trim(),
-  //   };
-
-  //   try {
-  //     await createDepartment(payload);
-
-  //     const refreshed = await getDepartments();
-  //     const mapped = refreshed.content.map((dept) => ({
-  //       name: dept.deptName,
-  //       displayName: dept.deptDisplayName,
-  //       departmentModerator:
-  //         dept.deptModerator || dept.permissions?.deptUsername || "",
-  //       storage: dept.permissions?.displayStorage || "0 GB",
-  //       allowedStorage:
-  //         cleanDisplay(dept.permissions?.allowedStorageInBytesDisplay) ||
-  //         "0 GB",
-  //       roles: dept.roles?.map((r) => r.roleName) || [],
-  //       userCount: dept.numberOfUsers || 0,
-  //       isActive: dept.permissions?.active || false,
-  //       createdAt: dept.createdOn,
-  //     }));
-  //     setDepartments(mapped);
-
-  //     setTotalDepartments(refreshed.totalElements);
-
-  //     setShowAddDepartment(false);
-
-  //     setNewDepartment({
-  //       name: "",
-  //       displayName: "",
-  //       initialRole: "",
-  //       storage: "", // reset to empty
-  //       departmentModerator: "",
-  //       submitted: false,
-  //     });
-
-  //     setSnackbar({
-  //       open: true,
-  //       message: `Department "${payload.deptName}" created successfully.`,
-  //       severity: "success",
-  //     });
-  //   } catch (error) {
-  //     const errorMessage =
-  //       error?.response?.data?.error || // ✅ NEW correct path
-  //       error?.response?.data?.error || // fallback
-  //       "Failed to create department. Please try again."; // final fallback
-
-  //     console.log("errrrrr", errorMessage);
-
-  //     if (/already exists/i.test(errorMessage)) {
-  //       console.log("Duplicate department detected");
-  //       setDuplicateDepartmentError(true);
-  //     }
-
-  //     setSnackbar({
-  //       open: true,
-  //       message: errorMessage,
-  //       severity: "error",
-  //     });
-  //   }
-  // };
   const handleAddDepartment = async () => {
     setNewDepartment((prev) => ({ ...prev, submitted: true }));
 
@@ -1320,54 +1292,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
   };
 
   useEffect(() => {
-    const fetchDepartments = async () => {
-      try {
-        setLoading(true);
-        // const apiDepartments = await getDepartments();
-        console.log("ppppp", page);
-        const departmentData = await getDepartments(page, rowsPerPage);
-        const apiDepartments = departmentData.content || [];
-        console.log("apiDepartment", apiDepartments);
-
-        setTotalDepartments(departmentData.totalElements || 0);
-
-        // Map backend data to expected frontend format
-        const mapped = apiDepartments.map((dept) => ({
-          name: dept.deptName,
-          displayName: dept.deptDisplayName,
-          departmentModerator:
-            dept.deptModerator || dept.permissions?.deptUsername || "",
-          // storage: dept.permissions?.allowedStorageInBytesDisplay || "0 GB",
-          storage: dept.permissions?.displayStorage || "0 GB",
-          // allowedStorage:
-          //   cleanDisplay(dept.permissions?.allowedStorageInBytesDisplay) ||
-          //   "0 GB", // 🔥
-          allowedStorage:
-            dept.permissions?.allowedStorageInBytesDisplay === "0 bytes"
-              ? "0 GB"
-              : dept.permissions?.allowedStorageInBytesDisplay || "0 GB",
-
-          // roles: dept.roles?.map((r) => r.roleName) || [],
-          roles: dept.roles || [],
-
-          userCount: dept.numberOfUsers || 0,
-          isActive: dept.permissions?.active || false,
-          createdAt: dept.createdOn,
-        }));
-
-        setDepartments(mapped);
-      } catch (error) {
-        console.error("Error fetching departments:", error);
-        setSnackbar({
-          open: true,
-          message: "Failed to fetch departments",
-          severity: "error",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchDepartments();
   }, [page, rowsPerPage]);
 
@@ -2122,7 +2046,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         </Box>
       </Box>
 
-      <Snackbar
+      {/* <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
         onClose={handleSnackbarClose}
@@ -2135,7 +2059,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         >
           {snackbar.message}
         </Alert>
-      </Snackbar>
+      </Snackbar> */}
 
       <Drawer
         anchor="left"
@@ -2284,7 +2208,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                           initialRole: e.target.value,
                         })),
                       error: false,
-                      helperText: "Optional: You can add roles later",
+                      // helperText: "Optional: You can add roles later",
                     },
                   ].map((field, index) => {
                     if (field.label === "Department Moderator") {
@@ -2296,8 +2220,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                             options={userOptions}
                             getOptionLabel={(option) => option.email || ""}
                             value={
-                              userOptions.find((u) => u.name === field.value) ||
-                              null
+                              userOptions.find(
+                                (u) => u.email === field.value
+                              ) || null
                             }
                             onChange={(event, newValue) =>
                               setNewDepartment((prev) => ({
@@ -3123,6 +3048,25 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           </Button>
         </DialogActions>
       </Dialog>
+      <Portal>
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={3000}
+          onClose={handleSnackbarClose}
+          anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+          sx={{ zIndex: 5000 }} // ✅ Makes Snackbar appear on top of all dialogs/drawers
+        >
+          <Alert
+            onClose={handleSnackbarClose}
+            severity={snackbar.severity}
+            sx={{ width: "100%" }}
+            elevation={6}
+            variant="filled"
+          >
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
+      </Portal>
     </Box>
   );
 }

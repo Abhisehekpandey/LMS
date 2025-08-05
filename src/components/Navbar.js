@@ -422,11 +422,11 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
             APM Settings
           </Button>
 
-          <Tooltip title="Toggle Theme" arrow>
+          {/* <Tooltip title="Toggle Theme" arrow>
             <IconButton onClick={onThemeToggle} size="medium">
               <DarkModeIcon sx={{ fontSize: "1.3rem", color: "#555" }} />
             </IconButton>
-          </Tooltip>
+          </Tooltip> */}
 
           <Tooltip title="Logout" arrow>
             <IconButton onClick={handleLogout} size="medium">
