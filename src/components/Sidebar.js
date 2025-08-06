@@ -158,11 +158,11 @@ const Sidebar = () => {
        icon: <DictionaryIcon />,
        text: "Data Dictionary",
      },
-     {
-       path: "/feed-context",
-       icon: <FeedContextIcon />,
-       text: "Docutalk Feedback",
-     },
+    //  {
+    //    path: "/feed-context",
+    //    icon: <FeedContextIcon />,
+    //    text: "Docutalk Feedback",
+    //  },
      {
        path: "/theme-setting",
        icon: <PaletteIcon />,

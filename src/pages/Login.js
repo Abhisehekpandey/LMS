@@ -167,7 +167,7 @@ const Login = () => {
         severity: "success",
       });
 
-      setTimeout(() => navigate("/angelbot"), 2000);
+      setTimeout(() => navigate("/angelbot"), 1000);
     } catch (error) {
       setSnackbar({
         open: true,

@@ -291,7 +291,7 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
         {/* Search Center */}
         {[
           "/user",
-          "/department",
+          // "/department",
           // "/data-dictionary",
           // "/feed-context",
           // "/department-type-setting",
@@ -401,7 +401,7 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
 
         {/* Actions Right */}
         <Box sx={{ display: "flex", gap: 1.5, alignItems: "center", ml: 2 }}>
-          <Button
+          {/* <Button
             variant="outlined"
             size="small"
             onClick={() => setApmDialogOpen(true)}
@@ -420,7 +420,7 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
             }}
           >
             APM Settings
-          </Button>
+          </Button> */}
 
           {/* <Tooltip title="Toggle Theme" arrow>
             <IconButton onClick={onThemeToggle} size="medium">

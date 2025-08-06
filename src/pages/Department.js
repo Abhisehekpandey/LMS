@@ -4,6 +4,9 @@ import axios from "axios";
 import { Portal } from "@mui/material";
 
 import PropTypes from "prop-types";
+import SearchIcon from "@mui/icons-material/Search";
+import InputAdornment from "@mui/material/InputAdornment";
+
 import {
   Box,
   Table,
@@ -188,6 +191,9 @@ const CustomSpinner = styled(CircularProgress)(({ theme }) => ({
 }));
 
 function Department({ departments, setDepartments, onThemeToggle }) {
+  const [searchColumn, setSearchColumn] = useState("name");
+  const [searchQuery, setSearchQuery] = useState("");
+
   const [bulkUploadDialogOpen, setBulkUploadDialogOpen] = useState(false);
   const [tabValue, setTabValue] = useState(0);
 
@@ -556,7 +562,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
   const [selectAllData, setSelectAllData] = useState(false);
   const [rowData, setRowData] = useState([]);
 
-  const [searchQuery, setSearchQuery] = useState("");
+  // const [searchQuery, setSearchQuery] = useState("");
   const [filteredDepartments, setFilteredDepartments] = useState([]);
   // Add this handler function
   const handleSearch = (results) => {
@@ -950,6 +956,13 @@ function Department({ departments, setDepartments, onThemeToggle }) {
   }, [departments, filteredDepartments, order, orderBy]);
   console.log("SSSS", sortedDepartments);
 
+
+  const filteredDepartments1 = sortedDepartments?.filter((row) => {
+    const value = row[searchColumn]?.toString().toLowerCase();
+    return value?.includes(searchQuery.toLowerCase());
+  });
+
+
   const StyledTableRow = styled(TableRow)(({ theme }) => ({
     "&:nth-of-type(odd)": {
       backgroundColor: "#ffffff",
@@ -1154,7 +1167,14 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       originalName: dept.name,
       departmentModerator: dept.departmentModerator || "", // ✅ add this
     });
+    setFilteredUsers([]); // ✅ reset previous list
+    setFilteredPage(0); // ✅ reset pagination
+    setHasMoreFilteredUsers(true); // ✅ allow loading again
+    loadingFilteredUsers.current = false; // ✅ clear flag
     setEditDialogOpen(true);
+    setTimeout(() => {
+      loadFilteredUsers();
+    }, 0);
   };
 
   const handleDeleteDepartment = async () => {
@@ -1329,6 +1349,47 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         },
       }}
     >
+      {/* <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        sx={{ mb: 2, px: 2 ,marginTop:1}} // adds horizontal padding to match the table
+      >
+        <Box display="flex" gap={2} alignItems="center">
+          <FormControl size="small" sx={{ minWidth: 180 }}>
+            <InputLabel>Filter By</InputLabel>
+            <Select
+              value={searchColumn}
+              onChange={(e) => setSearchColumn(e.target.value)}
+              label="Filter By"
+            >
+              <MenuItem value="name">Department Name</MenuItem>
+              <MenuItem value="departmentModerator">Moderator</MenuItem>
+              <MenuItem value="storage">Allocated Storage</MenuItem>
+              <MenuItem value="createdBy">Created By</MenuItem>
+              <MenuItem value="createdOn">Created On</MenuItem>
+            </Select>
+          </FormControl>
+
+          <TextField
+            size="small"
+            placeholder="Search"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            sx={{ width: 250 }}
+          />
+
+          <Button
+            variant="outlined"
+            color="error"
+            onClick={() => setSearchQuery("")}
+            sx={{ whiteSpace: "nowrap", height: "40px" }}
+          >
+            ✖ CLEAR
+          </Button>
+        </Box>
+      </Box> */}
+
       <TableContainer
         component={Paper}
         sx={{
@@ -1345,7 +1406,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           "& .MuiTableHead-root .MuiTableCell-root": {
             backgroundColor: "#ffff",
 
-            borderBottom: "2px solid #94a3b8", // Changed border color and made it thicker
+            borderBottom: "2px solid #94a3b8",
             fontSize: "0.875rem",
             fontWeight: "700 !important",
             color: "#475569",
@@ -1368,10 +1429,111 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           position: "relative",
         }}
       >
+        {/* <Box
+          display="flex"
+          justifyContent="space-between"
+          alignItems="center"
+          sx={{ mb: 2, px: 2, marginTop: 1 }} // adds horizontal padding to match the table
+        >
+          <Box display="flex" gap={2} alignItems="center">
+            <FormControl size="small" sx={{ minWidth: 180 }}>
+              <InputLabel>Filter By</InputLabel>
+              <Select
+                value={searchColumn}
+                onChange={(e) => setSearchColumn(e.target.value)}
+                label="Filter By"
+              >
+                <MenuItem value="name">Department Name</MenuItem>
+                <MenuItem value="departmentModerator">Moderator</MenuItem>
+                <MenuItem value="storage">Allocated Storage</MenuItem>
+                <MenuItem value="createdBy">Created By</MenuItem>
+                <MenuItem value="createdOn">Created On</MenuItem>
+              </Select>
+            </FormControl>
+
+            <TextField
+              size="small"
+              placeholder="Search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              sx={{ width: 250 }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon color="action" />
+                  </InputAdornment>
+                ),
+              }}
+            />
+
+            <Button
+              variant="outlined"
+              color="error"
+              onClick={() => setSearchQuery("")}
+              sx={{ whiteSpace: "nowrap", height: "40px" }}
+            >
+              ✖ CLEAR
+            </Button>
+          </Box>
+        </Box> */}
+        <Box
+          display="flex"
+          justifyContent="space-between"
+          alignItems="center"
+          flexWrap="wrap"
+          sx={{
+            mb: 2,
+            px: 2,
+            mt: 1,
+            backgroundColor: "#fff", // match table's background
+            borderRadius: 2,
+            py: 1.5,
+          }}
+        >
+          <Box display="flex" gap={2} alignItems="center" flexWrap="wrap">
+            <FormControl size="small" sx={{ minWidth: 180 }}>
+              <InputLabel>Filter By</InputLabel>
+              <Select
+                value={searchColumn}
+                onChange={(e) => setSearchColumn(e.target.value)}
+                label="Filter By"
+              >
+                <MenuItem value="name">Department Name</MenuItem>
+                <MenuItem value="departmentModerator">Moderator</MenuItem>
+                <MenuItem value="displayName">Short Name</MenuItem>
+              </Select>
+            </FormControl>
+
+            <TextField
+              size="small"
+              placeholder="Search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              sx={{ width: 250 }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon color="action" />
+                  </InputAdornment>
+                ),
+              }}
+            />
+
+            <Button
+              variant="outlined"
+              color="error"
+              onClick={() => setSearchQuery("")}
+              sx={{ whiteSpace: "nowrap", height: "40px" }}
+            >
+              ✖ CLEAR
+            </Button>
+          </Box>
+        </Box>
+
         <Table sx={{ border: "0px solid #e2e8f0 !important" }}>
           <TableHead className={styles.tableHeader}>
             <TableRow
-              sx={{ boxShadow: "0 -2px 8px 0 rgba(0, 0, 0, 0.2) !important" }}
+            // sx={{ boxShadow: "0 -2px 8px 0 rgba(0, 0, 0, 0.2) !important" }}
             >
               <TableCell
                 padding="checkbox"
@@ -1608,7 +1770,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             </TableRow>
           </TableHead>
           <TableBody>
-            {sortedDepartments?.map((dept, index) => {
+            {filteredDepartments1?.map((dept, index) => {
               const isItemSelected = isSelected(dept.name);
               return (
                 <React.Fragment key={index}>
@@ -2695,7 +2857,12 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     setFilteredUsers([]); // reset list
                     setFilteredPage(0); // reset page
                     setHasMoreFilteredUsers(true); // reset scroll
-                    loadFilteredUsers(); // 🔥 fetch on click
+                    loadingFilteredUsers.current = false; // ✅ Reset loading flag
+                    // loadFilteredUsers();
+                    // ✅ Ensure editedDepartment is updated before loading users
+                    setTimeout(() => {
+                      loadFilteredUsers();
+                    }, 0);
                   }}
                 >
                   Select New Moderator
@@ -3072,3 +3239,4 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 }
 
 export default Department;
+

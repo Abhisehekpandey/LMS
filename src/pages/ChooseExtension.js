@@ -464,7 +464,7 @@ const fetchAllowedExtensions = async () => {
             Save
           </Button>
           <Typography variant="caption" sx={{ ml: 2 }} color="text.secondary">
-            {selectedExtensions.length} extension(s) selected
+            {selectedExtensions.length-4} extension(s) selected
           </Typography>
         </Box>
       </Paper>

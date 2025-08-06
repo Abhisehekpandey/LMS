@@ -324,8 +324,6 @@ const AngelBot = () => {
         console.log(">>>alDepartmenst", allDepartments);
       }
 
-      // console.log(">>>alDepartmenst",allDepartments)
-
       return allDepartments;
     } catch (error) {
       console.error("Error fetching departments:", error);
@@ -506,6 +504,7 @@ const AngelBot = () => {
       left: "left",
       textStyle: {
         color: isDark ? "#fff" : "#000",
+        fontWeight: "bold",
         // fontWeight: "bold",
       },
       formatter: function (name) {
@@ -548,6 +547,59 @@ const AngelBot = () => {
       : `${(val / 1024).toFixed(1)} GB`;
   };
 
+  // const storageStatus = {
+  //   tooltip: {
+  //     trigger: "item",
+  //     formatter: function (params) {
+  //       const valueFormatted = formatSizestorage(params.value);
+  //       return `${params.name}: ${valueFormatted} (${params.percent}%)`;
+  //     },
+  //   },
+
+  //   legend: {
+  //     orient: "horizontal",
+  //     left: "center",
+  //     textStyle: {
+  //       color: isDark ? "#fff" : "#000",
+  //       // fontWeight: "bold",
+  //     },
+  //     formatter: function (name) {
+  //       const item = storageStatusData.find((d) => d.name === name);
+  //       return `${name} (${formatSize(item.value)})`;
+  //     },
+  //   },
+
+  //   series: [
+  //     {
+  //       name: "Status",
+  //       type: "pie",
+  //       radius: "75%",
+  //       center: ["50%", "50%"],
+
+  //       label: {
+  //         position: "inside",
+  //         fontSize: 13,
+  //         formatter: (params) => {
+  //           return params.percent > 0 ? `${params.percent}%` : "";
+  //         },
+  //       },
+
+  //       data: storageStatusData.map((item) => ({
+  //         value: item?.value,
+  //         name: item.name,
+  //         itemStyle: { color: item.color },
+  //         label: { show: true, formatter: "{d}%" },
+  //       })),
+  //       emphasis: {
+  //         itemStyle: {
+  //           shadowBlur: 10,
+  //           shadowOffsetX: 0,
+  //           shadowColor: "rgba(0, 0, 0, 0.5)",
+  //         },
+  //       },
+  //     },
+  //   ],
+  // };
   const storageStatus = {
     tooltip: {
       trigger: "item",
@@ -556,17 +608,18 @@ const AngelBot = () => {
         return `${params.name}: ${valueFormatted} (${params.percent}%)`;
       },
     },
-  
+
     legend: {
       orient: "horizontal",
       left: "center",
       textStyle: {
         color: isDark ? "#fff" : "#000",
-        // fontWeight: "bold",
+        fontWeight: "bold",
       },
       formatter: function (name) {
         const item = storageStatusData.find((d) => d.name === name);
-        return `${name} (${formatSize(item.value)})`;
+        if (!item) return name;
+        return `${name} (${formatSizestorage(item.value)})`; // ✅ Adds GB or MB
       },
     },
 
@@ -602,8 +655,6 @@ const AngelBot = () => {
     ],
   };
 
- 
-
   const storageDistribution = {
     tooltip: {
       trigger: "item",
@@ -614,7 +665,7 @@ const AngelBot = () => {
         }%)`;
       },
     },
-   
+
     legend: {
       orient: "horizontal",
       left: "center",
@@ -777,7 +828,6 @@ const AngelBot = () => {
           pending = 0,
           inactive = 0;
 
-        // Status counts for the main userStats pie
         users.forEach((user) => {
           if (user.active && user.enabled) active++;
           else if (user.active && !user.enabled) pending++;
@@ -790,7 +840,6 @@ const AngelBot = () => {
         });
         console.log("totalluser", totalUserStorage);
 
-        // ✅ FILTER Active Users only for initial graph + table (same as handleChartClick)
         const activeUsers = users.filter((user) => user.active && user.enabled);
 
         let usedStorage = 0;
@@ -1739,140 +1788,137 @@ const AngelBot = () => {
                   </Card>
                 </Grid>
 
-                <Grid container spacing={2}>
-                  <Grid item xs={12}>
-                    {selectedChart && filteredUsers && (
-                      <Paper
-                        ref={userTableRef}
-                        elevation={2}
+                <Grid item xs={12}>
+                  {selectedChart && filteredUsers && (
+                    <Paper
+                      ref={userTableRef}
+                      elevation={2}
+                      sx={{
+                        mt: 4,
+                        p: 2,
+                        borderRadius: 2,
+                        boxShadow: 3,
+                        backgroundColor: isDark ? "#1e1e1e" : "#fff",
+                        border: `1px solid ${isDark ? "#444" : "#e0e0e0"}`,
+                      }}
+                    >
+                      <Typography
+                        variant="h6"
                         sx={{
-                          mt: 4,
-                          p: 2,
-                          borderRadius: 2,
-                          width: "100%",
-                          boxShadow: 3,
-                          backgroundColor: isDark ? "#1e1e1e" : "#fff",
-                          border: `1px solid ${isDark ? "#444" : "#e0e0e0"}`,
+                          mb: 2,
+                          fontWeight: 600,
+                          color: isDark ? "#fff" : "#000",
                         }}
                       >
-                        <Typography
-                          variant="h6"
-                          sx={{
-                            mb: 2,
-                            fontWeight: 600,
-                            color: isDark ? "#fff" : "#000",
-                          }}
-                        >
-                          {selectedChart} Users
-                        </Typography>
+                        {selectedChart} Users
+                      </Typography>
 
-                        <Box
-                          sx={{
-                            maxHeight: 350,
-                            overflowY: "auto",
-                            border: `1px solid ${isDark ? "#555" : "#ccc"}`,
-                            borderRadius: "6px",
-                            backgroundColor: isDark ? "#121212" : "#fafafa",
-                            "&::-webkit-scrollbar": {
-                              width: "6px",
-                            },
-                            "&::-webkit-scrollbar-thumb": {
-                              backgroundColor: isDark ? "#666" : "#888",
-                              borderRadius: "4px",
-                            },
-                            "&::-webkit-scrollbar-thumb:hover": {
-                              backgroundColor: isDark ? "#888" : "#555",
-                            },
+                      <Box
+                        sx={{
+                          maxHeight: 350,
+                          overflowY: "auto",
+                          border: `1px solid ${isDark ? "#555" : "#ccc"}`,
+                          borderRadius: "6px",
+                          backgroundColor: isDark ? "#121212" : "#fafafa",
+                          "&::-webkit-scrollbar": {
+                            width: "6px",
+                          },
+                          "&::-webkit-scrollbar-thumb": {
+                            backgroundColor: isDark ? "#666" : "#888",
+                            borderRadius: "4px",
+                          },
+                          "&::-webkit-scrollbar-thumb:hover": {
+                            backgroundColor: isDark ? "#888" : "#555",
+                          },
+                        }}
+                      >
+                        <table
+                          className="user-table"
+                          style={{
+                            width: "100%",
+                            borderCollapse: "collapse",
                           }}
                         >
-                          <table
-                            className="user-table"
+                          <thead
                             style={{
-                              width: "100%",
-                              borderCollapse: "collapse",
+                              backgroundColor: isDark ? "#333" : "#1976d2",
+                              color: "#fff",
+                              position: "sticky",
+                              top: 0,
+                              zIndex: 2,
+                              boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
                             }}
                           >
-                            <thead
-                              style={{
-                                backgroundColor: isDark ? "#333" : "#1976d2",
-                                color: "#fff",
-                                position: "sticky",
-                                top: 0,
-                                zIndex: 2,
-                                boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-                              }}
-                            >
+                            <tr>
+                              <th style={headerCellStyle}>Name</th>
+                              <th style={headerCellStyle}>Used</th>
+                              <th style={headerCellStyle}>Allocated</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {filteredUsers.length === 0 ? (
                               <tr>
-                                <th style={headerCellStyle}>Name</th>
-                                <th style={headerCellStyle}>Used</th>
-                                <th style={headerCellStyle}>Allocated</th>
+                                <td
+                                  colSpan={3}
+                                  style={{
+                                    padding: "8px",
+                                    fontSize: "0.875rem",
+                                    color: isDark ? "#aaa" : "#000",
+                                  }}
+                                >
+                                  No users found.
+                                </td>
                               </tr>
-                            </thead>
-                            <tbody>
-                              {filteredUsers.length === 0 ? (
-                                <tr>
+                            ) : (
+                              filteredUsers.map((user, index) => (
+                                <tr
+                                  key={index}
+                                  style={{
+                                    borderBottom: `1px solid ${
+                                      isDark ? "#333" : "#f0f0f0"
+                                    }`,
+                                    backgroundColor: isDark
+                                      ? index % 2 === 0
+                                        ? "#1c1c1c"
+                                        : "#222"
+                                      : index % 2 === 0
+                                      ? "#fafafa"
+                                      : "#fff",
+                                  }}
+                                >
                                   <td
-                                    colSpan={3}
                                     style={{
-                                      padding: "8px",
-                                      fontSize: "0.875rem",
-                                      color: isDark ? "#aaa" : "#000",
+                                      ...rowCellStyle,
+                                      color: isDark ? "#eee" : "#000",
                                     }}
                                   >
-                                    No users found.
+                                    {user.name}
+                                  </td>
+                                  <td
+                                    style={{
+                                      ...rowCellStyle,
+                                      color: isDark ? "#eee" : "#000",
+                                    }}
+                                  >
+                                    {user.permissions?.displayStorage || "—"}
+                                  </td>
+                                  <td
+                                    style={{
+                                      ...rowCellStyle,
+                                      color: isDark ? "#eee" : "#000",
+                                    }}
+                                  >
+                                    {user.permissions
+                                      ?.allowedStorageInBytesDisplay || "—"}
                                   </td>
                                 </tr>
-                              ) : (
-                                filteredUsers.map((user, index) => (
-                                  <tr
-                                    key={index}
-                                    style={{
-                                      borderBottom: `1px solid ${
-                                        isDark ? "#333" : "#f0f0f0"
-                                      }`,
-                                      backgroundColor: isDark
-                                        ? index % 2 === 0
-                                          ? "#1c1c1c"
-                                          : "#222"
-                                        : index % 2 === 0
-                                        ? "#fafafa"
-                                        : "#fff",
-                                    }}
-                                  >
-                                    <td
-                                      style={{
-                                        ...rowCellStyle,
-                                        color: isDark ? "#eee" : "#000",
-                                      }}
-                                    >
-                                      {user.name}
-                                    </td>
-                                    <td
-                                      style={{
-                                        ...rowCellStyle,
-                                        color: isDark ? "#eee" : "#000",
-                                      }}
-                                    >
-                                      {user.permissions?.displayStorage || "—"}
-                                    </td>
-                                    <td
-                                      style={{
-                                        ...rowCellStyle,
-                                        color: isDark ? "#eee" : "#000",
-                                      }}
-                                    >
-                                      {user.permissions
-                                        ?.allowedStorageInBytesDisplay || "—"}
-                                    </td>
-                                  </tr>
-                                ))
-                              )}
-                            </tbody>
-                          </table>
-                        </Box>
-                      </Paper>
-                    )}
-                  </Grid>
+                              ))
+                            )}
+                          </tbody>
+                        </table>
+                      </Box>
+                    </Paper>
+                  )}
                 </Grid>
               </Grid>
               <Grid container spacing={2}>
