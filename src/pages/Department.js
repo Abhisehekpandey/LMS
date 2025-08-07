@@ -2073,7 +2073,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         }}
       >
         <TablePagination
-          rowsPerPageOptions={[10, 20, 30]}
+          rowsPerPageOptions={[10]}
           component="div"
           count={totalDepartments}
           rowsPerPage={rowsPerPage}
@@ -2929,7 +2929,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             </Button>
           </Box>
 
-          <Button
+          {/* <Button
             variant="outlined"
             color="primary"
             onClick={() => {
@@ -2944,7 +2944,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             }}
           >
             Migration
-          </Button>
+          </Button> */}
         </DialogActions>
       </Dialog>
 

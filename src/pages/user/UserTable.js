@@ -1371,7 +1371,7 @@ export default function UserTable() {
         <Divider />
         <div style={{ display: "flex", justifyContent: "space-between" }}>
           <TablePagination
-            rowsPerPageOptions={[10, 30, 60, 100]}
+            rowsPerPageOptions={[10]}
             component="div"
             count={totalCount} // ✅ correct total count
             rowsPerPage={rowsPerPage}
@@ -1388,7 +1388,7 @@ export default function UserTable() {
               alignItems: "center",
             }}
           >
-            {selected.length >= 1 && (
+            {/* {selected.length >= 1 && (
               <Tooltip title="Migrate Selected Users">
                 <IconButton
                   sx={{
@@ -1420,8 +1420,8 @@ export default function UserTable() {
                   <WifiProtectedSetup />
                 </IconButton>
               </Tooltip>
-            )}
-            {selected.length > 1 && (
+            )} */}
+            {selected.length >= 1 && (
               <Tooltip title="Delete">
                 <IconButton
                   sx={{
@@ -1454,7 +1454,7 @@ export default function UserTable() {
                 </IconButton>
               </Tooltip>
             )}
-            {selected.length > 1 && (
+            {/* {selected.length > 1 && (
               <Tooltip title="Activate Selected Users">
                 <IconButton
                   sx={{
@@ -1486,8 +1486,8 @@ export default function UserTable() {
                   <PowerSettingsNew />
                 </IconButton>
               </Tooltip>
-            )}
-            {selected.length > 1 && (
+            )} */}
+            {/* {selected.length > 1 && (
               <Tooltip title="Deactivate Selected Users">
                 <IconButton
                   sx={{
@@ -1518,7 +1518,7 @@ export default function UserTable() {
                   <Block />
                 </IconButton>
               </Tooltip>
-            )}
+            )} */}
             <div
               style={{
                 gap: "5px",
