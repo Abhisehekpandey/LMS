@@ -52,6 +52,7 @@ import {
   Filter,
   FilterList,
 } from "@mui/icons-material";
+import SearchIcon from "@mui/icons-material/Search";
 
 import styles from "./user.module.css";
 import DeleteUser from "./DeleteUser";
@@ -263,6 +264,9 @@ const Transition = React.forwardRef(function Transition(props, ref) {
 });
 
 export default function UserTable() {
+  const [searchColumn, setSearchColumn] = useState("name");
+  const [searchQuery, setSearchQuery] = useState("");
+
   const [showRoleChange, setShowRoleChange] = useState(false);
 
   const [order, setOrder] = useState("asc");
@@ -405,57 +409,56 @@ export default function UserTable() {
     }
   };
 
-  
-const handleSaveChanges = async () => {
-  console.log("editData:", editData);
+  const handleSaveChanges = async () => {
+    console.log("editData:", editData);
 
-  try {
-    const fullDepartments = await fetchFullDepartments();
+    try {
+      const fullDepartments = await fetchFullDepartments();
 
-    const deptObj = fullDepartments.find(
-      (d) => d.deptName?.toLowerCase() === editData.department?.toLowerCase()
-    );
+      const deptObj = fullDepartments.find(
+        (d) => d.deptName?.toLowerCase() === editData.department?.toLowerCase()
+      );
 
-    if (!deptObj) {
-      toast.error("Invalid department selected.");
-      return;
+      if (!deptObj) {
+        toast.error("Invalid department selected.");
+        return;
+      }
+
+      const roleObj = deptObj.roles?.find(
+        (r) => r.roleName?.toLowerCase() === editData.role?.toLowerCase()
+      );
+
+      if (!roleObj) {
+        toast.error("Invalid role selected.");
+        return;
+      }
+
+      const userPayload = {
+        userId: editData.id,
+        userName: editData.name.trim(),
+        phoneNumber: editData.phoneNumber.trim(),
+        deptId: deptObj.id,
+        roleId: roleObj.id,
+      };
+
+      console.log("Final userPayload:", userPayload);
+
+      await updateUser(userPayload);
+
+      // Update the saved role for this user
+      setUserRoleMap((prev) => ({
+        ...prev,
+        [editData.id]: roleObj.id,
+      }));
+
+      toast.success("User updated successfully!");
+      setEditDialogOpen(false);
+      refetchUsers();
+    } catch (error) {
+      console.error("Error updating user:", error);
+      toast.error("Failed to update user.");
     }
-
-    const roleObj = deptObj.roles?.find(
-      (r) => r.roleName?.toLowerCase() === editData.role?.toLowerCase()
-    );
-
-    if (!roleObj) {
-      toast.error("Invalid role selected.");
-      return;
-    }
-
-    const userPayload = {
-      userId: editData.id,
-      userName: editData.name.trim(),
-      phoneNumber: editData.phoneNumber.trim(),
-      deptId: deptObj.id,
-      roleId: roleObj.id,
-    };
-
-    console.log("Final userPayload:", userPayload);
-
-    await updateUser(userPayload);
-
-    // Update the saved role for this user
-    setUserRoleMap((prev) => ({
-      ...prev,
-      [editData.id]: roleObj.id,
-    }));
-
-    toast.success("User updated successfully!");
-    setEditDialogOpen(false);
-    refetchUsers();
-  } catch (error) {
-    console.error("Error updating user:", error);
-    toast.error("Failed to update user.");
-  }
-};
+  };
 
   const loadMoreDepartments = async () => {
     if (loadingDepartments.current || !hasMoreDepartments) return;
@@ -492,91 +495,46 @@ const handleSaveChanges = async () => {
     setStorage(event.target.value);
   };
 
-  // const handleEdit = async (e, row) => {
-  //   console.log("Editing user:", row);
+  const handleEdit = async (e, row) => {
+    console.log("Editing user:", row);
 
-  //   try {
-  //     const fullDepartments = await fetchFullDepartments(); // ✅ call your function
-  //     setFullDepartments(fullDepartments); // ✅ save it to state
+    try {
+      const fullDepartments = await fetchFullDepartments();
+      setFullDepartments(fullDepartments);
 
-  //     const savedRoleId = userRoleMap[row.id];
-  //     console.log("saveRoleId", savedRoleId);
+      const savedRoleId = userRoleMap[row.id];
+      const currentRole =
+        row.roles?.find((r) => r.id === savedRoleId) || row.roles?.[0];
 
-  //     const currentRole =
-  //       row.roles?.find((r) => r.id === savedRoleId) || row.roles?.[0];
-  //     console.log("current", currentRole);
+      const deptName = currentRole?.department?.deptName || "";
+      const roleName = currentRole?.roleName || "";
 
-  //     const deptName = currentRole?.department?.deptName || "";
-  //     const roleName = currentRole?.roleName || "";
+      const deptObj = fullDepartments.find(
+        (d) => d.deptName?.toLowerCase() === deptName?.toLowerCase()
+      );
 
-  //     const deptObj =
-  //       fullDepartments.find(
-  //         (d) => d.deptName?.toLowerCase() === deptName?.toLowerCase()
-  //       ) || null;
+      const matchedRole = deptObj?.roles?.find(
+        (r) => r.roleName?.toLowerCase() === roleName?.toLowerCase()
+      );
 
-  //     const matchedRole =
-  //       deptObj?.roles?.find(
-  //         (r) => r.roleName?.toLowerCase() === roleName?.toLowerCase()
-  //       ) || null;
+      const newEditData = {
+        id: row.id,
+        name: row.name || "",
+        email: row.email || "",
+        phoneNumber: row.phoneNumber || "",
+        department: deptName,
+        role: matchedRole?.roleName || roleName,
+        roles: row.roles || [],
+      };
 
-  //     const newEditData = {
-  //       id: row.id,
-  //       name: row.name || "",
-  //       email: row.email || "",
-  //       phoneNumber: row.phoneNumber || "",
-  //       department: deptName,
-  //       role: matchedRole?.roleName || roleName,
-  //       roles: row.roles || [],
-  //     };
-
-  //     setEditData(newEditData);
-  //     setSelectedDepartment(deptObj);
-  //     setEditDialogOpen(true);
-  //   } catch (error) {
-  //     console.error("Failed to load departments", error);
-  //     toast.error("Unable to fetch departments. Please try again.");
-  //   }
-  // };
-const handleEdit = async (e, row) => {
-  console.log("Editing user:", row);
-
-  try {
-    const fullDepartments = await fetchFullDepartments();
-    setFullDepartments(fullDepartments);
-
-    const savedRoleId = userRoleMap[row.id];
-    const currentRole =
-      row.roles?.find((r) => r.id === savedRoleId) || row.roles?.[0];
-
-    const deptName = currentRole?.department?.deptName || "";
-    const roleName = currentRole?.roleName || "";
-
-    const deptObj = fullDepartments.find(
-      (d) => d.deptName?.toLowerCase() === deptName?.toLowerCase()
-    );
-
-    const matchedRole = deptObj?.roles?.find(
-      (r) => r.roleName?.toLowerCase() === roleName?.toLowerCase()
-    );
-
-    const newEditData = {
-      id: row.id,
-      name: row.name || "",
-      email: row.email || "",
-      phoneNumber: row.phoneNumber || "",
-      department: deptName,
-      role: matchedRole?.roleName || roleName,
-      roles: row.roles || [],
-    };
-
-    setEditData(newEditData);
-    setSelectedDepartment(deptObj || null);
-    setEditDialogOpen(true);
-  } catch (error) {
-    console.error("Failed to load departments", error);
-    toast.error("Unable to fetch departments. Please try again.");
-  }
-};
+      setEditData(newEditData);
+      setSelectedDepartment(deptObj || null);
+      setEditDialogOpen(true);
+    } catch (error) {
+      console.error("Failed to load departments", error);
+      toast.error("Unable to fetch departments. Please try again.");
+    }
+  };
 
   const handleMigration = () => {
     setMigrationDialog(true);
@@ -881,7 +839,47 @@ const handleEdit = async (e, row) => {
   const handleClose = () => {
     setMigrationDialog(false);
   };
-  const sortedRows = [...rowsData].sort(getComparator(order, orderBy));
+  // const sortedRows = [...rowsData].sort(getComparator(order, orderBy));
+  const filteredRows = rowsData.filter((row) => {
+    const query = searchQuery.toLowerCase();
+
+    if (searchColumn === "name") {
+      return row.name?.toLowerCase().includes(query);
+    }
+
+    if (searchColumn === "email") {
+      return row.email?.toLowerCase().includes(query);
+    }
+
+    if (searchColumn === "department") {
+      const selectedRoleId = userRoleMap[row.id];
+      const selectedRole = row.roles?.find(
+        (role) => role.id === selectedRoleId
+      );
+      const department =
+        selectedRole?.department?.deptName ||
+        row.roles?.[0]?.department?.deptName ||
+        "";
+      return department?.toLowerCase().includes(query);
+    }
+
+    if (searchColumn === "role") {
+      const selectedRoleId = userRoleMap[row.id];
+      const selectedRole = row.roles?.find(
+        (role) => role.id === selectedRoleId
+      );
+      const deptId = selectedRole?.department?.id;
+      const rolesInSameDept = row.roles.filter(
+        (role) => role.department?.id === deptId
+      );
+      const roleNames = rolesInSameDept.map((role) => role.roleName).join(", ");
+      return roleNames.toLowerCase().includes(query);
+    }
+
+    return true;
+  });
+
+  const sortedRows = [...filteredRows].sort(getComparator(order, orderBy));
 
   return (
     <Box
@@ -916,10 +914,79 @@ const handleEdit = async (e, row) => {
         className="PaperUI"
       >
         <TableContainer sx={{ maxHeight: "83vh", height: "80vh" }}>
+          <Box
+            display="flex"
+            alignItems="center"
+            gap={2}
+            sx={{ px: 2, mb: 2, py: 1 }}
+          >
+            <FormControl
+              size="small"
+              sx={{
+                minWidth: 160,
+                height: 30,
+                "& .MuiInputBase-root": {
+                  height: 30,
+                  fontSize: "0.8rem",
+                },
+              }}
+            >
+              <InputLabel>Filter By</InputLabel>
+              <Select
+                value={searchColumn}
+                onChange={(e) => setSearchColumn(e.target.value)}
+                label="Filter By"
+              >
+                <MenuItem value="name">Name</MenuItem>
+                <MenuItem value="email">Email</MenuItem>
+                <MenuItem value="department">Department</MenuItem>
+                {/* <MenuItem value="role">Role</MenuItem> */}
+              </Select>
+            </FormControl>
+
+            <TextField
+              size="small"
+              placeholder="Search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              sx={{
+                width: 250,
+                height: 30,
+                "& .MuiInputBase-root": {
+                  height: 30,
+                  fontSize: "0.8rem",
+                },
+              }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon color="action" fontSize="small" />
+                  </InputAdornment>
+                ),
+              }}
+            />
+
+            <Button
+              variant="outlined"
+              color="error"
+              onClick={() => setSearchQuery("")}
+              disabled={!searchQuery.trim()} // ✅ disable if input is empty or just spaces
+              sx={{
+                height: 30,
+                padding: "0 12px",
+                fontSize: "0.75rem",
+                minWidth: 80,
+                whiteSpace: "nowrap",
+              }}
+            >
+              ✖ CLEAR
+            </Button>
+          </Box>
+
           <Table stickyHeader>
             <TableHead className={styles.tableHeader}>
               <TableRow
-                sx={{ boxShadow: "0 -2px 8px 0 rgba(0, 0, 0, 0.2) !important" }}
+              // sx={{ boxShadow: "0 -2px 8px 0 rgba(0, 0, 0, 0.2) !important" }}
               >
                 <TableCell padding="checkbox">
                   <Checkbox
@@ -1050,8 +1117,6 @@ const handleEdit = async (e, row) => {
                       {row.name}
                       {row.email === adminEmail && " (admin)"}
                     </TableCell>
-
-                    
 
                     <TableCell
                       align="center"
@@ -1867,4 +1932,3 @@ const handleEdit = async (e, row) => {
     </Box>
   );
 }
-

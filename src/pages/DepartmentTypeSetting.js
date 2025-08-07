@@ -369,7 +369,7 @@ const DepartmentTypeSetting = () => {
           },
         }}
       >
-        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, p: 2 }}>
+        {/* <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, p: 2 }}>
           <TextField
             select
             size="small"
@@ -411,6 +411,80 @@ const DepartmentTypeSetting = () => {
             >
               Clear
             </Button>
+          </Tooltip>
+        </Box> */}
+        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, p: 2 }}>
+          <TextField
+            select
+            size="small"
+            label="By"
+            value={searchColumn}
+            onChange={(e) => setSearchColumn(e.target.value)}
+            sx={{
+              minWidth: 130,
+              height: 30,
+              "& .MuiInputBase-root": {
+                height: 30,
+                fontSize: "0.8rem",
+              },
+              "& .MuiInputLabel-root": {
+                top: "-6px",
+              },
+            }}
+          >
+            <MenuItem value="typeName">Type Name</MenuItem>
+            <MenuItem value="createdBy">Created By</MenuItem>
+            <MenuItem value="for">For</MenuItem>
+          </TextField>
+
+          <TextField
+            size="small"
+            label="Search"
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" />
+                </InputAdornment>
+              ),
+            }}
+            sx={{
+              minWidth: 200,
+              height: 30,
+              "& .MuiInputBase-root": {
+                height: 30,
+                fontSize: "0.8rem",
+              },
+              "& .MuiInputLabel-root": {
+                top: "-6px",
+              },
+            }}
+          />
+
+          <Tooltip title="Clear All Filters">
+            <span>
+              {" "}
+              {/* Wrap in span to avoid Tooltip warning on disabled button */}
+              <Button
+                variant="outlined"
+                size="small"
+                color="error"
+                startIcon={<ClearIcon />}
+                onClick={() => {
+                  setSearchText("");
+                  setSearchColumn("typeName");
+                }}
+                disabled={!searchText.trim()}
+                sx={{
+                  height: 30,
+                  fontSize: "0.75rem",
+                  padding: "0 12px",
+                }}
+              >
+                Clear
+              </Button>
+            </span>
           </Tooltip>
         </Box>
 

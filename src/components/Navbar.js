@@ -290,7 +290,7 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
 
         {/* Search Center */}
         {[
-          "/user",
+          // "/user",
           // "/department",
           // "/data-dictionary",
           // "/feed-context",

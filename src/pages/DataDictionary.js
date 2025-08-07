@@ -407,6 +407,7 @@ const DataDictionary = ({ searchResults = [] }) => {
           },
         }}
       >
+       
         <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, p: 2 }}>
           <TextField
             select
@@ -414,7 +415,17 @@ const DataDictionary = ({ searchResults = [] }) => {
             label="By"
             value={searchColumn}
             onChange={(e) => setSearchColumn(e.target.value)}
-            sx={{ minWidth: 130 }}
+            sx={{
+              minWidth: 130,
+              height: 30,
+              "& .MuiInputBase-root": {
+                height: 30,
+                fontSize: "0.8rem",
+              },
+              "& .MuiInputLabel-root": {
+                top: "-6px",
+              },
+            }}
           >
             {searchableColumns.map((col) => (
               <MenuItem key={col.value} value={col.value}>
@@ -422,6 +433,7 @@ const DataDictionary = ({ searchResults = [] }) => {
               </MenuItem>
             ))}
           </TextField>
+
           <TextField
             size="small"
             label="Search"
@@ -434,21 +446,40 @@ const DataDictionary = ({ searchResults = [] }) => {
                 </InputAdornment>
               ),
             }}
-            sx={{ minWidth: 180 }}
+            sx={{
+              minWidth: 180,
+              height: 30,
+              "& .MuiInputBase-root": {
+                height: 30,
+                fontSize: "0.8rem",
+              },
+              "& .MuiInputLabel-root": {
+                top: "-6px",
+              },
+            }}
           />
+
           <Tooltip title="Clear All Filters">
-            <Button
-              variant="outlined"
-              size="small"
-              color="error"
-              startIcon={<ClearIcon />}
-              onClick={() => {
-                setSearchText("");
-                setColumnFilters({ key: "", value: "", applicableTo: "" });
-              }}
-            >
-              Clear
-            </Button>
+            <span>
+              <Button
+                variant="outlined"
+                size="small"
+                color="error"
+                startIcon={<ClearIcon />}
+                onClick={() => {
+                  setSearchText("");
+                  setColumnFilters({ key: "", value: "", applicableTo: "" });
+                }}
+                disabled={!searchText.trim()}
+                sx={{
+                  height: 30,
+                  fontSize: "0.75rem",
+                  padding: "0 12px",
+                }}
+              >
+                Clear
+              </Button>
+            </span>
           </Tooltip>
 
           <Menu
@@ -457,17 +488,17 @@ const DataDictionary = ({ searchResults = [] }) => {
             onClose={handleCloseMenu}
           ></Menu>
         </Box>
+
         <TableContainer sx={{ maxHeight: "80vh", height: "80vh" }}>
           <Table stickyHeader>
             <TableHead>
-             
               <TableRow
                 sx={(theme) => ({
                   height: 64,
-                  backgroundColor: theme.palette.primary.main,
+                  // backgroundColor: theme.palette.primary.main,
                   "& td, & th": {
                     padding: "6px 8px",
-                    color: theme.palette.primary.contrastText,
+                    // color: theme.palette.primary.contrastText,
                     fontWeight: "bold",
                     fontFamily: '"Be Vietnam", sans-serif',
                     textAlign: "center",
@@ -476,7 +507,6 @@ const DataDictionary = ({ searchResults = [] }) => {
               >
                 {/* Checkbox column */}
                 <TableCell padding="checkbox" sx={{ textAlign: "center" }}>
-                 
                   <Checkbox
                     indeterminate={
                       selected.length > 0 &&

@@ -191,6 +191,10 @@ const CustomSpinner = styled(CircularProgress)(({ theme }) => ({
 }));
 
 function Department({ departments, setDepartments, onThemeToggle }) {
+  const [searchModerator, setSearchModerator] = useState("");
+
+  const [searchUser, setSearchUser] = useState("");
+
   const [searchColumn, setSearchColumn] = useState("name");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -956,12 +960,10 @@ function Department({ departments, setDepartments, onThemeToggle }) {
   }, [departments, filteredDepartments, order, orderBy]);
   console.log("SSSS", sortedDepartments);
 
-
   const filteredDepartments1 = sortedDepartments?.filter((row) => {
     const value = row[searchColumn]?.toString().toLowerCase();
     return value?.includes(searchQuery.toLowerCase());
   });
-
 
   const StyledTableRow = styled(TableRow)(({ theme }) => ({
     "&:nth-of-type(odd)": {
@@ -1171,6 +1173,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     setFilteredPage(0); // ✅ reset pagination
     setHasMoreFilteredUsers(true); // ✅ allow loading again
     loadingFilteredUsers.current = false; // ✅ clear flag
+    setSearchModerator(""); // ✅ Clear the moderator field
     setEditDialogOpen(true);
     setTimeout(() => {
       loadFilteredUsers();
@@ -1349,47 +1352,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         },
       }}
     >
-      {/* <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        sx={{ mb: 2, px: 2 ,marginTop:1}} // adds horizontal padding to match the table
-      >
-        <Box display="flex" gap={2} alignItems="center">
-          <FormControl size="small" sx={{ minWidth: 180 }}>
-            <InputLabel>Filter By</InputLabel>
-            <Select
-              value={searchColumn}
-              onChange={(e) => setSearchColumn(e.target.value)}
-              label="Filter By"
-            >
-              <MenuItem value="name">Department Name</MenuItem>
-              <MenuItem value="departmentModerator">Moderator</MenuItem>
-              <MenuItem value="storage">Allocated Storage</MenuItem>
-              <MenuItem value="createdBy">Created By</MenuItem>
-              <MenuItem value="createdOn">Created On</MenuItem>
-            </Select>
-          </FormControl>
-
-          <TextField
-            size="small"
-            placeholder="Search"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            sx={{ width: 250 }}
-          />
-
-          <Button
-            variant="outlined"
-            color="error"
-            onClick={() => setSearchQuery("")}
-            sx={{ whiteSpace: "nowrap", height: "40px" }}
-          >
-            ✖ CLEAR
-          </Button>
-        </Box>
-      </Box> */}
-
       <TableContainer
         component={Paper}
         sx={{
@@ -1429,53 +1391,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           position: "relative",
         }}
       >
-        {/* <Box
-          display="flex"
-          justifyContent="space-between"
-          alignItems="center"
-          sx={{ mb: 2, px: 2, marginTop: 1 }} // adds horizontal padding to match the table
-        >
-          <Box display="flex" gap={2} alignItems="center">
-            <FormControl size="small" sx={{ minWidth: 180 }}>
-              <InputLabel>Filter By</InputLabel>
-              <Select
-                value={searchColumn}
-                onChange={(e) => setSearchColumn(e.target.value)}
-                label="Filter By"
-              >
-                <MenuItem value="name">Department Name</MenuItem>
-                <MenuItem value="departmentModerator">Moderator</MenuItem>
-                <MenuItem value="storage">Allocated Storage</MenuItem>
-                <MenuItem value="createdBy">Created By</MenuItem>
-                <MenuItem value="createdOn">Created On</MenuItem>
-              </Select>
-            </FormControl>
-
-            <TextField
-              size="small"
-              placeholder="Search"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              sx={{ width: 250 }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon color="action" />
-                  </InputAdornment>
-                ),
-              }}
-            />
-
-            <Button
-              variant="outlined"
-              color="error"
-              onClick={() => setSearchQuery("")}
-              sx={{ whiteSpace: "nowrap", height: "40px" }}
-            >
-              ✖ CLEAR
-            </Button>
-          </Box>
-        </Box> */}
         <Box
           display="flex"
           justifyContent="space-between"
@@ -1491,7 +1406,17 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           }}
         >
           <Box display="flex" gap={2} alignItems="center" flexWrap="wrap">
-            <FormControl size="small" sx={{ minWidth: 180 }}>
+            <FormControl
+              size="small"
+              sx={{
+                minWidth: 180,
+                height: 30,
+                "& .MuiInputBase-root": {
+                  height: 30,
+                  fontSize: "0.8rem",
+                },
+              }}
+            >
               <InputLabel>Filter By</InputLabel>
               <Select
                 value={searchColumn}
@@ -1509,11 +1434,18 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               placeholder="Search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              sx={{ width: 250 }}
+              sx={{
+                width: 250,
+                height: 30,
+                "& .MuiInputBase-root": {
+                  height: 30,
+                  fontSize: "0.8rem",
+                },
+              }}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <SearchIcon color="action" />
+                    <SearchIcon color="action" fontSize="small" />
                   </InputAdornment>
                 ),
               }}
@@ -1523,7 +1455,13 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               variant="outlined"
               color="error"
               onClick={() => setSearchQuery("")}
-              sx={{ whiteSpace: "nowrap", height: "40px" }}
+              disabled={!searchQuery.trim()}
+              sx={{
+                whiteSpace: "nowrap",
+                height: 30,
+                fontSize: "0.75rem",
+                padding: "0 12px",
+              }}
             >
               ✖ CLEAR
             </Button>
@@ -2699,16 +2637,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 onChange={(e) => setNewRole(e.target.value)}
                 sx={{ mb: 2 }}
               />
-              {/* <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={isAdminRole}
-                    onChange={(e) => setIsAdminRole(e.target.checked)}
-                    color="primary"
-                  />
-                }
-                label="Admin Role"
-              /> */}
             </CardContent>
           </Card>
         </Box>
@@ -2837,7 +2765,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 }
               />
 
-              <Box display="flex" alignItems="center" gap={1} mt={2}>
+              <Box display="flex" alignItems="center" gap={2} mt={2}>
                 <TextField
                   fullWidth
                   size="small"
@@ -2848,82 +2776,99 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                   }}
                 />
 
-                <Button
-                  variant="outlined"
+                <TextField
+                  fullWidth
                   size="small"
-                  ref={anchorRef}
-                  onClick={() => {
+                  label="Change Moderator"
+                  value={searchModerator}
+                  onFocus={() => {
                     setShowUserDropdown(true);
                     setFilteredUsers([]); // reset list
                     setFilteredPage(0); // reset page
                     setHasMoreFilteredUsers(true); // reset scroll
-                    loadingFilteredUsers.current = false; // ✅ Reset loading flag
-                    // loadFilteredUsers();
-                    // ✅ Ensure editedDepartment is updated before loading users
+                    loadingFilteredUsers.current = false;
                     setTimeout(() => {
                       loadFilteredUsers();
                     }, 0);
                   }}
-                >
-                  Select New Moderator
-                </Button>
-              </Box>
+                  onChange={(e) => {
+                    setSearchModerator(e.target.value);
+                  }}
+                  inputRef={anchorRef}
+                  autoComplete="off" // ✅ Disable browser auto-suggestions
+                />
 
-              <Popper
-                open={showUserDropdown}
-                anchorEl={anchorRef.current}
-                placement="bottom-start"
-                disablePortal={false}
-                flip={false}
-                transition
-                modifiers={[
-                  {
-                    name: "zIndex",
-                    enabled: true,
-                    phase: "write",
-                    fn({ state }) {
-                      state.styles.popper.zIndex = 1600;
+                <Popper
+                  open={showUserDropdown}
+                  anchorEl={anchorRef.current}
+                  placement="bottom-start"
+                  transition
+                  disablePortal
+                  modifiers={[
+                    {
+                      name: "zIndex",
+                      enabled: true,
+                      phase: "write",
+                      fn({ state }) {
+                        state.styles.popper.zIndex = 1600;
+                      },
                     },
-                  },
-                ]}
-              >
-                {({ TransitionProps }) => (
-                  <Grow {...TransitionProps}>
-                    <Paper
-                      sx={{ maxHeight: 300, overflowY: "auto", width: 300 }}
-                    >
-                      <Box
-                        sx={{ maxHeight: 300, overflowY: "auto" }}
-                        onScroll={(event) => {
-                          const { scrollTop, clientHeight, scrollHeight } =
-                            event.currentTarget;
-                          if (scrollTop + clientHeight >= scrollHeight - 50) {
-                            loadFilteredUsers(); // 🔁 loads more filtered users
-                          }
+                  ]}
+                >
+                  {({ TransitionProps }) => (
+                    <Grow {...TransitionProps}>
+                      <Paper
+                        sx={{
+                          width: 300,
+                          maxHeight: 200, // limit dropdown height ~5 items
+                          overflowY: "auto",
+                          borderRadius: 1,
+                          mt: 1,
                         }}
                       >
-                        {filteredUsers.map((user, index) => (
-                          <MenuItem
-                            key={index}
-                            onClick={() => {
-                              setEditedDepartment((prev) => ({
-                                ...prev,
-                                departmentModerator: user.name,
-                              }));
-                              setShowUserDropdown(false);
-                            }}
-                          >
-                            {user.name}
-                          </MenuItem>
-                        ))}
-                        {filteredUsers.length === 0 && (
-                          <MenuItem disabled>No users found</MenuItem>
-                        )}
-                      </Box>
-                    </Paper>
-                  </Grow>
-                )}
-              </Popper>
+                        <Box
+                          sx={{
+                            maxHeight: 200,
+                            overflowY: "auto",
+                          }}
+                          onScroll={(event) => {
+                            const { scrollTop, clientHeight, scrollHeight } =
+                              event.currentTarget;
+                            if (scrollTop + clientHeight >= scrollHeight - 50) {
+                              loadFilteredUsers(); // keep pagination logic
+                            }
+                          }}
+                        >
+                          {filteredUsers
+                            .filter((user) =>
+                              user.name
+                                .toLowerCase()
+                                .includes(searchModerator.toLowerCase())
+                            )
+                            .map((user, index) => (
+                              <MenuItem
+                                key={index}
+                                onClick={() => {
+                                  setEditedDepartment((prev) => ({
+                                    ...prev,
+                                    departmentModerator: user.name,
+                                  }));
+                                  setSearchModerator(user.name);
+                                  setShowUserDropdown(false);
+                                }}
+                              >
+                                {user.name}
+                              </MenuItem>
+                            ))}
+                          {filteredUsers.length === 0 && (
+                            <MenuItem disabled>No users found</MenuItem>
+                          )}
+                        </Box>
+                      </Paper>
+                    </Grow>
+                  )}
+                </Popper>
+              </Box>
             </Box>
           </CardContent>
         </Card>
@@ -3239,4 +3184,3 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 }
 
 export default Department;
-
