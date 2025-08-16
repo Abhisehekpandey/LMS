@@ -50,6 +50,7 @@ const emptyUser = {
 };
 
 const CreateUser = ({
+  open,
   handleClose,
   onUserCreated,
   showSnackbar,
@@ -196,16 +197,13 @@ const CreateUser = ({
     "500GB",
   ];
   const storageAllocation = [
-    "0GB",
-    "1GB",
-    "2GB",
-    "3GB",
-    "5GB",
-    "25GB",
-    "50GB",
-    "100GB",
-    "200GB",
-    "500GB",
+    "0 GB",
+    "25 GB",
+    "50 GB",
+    "75 GB",
+    "100 GB",
+    "150 GB",
+    "200 GB",
   ];
 
   const [departments, setDepartments] = useState([]);
@@ -361,9 +359,18 @@ const CreateUser = ({
     console.log("Updated departments:", departments);
   }, [departments]);
 
+  useEffect(() => {
+    if (open) {
+      setFormKey(Date.now()); // 👈 Force reinit Formik
+      setExpandedIndex(0); // 👈 Expand first user
+      setCsvUsers([]); // 👈 Clear uploaded CSV
+      setFileName("");
+      setBulkFile(null);
+    }
+  }, [open]);
+
   return (
     <>
-      {/* <DialogTitle>ADD NEW USERS</DialogTitle> */}
       <DialogTitle
         sx={{
           display: "flex",
@@ -551,9 +558,13 @@ const CreateUser = ({
           validationSchema={validationSchema}
           onSubmit={async (values, actions) => {
             try {
+              // ✅ Validate form with all fields
+              await validationSchema.validate(values, { abortEarly: false });
+
+              // ✅ Transform data for backend
               const transformedUsers = values.users.map((user) => ({
                 name: user.name,
-                email: user.email.toLowerCase(), // 👈 convert to lowercase
+                email: user.email.toLowerCase(),
                 deptName:
                   typeof user.department === "object"
                     ? user.department.deptName
@@ -568,7 +579,6 @@ const CreateUser = ({
               }));
 
               const response = await createUsers(transformedUsers);
-
               const alreadyRegistered =
                 response?.["Users already registered"] || [];
 
@@ -578,13 +588,13 @@ const CreateUser = ({
                   showSnackbar("Users created successfully!", "success");
                 handleClose();
               } else {
-                // Field-level email error mapping
                 values.users.forEach((user, index) => {
                   if (alreadyRegistered.includes(user.email)) {
                     actions.setFieldError(
                       `users[${index}].email`,
                       "Email already exists"
                     );
+                    setExpandedIndex(index); // 👈 Expand duplicate email user
                   }
                 });
 
@@ -594,10 +604,33 @@ const CreateUser = ({
                 setSnackbarOpen(true);
               }
             } catch (error) {
-              setSnackbarMessage("Failed to create users. Please try again.");
-              setSnackbarSeverity("error");
-              setSnackbarOpen(true);
-              console.error("Failed to create users", error);
+              if (error.name === "ValidationError" && error.inner) {
+                const firstError = error.inner.find((e) =>
+                  e.path?.startsWith("users[")
+                );
+
+                if (firstError) {
+                  const match = firstError.path.match(/^users\[(\d+)\]/);
+                  if (match) {
+                    setExpandedIndex(Number(match[1])); // ✅ Expand first invalid form
+                  }
+                }
+
+                // ✅ Show individual field errors
+                error.inner.forEach((err) => {
+                  actions.setFieldError(err.path, err.message);
+                });
+
+                setSnackbarMessage("Please fix the highlighted errors.");
+                setSnackbarSeverity("error");
+                setSnackbarOpen(true);
+              } else {
+                // ⚠️ Fallback for non-validation errors
+                setSnackbarMessage("Failed to create users. Please try again.");
+                setSnackbarSeverity("error");
+                setSnackbarOpen(true);
+                console.error("Failed to create users", error);
+              }
             } finally {
               actions.setSubmitting(false);
             }
@@ -610,6 +643,12 @@ const CreateUser = ({
                   <>
                     {formik.values.users.map((user, index) => {
                       console.log(">>user.department", user.department);
+
+                      const userErrors = formik.errors.users?.[index] || {};
+                      const userTouched = formik.touched.users?.[index] || {};
+                      const hasErrors = Object.keys(userErrors).some(
+                        (field) => userTouched[field] && userErrors[field]
+                      );
 
                       const selectedDeptName =
                         typeof user.department === "string"
@@ -631,15 +670,20 @@ const CreateUser = ({
                       return (
                         <Paper
                           key={index}
-                          ref={isExpanded ? lastFieldRef : null}
+                          // ref={isExpanded ? lastFieldRef : null}
+                          ref={index === expandedIndex ? lastFieldRef : null}
                           elevation={3}
                           sx={{
                             padding: isExpanded ? 2 : 1,
                             mb: 2,
                             bgcolor: isExpanded
                               ? "background.paper"
+                              : hasErrors
+                              ? "#fdecea" // light red background if error
                               : "grey.100",
+                            border: hasErrors ? "1px solid #f44336" : "none",
                             borderRadius: "20px",
+                            cursor: "pointer",
                           }}
                           onClick={() => setExpandedIndex(index)}
                         >
@@ -809,7 +853,7 @@ const CreateUser = ({
                                   )}
                                 />
                               </Grid>
-                              <Grid item xs={3}>
+                              {/* <Grid item xs={3}>
                                 <Autocomplete
                                   options={[
                                     { isAddOption: true },
@@ -886,7 +930,58 @@ const CreateUser = ({
                                     />
                                   )}
                                 />
+                              </Grid> */}
+                              <Grid item xs={3}>
+                                <Autocomplete
+                                  options={departments}
+                                  getOptionLabel={(option) =>
+                                    option.deptName || ""
+                                  }
+                                  ListboxProps={{
+                                    style: { maxHeight: 300, overflow: "auto" },
+                                    onScroll: (event) => {
+                                      const listboxNode = event.currentTarget;
+                                      const threshold = 50;
+                                      if (
+                                        listboxNode.scrollTop +
+                                          listboxNode.clientHeight >=
+                                        listboxNode.scrollHeight - threshold
+                                      ) {
+                                        loadMoreDepartments();
+                                      }
+                                    },
+                                  }}
+                                  renderOption={(props, option) => (
+                                    <li
+                                      {...props}
+                                      style={{ padding: "10px 16px" }}
+                                    >
+                                      {option.deptName}
+                                    </li>
+                                  )}
+                                  value={user.department || ""}
+                                  onChange={(e, value) => {
+                                    formik.setFieldValue(
+                                      `users[${index}].department`,
+                                      value
+                                    );
+                                    formik.setFieldValue(
+                                      `users[${index}].role`,
+                                      value?.role || ""
+                                    );
+                                  }}
+                                  renderInput={(params) => (
+                                    <TextField
+                                      {...params}
+                                      label="Department"
+                                      fullWidth
+                                      size="small"
+                                      autoComplete="off"
+                                    />
+                                  )}
+                                />
                               </Grid>
+
                               <Grid item xs={3}>
                                 <Tooltip
                                   title={
@@ -1110,31 +1205,6 @@ const CreateUser = ({
         <DialogContent dividers padding="0 !important">
           <Grid container spacing={2}>
             <Grid item xs={6}>
-              {/* <TextField
-                fullWidth
-                size="small"
-                label="Department Name"
-                FormHelperTextProps={{ sx: { ml: 0 } }}
-                value={newDepartment.deptName}
-                onChange={(e) => {
-                  setNewDepartment({
-                    ...newDepartment,
-                    deptName: e.target.value,
-                  });
-                  setDuplicateDeptError(false); // 👈 Clear error on change
-                }}
-                error={
-                  (departmentSubmitted && !newDepartment.deptName) ||
-                  duplicateDeptError
-                }
-                helperText={
-                  departmentSubmitted && !newDepartment.deptName
-                    ? "Department Name is required"
-                    : duplicateDeptError
-                    ? "Department with this name already exists"
-                    : ""
-                }
-              /> */}
               <TextField
                 fullWidth
                 size="small"
@@ -1154,11 +1224,14 @@ const CreateUser = ({
                 }}
                 error={
                   (departmentSubmitted && !newDepartment.deptName) ||
+                  /\s/.test(newDepartment.deptName) || // ❌ check for whitespace
                   duplicateDeptError
                 }
                 helperText={
                   departmentSubmitted && !newDepartment.deptName
                     ? "Department Name is required"
+                    : /\s/.test(newDepartment.deptName)
+                    ? "Spaces are not allowed in Department Name"
                     : duplicateDeptError
                     ? "Department with this name already exists"
                     : ""
@@ -1175,7 +1248,7 @@ const CreateUser = ({
                 getOptionLabel={(option) => option.email || ""}
                 value={
                   userOptions.find(
-                    (user) => user.name === newDepartment.deptModerator
+                    (user) => user.email === newDepartment.deptModerator
                   ) || null
                 }
                 onChange={(event, value) =>
@@ -1198,17 +1271,6 @@ const CreateUser = ({
                   },
                 }}
                 renderInput={(params) => (
-                  // <TextField
-                  //   {...params}
-                  //   label="Department Moderator"
-                  //   FormHelperTextProps={{ sx: { ml: 0 } }}
-                  //   error={departmentSubmitted && !newDepartment.deptModerator}
-                  //   helperText={
-                  //     departmentSubmitted && !newDepartment.deptModerator
-                  //       ? "Department Moderator is required"
-                  //       : ""
-                  //   }
-                  // />
                   <TextField
                     {...params}
                     label={
@@ -1263,23 +1325,6 @@ const CreateUser = ({
                   },
                 }}
                 renderInput={(params) => (
-                  // <TextField
-                  //   {...params}
-                  //   label="Select Users"
-                  //   placeholder="Choose multiple users"
-                  //   error={
-                  //     departmentSubmitted &&
-                  //     (!newDepartment.selectedUsers ||
-                  //       newDepartment.selectedUsers.length === 0)
-                  //   }
-                  //   helperText={
-                  //     departmentSubmitted &&
-                  //     (!newDepartment.selectedUsers ||
-                  //       newDepartment.selectedUsers.length === 0)
-                  //       ? "At least one user must be selected"
-                  //       : ""
-                  //   }
-                  // />
                   <TextField
                     {...params}
                     label={
@@ -1306,25 +1351,6 @@ const CreateUser = ({
             </Grid>
 
             <Grid item xs={4}>
-              {/* <TextField
-                fullWidth
-                size="small"
-                label="Short Name"
-                FormHelperTextProps={{ sx: { ml: 0 } }}
-                value={newDepartment.deptDisplayName}
-                onChange={(e) =>
-                  setNewDepartment({
-                    ...newDepartment,
-                    deptDisplayName: e.target.value,
-                  })
-                }
-                error={departmentSubmitted && !newDepartment.deptDisplayName}
-                helperText={
-                  departmentSubmitted && !newDepartment.deptDisplayName
-                    ? "Short Name is required"
-                    : ""
-                }
-              /> */}
               <TextField
                 fullWidth
                 size="small"
@@ -1357,18 +1383,6 @@ const CreateUser = ({
                   setNewDepartment({ ...newDepartment, storage: value })
                 }
                 renderInput={(params) => (
-                  // <TextField
-                  //   {...params}
-                  //   label="Storage"
-                  //   FormHelperTextProps={{ sx: { ml: 0 } }}
-                  //   size="small"
-                  //   error={departmentSubmitted && !newDepartment.storage}
-                  //   helperText={
-                  //     departmentSubmitted && !newDepartment.storage
-                  //       ? "Storage is required"
-                  //       : ""
-                  //   }
-                  // />
                   <TextField
                     {...params}
                     label={
@@ -1412,8 +1426,6 @@ const CreateUser = ({
               const { deptName, deptModerator, deptDisplayName, storage } =
                 newDepartment;
 
-              // if (!deptName || !deptModerator || !deptDisplayName || !storage)
-              //   return;
               if (
                 !deptName ||
                 !deptModerator ||
@@ -1574,18 +1586,7 @@ const CreateUser = ({
               />
             </Grid>
             <Grid item xs={4}>
-              <FormControl>
-                {/* <label
-                  style={{ display: "flex", alignItems: "center", gap: "8px" }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={isAdminRole}
-                    onChange={(e) => setIsAdminRole(e.target.checked)}
-                  />
-                  Admin Role
-                </label> */}
-              </FormControl>
+              <FormControl></FormControl>
             </Grid>
           </Grid>
         </DialogContent>
@@ -1699,4 +1700,3 @@ const CreateUser = ({
 };
 
 export default CreateUser;
-

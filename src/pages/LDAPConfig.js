@@ -10,7 +10,7 @@ import WhatsAppIcon from "@mui/icons-material/WhatsApp";
 import EmailIcon from "@mui/icons-material/Email";
 import DnsIcon from "@mui/icons-material/Dns";
 import { useTheme } from "@mui/material/styles";
-
+import axios from "axios";
 
 import {
   Box,
@@ -90,6 +90,10 @@ const sectionDefaults = {
 };
 
 const LDAPConfig = () => {
+  // Add these inside your component's state
+  const [isServerDone, setIsServerDone] = useState(false);
+  const [isUsersDone, setIsUsersDone] = useState(false);
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newConfigName, setNewConfigName] = useState("");
   const [kvPairs, setKvPairs] = useState([{ key: "", value: "" }]);
@@ -101,7 +105,8 @@ const LDAPConfig = () => {
   const [emailSslCertificate, setEmailSslCertificate] = useState(null);
   const [smsSslCertificate, setSmsSslCertificate] = useState(null);
   const [whatsappSslCertificate, setWhatsappSslCertificate] = useState(null);
-  const [selectedObjectClass, setSelectedObjectClass] = useState("");
+  // const [selectedObjectClass, setSelectedObjectClass] = useState("");
+  const [selectedObjectClass, setSelectedObjectClass] = useState("group");
   const [availableGroups, setAvailableGroups] = useState([]);
   const [selectedGroup, setSelectedGroup] = useState(""); // or [] for multi-select
   const [groupListBox, setGroupListBox] = useState([]); // holds displayed items
@@ -409,7 +414,8 @@ const LDAPConfig = () => {
     if (activeSection === "LDAP CONFIGURATION") {
       if (tabIndex === 0) {
         return (
-          <Slide direction="left" in timeout={300}>
+          // <Slide direction="left" in timeout={300}>
+          <Fade in timeout={300}>
             <Box component="form" noValidate autoComplete="off">
               <Grid container spacing={2}>
                 <Grid item xs={5}>
@@ -539,7 +545,6 @@ const LDAPConfig = () => {
                     name="username"
                     value={config.username}
                     onChange={handleChange}
-                    
                   />
                 </Grid>
                 <Grid item xs={7}>
@@ -791,6 +796,7 @@ const LDAPConfig = () => {
                           result?.message ||
                           "LDAP configuration saved successfully.",
                       });
+                      setIsServerDone(true);
 
                       setTabIndex(1);
                     } catch (error) {
@@ -807,167 +813,187 @@ const LDAPConfig = () => {
                 </Button>
               </Grid>
             </Box>
-          </Slide>
+          </Fade>
+          // </Slide>
         );
       } else if (tabIndex === 1) {
         return (
-          <Slide direction="left" in timeout={300}>
+          // <Slide direction="left" in timeout={300}>
+          <Fade in timeout={300}>
             <Box>
               <Typography mb={2}>
                 Listing and searching for users is constrained by these
                 criteria:
               </Typography>
+
               <Grid container spacing={1}>
                 <Grid item xs={12}>
-                  <FormControl fullWidth size="small" sx={{ mt: 2 }}>
-                    <InputLabel id="object-class-label">
-                      Only these object classes
-                    </InputLabel>
-                    <Select
-                      labelId="object-class-label"
-                      value={selectedObjectClass}
+                  <Box display="flex" alignItems="center" gap={1} mt={2}>
+                    <TextField
+                      fullWidth
+                      size="small"
                       label="Only these object classes"
-                      onChange={async (e) => {
-                        const value = e.target.value;
-                        setSelectedObjectClass(value);
-
-                        if (value === "group") {
-                          const configId = sessionStorage.getItem("ldapConfigId");
-
-                          if (!configId) {
-                            setStatus({
-                              type: "warning",
-                              message:
-                                "Configuration ID not found. Please save configuration first.",
-                            });
-                            return;
-                          }
-
-                          try {
-                            setStatus({
-                              type: "info",
-                              message: "Fetching groups...",
-                            });
-                            const groups = await fetchGroupsByObjectClass(
-                              configId
-                            );
-                            setAvailableGroups(groups);
-                            setStatus({
-                              type: "success",
-                              message: "Groups fetched successfully.",
-                            });
-                            console.log("Fetched groups:", groups); // Use them as needed
-                          } catch (error) {
-                            setStatus({
-                              type: "error",
-                              message:
-                                error?.response?.data?.message ||
-                                "Failed to fetch groups.",
-                            });
-                          }
+                      value={selectedObjectClass}
+                      onChange={(e) => setSelectedObjectClass(e.target.value)}
+                      placeholder="Enter object class"
+                    />
+                    <Button
+                      variant="contained"
+                      onClick={async () => {
+                        const value = selectedObjectClass.trim();
+                        if (!value) {
+                          setStatus({
+                            type: "warning",
+                            message: "Please enter an object class.",
+                          });
+                          return;
                         }
-                      }}
-                    >
-                      <MenuItem value="group">group</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12}>
-                  <FormControl fullWidth size="small" sx={{ mt: 2 }}>
-                    <InputLabel id="only-from-groups-label">
-                      Only from these Groups
-                    </InputLabel>
-                    <Select
-                      labelId="only-from-groups-label"
-                      value={selectedGroup}
-                      onChange={(e) => {
-                        const selected = e.target.value;
-                        setSelectedGroup(selected);
 
-                        if (!groupListBox.includes(selected)) {
-                          setGroupListBox((prev) => [...prev, selected]);
+                        const configId = sessionStorage.getItem("ldapConfigId");
+                        if (!configId) {
+                          setStatus({
+                            type: "warning",
+                            message:
+                              "Configuration ID not found. Please save configuration first.",
+                          });
+                          return;
                         }
-                      }}
-                      label="Only from these Groups"
-                    >
-                      {availableGroups.map((group, index) => (
-                        <MenuItem key={index} value={group.name}>
-                          {group.name}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
 
-                  <Box display="flex" alignItems="center" gap={2} mt={2}>
-                    <Box
-                      sx={{
-                        border: "1px solid #ccc",
-                        borderRadius: 1,
-                        px: 2,
-                        py: 1,
-                        minHeight: "56px",
-                        flex: 1,
-                        display: "flex",
-                        alignItems: "center",
-                        flexWrap: "wrap",
-                        gap: 1,
-                      }}
-                    >
-                      {groupListBox.length === 0 ? (
-                        <Typography color="text.secondary">
-                          No groups added
-                        </Typography>
-                      ) : (
-                        groupListBox.map((name, index) => (
-                          <Chip key={index} label={name} />
-                        ))
-                      )}
-                    </Box>
+                        try {
+                          setStatus({
+                            type: "info",
+                            message: "Fetching groups...",
+                          });
 
-                    <Tooltip title="Add next group from dropdown">
-                      <IconButton
-                        onClick={() => {
-                          const currentIndex = availableGroups.findIndex(
-                            (g) => g.name === selectedGroup
+                          const groupsResponse = await fetchGroupsByObjectClass(
+                            configId
                           );
-                          const next = availableGroups[currentIndex + 1];
-                          if (next && !groupListBox.includes(next.name)) {
-                            setSelectedGroup(next.name);
-                            setGroupListBox((prev) => [...prev, next.name]);
-                          }
-                        }}
-                      >
-                        <ArrowForwardIcon />
-                      </IconButton>
-                    </Tooltip>
 
-                    <Tooltip title="Remove last group">
-                      <IconButton
-                        onClick={() => {
-                          setGroupListBox((prev) => prev.slice(0, -1));
-                        }}
-                      >
-                        <ArrowBackIcon />
-                      </IconButton>
-                    </Tooltip>
+                          const groupsArray = Array.isArray(
+                            groupsResponse.groupsExtracted
+                          )
+                            ? groupsResponse.groupsExtracted
+                            : [];
+
+                          const normalizedGroups = groupsArray.map((g) => ({
+                            name: g.name,
+                            groupDn: g.groupDn,
+                          }));
+
+                          setAvailableGroups(normalizedGroups);
+
+                          if (normalizedGroups.length > 0)
+                            setSelectedGroup(normalizedGroups[0].name);
+
+                          setStatus({
+                            type: "success",
+                            message: "Groups fetched successfully.",
+                          });
+                          console.log("Fetched groups:", normalizedGroups);
+                        } catch (error) {
+                          setStatus({
+                            type: "error",
+                            message:
+                              error?.response?.data?.message ||
+                              "Failed to fetch groups.",
+                          });
+                        }
+                      }}
+                    >
+                      Go
+                    </Button>
                   </Box>
                 </Grid>
 
                 <Grid item xs={12}>
-                  <Typography mt={1} variant="body2">
-                    LDAP Filter: ((objectclass=
-                    {selectedObjectClass || "Not Selected"}))
+                  <Typography variant="subtitle1" sx={{ mb: 1 }}>
+                    Only from these Groups
                   </Typography>
-                </Grid>
-                <Grid item xs={12}>
-                  <Divider sx={{ my: 2 }} />
 
-                  <Grid item xs={12}>
-                    <Divider sx={{ my: 2 }} />
-                    <Box display="flex" alignItems="center" gap={2}>
-                      <Button
-                        variant="outlined"
-                        onClick={async () => {
+                  <Box
+                    sx={{
+                     
+                      border: "1px solid #ccc",
+                      borderRadius: 1,
+                      px: 2,
+                      py: 1,
+                      minHeight: "56px",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 1,
+                      maxHeight: 200, // 👈 about 5 items depending on font size
+                      overflowY: "auto", // 👈 adds scrollbar if more than 5
+                    }}
+                  >
+                    {Array.isArray(availableGroups) &&
+                    availableGroups.length > 0 ? (
+                      availableGroups.map((group, index) => (
+                        <FormControlLabel
+                          key={index}
+                          control={
+                            <Checkbox
+                              checked={groupListBox.includes(group.name)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setGroupListBox((prev) => [
+                                    ...prev,
+                                    group.name,
+                                  ]);
+                                } else {
+                                  setGroupListBox((prev) =>
+                                    prev.filter((name) => name !== group.name)
+                                  );
+                                }
+                              }}
+                            />
+                          }
+                          label={group.name}
+                        />
+                      ))
+                    ) : (
+                      <Typography color="text.secondary">
+                        No groups available
+                      </Typography>
+                    )}
+                  </Box>
+
+                  <Box mt={2}>
+                    <Button
+                      variant="contained"
+                      onClick={async () => {
+                        if (groupListBox.length === 0) {
+                          setStatus({
+                            type: "warning",
+                            message: "Please select at least one group to add.",
+                          });
+                          return;
+                        }
+
+                        const selectedGroupsObjects = groupListBox
+                          .map((name) => {
+                            const groupObj = availableGroups.find(
+                              (g) => g.name === name
+                            );
+                            return groupObj
+                              ? {
+                                  name: groupObj.name,
+                                  groupDn: groupObj.groupDn,
+                                }
+                              : null;
+                          })
+                          .filter(Boolean);
+
+                        console.log(
+                          "Selected Groups Array:",
+                          selectedGroupsObjects
+                        );
+
+                        try {
+                          setStatus({
+                            type: "info",
+                            message: "Adding selected groups...",
+                          });
+
                           const ldapId = sessionStorage.getItem("ldapConfigId");
 
                           if (!ldapId) {
@@ -979,61 +1005,123 @@ const LDAPConfig = () => {
                             return;
                           }
 
-                          if (groupListBox.length === 0) {
-                            setStatus({
-                              type: "warning",
-                              message:
-                                "Please select at least one group to verify.",
-                            });
-                            return;
-                          }
+                          const response = await axios.post(
+                            `${window.__ENV__.REACT_APP_ROUTE}/api/ldap/addUsersToMongoDB/GroupDn/${ldapId}`,
+                            selectedGroupsObjects,
+                            {
+                              headers: {
+                                "Content-Type": "application/json",
+                                username: sessionStorage.getItem("adminEmail"),
+                                Authorization: `Bearer ${sessionStorage.getItem(
+                                  "authToken"
+                                )}`,
+                              },
+                            }
+                          );
 
-                          try {
-                            setStatus({
-                              type: "info",
-                              message: "Verifying users...",
-                            });
+                          setStatus({
+                            type: "success",
+                            message: "Groups added successfully!",
+                          });
 
-                            const result = await verifyAndCountUsers({
-                              ldapId,
-                              groupDn: groupListBox,
-                            });
+                          console.log("API Response:", response.data);
 
-                            const savedUsers = result?.savedUsers || [];
-                            setUserCount(savedUsers.length); // ✅ update count
-
-                            setStatus({
-                              type: "success",
-                              message: `${savedUsers.length} users found.`,
-                            });
-                          } catch (error) {
-                            setStatus({
-                              type: "error",
-                              message:
-                                error?.response?.data?.message ||
-                                "Failed to verify users.",
-                            });
-                          }
-                        }}
-                      >
-                        Verify settings and count users
-                      </Button>
-
-                      {userCount !== null && (
-                        <Typography variant="body2">
-                          <strong>{userCount}</strong> user(s) found
-                        </Typography>
-                      )}
-                    </Box>
-                  </Grid>
+                          setGroupListBox([]);
+                          setIsUsersDone(true);
+                        } catch (error) {
+                          setStatus({
+                            type: "error",
+                            message:
+                              error?.response?.data?.message ||
+                              "Failed to add selected groups.",
+                          });
+                        }
+                      }}
+                    >
+                      Add User
+                    </Button>
+                  </Box>
                 </Grid>
+
+                <Grid item xs={12}>
+                  <Typography mt={1} variant="body2">
+                    LDAP Filter: ((objectclass=
+                    {selectedObjectClass || "Not Selected"}))
+                  </Typography>
+                </Grid>
+
+                {/* Verify Users Button */}
+                {/* <Grid item xs={12}>
+                  <Divider sx={{ my: 2 }} />
+                  <Box display="flex" alignItems="center" gap={2}>
+                    <Button
+                      variant="outlined"
+                      onClick={async () => {
+                        const ldapId = sessionStorage.getItem("ldapConfigId");
+
+                        if (!ldapId) {
+                          setStatus({
+                            type: "warning",
+                            message:
+                              "Configuration ID not found. Please save configuration first.",
+                          });
+                          return;
+                        }
+
+                        if (groupListBox.length === 0) {
+                          setStatus({
+                            type: "warning",
+                            message:
+                              "Please select at least one group to verify.",
+                          });
+                          return;
+                        }
+
+                        try {
+                          setStatus({
+                            type: "info",
+                            message: "Verifying users...",
+                          });
+
+                          const result = await verifyAndCountUsers({
+                            ldapId,
+                            groupDn: groupListBox,
+                          });
+
+                          const savedUsers = result?.savedUsers || [];
+                          setUserCount(savedUsers.length);
+
+                          setStatus({
+                            type: "success",
+                            message: `${savedUsers.length} users found.`,
+                          });
+                        } catch (error) {
+                          setStatus({
+                            type: "error",
+                            message:
+                              error?.response?.data?.message ||
+                              "Failed to verify users.",
+                          });
+                        }
+                      }}
+                    >
+                      Verify settings and count users
+                    </Button>
+
+                    {userCount !== null && (
+                      <Typography variant="body2">
+                        <strong>{userCount}</strong> user(s) found
+                      </Typography>
+                    )}
+                  </Box>
+                </Grid> */}
               </Grid>
             </Box>
-          </Slide>
+          </Fade>
         );
       } else if (tabIndex === 2) {
         return (
-          <Slide direction="left" in timeout={300}>
+          <Fade in timeout={300}>
             <Box>
               <Typography mb={2}>
                 Groups meeting these criteria are available in Nextcloud:
@@ -1053,7 +1141,8 @@ const LDAPConfig = () => {
                         setSelectedGroupObjectClass(value);
 
                         if (value === "group") {
-                          const configId = sessionStorage.getItem("ldapConfigId");
+                          const configId =
+                            sessionStorage.getItem("ldapConfigId");
 
                           if (!configId) {
                             setStatus({
@@ -1199,7 +1288,6 @@ const LDAPConfig = () => {
                         <Button
                           variant="outlined"
                           disabled={availableGroupGroups.length === 0} // ✅ disables button if list is empty
-                          // onClick={() => handleDummyAction("Verify Groups")}
                           size="small"
                           sx={{ mt: 2 }}
                           onClick={() => {
@@ -1227,7 +1315,7 @@ const LDAPConfig = () => {
                 </Grid>
               </Grid>
             </Box>
-          </Slide>
+          </Fade>
         );
       }
     }
@@ -1416,33 +1504,7 @@ const LDAPConfig = () => {
             value={config.apiEndpoint}
             onChange={handleChange}
           />
-          {/* {config.apiEndpoint?.toLowerCase().startsWith("https") && (
-            <Box sx={{ mt: 2 }}>
-              <Button variant="outlined" component="label" fullWidth>
-                Upload SSL Certificate
-                <input
-                  type="file"
-                  hidden
-                  accept=".crt,.pem,.cer,.der"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      setWhatsappSslCertificate(file);
-                      setStatus({
-                        type: "success",
-                        message: `SSL Certificate "${file.name}" selected for WhatsApp.`,
-                      });
-                    }
-                  }}
-                />
-              </Button>
-              {whatsappSslCertificate && (
-                <Typography variant="caption" sx={{ mt: 1, display: "block" }}>
-                  Selected: {whatsappSslCertificate.name}
-                </Typography>
-              )}
-            </Box>
-          )} */}
+
           <Box sx={{ mt: 2 }}>
             <FormControlLabel
               control={
@@ -1533,7 +1595,6 @@ const LDAPConfig = () => {
   };
 
   return (
- 
     <Box
       sx={{
         display: "flex",
@@ -1545,7 +1606,7 @@ const LDAPConfig = () => {
         width: "80%",
         margin: "auto",
         backgroundColor: isDark ? theme.palette.background.paper : "#ffffff",
-       
+
         boxShadow: isDark
           ? "0 0 10px rgba(255,255,255,0.05)"
           : "0 1px 4px rgba(0,0,0,0.1)",
@@ -1752,22 +1813,21 @@ const LDAPConfig = () => {
               scrollButtons="auto"
               sx={{ mb: 2 }}
             >
-              {getTabsForSection().map((label) => (
+              {/* {getTabsForSection().map((label) => (
                 <Tab key={label} label={label} />
-              ))}
+              ))} */}
+              {getTabsForSection().map((label) => {
+                let disabled = false;
+                if (label === "Users" && !isServerDone) disabled = true;
+                if (label === "Groups" && !isUsersDone) disabled = true;
+                return <Tab key={label} label={label} disabled={disabled} />;
+              })}
             </Tabs>
           )}
 
-          <Slide
-            key={tabIndex}
-            direction="left"
-            in
-            timeout={300}
-            mountOnEnter
-            unmountOnExit
-          >
-            <Box>{renderTabContent()}</Box>
-          </Slide>
+          <Fade in timeout={300}>
+            <Box key={tabIndex}>{renderTabContent()}</Box>
+          </Fade>
         </Paper>
       </Box>
       <Dialog
@@ -1988,8 +2048,3 @@ const LDAPConfig = () => {
 };
 
 export default LDAPConfig;
-
-
-// ✅ Icon Imports for Sidebar
-
-

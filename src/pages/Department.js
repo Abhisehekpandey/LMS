@@ -35,6 +35,8 @@ import {
   FormControlLabel,
 } from "@mui/material";
 import { FormHelperText } from "@mui/material";
+import { Delete } from "@mui/icons-material";
+import { Fab } from "@mui/material";
 
 import { Autocomplete } from "@mui/material";
 import { Card, CardContent } from "@mui/material";
@@ -76,6 +78,7 @@ import Grow from "@mui/material/Grow";
 
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import Drawer from "@mui/material/Drawer";
+import { OutlinedInput } from "@mui/material";
 
 import { PersonAdd as PersonAddIcon } from "@mui/icons-material";
 import { ManageAccounts as ManageAccountsIcon } from "@mui/icons-material";
@@ -99,6 +102,7 @@ import { deleteDepartment } from "../api/departmentService";
 import { updateDepartmentStorage } from "../api/departmentService";
 import { toggleUserStatusByUsername } from "../api/userService";
 import { updateDepartmentStoragePermission } from "../api/departmentService";
+import { Chip, Grid } from "@mui/material";
 
 const IOSSwitch = styled((props) => (
   <Switch focusVisibleClassName=".Mui-focusVisible" disableRipple {...props} />
@@ -191,6 +195,13 @@ const CustomSpinner = styled(CircularProgress)(({ theme }) => ({
 }));
 
 function Department({ departments, setDepartments, onThemeToggle }) {
+  const [duplicateShortNameError, setDuplicateShortNameError] = useState(false);
+
+  const [showAddUserDialog, setShowAddUserDialog] = useState(false);
+  const [addUserAssignments, setAddUserAssignments] = useState([
+    { user: null, role: "" },
+  ]);
+
   const [searchModerator, setSearchModerator] = useState("");
 
   const [searchUser, setSearchUser] = useState("");
@@ -248,11 +259,23 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     name: "",
     displayName: "",
     initialRole: "",
-    storage: "", // <-- Make it blank to enforce validation
+    storage: "1 GB", // ✅ default
     departmentModerator: "",
-    selectedUser: [], // ✅ now an array
+    userAssignments: [{ user: null, role: "" }], // 👈 start with one empty row
     submitted: false,
   });
+
+  const [newDepartments, setNewDepartments] = useState([
+    {
+      name: "",
+      displayName: "",
+      storage: "1 GB",
+      departmentModerator: "",
+      submitted: false,
+    },
+  ]);
+
+  const [expandedIndices, setExpandedIndices] = useState([0]);
 
   // Add after other state declarations
   const [showAddRoleDialog, setShowAddRoleDialog] = useState(false);
@@ -354,11 +377,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         displayName: dept.deptDisplayName,
         departmentModerator:
           dept.deptModerator || dept.permissions?.deptUsername || "",
-        // storage: dept.permissions?.allowedStorageInBytesDisplay || "0 GB",
         storage: dept.permissions?.displayStorage || "0 GB",
-        // allowedStorage:
-        //   cleanDisplay(dept.permissions?.allowedStorageInBytesDisplay) ||
-        //   "0 GB", // 🔥
         allowedStorage:
           dept.permissions?.allowedStorageInBytesDisplay === "0 bytes"
             ? "0 GB"
@@ -566,7 +585,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
   const [selectAllData, setSelectAllData] = useState(false);
   const [rowData, setRowData] = useState([]);
 
-  // const [searchQuery, setSearchQuery] = useState("");
   const [filteredDepartments, setFilteredDepartments] = useState([]);
   // Add this handler function
   const handleSearch = (results) => {
@@ -992,94 +1010,110 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     transition: "background-color 0.2s ease",
   }));
 
+  const checkDuplicateDepartment = (value) => {
+    const duplicate = departments.some(
+      (dept) => dept.name.toLowerCase() === value.toLowerCase()
+    );
+    setDuplicateDepartmentError(duplicate);
+  };
+
+  const checkDuplicateShortName = (value) => {
+    const duplicate = departments.some(
+      (dept) => dept.displayName.toLowerCase() === value.toLowerCase()
+    );
+    setDuplicateShortNameError(duplicate);
+  };
+
+  const updateDepartmentField = (index, field, value) => {
+    setNewDepartments((prev) => {
+      const updated = [...prev];
+      updated[index][field] = value;
+      return updated;
+    });
+  };
+
+  const addMoreDepartment = () => {
+    setNewDepartments((prev) => [
+      ...prev,
+      {
+        name: "",
+        displayName: "",
+        storage: "1 GB",
+        departmentModerator: "",
+        submitted: false,
+      },
+    ]);
+    setExpandedIndices([newDepartments.length]); // expand only the new one
+  };
+
+  const removeDepartment = (index) => {
+    setNewDepartments((prev) => prev.filter((_, i) => i !== index));
+    setExpandedIndices((prev) => prev.filter((i) => i !== index));
+  };
+
+  const toggleExpand = (index) => {
+    setExpandedIndices((prev) => (prev.includes(index) ? [] : [index]));
+  };
+
   const handleAddDepartment = async () => {
-    setNewDepartment((prev) => ({ ...prev, submitted: true }));
+    let hasError = false;
+    const updated = newDepartments.map((dept) => {
+      const invalid =
+        !dept.name ||
+        !dept.displayName ||
+        !dept.storage ||
+        !dept.departmentModerator ||
+        dept.name.length > 35 ||
+        dept.displayName.length > 8 ||
+        /\s/.test(dept.name);
+      if (invalid) {
+        hasError = true;
+        return { ...dept, submitted: true };
+      }
+      return dept;
+    });
+    setNewDepartments(updated);
 
-    const {
-      name,
-      displayName,
-      departmentModerator,
-      initialRole,
-      storage,
-      selectedUser,
-    } = newDepartment;
-
-    if (
-      !name ||
-      !displayName ||
-      !departmentModerator ||
-      !storage ||
-      selectedUser.length === 0
-    ) {
+    if (hasError) {
       setSnackbar({
         open: true,
-        message: "Please fill all required fields",
+        message: "Please fill all required fields correctly",
         severity: "error",
       });
       return;
     }
 
-    const payload = {
-      deptName: name.trim(),
-      deptDisplayName: displayName.trim(),
-      deptModerator: departmentModerator.trim(),
-      storage: storage.trim(),
-      role: initialRole.trim(),
-      selectedUsers: selectedUser.map((u) => u.name), // ✅ send names of selected users
-    };
-
     try {
-      await createDepartment(payload);
-
-      const refreshed = await getDepartments();
-      const mapped = refreshed.content.map((dept) => ({
-        name: dept.deptName,
-        displayName: dept.deptDisplayName,
-        departmentModerator:
-          dept.deptModerator || dept.permissions?.deptUsername || "",
-        storage: dept.permissions?.displayStorage || "0 GB",
-        allowedStorage:
-          cleanDisplay(dept.permissions?.allowedStorageInBytesDisplay) ||
-          "0 GB",
-        roles: dept.roles?.map((r) => r.roleName) || [],
-        userCount: dept.numberOfUsers || 0,
-        isActive: dept.permissions?.active || false,
-        createdAt: dept.createdOn,
-      }));
-      setDepartments(mapped);
-      setTotalDepartments(refreshed.totalElements);
-      setShowAddDepartment(false);
-
-      setNewDepartment({
-        name: "",
-        displayName: "",
-        initialRole: "",
-        storage: "",
-        departmentModerator: "",
-        selectedUser: [], // ✅ reset
-        submitted: false,
-      });
-
+      for (let dept of updated) {
+        await createDepartment({
+          deptName: dept.name.trim(),
+          deptDisplayName: dept.displayName.trim(),
+          deptModerator: dept.departmentModerator.trim(),
+          storage: dept.storage.trim(),
+        });
+      }
+      fetchDepartments();
       setSnackbar({
         open: true,
-        message: `Department "${payload.deptName}" created successfully.`,
+        message: "Departments created successfully",
         severity: "success",
       });
+      setShowAddDepartment(false);
+      setNewDepartments([
+        {
+          name: "",
+          displayName: "",
+          storage: "1 GB",
+          departmentModerator: "",
+          submitted: false,
+        },
+      ]);
+      setExpandedIndices([0]);
     } catch (error) {
-      const errorMessage =
-        error?.response?.data?.error ||
-        "Failed to create department. Please try again.";
-
-      console.log("errrrrr", errorMessage);
-
-      if (/already exists/i.test(errorMessage)) {
-        console.log("Duplicate department detected");
-        setDuplicateDepartmentError(true);
-      }
-
+      console.error(error);
       setSnackbar({
         open: true,
-        message: errorMessage,
+        message: "Failed to create departments",
         severity: "error",
       });
     }
@@ -1119,7 +1153,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         )
       );
 
-      // ✅ Update selectedDepartment
       setSelectedDepartment((prev) => ({
         ...prev,
         roles: [
@@ -1470,9 +1503,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
         <Table sx={{ border: "0px solid #e2e8f0 !important" }}>
           <TableHead className={styles.tableHeader}>
-            <TableRow
-            // sx={{ boxShadow: "0 -2px 8px 0 rgba(0, 0, 0, 0.2) !important" }}
-            >
+            <TableRow>
               <TableCell
                 padding="checkbox"
                 sx={{ width: "48px", textAlign: "center" }}
@@ -1500,7 +1531,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                   height: "40px",
                   fontWeight: "bold",
                   color: "#444",
-                  // textAlign: "center",
                 }}
               >
                 <TableSortLabel
@@ -1596,7 +1626,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                       letterSpacing: "-0.01em",
                     }}
                   >
-                    Department Moderator
+                    Department Owner
                   </Typography>
                 </TableSortLabel>
               </TableCell>
@@ -1645,7 +1675,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 </Typography>
               </TableCell>
 
-              <TableCell
+              {/* <TableCell
                 sx={{
                   width: "150px",
                   padding: "2px 8px",
@@ -1676,12 +1706,11 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                       letterSpacing: "-0.01em",
                     }}
                   >
-                    Number of Role
+                    Number of Users
                   </Typography>
                 </TableSortLabel>
-              </TableCell>
+              </TableCell> */}
 
-              {/* <TableCell sx={{ width: "150px", padding: "1px 8px" }}> */}
               <TableCell
                 sx={{
                   // ...commonTextStyle,
@@ -1714,7 +1743,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 <React.Fragment key={index}>
                   <StyledTableRow
                     hover
-                    // onClick={(event) => handleClick(event, dept.name)}
                     role="checkbox"
                     aria-checked={isItemSelected}
                     tabIndex={-1}
@@ -1799,7 +1827,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                       </Select>
                     </TableCell>
 
-                    <TableCell sx={{ padding: "2px 8px", textAlign: "center" }}>
+                    {/* <TableCell sx={{ padding: "2px 8px", textAlign: "center" }}>
                       <Box
                         sx={{
                           display: "flex",
@@ -1809,37 +1837,16 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                         }}
                       >
                         <Typography variant="body2">
-                          {dept.roles?.length || 0}
+                          {5} 
                         </Typography>
 
-                        <IconButton
-                          size="small"
-                          onClick={() => handleRowToggle(index)}
-                          sx={{
-                            padding: "2px",
-                            color: "#64748b",
-                            "&:hover": {
-                              color: "primary.main",
-                            },
-                          }}
-                        >
-                          <KeyboardArrowDownIcon
-                            sx={{
-                              fontSize: "1.1rem",
-                              transition: "transform 0.2s ease-in-out",
-                              transform: openRows[index]
-                                ? "rotate(-180deg)"
-                                : "rotate(0)",
-                            }}
-                          />
-                        </IconButton>
-
-                        <Tooltip title="Add Role">
+                        <Tooltip title="Add User">
                           <IconButton
                             size="small"
                             onClick={() => {
                               setSelectedDepartment(dept);
-                              setShowAddRoleDialog(true);
+                              setAddUserAssignments([{ user: null, role: "" }]); // reset
+                              setShowAddUserDialog(true);
                             }}
                             sx={{
                               padding: "2px",
@@ -1853,7 +1860,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                           </IconButton>
                         </Tooltip>
                       </Box>
-                    </TableCell>
+                    </TableCell> */}
 
                     <TableCell sx={{ padding: "2px 8px" }}>
                       <Box
@@ -2146,21 +2153,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         </Box>
       </Box>
 
-      {/* <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={handleSnackbarClose}
-        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
-      >
-        <Alert
-          onClose={handleSnackbarClose}
-          severity={snackbar.severity}
-          sx={{ width: "100%" }}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar> */}
-
       <Drawer
         anchor="left"
         open={showAddDepartment}
@@ -2170,29 +2162,17 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             borderRadius: "8px",
             boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
             position: "absolute",
-            top: "9%",
-            left: "23%",
-            width: "800px",
-            height: "80vh", // ✅ fixed height
-            maxHeight: "80vh",
-            overflow: "hidden", // ✅ scroll handled inside
-            animation: "slideInFromLeft 0.2s ease-in-out forwards",
-            opacity: 0,
-            transform: "translateX(-50px)",
-            "@keyframes slideInFromLeft": {
-              "0%": {
-                opacity: 0,
-                transform: "translateX(-50px)",
-              },
-              "100%": {
-                opacity: 1,
-                transform: "translateX(0)",
-              },
-            },
+            top: "10%",
+            left: "20%",
+            width: "1000px",
+            height: "65vh",
+            maxHeight: "65vh",
+            overflow: "hidden",
           },
         }}
       >
         <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
+          {/* Header */}
           <Box
             sx={{
               borderBottom: "1px solid #eee",
@@ -2200,120 +2180,182 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               justifyContent: "space-between",
               alignItems: "center",
               p: 2,
-
               backgroundColor: "primary.main",
             }}
           >
-            <Typography variant="h6" sx={{ color: "#ffff" }}>
-              New Department
+            <Typography variant="h6" sx={{ color: "#fff" }}>
+              Create New Department
             </Typography>
             <IconButton
               onClick={() => setShowAddDepartment(false)}
               size="small"
-              sx={{
-                color: "#ffff",
-                width: 32,
-                height: 32,
-                border: "1px solid",
-                borderColor: "#ffff",
-                bgcolor: "error.lighter",
-                borderRadius: "50%",
-                position: "relative",
-                "&:hover": {
-                  // color: "error.dark",
-                  // borderColor: "error.main",
-                  // bgcolor: "error.lighter",
-                  transform: "rotate(180deg)",
-                },
-                transition: "transform 0.3s ease",
-              }}
+              sx={{ color: "#fff" }}
             >
-              <CloseIcon
-                sx={{ fontSize: "1.1rem", transition: "transform 0.2s ease" }}
-              />
+              <CloseIcon />
             </IconButton>
           </Box>
 
+          {/* Form list */}
           <Box sx={{ p: 2, flex: 1, overflowY: "auto" }}>
-            <Box
-              sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}
-            >
-              {/* First Card - Grouped Text Fields */}
-              <Card elevation={2} sx={{ borderRadius: 2 }}>
-                <CardContent
-                  sx={{ display: "flex", flexDirection: "column", gap: 2 }}
-                >
-                  {[
-                    {
-                      label: "Department Name",
-                      value: newDepartment.name,
+            {newDepartments.map((dept, index) => (
+              <Card key={index} sx={{ mb: 2 }}>
+                <CardContent sx={{ p: 0 }}>
+                  {/* Header Row */}
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      bgcolor: "#f5f5f5",
+                      px: 2,
+                      py: 1,
+                      cursor: "pointer",
+                    }}
+                    onClick={() => toggleExpand(index)}
+                  >
+                    {/* <Typography variant="subtitle1">
+                      Department {index + 1}
+                    </Typography> */}
+                    <Typography variant="subtitle1" sx={{ fontWeight: "bold" }}>
+                      {dept.name ? dept.name : "Untitled Department"}
+                      {dept.storage ? ` / ${dept.storage}` : ""}
+                    </Typography>
 
-                      onChange: (e) => {
-                        setNewDepartment((prev) => ({
-                          ...prev,
-                          name: e.target.value,
-                        }));
-                        setDuplicateDepartmentError(false); // reset on input
-                      },
-                      error:
-                        (!newDepartment.name && newDepartment.submitted) ||
-                        duplicateDepartmentError,
-                      helperText:
-                        !newDepartment.name && newDepartment.submitted
-                          ? "Department name is required"
-                          : duplicateDepartmentError
-                          ? "Department with this name already exists"
-                          : "",
-                    },
-                    {
-                      label: "Short Name",
+                    <Box>
+                      {newDepartments.length > 1 && (
+                        <IconButton
+                          size="small"
+                          color="error"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeDepartment(index);
+                          }}
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      )}
+                      {expandedIndices.includes(index) ? (
+                        <KeyboardArrowUpIcon />
+                      ) : (
+                        <KeyboardArrowDownIcon />
+                      )}
+                    </Box>
+                  </Box>
 
-                      value: newDepartment.displayName,
-                      onChange: (e) =>
-                        setNewDepartment((prev) => ({
-                          ...prev,
-                          displayName: e.target.value.toUpperCase(),
-                        })),
-                      error:
-                        !newDepartment.displayName && newDepartment.submitted,
-                      helperText:
-                        !newDepartment.displayName && newDepartment.submitted
-                          ? "Display name is required"
-                          : "Short form",
-                    },
-                    {
-                      label: "Department Moderator",
-                      value: newDepartment.departmentModerator,
-                      onChange: (e) =>
-                        setNewDepartment((prev) => ({
-                          ...prev,
-                          departmentModerator: e.target.value,
-                        })),
-                      error:
-                        !newDepartment.departmentModerator &&
-                        newDepartment.submitted,
-                      helperText:
-                        !newDepartment.departmentModerator &&
-                        newDepartment.submitted
-                          ? "Department Moderator is required"
-                          : "",
-                    },
+                  {/* Collapse Content */}
+                  <Collapse
+                    in={expandedIndices.includes(index)}
+                    timeout="auto"
+                    unmountOnExit
+                  >
+                    <Box sx={{ p: 2 }}>
+                      <Grid container spacing={2}>
+                        <Grid item xs={6}>
+                          <TextField
+                            fullWidth
+                            size="small"
+                            label="Department Name"
+                            value={dept.name}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              if (value.length <= 35) {
+                                updateDepartmentField(index, "name", value);
+                                setDuplicateDepartmentError(false);
+                                checkDuplicateDepartment(value);
+                              }
+                            }}
+                            error={
+                              (!dept.name && dept.submitted) ||
+                              duplicateDepartmentError ||
+                              /\s/.test(dept.name) ||
+                              dept.name.length > 35
+                            }
+                            helperText={
+                              !dept.name && dept.submitted
+                                ? "Required"
+                                : /\s/.test(dept.name)
+                                ? "No spaces allowed"
+                                : duplicateDepartmentError
+                                ? "Already exists"
+                                : dept.name.length > 35
+                                ? "Max 35 characters"
+                                : ""
+                            }
+                          />
+                        </Grid>
 
-                    {
-                      label: "Initial Role",
-                      value: newDepartment.initialRole,
-                      onChange: (e) =>
-                        setNewDepartment((prev) => ({
-                          ...prev,
-                          initialRole: e.target.value,
-                        })),
-                      error: false,
-                      // helperText: "Optional: You can add roles later",
-                    },
-                  ].map((field, index) => {
-                    if (field.label === "Department Moderator") {
-                      return (
-                        <React.Fragment key={index}>
+                        <Grid item xs={6}>
+                          <TextField
+                            fullWidth
+                            size="small"
+                            label=" Department Short Name"
+                            value={dept.displayName}
+                            onChange={(e) => {
+                              const value = e.target.value.toUpperCase();
+                              if (value.length <= 8) {
+                                updateDepartmentField(
+                                  index,
+                                  "displayName",
+                                  value
+                                );
+                                checkDuplicateShortName(value);
+                              }
+                            }}
+                            error={
+                              (!dept.displayName && dept.submitted) ||
+                              duplicateShortNameError ||
+                              dept.displayName.length > 8
+                            }
+                            helperText={
+                              !dept.displayName && dept.submitted
+                                ? "Required"
+                                : duplicateShortNameError
+                                ? "Already exists"
+                                : dept.displayName.length > 8
+                                ? "Max 8 characters"
+                                : ""
+                            }
+                          />
+                        </Grid>
+
+                        <Grid item xs={6}>
+                          <FormControl
+                            fullWidth
+                            size="small"
+                            error={!dept.storage && dept.submitted}
+                          >
+                            <InputLabel id={`storage-label-${index}`}>
+                              Storage Allocation
+                            </InputLabel>
+                            <Select
+                              labelId={`storage-label-${index}`}
+                              value={dept.storage}
+                              onChange={(e) =>
+                                updateDepartmentField(
+                                  index,
+                                  "storage",
+                                  e.target.value
+                                )
+                              }
+                              input={
+                                <OutlinedInput label="Storage Allocation" />
+                              }
+                            >
+                              {[1, 2, 25, 50, 75, 100, 150, 200].map((size) => (
+                                <MenuItem key={size} value={`${size} GB`}>
+                                  {size} GB
+                                </MenuItem>
+                              ))}
+                            </Select>
+                            <FormHelperText>
+                              {!dept.storage && dept.submitted
+                                ? "Required"
+                                : ""}
+                            </FormHelperText>
+                          </FormControl>
+                        </Grid>
+
+                        <Grid item xs={6}>
                           <Autocomplete
                             size="small"
                             fullWidth
@@ -2321,233 +2363,76 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                             getOptionLabel={(option) => option.email || ""}
                             value={
                               userOptions.find(
-                                (u) => u.email === field.value
+                                (u) => u.email === dept.departmentModerator
                               ) || null
                             }
                             onChange={(event, newValue) =>
-                              setNewDepartment((prev) => ({
-                                ...prev,
-                                departmentModerator: newValue?.email || "",
-                              }))
+                              updateDepartmentField(
+                                index,
+                                "departmentModerator",
+                                newValue?.email || ""
+                              )
                             }
-                            ListboxProps={{
-                              style: { maxHeight: 300, overflow: "auto" },
-                              onScroll: (event) => {
-                                const listboxNode = event.currentTarget;
-                                const threshold = 50;
-                                if (
-                                  listboxNode.scrollTop +
-                                    listboxNode.clientHeight >=
-                                  listboxNode.scrollHeight - threshold
-                                ) {
-                                  loadMoreUsers();
-                                }
-                              },
-                            }}
                             renderInput={(params) => (
                               <TextField
                                 {...params}
-                                label="Department Moderator"
-                                FormHelperTextProps={{ sx: { ml: 0 } }}
-                                error={field.error}
-                                helperText={field.helperText}
-                                required
-                              />
-                            )}
-                          />
-
-                          {/* ✅ New Select User Field */}
-                          <Autocomplete
-                            multiple
-                            size="small"
-                            fullWidth
-                            options={userOptions}
-                            getOptionLabel={(option) => option.name || ""}
-                            value={newDepartment.selectedUser}
-                            onChange={(event, newValue) =>
-                              setNewDepartment((prev) => ({
-                                ...prev,
-                                selectedUser: newValue,
-                              }))
-                            }
-                            isOptionEqualToValue={(option, value) =>
-                              option.id === value.id
-                            }
-                            ListboxProps={{
-                              style: { maxHeight: 300, overflow: "auto" },
-                              onScroll: (event) => {
-                                const listboxNode = event.currentTarget;
-                                const threshold = 50;
-                                if (
-                                  listboxNode.scrollTop +
-                                    listboxNode.clientHeight >=
-                                  listboxNode.scrollHeight - threshold
-                                ) {
-                                  loadMoreUsers();
-                                }
-                              },
-                            }}
-                            renderInput={(params) => (
-                              <TextField
-                                {...params}
-                                label="Select Users"
-                                FormHelperTextProps={{ sx: { ml: 0 } }}
+                                label="Department Owner"
                                 error={
-                                  newDepartment.submitted &&
-                                  newDepartment.selectedUser.length === 0
+                                  !dept.departmentModerator && dept.submitted
                                 }
                                 helperText={
-                                  newDepartment.submitted &&
-                                  newDepartment.selectedUser.length === 0
-                                    ? "At least one user must be selected"
+                                  !dept.departmentModerator && dept.submitted
+                                    ? "Required"
                                     : ""
                                 }
-                                required
                               />
                             )}
                           />
-                        </React.Fragment>
-                      );
-                    }
-
-                    return (
-                      <TextField
-                        key={index}
-                        fullWidth
-                        size="small"
-                        FormHelperTextProps={{ sx: { ml: 0 } }}
-                        label={field.label}
-                        value={field.value}
-                        onChange={field.onChange}
-                        error={field.error}
-                        helperText={field.helperText}
-                        required
-                      />
-                    );
-                  })}
+                        </Grid>
+                      </Grid>
+                    </Box>
+                  </Collapse>
                 </CardContent>
               </Card>
+            ))}
 
-              {/* Second Card - Storage Allocation */}
-              <Card elevation={2} sx={{ borderRadius: 2 }}>
-                <CardContent sx={{ p: 1.5 }}>
-                  <FormControl
-                    fullWidth
-                    size="small"
-                    error={!newDepartment.storage && newDepartment.submitted}
-                    FormHelperTextProps={{ sx: { ml: 0 } }} // ✅ Add here
-                  >
-                    <InputLabel id="storage-label">
-                      Storage Allocation
-                    </InputLabel>
-                    <Select
-                      labelId="storage-label"
-                      value={newDepartment.storage}
-                      label="Storage Allocation"
-                      onChange={(e) =>
-                        setNewDepartment((prev) => ({
-                          ...prev,
-                          storage: e.target.value,
-                        }))
-                      }
-                      required
-                    >
-                      {[0, 25, 50, 75, 100, 150, 200].map((size) => (
-                        <MenuItem key={size} value={`${size} GB`}>
-                          {size} GB
-                        </MenuItem>
-                      ))}
-                    </Select>
-                    <FormHelperText>
-                      {!newDepartment.storage && newDepartment.submitted
-                        ? "Storage allocation is required"
-                        : ""}
-                    </FormHelperText>
-                  </FormControl>
-                </CardContent>
-              </Card>
-            </Box>
+            <Button
+              variant="outlined"
+              onClick={addMoreDepartment}
+              sx={{ mt: 1 }}
+            >
+              + Add More Department
+            </Button>
           </Box>
 
+          {/* Footer */}
           <Box
             sx={{
               display: "flex",
               justifyContent: "space-between",
-              alignItems: "center",
-              gap: 2,
               p: 2,
               borderTop: "1px solid #eee",
             }}
           >
             <Box sx={{ display: "flex", gap: 1 }}>
               <Tooltip title="Download Template">
-                <IconButton
-                  onClick={handleTemplateDownload}
-                  size="small"
-                  sx={{
-                    backgroundColor: "primary.lighter",
-                    border: "1px solid",
-                    borderColor: "primary.light",
-                    color: "primary.main",
-                    px: 1,
-                    height: 36,
-                    borderRadius: "8px",
-                    "&:hover": {
-                      backgroundColor: "primary.100",
-                      transform: "translateY(-1px)",
-                      boxShadow: "0 2px 8px rgba(46, 125, 50, 0.15)",
-                    },
-                    transition: "all 0.2s ease",
-                  }}
-                >
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                    <Typography variant="body2">Download Template</Typography>
-                    <DownloadIcon sx={{ fontSize: 20 }} />
-                  </Box>
+                <IconButton onClick={handleTemplateDownload}>
+                  <DownloadIcon />
                 </IconButton>
               </Tooltip>
-
-              <Tooltip title="Bulk Upload" componentsProps={{}}>
-                <IconButton
-                  onClick={() => fileInputRef.current?.click()}
-                  size="small"
-                  sx={{
-                    backgroundColor: "primary.dark",
-                    border: "1px solid",
-                    borderColor: "primary.light",
-                    color: "white",
-                    px: 1,
-                    height: 36,
-                    borderRadius: "8px",
-                    "&:hover": {
-                      backgroundColor: "primary.dark",
-                      transform: "translateY(-1px)",
-                      // boxShadow: "0 2px 8px rgba(46, 125, 50, 0.15)",
-                    },
-                    transition: "all 0.2s ease",
-                  }}
-                >
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                    <Typography variant="body2">Bulk Upload</Typography>
-                    <UploadFileIcon sx={{ fontSize: 20 }} />
-                  </Box>
+              <Tooltip title="Bulk Upload">
+                <IconButton onClick={() => fileInputRef.current?.click()}>
+                  <UploadFileIcon />
                 </IconButton>
               </Tooltip>
             </Box>
 
             <Button
-              onClick={handleAddDepartment}
               variant="contained"
-              sx={{
-                background: "rgb(251, 68, 36)",
-                "&:hover": {
-                  background: "rgb(251, 68, 36)",
-                },
-                px: 3,
-                py: 0.7,
-              }}
+              onClick={handleAddDepartment}
+              sx={{ background: "rgb(251, 68, 36)" }}
             >
-              Add
+              Add All
             </Button>
           </Box>
         </Box>
@@ -2769,7 +2654,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 <TextField
                   fullWidth
                   size="small"
-                  label="Department Moderator"
+                  label="Department Owner"
                   value={editedDepartment?.departmentModerator || ""}
                   InputProps={{
                     readOnly: true,
@@ -2779,7 +2664,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 <TextField
                   fullWidth
                   size="small"
-                  label="Change Moderator"
+                  label="Change Owner"
                   value={searchModerator}
                   onFocus={() => {
                     setShowUserDropdown(true);
@@ -2928,23 +2813,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               Delete
             </Button>
           </Box>
-
-          {/* <Button
-            variant="outlined"
-            color="primary"
-            onClick={() => {
-              handleOpenMigration(departmentToDelete);
-              setMigrationDialogOpen(true);
-              setDepartmentToMigrate(departmentToDelete);
-              setDeleteDialogOpen(false);
-              setAllDepartments([]); // reset list
-              setMigrationPage(0);
-              setHasMoreDepartments(true);
-              loadMoreDepartments(); // fetch first page
-            }}
-          >
-            Migration
-          </Button> */}
         </DialogActions>
       </Dialog>
 
@@ -3160,6 +3028,177 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           </Button>
         </DialogActions>
       </Dialog>
+      <Dialog
+        open={showAddUserDialog}
+        onClose={() => setShowAddUserDialog(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle
+          sx={{
+            backgroundColor: "primary.main",
+            color: "#fff",
+            fontWeight: "bold",
+          }}
+        >
+          Add User(s) to {selectedDepartment?.deptName}
+        </DialogTitle>
+        <DialogContent>
+          {addUserAssignments.map((assignment, index) => (
+            <Box key={index} sx={{ mb: 1, mt: 2 }}>
+              <Grid container spacing={2} alignItems="center">
+                {/* Select User */}
+                <Grid item xs={3}>
+                  <Autocomplete
+                    size="small"
+                    fullWidth
+                    options={userOptions}
+                    getOptionLabel={(option) => option.name || ""}
+                    value={assignment.user}
+                    onChange={(event, newValue) => {
+                      const updated = [...addUserAssignments];
+                      updated[index].user = newValue;
+                      setAddUserAssignments(updated);
+                    }}
+                    isOptionEqualToValue={(option, value) =>
+                      option.id === value.id
+                    }
+                    renderInput={(params) => (
+                      <TextField {...params} label="Select User" required />
+                    )}
+                    ListboxProps={{
+                      style: { maxHeight: 300, overflow: "auto" },
+                      onScroll: (event) => {
+                        const listboxNode = event.currentTarget;
+                        const threshold = 50;
+                        if (
+                          listboxNode.scrollTop + listboxNode.clientHeight >=
+                          listboxNode.scrollHeight - threshold
+                        ) {
+                          loadMoreUsers();
+                        }
+                      },
+                    }}
+                  />
+                </Grid>
+
+                <Grid
+                  item
+                  xs={5}
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    flexWrap: "nowrap", // keep in single line
+                  }}
+                >
+                  <FormControl size="small" sx={{ width: 140, flexShrink: 0 }}>
+                    <InputLabel id={`role-label-${index}`}>Role</InputLabel>
+                    <Select
+                      labelId={`role-label-${index}`}
+                      value={assignment.role}
+                      onChange={(e) => {
+                        const updated = [...addUserAssignments];
+                        updated[index].role = e.target.value;
+                        setAddUserAssignments(updated);
+                      }}
+                      input={<OutlinedInput label="Role" />}
+                    >
+                      <MenuItem value="Admin">Admin</MenuItem>
+                      <MenuItem value="Editor">Editor</MenuItem>
+                      <MenuItem value="Viewer">Viewer</MenuItem>
+                      <MenuItem value="Collaborator">Collaborator</MenuItem>
+                      <MenuItem value="noRole">No Role</MenuItem>
+                    </Select>
+                  </FormControl>
+
+                  {assignment.role && assignment.role !== "noRole" && (
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontSize: "0.8rem",
+                        color: "text.secondary",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {`[${(assignment.role === "Admin"
+                        ? [
+                            "Read",
+                            "Write",
+                            "Delete",
+                            "Share",
+                            "UserAdmin",
+                            "Comment",
+                            "Upload",
+                          ]
+                        : assignment.role === "Editor"
+                        ? [
+                            "Read",
+                            "Write",
+                            "Delete",
+                            "Share",
+                            "Comment",
+                            "Upload",
+                          ]
+                        : assignment.role === "Viewer"
+                        ? ["Read", "Comment"]
+                        : assignment.role === "Collaborator"
+                        ? ["Read", "Share", "Comment", "Upload"]
+                        : []
+                      ).join(", ")}]`}
+                    </Typography>
+                  )}
+
+                  {addUserAssignments.length > 1 && (
+                    <IconButton
+                      color="error"
+                      onClick={() => {
+                        setAddUserAssignments(
+                          addUserAssignments.filter((_, i) => i !== index)
+                        );
+                      }}
+                      size="small"
+                    >
+                      <Delete fontSize="small" />
+                    </IconButton>
+                  )}
+                </Grid>
+              </Grid>
+            </Box>
+          ))}
+
+          {/* Add another user button */}
+          <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
+            <Tooltip title="Add More Users">
+              <Fab
+                color="primary"
+                size="small"
+                onClick={() =>
+                  setAddUserAssignments((prev) => [
+                    ...prev,
+                    { user: null, role: "" },
+                  ])
+                }
+              >
+                <Add />
+              </Fab>
+            </Tooltip>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowAddUserDialog(false)}>Cancel</Button>
+          <Button
+            variant="contained"
+            onClick={() => {
+              console.log("Adding users:", addUserAssignments);
+              setShowAddUserDialog(false);
+            }}
+          >
+            Add
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <Portal>
         <Snackbar
           open={snackbar.open}

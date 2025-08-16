@@ -638,13 +638,11 @@ export default function UserTable() {
   const label = { inputProps: { "aria-label": "Switch demo" } };
 
   const handleDelete = (e, row) => {
-    // If a specific row is passed (single user delete)
     if (row) {
       setDeleteUser(true);
       setRowData([row]);
       setSelected([row.id]);
     } else {
-      // Bulk delete: selected rows
       if (selected.length === 0) {
         toast.warning("No users selected for deletion.");
         return;
@@ -1037,7 +1035,6 @@ export default function UserTable() {
                   </TableSortLabel>
                 </TableCell>
 
-                {/* <TableCell align="center">User email</TableCell> */}
                 <TableCell
                   align="center"
                   sortDirection={orderBy === "email" ? order : false}
@@ -1106,6 +1103,7 @@ export default function UserTable() {
                         sx={{ padding: "1px 1px 1px 1px !important" }}
                         checked={isItemSelected}
                         onChange={() => handleClick(row)}
+                        disabled={row.email === adminEmail} // ✅ Disable admin's checkbox
                       />
                     </TableCell>
 
@@ -1388,39 +1386,6 @@ export default function UserTable() {
               alignItems: "center",
             }}
           >
-            {/* {selected.length >= 1 && (
-              <Tooltip title="Migrate Selected Users">
-                <IconButton
-                  sx={{
-                    bgcolor: "#9c27b0", // Solid orange background color
-                    color: "white",
-                    boxShadow:
-                      "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.6)", // Default shadow
-                    "&:hover": {
-                      backgroundColor: "#9c27b0", // Keep the background color on hover
-                      animation: "glowBorderMigrate 1.5s ease-in-out infinite", // Apply glowing animation on hover
-                    },
-                    "@keyframes glowBorderMigrate": {
-                      "0%": {
-                        boxShadow: "0 0 0px 2px #9c27b0", // Start with soft glow
-                        borderColor: "transparent", // Initial transparent border
-                      },
-                      "50%": {
-                        boxShadow: "0 0 20px 5px #9c27b0",
-                        borderColor: "#9c27b0", // Glowing orange border
-                      },
-                      "100%": {
-                        boxShadow: "0 0 0px 2px #9c27b0", // Glow fades out
-                        borderColor: "transparent", // Reset to transparent
-                      },
-                    },
-                  }}
-                  onClick={handleMigration}
-                >
-                  <WifiProtectedSetup />
-                </IconButton>
-              </Tooltip>
-            )} */}
             {selected.length >= 1 && (
               <Tooltip title="Delete">
                 <IconButton
@@ -1454,71 +1419,7 @@ export default function UserTable() {
                 </IconButton>
               </Tooltip>
             )}
-            {/* {selected.length > 1 && (
-              <Tooltip title="Activate Selected Users">
-                <IconButton
-                  sx={{
-                    bgcolor: "rgba(46,125,50,1)", // Solid orange background color
-                    color: "white",
-                    boxShadow:
-                      "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.6)", // Default shadow
-                    "&:hover": {
-                      backgroundColor: "rgba(46,125,50,1)", // Keep the background color on hover
-                      animation: "glowActivate 1.5s ease-in-out infinite", // Apply glowing animation on hover
-                    },
-                    "@keyframes glowActivate": {
-                      "0%": {
-                        boxShadow: "0 0 0px 2px rgba(46,125,50,1)", // Start with soft glow
-                        borderColor: "transparent", // Initial transparent border
-                      },
-                      "50%": {
-                        boxShadow: "0 0 20px 5px rgba(46,125,50,1)",
-                        borderColor: "rgba(46,125,50,1)", // Glowing orange border
-                      },
-                      "100%": {
-                        boxShadow: "0 0 0px 2px rgba(46,125,50,1)", // Glow fades out
-                        borderColor: "transparent", // Reset to transparent
-                      },
-                    },
-                  }}
-                  onClick={handleActivateAll}
-                >
-                  <PowerSettingsNew />
-                </IconButton>
-              </Tooltip>
-            )} */}
-            {/* {selected.length > 1 && (
-              <Tooltip title="Deactivate Selected Users">
-                <IconButton
-                  sx={{
-                    bgcolor: "#f5ac26", // Solid orange background color
-                    color: "white",
-                    boxShadow:
-                      "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.6)", // Default shadow
-                    "&:hover": {
-                      backgroundColor: "#f5ac26", // Keep the background color on hover
-                      animation: "BorderDeactivate 1.5s ease-in-out infinite", // Apply glowing animation on hover
-                    },
-                    "@keyframes BorderDeactivate": {
-                      "0%": {
-                        boxShadow: "0 0 0px 2px #f5ac26", // Start with soft glow
-                        borderColor: "transparent", // Initial transparent border
-                      },
-                      "50%": {
-                        boxShadow: "0 0 20px 5px #f5ac26",
-                        borderColor: "#f5ac26", // Glowing orange border
-                      },
-                      "100%": {
-                        boxShadow: "0 0 0px 2px #f5ac26", // Glow fades out
-                        borderColor: "transparent", // Reset to transparent
-                      },
-                    },
-                  }}
-                >
-                  <Block />
-                </IconButton>
-              </Tooltip>
-            )} */}
+
             <div
               style={{
                 gap: "5px",
@@ -1685,6 +1586,7 @@ export default function UserTable() {
               >
                 Select Current Page ({rowsData.length} rows)
               </Button>
+
               <Button
                 style={{
                   backgroundColor: "#d32f2f",
@@ -1715,10 +1617,15 @@ export default function UserTable() {
                       allUsers.push(...res.content);
                     });
 
-                    // ✅ Select all user IDs
-                    const allIds = allUsers.map((u) => u.id);
+                    // ✅ Exclude admin user
+                    const nonAdminUsers = allUsers.filter(
+                      (u) => u.email !== adminEmail
+                    );
+
+                    // ✅ Select only non-admin user IDs
+                    const allIds = nonAdminUsers.map((u) => u.id);
                     setSelected(allIds);
-                    setRowData(allUsers); // Store all user data in rowDatahandle
+                    setRowData(nonAdminUsers); // Store only non-admin users
                   } catch (error) {
                     console.error("Failed to fetch all users:", error);
                     alert("Something went wrong while selecting all users.");
@@ -1766,6 +1673,7 @@ export default function UserTable() {
           }}
         >
           <CreateUser
+            open={createUser} // 👈 Add this line
             handleClose={() => setCreateUser(false)}
             onUserCreated={(page, newUserEmails) => {
               refetchUsers(page, newUserEmails);

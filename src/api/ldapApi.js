@@ -8,6 +8,7 @@ export const detectPort = async ({ host, port }) => {
       headers: {
         "Content-Type": "application/json",
         username: `${sessionStorage.getItem("adminEmail")}`,
+        Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
       },
     }
   );
@@ -33,6 +34,7 @@ export const saveLdapCredentials = async ({
       headers: {
         "Content-Type": "application/json",
         username: `${sessionStorage.getItem("adminEmail")}`,
+        Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
       },
     }
   );
@@ -53,6 +55,7 @@ export const detectBaseDn = async ({ host, port, username, password }) => {
       headers: {
         "Content-Type": "application/json",
         username: `${sessionStorage.getItem("adminEmail")}`,
+        Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
       },
     }
   );
@@ -74,6 +77,7 @@ export const testBaseDn = async ({
       headers: {
         "Content-Type": "application/json",
         username: `${sessionStorage.getItem("adminEmail")}`,
+        Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
       },
     }
   );
@@ -89,6 +93,7 @@ export const saveLdapConfig = async (config) => {
       headers: {
         "Content-Type": "application/json",
         username: `${sessionStorage.getItem("adminEmail")}`,
+        Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
       },
     }
   );
@@ -98,7 +103,7 @@ export const saveLdapConfig = async (config) => {
 
 export const fetchGroupsByObjectClass = async (configId) => {
   const response = await axios.get(
-    `${window.__ENV__.REACT_APP_ROUTE}/api/ldap/groups`,
+    `${window.__ENV__.REACT_APP_ROUTE}/api/ldap/getAllgroups`,
     {
       headers: {
         "Content-Type": "application/json",
@@ -112,14 +117,33 @@ export const fetchGroupsByObjectClass = async (configId) => {
 };
 
 
+// export const verifyAndCountUsers = async ({ ldapId, groupDn }) => {
+//   const response = await axios.post(
+//     `${window.__ENV__.REACT_APP_ROUTE}/api/ldap/users-from-group`,
+//     {
+//       ldapId,
+//       groupDn,
+//     }
+//   );
+//   console.log("responseFinal",response)
+//   return response.data;
+// };
+
+
 export const verifyAndCountUsers = async ({ ldapId, groupDn }) => {
   const response = await axios.post(
-    `${window.__ENV__.REACT_APP_ROUTE}/api/ldap/users-from-group`,
+    `${window.__ENV__.REACT_APP_ROUTE}/api/ldap/addUsersToMongoDB/GroupDn/${ldapId}`,
+    { groupDn }, // request body
     {
-      ldapId,
-      groupDn,
+      headers: {
+        username: `${sessionStorage.getItem("adminEmail")}`,
+        Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+      },
     }
   );
-  console.log("responseFinal",response)
+
+  console.log("responseFinal", response);
   return response.data;
 };
+
+
