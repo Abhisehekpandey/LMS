@@ -16,7 +16,7 @@ export const createUsers = async (users) => {
         },
       }
     );
-    console.log(">>>>>>rrrr",response)
+    console.log(">>>>>>rrrr", response);
     return response.data;
   } catch (error) {
     console.error("Error creating users:", error);
@@ -24,11 +24,7 @@ export const createUsers = async (users) => {
   }
 };
 
-
-
-
-
-export const fetchUsers = async (page=0) => {
+export const fetchUsers = async (page = 0) => {
   try {
     const response = await axios.get(
       `${window.__ENV__.REACT_APP_ROUTE}/tenants/users`,
@@ -40,7 +36,7 @@ export const fetchUsers = async (page=0) => {
         },
       }
     );
-    console.log(">>>>userResponse",response)
+    console.log(">>>>userResponse", response);
     return response.data; // Assume it's an array of user objects
   } catch (error) {
     console.error("Failed to fetch users:", error);
@@ -48,20 +44,20 @@ export const fetchUsers = async (page=0) => {
   }
 };
 
-
-
-export const toggleUserStatusByUsername = async (users,pageNumber) => {
-  console.log(">>>>>aaa",users)
-  console.log(">>>>bbb",pageNumber)
-   const token = sessionStorage.getItem("authToken"); // Adjust key if different
-   const adminEmail=sessionStorage.getItem("adminEmail")
-    try {
-    const response = await axios.post(`${window.__ENV__.REACT_APP_ROUTE}/dms_service_LM/api/dms_admin_service/setUserData`, users,
-       {
+export const toggleUserStatusByUsername = async (users, pageNumber) => {
+  console.log(">>>>>aaa", users);
+  console.log(">>>>bbb", pageNumber);
+  const token = sessionStorage.getItem("authToken"); // Adjust key if different
+  const adminEmail = sessionStorage.getItem("adminEmail");
+  try {
+    const response = await axios.post(
+      `${window.__ENV__.REACT_APP_ROUTE}/dms_service_LM/api/dms_admin_service/setUserData`,
+      users,
+      {
         headers: {
           Authorization: `Bearer ${token}`,
           pageNumber: pageNumber.toString(), // or just pageNumber if backend expects number
-          userName:adminEmail
+          userName: adminEmail,
         },
       }
     ); // Adjust endpoint if needed
@@ -71,12 +67,13 @@ export const toggleUserStatusByUsername = async (users,pageNumber) => {
   }
 };
 
-
 export const activateAll = async (users) => {
-    const token = sessionStorage.getItem("authToken"); // Adjust key if different
+  const token = sessionStorage.getItem("authToken"); // Adjust key if different
   try {
-    const response = await axios.post(`${window.__ENV__.REACT_APP_ROUTE}/users/status?appName=TeamSync`, users,
-       {
+    const response = await axios.post(
+      `${window.__ENV__.REACT_APP_ROUTE}/users/status?appName=TeamSync`,
+      users,
+      {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -88,8 +85,6 @@ export const activateAll = async (users) => {
     throw error;
   }
 };
-
-
 
 export const fetchUsersByDepartment = async (
   deptName,
@@ -116,45 +111,43 @@ export const fetchUsersByDepartment = async (
   );
 };
 
-
-
-
 export const deleteUsers = async (userIds) => {
   const authToken = sessionStorage.getItem("authToken");
   const username = sessionStorage.getItem("adminEmail");
-  const errors = [];
 
-  for (const userId of userIds) {
-    const url = `${window.__ENV__.REACT_APP_ROUTE}/tenants/user?userId=${userId}`;
+  const url = `${window.__ENV__.REACT_APP_ROUTE}/tenants/allusers`;
 
-    try {
-      await axios.delete(url, {
-        headers: {
-          Authorization: `Bearer ${authToken}`,
-          username: username,
-          "Content-Type": "application/json",
-        },
-      });
-    } catch (err) {
-      console.error(`Failed to delete user ${userId}:`, err);
-      errors.push({ userId, error: err });
+  try {
+    const response = await axios.delete(url, {
+      headers: {
+        Authorization: `Bearer ${authToken}`,
+        username: username,
+        "Content-Type": "application/json",
+        Accept: "application/json, text/plain, */*", // optional but safe
+      },
+      data: userIds, // ✅ array of IDs directly
+    });
+
+    return {
+      success: true,
+      message: `Successfully deleted ${userIds.length} user(s).`,
+      data: response.data,
+    };
+  } catch (error) {
+    console.error("Bulk deletion failed:", error);
+
+    let errorMsg = "Failed to delete user(s).";
+    if (error.response?.data?.message) {
+      errorMsg = error.response.data.message;
     }
-  }
 
-  if (errors.length > 0) {
     throw {
       success: false,
-      message: "Some users could not be deleted",
-      details: errors,
+      message: errorMsg,
+      details: error.response?.data || error,
     };
   }
-
-  return { success: true };
 };
-
-
-
-
 
 export const updateUser = async (userData) => {
   try {
@@ -176,6 +169,32 @@ export const updateUser = async (userData) => {
   }
 };
 
-
-
-
+export const searchUsers = async (
+  page = 0,
+  size = 10,
+  searchColumn = "",
+  searchQuery = ""
+) => {
+  try {
+    const response = await axios.get(
+      `${window.__ENV__.REACT_APP_ROUTE}/tenants/users/search`,
+      {
+        headers: {
+          Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+          username: `${sessionStorage.getItem("adminEmail")}`,
+        },
+        params: {
+          pageNumber: page,
+          pageSize: size,
+          searchColumn,
+          searchQuery,
+        },
+      }
+    );
+    console.log(">>>>searchUserResponse", response);
+    return response.data;
+  } catch (error) {
+    console.error("Failed to search users:", error);
+    throw error;
+  }
+};
