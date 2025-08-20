@@ -562,7 +562,7 @@ const LDAPConfig = () => {
                   xs={5}
                   sx={{ display: "flex", alignItems: "center" }}
                 >
-                  <Button
+                  {/* <Button
                     fullWidth
                     variant="contained"
                     onClick={async () => {
@@ -604,7 +604,7 @@ const LDAPConfig = () => {
                     }}
                   >
                     Save
-                  </Button>
+                  </Button> */}
                 </Grid>
                 <Grid item xs={12}>
                   <TextField
@@ -865,9 +865,14 @@ const LDAPConfig = () => {
                             message: "Fetching groups...",
                           });
 
+                          // const groupsResponse = await fetchGroupsByObjectClass(
+                          //   configId
+                          // );
                           const groupsResponse = await fetchGroupsByObjectClass(
-                            configId
+                            configId,
+                            selectedObjectClass
                           );
+
 
                           const groupsArray = Array.isArray(
                             groupsResponse.groupsExtracted

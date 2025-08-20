@@ -101,20 +101,37 @@ export const saveLdapConfig = async (config) => {
   return response.data;
 };
 
-export const fetchGroupsByObjectClass = async (configId) => {
+// export const fetchGroupsByObjectClass = async (configId) => {
+//   const response = await axios.get(
+//     `${window.__ENV__.REACT_APP_ROUTE}/api/ldap/getAllgroups`,
+//     {
+//       headers: {
+//         "Content-Type": "application/json",
+//         username: `${sessionStorage.getItem("adminEmail")}`,
+//         ldapId: configId, // ✅ send as custom header
+//       },
+//     }
+//   );
+//   console.log("response",response)
+//   return response.data;
+// };
+
+export const fetchGroupsByObjectClass = async (configId, userDn) => {
   const response = await axios.get(
     `${window.__ENV__.REACT_APP_ROUTE}/api/ldap/getAllgroups`,
     {
       headers: {
         "Content-Type": "application/json",
-        username: `${sessionStorage.getItem("adminEmail")}`,
-        ldapId: configId, // ✅ send as custom header
+        username: sessionStorage.getItem("adminEmail"),
+        ldapId: configId, // ✅ existing
+        objectClass: userDn, // ✅ new header
       },
     }
   );
-  console.log("response",response)
+  console.log("response", response);
   return response.data;
 };
+
 
 
 // export const verifyAndCountUsers = async ({ ldapId, groupDn }) => {
