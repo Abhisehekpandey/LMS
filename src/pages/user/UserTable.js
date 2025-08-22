@@ -67,6 +67,8 @@ import { getDepartments } from "../../api/departmentService";
 import { updateUser } from "../../api/userService";
 // import { activateAll } from "../../api/userService";
 import { TableSortLabel } from "@mui/material";
+import { searchUsers } from "../../api/userService";
+import { debounce } from "lodash";
 
 const CustomSwitch = styled(Switch)(({ theme, checked }) => ({
   "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
@@ -265,7 +267,9 @@ const Transition = React.forwardRef(function Transition(props, ref) {
 
 export default function UserTable() {
   const [searchColumn, setSearchColumn] = useState("name");
+
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(searchQuery);
 
   const [showRoleChange, setShowRoleChange] = useState(false);
 
@@ -290,7 +294,7 @@ export default function UserTable() {
   const [selected, setSelected] = useState([]);
   const [createUser, setCreateUser] = useState(false);
   const [checked, setChecked] = useState(false);
-  // const [rowsData, setRowsData] = useState(rows);
+
   const [rowsData, setRowsData] = useState([]);
 
   const [deleteUser, setDeleteUser] = useState(false);
@@ -354,7 +358,6 @@ export default function UserTable() {
 
   const getComparator = (order, orderBy) => {
     return (a, b) => {
-      // Always show admin at top
       if (a.email === adminEmail) return -1;
       if (b.email === adminEmail) return 1;
 
@@ -381,7 +384,6 @@ export default function UserTable() {
     return 0;
   };
 
-  // Extract nested values
   const extractValue = (row, orderBy) => {
     switch (orderBy) {
       case "name":
@@ -445,7 +447,6 @@ export default function UserTable() {
 
       await updateUser(userPayload);
 
-      // Update the saved role for this user
       setUserRoleMap((prev) => ({
         ...prev,
         [editData.id]: roleObj.id,
@@ -777,7 +778,6 @@ export default function UserTable() {
 
     setSelected(newSelected);
 
-    // 💡 Optional: If you also want full selected row data
     const selectedFullRows = rowsData.filter((r) => newSelected.includes(r.id));
     setRowData(selectedFullRows);
   };
@@ -787,16 +787,28 @@ export default function UserTable() {
   const refetchUsers = async () => {
     setLoading(true);
     try {
-      const users = await fetchUsers(page);
       const adminEmail = sessionStorage.getItem("adminEmail");
 
-      // Normalize storage format like "1.00 GB" to "1GB"
-      const normalizedUsers = users.content.map((user) => {
+      // ✅ Decide API based on search
+      let users;
+      if (debouncedSearchQuery.trim()) {
+        users = await searchUsers(
+          page,
+          rowsPerPage,
+          searchColumn,
+          debouncedSearchQuery.trim()
+        );
+      } else {
+        // users = await fetchUsers(page);
+        users = await fetchUsers(page, rowsPerPage);
+      }
+      // ✅ Normalize storage format like "1.00 GB" → "1GB"
+      const normalizedUsers = (users.content || []).map((user) => {
         const display = user.permissions?.allowedStorageInBytesDisplay;
         if (display) {
           const fixedDisplay = display
             .replace(/\.00\s?([A-Z]+)/, "$1") // remove ".00" before GB/MB/etc.
-            .replace(/\s+/g, ""); // remove all spaces
+            .replace(/\s+/g, ""); // remove spaces
           return {
             ...user,
             permissions: {
@@ -808,6 +820,7 @@ export default function UserTable() {
         return user;
       });
 
+      // ✅ Put admin email first
       const sortedUsers = [...normalizedUsers].sort((a, b) => {
         if (a.email === adminEmail) return -1;
         if (b.email === adminEmail) return 1;
@@ -815,7 +828,7 @@ export default function UserTable() {
       });
 
       setRowsData(sortedUsers);
-      setTotalCount(users.totalElements);
+      setTotalCount(users.totalElements || 0);
     } catch (error) {
       console.error("Error loading users", error);
     } finally {
@@ -829,15 +842,24 @@ export default function UserTable() {
   }, []);
 
   useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 500); // wait 500ms after user stops typing
+
+    return () => {
+      clearTimeout(handler); // cleanup if user keeps typing
+    };
+  }, [searchQuery]);
+  useEffect(() => {
     refetchUsers();
-  }, [page, rowsPerPage]);
+  }, [page, rowsPerPage, searchColumn, debouncedSearchQuery]);
 
   console.log(">>>rowssss", rowsData);
 
   const handleClose = () => {
     setMigrationDialog(false);
   };
-  // const sortedRows = [...rowsData].sort(getComparator(order, orderBy));
+
   const filteredRows = rowsData.filter((row) => {
     const query = searchQuery.toLowerCase();
 
@@ -938,7 +960,6 @@ export default function UserTable() {
                 <MenuItem value="name">Name</MenuItem>
                 <MenuItem value="email">Email</MenuItem>
                 <MenuItem value="department">Department</MenuItem>
-                {/* <MenuItem value="role">Role</MenuItem> */}
               </Select>
             </FormControl>
 
@@ -983,9 +1004,7 @@ export default function UserTable() {
 
           <Table stickyHeader>
             <TableHead className={styles.tableHeader}>
-              <TableRow
-              // sx={{ boxShadow: "0 -2px 8px 0 rgba(0, 0, 0, 0.2) !important" }}
-              >
+              <TableRow>
                 <TableCell padding="checkbox">
                   <Checkbox
                     checked={selected.length === rowsData.length}
@@ -1170,7 +1189,6 @@ export default function UserTable() {
                       align="center"
                       sx={{ padding: "10px 10px 10px 10px !important" }}
                     >
-                      {/* {row.storageUsed} */}
                       {row.permissions?.displayStorage || "N/A"}
                     </TableCell>
 
@@ -1369,9 +1387,10 @@ export default function UserTable() {
         <Divider />
         <div style={{ display: "flex", justifyContent: "space-between" }}>
           <TablePagination
-            rowsPerPageOptions={[10]}
+            // rowsPerPageOptions={[10]}
+            rowsPerPageOptions={[10, 20, 30, 50, 100]}
             component="div"
-            count={totalCount} // ✅ correct total count
+            count={totalCount}
             rowsPerPage={rowsPerPage}
             page={page}
             onPageChange={handleChangePage}
@@ -1524,7 +1543,6 @@ export default function UserTable() {
           />
         </Dialog>
 
-        {/* select all rows */}
         <Dialog
           open={selectAllData}
           onClose={() => setSelectAllData(false)}
@@ -1534,7 +1552,6 @@ export default function UserTable() {
             Select Users
           </DialogTitle>
 
-          {/* Action buttons */}
           <DialogContent dividers>
             <Typography>
               Do you want to select all users or just the current page
@@ -1551,7 +1568,7 @@ export default function UserTable() {
               style={{
                 backgroundColor: "#9e9e9e",
                 color: "white",
-                // padding: "8px 12px",
+
                 border: "none",
                 cursor: "pointer",
                 borderRadius: "4px",
@@ -1622,7 +1639,6 @@ export default function UserTable() {
                       (u) => u.email !== adminEmail
                     );
 
-                    // ✅ Select only non-admin user IDs
                     const allIds = nonAdminUsers.map((u) => u.id);
                     setSelected(allIds);
                     setRowData(nonAdminUsers); // Store only non-admin users
@@ -1647,7 +1663,6 @@ export default function UserTable() {
           />
         </Dialog>
 
-        {/* create users */}
         <Dialog
           open={createUser}
           onClose={() => setCreateUser(false)}
@@ -1715,13 +1730,6 @@ export default function UserTable() {
                 />
               </Grid>
               <Grid item xs={6}>
-                {/* <TextField
-                  size="small"
-                  label="Email"
-                  fullWidth
-                  value={editData.email || ""}
-                  disabled
-                /> */}
                 <Tooltip title="Email cannot be edited">
                   <span>
                     <TextField

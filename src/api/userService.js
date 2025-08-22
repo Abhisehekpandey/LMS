@@ -24,7 +24,7 @@ export const createUsers = async (users) => {
   }
 };
 
-export const fetchUsers = async (page = 0) => {
+export const fetchUsers = async (page = 0, size = 10) => {
   try {
     const response = await axios.get(
       `${window.__ENV__.REACT_APP_ROUTE}/tenants/users`,
@@ -33,6 +33,7 @@ export const fetchUsers = async (page = 0) => {
           Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
           username: `${sessionStorage.getItem("adminEmail")}`,
           pageNumber: page.toString(), // send page number as header
+          pageSize: size.toString(), // ✅ add page size as header
         },
       }
     );
@@ -177,7 +178,7 @@ export const searchUsers = async (
 ) => {
   try {
     const response = await axios.get(
-      `${window.__ENV__.REACT_APP_ROUTE}/tenants/users/search`,
+      `${window.__ENV__.REACT_APP_ROUTE}/tenants/search`,
       {
         headers: {
           Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,

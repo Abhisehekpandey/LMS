@@ -2373,6 +2373,20 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                 newValue?.email || ""
                               )
                             }
+                            // 👇 Add scroll listener
+                            ListboxProps={{
+                              onScroll: (event) => {
+                                const listboxNode = event.currentTarget;
+                                if (
+                                  listboxNode.scrollTop +
+                                    listboxNode.clientHeight >=
+                                  listboxNode.scrollHeight - 1
+                                ) {
+                                  loadMoreUsers(); // ✅ Fetch next page when scrolled to bottom
+                                }
+                              },
+                              style: { maxHeight: 250 }, // optional: limit height with scrollbar
+                            }}
                             renderInput={(params) => (
                               <TextField
                                 {...params}
