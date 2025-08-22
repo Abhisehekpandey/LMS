@@ -11,7 +11,7 @@ export const createAxiosConfig = (token, additionalHeaders = {}) => ({
 
 export const refreshAccessToken = async thunkAPI => {
     try {
-      const refresh_token = localStorage.getItem('refresh_token')
+      const refresh_token = sessionStorage.getItem('refresh_token')
   
       const refreshResponse = await axios.post(
         `/auth/refresh-token`,
@@ -27,8 +27,8 @@ export const refreshAccessToken = async thunkAPI => {
         }
       )
   
-      localStorage.setItem('token', refreshResponse.data.access_token)
-      localStorage.setItem('sessionId', refreshResponse.data.session_state)
+      sessionStorage.setItem('token', refreshResponse.data.access_token)
+      sessionStorage.setItem('sessionId', refreshResponse.data.session_state)
   
       return refreshResponse.data
     } catch (refreshError) {
@@ -40,7 +40,7 @@ export const createAsyncThunkWithTokenRefresh = (type, requestFunction) =>
     createAsyncThunk(`${type}`, async (payload, thunkAPI) => {
       try {
         // Get the token from the session storage
-        const token = localStorage.getItem('token')
+        const token = sessionStorage.getItem('token')
   
         // Make the initial request using the provided function and token
         const response = await requestFunction(token, payload)

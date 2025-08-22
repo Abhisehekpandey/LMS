@@ -11,7 +11,7 @@ const ActivateAccount = () => {
     const activateUser = () => {
       try {
         // Get stored invites
-        const invites = JSON.parse(localStorage.getItem('pendingInvites') || '{}');
+        const invites = JSON.parse(sessionStorage.getItem('pendingInvites') || '{}');
         const userEmail = invites[token];
 
         if (!userEmail) {
@@ -20,17 +20,17 @@ const ActivateAccount = () => {
         }
 
         // Get users and update status
-        const users = JSON.parse(localStorage.getItem('dashboardRows') || '[]');
+        const users = JSON.parse(sessionStorage.getItem('dashboardRows') || '[]');
         const updatedUsers = users.map(user => 
           user.email === userEmail ? { ...user, status: 'active' } : user
         );
 
         // Save updated users
-        localStorage.setItem('dashboardRows', JSON.stringify(updatedUsers));
+        sessionStorage.setItem('dashboardRows', JSON.stringify(updatedUsers));
 
         // Remove used invite
         delete invites[token];
-        localStorage.setItem('pendingInvites', JSON.stringify(invites));
+        sessionStorage.setItem('pendingInvites', JSON.stringify(invites));
 
         setStatus('success');
         setTimeout(() => navigate('/login'), 3000);

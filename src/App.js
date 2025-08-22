@@ -1,100 +1,193 @@
-// src/App.js
-import React, { useState } from 'react';
-import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import Login from './pages/Login';
-import Signup from './pages/Signup';
-import Dashboard from './pages/Dashboard';
-import ProtectedRoute from './ProtectedRoute';
-import Department from './pages/Department'
-import Role from './pages/Role';
-import AngelBot from './pages/AngelBot';
-import LDAPConfig from './pages/LDAPConfig';
-import CompanyDashboard from './pages/CompanyDashboard';
-import ActivateAccount from './components/ActivateAccount';
-import Layout from './components/Layout';
-import './App.css'
+
+import React, { useState } from "react";
+import {
+  BrowserRouter as Router,
+  Route,
+  Routes,
+  Navigate,
+} from "react-router-dom";
+import { ThemeProvider, createTheme } from "@mui/material/styles";
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
+import Dashboard from "./pages/Dashboard";
+import ProtectedRoute from "./ProtectedRoute";
+import Department from "./pages/Department";
+import Role from "./pages/Role";
+import AngelBot from "./pages/AngelBot";
+import LDAPConfig from "./pages/LDAPConfig";
+import CompanyDashboard from "./pages/CompanyDashboard";
+import ActivateAccount from "./components/ActivateAccount";
+import Layout from "./components/Layout";
+import "./App.css";
+import UserTable from "./pages/user/UserTable";
+import ResetPassword from "./pages/ResetPassword";
+import ForgetPassword from "./pages/ForgetPassword";
+import ResetAdminPassword from "./pages/ResetAdminPassword";
+import ChooseExtension from "./pages/ChooseExtension";
+import DepartmentTypeSetting from "./pages/DepartmentTypeSetting";
+import DataDictionary from "./pages/DataDictionary";
+import FeedContext from "./pages/FeedContext";
+import ThemeSetting from "./pages/ThemeSetting";
 
 function App() {
-    const [darkMode, setDarkMode] = useState(false);
-    // const [departments, setDepartments] = useState([
-    //     { name: 'Engineering', displayName: 'ENG', roles: ['Developer', 'Tech Lead', 'Software Architect'] },
-    //     { name: 'Marketing', displayName: 'MKT', roles: ['Marketing Manager', 'Content Writer', 'SEO Specialist'] },
-    //     { name: 'Sales', displayName: 'SLS', roles: ['Sales Rep', 'Sales Manager', 'Account Executive'] },
-    //     { name: 'HR', displayName: 'HRM', roles: ['HR Manager', 'Recruiter', 'HR Assistant'] },
-    //     { name: 'Finance', displayName: 'FIN', roles: ['Accountant', 'Financial Analyst', 'Controller'] },
-    //     { name: 'IT', displayName: 'ITS', roles: ['System Admin', 'Support Engineer', 'Network Engineer'] },
-    //     { name: 'Operations', displayName: 'OPS', roles: ['Operations Manager', 'Project Manager', 'Business Analyst'] }
-    // ]);
-    const [departments, setDepartments] = useState([
-        { name: 'Engineering', displayName: 'ENG', roles: ['Developer', 'Tech Lead', 'Software Architect'], storage: '100GB' },
-        { name: 'Marketing', displayName: 'MKT', roles: ['Marketing Manager', 'Content Writer', 'SEO Specialist'], storage: '50GB' },
-        { name: 'Sales', displayName: 'SLS', roles: ['Sales Rep', 'Sales Manager', 'Account Executive'], storage: '50GB' },
-        { name: 'HR', displayName: 'HRM', roles: ['HR Manager', 'Recruiter', 'HR Assistant'], storage: '30GB' },
-        { name: 'Finance', displayName: 'FIN', roles: ['Accountant', 'Financial Analyst', 'Controller'], storage: '40GB' },
-        { name: 'IT', displayName: 'ITS', roles: ['System Admin', 'Support Engineer', 'Network Engineer'], storage: '200GB' },
-        { name: 'Operations', displayName: 'OPS', roles: ['Operations Manager', 'Project Manager', 'Business Analyst'], storage: '75GB' }
-    ]);
-    const theme = createTheme({
-        palette: {
-            mode: darkMode ? 'dark' : 'light', // Set theme mode based on darkMode state
-        },
-    });
+  const [dictionarySearchResults, setDictionarySearchResults] = useState([]);
+  const [darkMode, setDarkMode] = useState(false);
+  const [departments, setDepartments] = useState([]);
 
-    const toggleTheme = () => {
-        console.log(">>>>abhi>>>>")
-        setDarkMode((prevMode) => !prevMode); // Toggle the darkMode state
-    };
+  const theme = createTheme({
+    palette: {
+      mode: darkMode ? "dark" : "light",
+    },
+  });
 
-    return (
-        // <ThemeProvider theme={theme}>
-        <Router>
-            <Layout>
-                <Routes>
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/signup" element={<Signup />} />
-                    <Route
-                        path="/user"
-                        element={
-                            <ProtectedRoute>
-                                <Dashboard onThemeToggle={toggleTheme} departments={departments} setDepartments={setDepartments} /> {/* Pass the toggleTheme function */}
-                            </ProtectedRoute>
-                        }
-                    />
-                    <Route
-                        path="/department"
-                        element={
-                            <ProtectedRoute>
-                                <Department onThemeToggle={toggleTheme} departments={departments} setDepartments={setDepartments} /> {/* Pass the toggleTheme function */}
-                            </ProtectedRoute>
-                        }
-                    />
-                    <Route
-                        path="/role"
-                        element={
-                            <ProtectedRoute>
-                                <Role onThemeToggle={toggleTheme} departments={departments} /> {/* Pass the toggleTheme function */}
-                            </ProtectedRoute>
-                        }
-                    />
-                    <Route path="/" element={<Navigate to="/signup" />} />
-                    <Route path="/angelbot" element={<AngelBot onThemeToggle={toggleTheme} />} />
-                    <Route path="/ldap-config" element={<LDAPConfig />}
+  const toggleTheme = () => {
+    setDarkMode((prevMode) => !prevMode);
+  };
 
-                    />
-                    <Route
-                        path="/company-dashboard"
-                        element={
-                            <CompanyDashboard onThemeToggle={toggleTheme} />
-                        }
-                    />
-                    <Route path="/activate/:token" element={<ActivateAccount />} />
-                </Routes>
-            </Layout>
+  return (
+    <ThemeProvider theme={theme}>
+      <Router>
+        <Routes>
+          {/* Public routes */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/set-password" element={<ResetPassword />} />
+          <Route path="/forget-password" element={<ForgetPassword />} />
+          <Route
+            path="/reset-password/:token"
+            element={<ResetAdminPassword />}
+          />
 
-        </Router>
-        // </ThemeProvider>
-    );
+          {/* Protected routes — wrapped in Layout and ProtectedRoute */}
+          <Route
+            path="/user"
+            element={
+              <Layout onThemeToggle={toggleTheme}>
+                <ProtectedRoute>
+                  <Dashboard
+                    onThemeToggle={toggleTheme}
+                    departments={departments}
+                    setDepartments={setDepartments}
+                  />
+                </ProtectedRoute>
+              </Layout>
+            }
+          />
+          <Route
+            path="/department"
+            element={
+              <Layout onThemeToggle={toggleTheme}>
+                <ProtectedRoute>
+                  <Department
+                    onThemeToggle={toggleTheme}
+                    departments={departments}
+                    setDepartments={setDepartments}
+                  />
+                </ProtectedRoute>
+              </Layout>
+            }
+          />
+          <Route
+            path="/angelbot"
+            element={
+              <Layout onThemeToggle={toggleTheme}>
+                <ProtectedRoute>
+                  <AngelBot onThemeToggle={toggleTheme} />
+                </ProtectedRoute>
+              </Layout>
+            }
+          />
+          <Route
+            path="/company-dashboard"
+            element={
+              <Layout>
+                <ProtectedRoute>
+                  <CompanyDashboard onThemeToggle={toggleTheme} />
+                </ProtectedRoute>
+              </Layout>
+            }
+          />
+          <Route
+            path="/ldap-config"
+            element={
+              <Layout onThemeToggle={toggleTheme}>
+                <ProtectedRoute>
+                  <LDAPConfig />
+                </ProtectedRoute>
+              </Layout>
+            }
+          />
+          <Route
+            path="/choose-extension"
+            element={
+              <Layout onThemeToggle={toggleTheme}>
+                <ProtectedRoute>
+                  <ChooseExtension />
+                </ProtectedRoute>
+              </Layout>
+            }
+          />
+          <Route
+            path="/department-type-setting"
+            element={
+              <Layout onThemeToggle={toggleTheme}>
+                <ProtectedRoute>
+                  <DepartmentTypeSetting />
+                </ProtectedRoute>
+              </Layout>
+            }
+          />
+          <Route
+            path="/data-dictionary"
+            element={
+              <Layout
+                onThemeToggle={toggleTheme}
+                onSearch={setDictionarySearchResults}
+              >
+                <ProtectedRoute>
+                  <DataDictionary searchResults={dictionarySearchResults} />
+                </ProtectedRoute>
+              </Layout>
+            }
+          />
+          <Route
+            path="/feed-context"
+            element={
+              <Layout onThemeToggle={toggleTheme}>
+                <ProtectedRoute>
+                  <FeedContext />
+                </ProtectedRoute>
+              </Layout>
+            }
+          />
+          <Route
+            path="/theme-setting"
+            element={
+              <Layout onThemeToggle={toggleTheme}>
+                <ProtectedRoute>
+                  <ThemeSetting />
+                </ProtectedRoute>
+              </Layout>
+            }
+          />
+          <Route
+            path="/activate/:token"
+            element={
+              <Layout>
+                <ProtectedRoute>
+                  <ActivateAccount />
+                </ProtectedRoute>
+              </Layout>
+            }
+          />
+
+          {/* Redirect root to signup */}
+          <Route path="/" element={<Navigate to="/signup" />} />
+        </Routes>
+      </Router>
+    </ThemeProvider>
+  );
 }
 
 export default App;
+

@@ -1,43 +1,92 @@
-import React, { useState, useEffect } from "react";
-import ReactECharts from "echarts-for-react";
 import {
-  Box,
-  Paper,
-  Typography,
-  Grid,
+  Add,
+  ArrowDownward,
+  ArrowUpward,
+  Dashboard,
+  Group,
+  Warning,
+} from "@mui/icons-material";
+
+import {
   alpha,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
+  Box,
   Button,
   Card,
   CardContent,
   CardHeader,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Fab,
+  Grid,
+  IconButton,
+  LinearProgress,
+  Paper,
+  TablePagination,
+  Typography,
+  FormControl,
+  Select,
+  MenuItem,
 } from "@mui/material";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import { PieChart } from "@mui/x-charts/PieChart";
-import { LineChart } from "@mui/x-charts/LineChart";
-import { LinearProgress, TablePagination } from "@mui/material";
-import Navbar from "../components/Navbar";
-import Sidebar from "../components/Sidebar";
-import DashboardIcon from "@mui/icons-material/Dashboard";
-import StorageIcon from "@mui/icons-material/Storage";
-import AccessTimeIcon from "@mui/icons-material/AccessTime";
-import GroupIcon from "@mui/icons-material/Group";
-import PersonIcon from "@mui/icons-material/Person";
-import { fontGrid } from "@mui/material/styles/cssUtils";
-import { BarChart } from "@mui/x-charts/BarChart";
-import AddIcon from "@mui/icons-material/Add";
-import UpgradeIcon from "@mui/icons-material/Upgrade";
-import WarningIcon from "@mui/icons-material/Warning";
-import Tooltip from "@mui/material/Tooltip";
-import Fab from "@mui/material/Fab";
-import AssessmentIcon from "@mui/icons-material/Assessment";
+import { TextField } from "@mui/material";
 
+import React, { useEffect, useState } from "react";
+import { CircularProgress, keyframes, styled } from "@mui/material";
+import ReactECharts from "echarts-for-react";
+import { NotificationImportant } from "@mui/icons-material";
+import { WarningAmber } from "@mui/icons-material";
+import { Tooltip } from "@mui/material";
+import { Fade } from "@mui/material";
+import { useTheme } from "@mui/material";
+import { License } from "@mui/icons-material"; // Optional icon
+import { VerifiedUser } from "@mui/icons-material";
+import { Snackbar, Alert } from "@mui/material"; // already likely imported
+import { fetchUsers } from "../api/userService";
+import { getDepartments } from "../api/departmentService";
+import Loading from "../components/Loading";
+import CreateUser from "./user/CreateUser";
+import Slide from "@mui/material/Slide";
+
+import {
+  ArrowDropUp,
+  ArrowDropDown,
+  SortByAlpha,
+  FilterList,
+} from "@mui/icons-material";
+import { ArrowBack, ArrowForward } from "@mui/icons-material";
+
+const fadeIn = keyframes`
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+`;
+const Transition = React.forwardRef(function Transition(props, ref) {
+  return <Slide direction="right" ref={ref} {...props} />;
+});
+
+// Styled overlay
+const LoaderWrapper = styled(Box)(({ theme }) => ({
+  position: "fixed",
+  top: 0,
+  left: 0,
+  width: "100vw",
+  height: "100vh",
+  background: "rgba(255, 255, 255, 0.75)",
+  backdropFilter: "blur(5px)",
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
+  zIndex: 1300,
+  animation: `${fadeIn} 0.5s ease-in-out`,
+}));
+
+// Styled CircularProgress
+const CustomSpinner = styled(CircularProgress)(({ theme }) => ({
+  color: theme.palette.primary.main,
+  width: "60px !important",
+  height: "80px !important",
+  thickness: 2,
+}));
 const chartColors = {
   primary: "#1976d2", // Main blue color
   success: "#42a5f5", // Lighter blue
@@ -47,27 +96,8 @@ const chartColors = {
   pending: "#64b5f6", // Medium blue
 };
 
-const chartColorSchemes = {
-  userDistribution: {
-    active: "#4CAF50", // Green for active
-    inactive: "#FF0000", // Red for inactive
-    pending: "#FFA500", // Orange for pending
-    available: "#13529d", // Yellow for available
-  },
-
-  storageDistribution: {
-    used: "#8338ec", // Indigo for used storage
-    available: "#ff8a00cc", // Light indigo for available storage
-  },
-
-  licenseData: {
-    user: "#1976d25c", // Teal for user storage
-    department: "#1900ff", // Light Teal for department storage
-  },
-};
-
 const commonPaperStyles = {
-  // p: 3,
+  p: 3,
   // mb: 2,
   borderRadius: 2,
   boxShadow: "0 2px 12px 0 rgba(0,0,0,0.05)",
@@ -77,154 +107,256 @@ const commonPaperStyles = {
     boxShadow: "0 4px 20px 0 rgba(0,0,0,0.08)",
   },
 };
+const getProgressBarColor = (percentage) => {
+  if (percentage == 100) {
+    // return "";
+    return "#FF7F50";
+  } else if (percentage > 30) {
+    return "#4caf50";
+  } else {
+    return "rgb(255, 193, 7)";
+  }
+};
 
-const arrowLabelSx = {
-  position: "absolute",
-  display: "flex",
-  alignItems: "center",
-  fontSize: "0.75rem",
+const userStatusMap = {
+  abhishek: "Active",
+  pratibha: "Inactive",
+  ankit: "Pending",
+  satyam: "Active",
+  abhimanyu: "Pending",
+  manish: "Inactive",
+  prince: "Pending",
+  kunal: "Active",
+};
+const headerCellStyle = {
+  padding: "6px 10px",
   fontWeight: 600,
-  whiteSpace: "nowrap",
-  "&::before": {
-    content: '""',
-    width: "40px",
-    height: "2px",
-    marginRight: "4px",
-  },
+  fontSize: "0.8rem",
+  textAlign: "left",
+  color: "#ffff",
 };
 
-// Update the chart configuration for all three chart components
-const commonChartOptions = {
-  legend: {
-    orient: "horizontal",
-    bottom: 10, // Move legend down
-    left: "center",
-    itemWidth: 12,
-    itemHeight: 12,
-    textStyle: {
-      fontSize: 12,
-    },
-  },
-  series: [
-    {
-      center: ["50%", "35%"], // Move chart up to make more room for labels
-      radius: "60%", // Reduce chart size
-      label: {
-        position: "outside",
-        alignTo: "edge",
-        margin: 20, // Add margin to prevent overlap
-        distanceToLabelLine: 5,
-        formatter: "{b}\n{c}",
-        fontSize: 12,
-        overflow: "break", // Break text if too long
-      },
-      labelLine: {
-        length: 15,
-        length2: 20,
-        maxSurfaceAngle: 80,
-      },
-      labelLayout: {
-        hideOverlap: true, // Hide labels that would overlap
-      },
-    },
-  ],
+const rowCellStyle = {
+  padding: "6px 10px",
+  fontSize: "0.8rem",
+  color: "#555",
+  textAlign: "left",
 };
 
-const ArrowLabel = ({ text, value, color, top, left, right }) => (
-  <Box
-    sx={{
-      ...arrowLabelSx,
-      color,
-      top,
-      left,
-      right,
-      "&::before": {
-        ...arrowLabelSx["&::before"],
-        backgroundColor: color,
-      },
-    }}
-  >
-    {`${text} (${value})`}
-  </Box>
-);
-
-const pulseAnimation = {
-  "@keyframes pulse": {
-    "0%": {
-      transform: "scale(1)",
-      opacity: 1,
-    },
-    "50%": {
-      transform: "scale(1.05)",
-      opacity: 0.8,
-    },
-    "100%": {
-      transform: "scale(1)",
-      opacity: 1,
-    },
-  },
-};
-
-const AngelBot = ({ onThemeToggle }) => {
-  const [userPage, setUserPage] = useState(0);
-  const [deptPage, setDeptPage] = useState(0);
-  const [userRowsPerPage, setUserRowsPerPage] = useState(7);
-  const [deptRowsPerPage, setDeptRowsPerPage] = useState(7);
-
-  const [userStats, setUserStats] = useState({
-    totalUsers: 0,
-    activeUsers: 0,
-    availableUsers: 0, // Add this
-    inactiveUsers: 0,
-    pendingUsers: 0, // Add this line
-  });
-  const [storageStats, setStorageStats] = useState({
-    totalAllocated: 0,
-    totalUsed: 0,
-    totalUnused: 0,
-  });
-
-  const expiryData = {
-    days: [0, 15, 30, 45, 60, 90],
-    licenses: [5, 8, 12, 3, 7, 2],
-  };
-
-  // First, add this to your existing state declarations at the top
-  const [licenseExpiryDate] = useState(new Date("2025-12-31")); // Replace with your actual expiry date
-  // Add these state variables inside AngelBot component
-  const [showBlockWarning, setShowBlockWarning] = useState(false);
+const AngelBot = () => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
+  const userTableRef = React.useRef(null);
   const [negativeCount, setNegativeCount] = useState(0);
   const [remainingDays, setRemainingDays] = useState(0);
+  const [showBlockWarning, setShowBlockWarning] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [licenseExpiryDate] = useState(new Date("2025-12-31")); // Replace with your actual expiry date
+  const [addLicenseDialogOpen, setAddLicenseDialogOpen] = useState(false);
+  const [newLicense, setNewLicense] = useState({ name: "", expiryDate: "" });
+  const [filteredUsers, setFilteredUsers] = useState(null);
 
-  useEffect(() => {
-    const calculateRemainingDays = () => {
-      const today = new Date();
-      const diffTime = licenseExpiryDate - today;
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  const [currentPage, setCurrentPage] = useState(0);
+  const [userPageData, setUserPageData] = useState([]);
+  const [totalPages, setTotalPages] = useState(1);
+  const [userTableLoading, setUserTableLoading] = useState(false);
 
-      if (diffDays <= -10) {
-        setShowBlockWarning(true);
-      }
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarSeverity, setSnackbarSeverity] = useState("success"); // 'error', 'warning', 'info', 'success'
 
-      if (diffDays <= 0) {
-        setNegativeCount(Math.abs(diffDays));
-        setRemainingDays(0);
-      } else {
-        setRemainingDays(diffDays);
-      }
-    };
+  const defaultStatusData = [
+    { value: 500, name: "Used", color: "#91CC75" },
+    { value: 484, name: "Available", color: "#5470C6" },
+  ];
 
-    calculateRemainingDays();
-  }, [licenseExpiryDate]); // Only recalculate when licenseExpiryDate changes
+  const defaultDistributionData = [
+    { value: 500, name: "User", color: "#FAC858" },
+    { value: 484, name: "Department", color: "#5470C6" },
+  ];
 
-  // Update the getRemainingDays function to just return the state value
-  const getRemainingDays = () => remainingDays;
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success", // or "error"
+  });
 
-  const handleUserPageChange = (event, newPage) => {
-    setUserPage(newPage);
+  const [licenses, setLicenses] = useState([
+    {
+      id: 1,
+      name: "IAF-38M-15TB",
+      issueDate: "2025-07-30",
+      expiryDate: "2028-09-30", // 38 months later
+    },
+  ]);
+
+  const [nextExpiringLicense, setNextExpiringLicense] = useState("");
+  const [currentLicenseIndex, setCurrentLicenseIndex] = useState(0);
+  const [openCreateUser, setOpenCreateUser] = useState(false);
+
+  const activeConfig = {
+    storageStatusData: [
+      { value: 100, name: "Used", color: "#91CC75" },
+      { value: 110, name: "Available", color: "#FAC858" },
+    ],
+    storageDistributionData: [
+      { value: 130, name: "User", color: "#91CC75" },
+      { value: 150, name: "Department", color: "#FAC858" },
+    ],
   };
 
-  // Add the warning dialog component
+  const [storageStatusData, setStorageStatusData] = useState(
+    activeConfig.storageStatusData
+  );
+  const [storageDistributionData, setStorageDistributionData] = useState(
+    activeConfig.storageDistributionData
+  );
+
+  const [userRowsPerPage, setUserRowsPerPage] = useState(7);
+  const [userPage, setUserPage] = useState(0);
+  const [deptPage, setDeptPage] = useState(0);
+  const [deptRowsPerPage, setDeptRowsPerPage] = useState(7);
+
+  const [selectedChart, setSelectedChart] = useState("Active"); // preselect Active
+  const [backButton, setBackButton] = useState(false); // hidden initially
+
+  const [userSortOption, setUserSortOption] = useState("high"); // Default option
+
+  const [getSortedStorageUsers, setSortedStorageUsers] = useState([]);
+
+  const [deptSortOption, setDeptSortOption] = useState("high");
+
+  const [getSortedDepartments, setSortedDepartments] = useState([]);
+
+  const [storageTab, setStorageTab] = useState("status"); // "status" or "distribution"
+  // const [licenseFilter, setLicenseFilter] = useState("all");
+  const [licenseFilter, setLicenseFilter] = useState("active");
+
+  const showSnackbar = (message, severity = "success") => {
+    setSnackbarMessage(message);
+    setSnackbarSeverity(severity);
+    setSnackbarOpen(true);
+  };
+
+  const convertDisplayToGB = (value) => {
+    if (!value || typeof value !== "string") return 0;
+
+    const match = value.match(/([\d.]+)\s*(KB|MB|GB|B)/i);
+    if (!match) return 0;
+
+    const number = parseFloat(match[1]);
+    const unit = match[2].toUpperCase();
+
+    switch (unit) {
+      case "B":
+        return number / 1024 ** 3;
+      case "KB":
+        return number / 1024 ** 2;
+      case "MB":
+        return number / 1024;
+      case "GB":
+        return number;
+      default:
+        return 0;
+    }
+  };
+
+  const convertDisplayToMB = (value) => {
+    if (!value || typeof value !== "string") return 0;
+
+    const match = value.match(/([\d.]+)\s*(KB|MB|GB|B)/i);
+    if (!match) return 0;
+
+    const number = parseFloat(match[1]);
+    const unit = match[2].toUpperCase();
+
+    switch (unit) {
+      case "B":
+        return number / (1024 * 1024);
+      case "KB":
+        return number / 1024;
+      case "MB":
+        return number;
+      case "GB":
+        return number * 1024;
+      default:
+        return 0;
+    }
+  };
+
+  const fetchAllUsers = async () => {
+    let allUsers = [];
+    let page = 0;
+
+    // First fetch to determine total pages
+    const firstResponse = await fetchUsers(page);
+    const firstPageUsers = firstResponse?.content || [];
+    const totalPages = firstResponse?.totalPages || 1;
+
+    allUsers = [...firstPageUsers];
+
+    // Fetch remaining pages (if any)
+    for (let i = 1; i < totalPages; i++) {
+      const response = await fetchUsers(i);
+      const pageUsers = response?.content || [];
+      allUsers = [...allUsers, ...pageUsers];
+    }
+
+    return allUsers;
+  };
+
+  const fetchAllDepartments = async () => {
+    let allDepartments = [];
+    let page = 0;
+    const pageSize = 10;
+
+    try {
+      const firstResponse = await getDepartments(page, pageSize);
+      console.log(">>firsstresponse", firstResponse);
+      const totalPages = firstResponse?.totalPages || 1;
+      console.log("totalPages", totalPages);
+      allDepartments = [...(firstResponse?.content || [])];
+      console.log("allll", allDepartments);
+
+      for (let i = 1; i < totalPages; i++) {
+        const response = await getDepartments(i, pageSize);
+        allDepartments = [...allDepartments, ...(response?.content || [])];
+        console.log(">>>alDepartmenst", allDepartments);
+      }
+
+      return allDepartments;
+    } catch (error) {
+      console.error("Error fetching departments:", error);
+      return [];
+    }
+  };
+
+  useEffect(() => {
+    const today = new Date();
+    const currentLicense = licenses[currentLicenseIndex];
+
+    if (!currentLicense) return;
+
+    const expiryDate = new Date(currentLicense.expiryDate);
+    const diffTime = expiryDate - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays <= -10) {
+      setShowBlockWarning(true);
+    }
+
+    if (diffDays <= 0) {
+      setNegativeCount(Math.abs(diffDays));
+      setRemainingDays(0);
+    } else {
+      setRemainingDays(diffDays);
+    }
+
+    setNextExpiringLicense(currentLicense.name);
+  }, [licenses, currentLicenseIndex]);
+
+  const getRemainingDays = () => remainingDays;
+
   const BlockWarningDialog = () => (
     <Dialog
       open={showBlockWarning}
@@ -244,7 +376,7 @@ const AngelBot = ({ onThemeToggle }) => {
           color: chartColors.error,
         }}
       >
-        <WarningIcon color="error" />
+        <Warning color="error" />
         Account Block Warning
       </DialogTitle>
       <DialogContent>
@@ -270,9 +402,408 @@ const AngelBot = ({ onThemeToggle }) => {
     </Dialog>
   );
 
+  const sortUsers = (sortOption) => {
+    let sortedUsers = [...getSortedStorageUsers];
+    switch (sortOption) {
+      case "high":
+        sortedUsers.sort(
+          (a, b) =>
+            b.storageUsed / b.storageAllocated -
+            a.storageUsed / a.storageAllocated
+        );
+        break;
+      case "low":
+        sortedUsers.sort(
+          (a, b) =>
+            a.storageUsed / a.storageAllocated -
+            b.storageUsed / b.storageAllocated
+        );
+        break;
+      case "az":
+        sortedUsers.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case "za":
+        sortedUsers.sort((a, b) => b.name.localeCompare(a.name));
+        break;
+      default:
+        break;
+    }
+    setSortedStorageUsers(sortedUsers);
+  };
+
+  const sortDepartments = (sortOption) => {
+    let sortedDepartments = [...getSortedDepartments];
+
+    switch (sortOption) {
+      case "high":
+        sortedDepartments.sort(
+          (a, b) =>
+            b.storage / b.storageAllocated - a.storage / a.storageAllocated
+        );
+        break;
+      case "low":
+        sortedDepartments.sort(
+          (a, b) =>
+            a.storage / a.storageAllocated - b.storage / b.storageAllocated
+        );
+        break;
+      case "az":
+        sortedDepartments.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case "za":
+        sortedDepartments.sort((a, b) => b.name.localeCompare(a.name));
+        break;
+      default:
+        break;
+    }
+
+    setSortedDepartments(sortedDepartments);
+  };
+
+  const [userStatsData, setUserStatsData] = useState([
+    { name: "Active", value: 0, color: "#91CC75" },
+    { name: "Inactive", value: 0, color: "#EE6666" },
+    { name: "Pending", value: 0, color: "#5470C6" },
+  ]);
+
+  // Helper function to format value as MB or GB
+  const formatSize = (val) => {
+    return val < 1024 ? `${val} MB` : `${(val / 1024).toFixed(1)}`;
+  };
+
+  const formatSizeGB = (val) => {
+    return `${val.toFixed(2)} GB`;
+  };
+
+  const getLicenseStatus = (expiryDate) => {
+    const today = new Date();
+    const expDate = new Date(expiryDate);
+    const diffDays = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0) return { status: "Expired", daysLeft: 0 };
+    if (diffDays <= 30) return { status: "Expiring Soon", daysLeft: diffDays };
+    return { status: "Active", daysLeft: diffDays };
+  };
+  const filteredLicenses = licenses.filter((license) => {
+    const { status } = getLicenseStatus(license.expiryDate);
+    if (licenseFilter === "all") return true;
+    return status.toLowerCase() === licenseFilter;
+  });
+
+  const LicenseStatus = {
+    tooltip: {
+      trigger: "item",
+      formatter: function (params) {
+        const valueFormatted = params.value;
+        return `${params.name}: ${valueFormatted} (${params.percent}%)`;
+      },
+    },
+
+    legend: {
+      orient: "horizontal",
+      left: "left",
+      textStyle: {
+        color: isDark ? "#fff" : "#000",
+        fontWeight: "bold",
+        // fontWeight: "bold",
+      },
+      formatter: function (name) {
+        const item = userStatsData.find((d) => d.name === name);
+        return `${name} ${item?.value || 0}`;
+      },
+    },
+
+    series: [
+      {
+        name: "Status",
+        type: "pie",
+        radius: "75%",
+        center: ["50%", "50%"],
+        label: {
+          position: "inside",
+          fontSize: 13,
+          formatter: "{d}%",
+        },
+        data: userStatsData.map((item) => ({
+          value: item.value,
+          name: item.name,
+          itemStyle: { color: item.color },
+          label: { show: true, formatter: "{d}%" },
+        })),
+        emphasis: {
+          itemStyle: {
+            shadowBlur: 10,
+            shadowOffsetX: 0,
+            shadowColor: "rgba(0, 0, 0, 0.5)",
+          },
+        },
+      },
+    ],
+  };
+
+  const formatSizestorage = (val) => {
+    return val < 1024
+      ? `${val.toFixed(1)} MB`
+      : `${(val / 1024).toFixed(1)} GB`;
+  };
+
+  // const storageStatus = {
+  //   tooltip: {
+  //     trigger: "item",
+  //     formatter: function (params) {
+  //       const valueFormatted = formatSizestorage(params.value);
+  //       return `${params.name}: ${valueFormatted} (${params.percent}%)`;
+  //     },
+  //   },
+
+  //   legend: {
+  //     orient: "horizontal",
+  //     left: "center",
+  //     textStyle: {
+  //       color: isDark ? "#fff" : "#000",
+  //       // fontWeight: "bold",
+  //     },
+  //     formatter: function (name) {
+  //       const item = storageStatusData.find((d) => d.name === name);
+  //       return `${name} (${formatSize(item.value)})`;
+  //     },
+  //   },
+
+  //   series: [
+  //     {
+  //       name: "Status",
+  //       type: "pie",
+  //       radius: "75%",
+  //       center: ["50%", "50%"],
+
+  //       label: {
+  //         position: "inside",
+  //         fontSize: 13,
+  //         formatter: (params) => {
+  //           return params.percent > 0 ? `${params.percent}%` : "";
+  //         },
+  //       },
+
+  //       data: storageStatusData.map((item) => ({
+  //         value: item?.value,
+  //         name: item.name,
+  //         itemStyle: { color: item.color },
+  //         label: { show: true, formatter: "{d}%" },
+  //       })),
+  //       emphasis: {
+  //         itemStyle: {
+  //           shadowBlur: 10,
+  //           shadowOffsetX: 0,
+  //           shadowColor: "rgba(0, 0, 0, 0.5)",
+  //         },
+  //       },
+  //     },
+  //   ],
+  // };
+  const storageStatus = {
+    tooltip: {
+      trigger: "item",
+      formatter: function (params) {
+        const valueFormatted = formatSizestorage(params.value);
+        return `${params.name}: ${valueFormatted} (${params.percent}%)`;
+      },
+    },
+
+    legend: {
+      orient: "horizontal",
+      left: "center",
+      textStyle: {
+        color: isDark ? "#fff" : "#000",
+        fontWeight: "bold",
+      },
+      formatter: function (name) {
+        const item = storageStatusData.find((d) => d.name === name);
+        if (!item) return name;
+        return `${name} (${formatSizestorage(item.value)})`; // ✅ Adds GB or MB
+      },
+    },
+
+    series: [
+      {
+        name: "Status",
+        type: "pie",
+        radius: "75%",
+        center: ["50%", "50%"],
+
+        label: {
+          position: "inside",
+          fontSize: 13,
+          formatter: (params) => {
+            return params.percent > 0 ? `${params.percent}%` : "";
+          },
+        },
+
+        data: storageStatusData.map((item) => ({
+          value: item?.value,
+          name: item.name,
+          itemStyle: { color: item.color },
+          label: { show: true, formatter: "{d}%" },
+        })),
+        emphasis: {
+          itemStyle: {
+            shadowBlur: 10,
+            shadowOffsetX: 0,
+            shadowColor: "rgba(0, 0, 0, 0.5)",
+          },
+        },
+      },
+    ],
+  };
+
+  const storageDistribution = {
+    tooltip: {
+      trigger: "item",
+
+      formatter: function (params) {
+        return `${params.name}: ${formatSizeGB(params.value)} (${
+          params.percent
+        }%)`;
+      },
+    },
+
+    legend: {
+      orient: "horizontal",
+      left: "center",
+      textStyle: {
+        color: isDark ? "#fff" : "#000",
+        fontWeight: "bold",
+      },
+      formatter: function (name) {
+        const item = storageDistributionData.find((d) => d.name === name);
+        return `${name} (${item ? formatSizeGB(item.value) : "0 GB"})`;
+      },
+    },
+
+    series: [
+      {
+        name: "Status",
+        type: "pie",
+        radius: "75%",
+        center: ["50%", "50%"],
+
+        label: {
+          position: "inside",
+          fontSize: 13,
+
+          formatter: function (params) {
+            return `${formatSizeGB(params.value)} (${params.percent}%)`;
+          },
+        },
+
+        data: storageDistributionData.map((item) => ({
+          value: item?.value,
+          name: item.name,
+          itemStyle: { color: item.color },
+          label: { show: true, formatter: "{d}%" },
+        })),
+        emphasis: {
+          itemStyle: {
+            shadowBlur: 10,
+            shadowOffsetX: 0,
+            shadowColor: "rgba(0, 0, 0, 0.5)",
+          },
+        },
+      },
+    ],
+  };
+
+  const handleChartClick = (params) => {
+    const name = params.name;
+
+    if (selectedChart === name) return;
+
+    setSelectedChart(name);
+    setBackButton(name !== "Active");
+
+    fetchAllUsers().then((allUsers) => {
+      const filtered = allUsers.filter((user) => {
+        if (name === "Active") return user.active && user.enabled;
+        if (name === "Pending") return user.active && !user.enabled;
+        if (name === "Inactive") return !user.active;
+        return false;
+      });
+
+      setFilteredUsers(filtered);
+
+      let usedStorage = 0;
+      let totalAllocated = 0;
+
+      filtered.forEach((user) => {
+        const used = convertDisplayToMB(user.permissions?.displayStorage);
+        const allowed = convertDisplayToMB(
+          user.permissions?.allowedStorageInBytesDisplay
+        );
+        usedStorage += used;
+        totalAllocated += allowed;
+      });
+
+      const availableStorage = Math.max(totalAllocated - usedStorage, 0);
+
+      console.log(
+        "Used:",
+        usedStorage.toFixed(2),
+        "Allocated:",
+        totalAllocated.toFixed(2),
+        "Available:",
+        availableStorage.toFixed(2)
+      );
+
+      setStorageStatusData([
+        { name: "Used", value: usedStorage, color: "#91CC75" },
+        { name: "Available", value: availableStorage, color: "#FAC858" },
+      ]);
+    });
+
+    setTimeout(() => {
+      userTableRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 100);
+  };
+
+  const handleBack = () => {
+    setSelectedChart("Active");
+    setBackButton(false);
+
+    fetchAllUsers().then((users) => {
+      const activeUsers = users.filter((user) => user.active && user.enabled);
+
+      let usedStorage = 0;
+      let totalAllocated = 0;
+
+      activeUsers.forEach((user) => {
+        const used = convertDisplayToMB(user.permissions?.displayStorage);
+        const allowed = convertDisplayToMB(
+          user.permissions?.allowedStorageInBytesDisplay
+        );
+        usedStorage += used;
+        totalAllocated += allowed;
+      });
+
+      const availableStorage = Math.max(totalAllocated - usedStorage, 0);
+
+      setStorageStatusData([
+        { name: "Used", value: usedStorage, color: "#91CC75" },
+        { name: "Available", value: availableStorage, color: "#FAC858" },
+      ]);
+
+      setFilteredUsers(activeUsers);
+    });
+  };
+
   const handleUserRowsPerPageChange = (event) => {
     setUserRowsPerPage(parseInt(event.target.value, 10));
     setUserPage(0);
+  };
+
+  const handleUserPageChange = (event, newPage) => {
+    setUserPage(newPage);
   };
 
   const handleDeptPageChange = (event, newPage) => {
@@ -285,912 +816,1661 @@ const AngelBot = ({ onThemeToggle }) => {
   };
 
   useEffect(() => {
-    const dashboardRows =
-      JSON.parse(localStorage.getItem("dashboardRows")) || [];
-    const active = dashboardRows.filter(
-      (user) => user.status === "active"
-    ).length;
-    const pending = dashboardRows.filter(
-      (user) => user.status === "pending"
-    ).length;
-    const total = dashboardRows.length;
-    const inactive = total - active - pending;
-    const available = Math.floor(active / 2); // Set available as half of active users
+    const loadUserStats = async () => {
+      try {
+        setLoading(true);
+        const users = await fetchAllUsers();
 
-    const totalAllocated = dashboardRows.reduce((sum, user) => {
-      const allocated = parseInt(
-        user.storageUsed?.replace(/[^0-9]/g, "") || "0"
-      );
-      return sum + allocated;
-    }, 0);
+        let totalUserStorage = 0;
+        let totalDepartmentStorage = 0;
 
-    const totalUsed = dashboardRows.reduce((sum, user) => {
-      const used = parseInt(user.manageStorage?.replace(/[^0-9]/g, "") || "0");
-      return sum + used;
-    }, 0);
+        let active = 0,
+          pending = 0,
+          inactive = 0;
 
-    setUserStats({
-      totalUsers: total,
-      activeUsers: active,
-      availableUsers: available,
-      pendingUsers: pending,
-      // inactiveUsers: total - active,
-      inactiveUsers: inactive,
-    });
+        users.forEach((user) => {
+          if (user.active && user.enabled) active++;
+          else if (user.active && !user.enabled) pending++;
+          else if (!user.active) inactive++;
 
-    setStorageStats({
-      totalAllocated: totalAllocated,
-      totalUsed: totalUsed,
-      totalUnused: totalAllocated - totalUsed,
-    });
+          const allowed = convertDisplayToGB(
+            user.permissions?.allowedStorageInBytesDisplay
+          );
+          totalUserStorage += allowed;
+        });
+        console.log("totalluser", totalUserStorage);
+
+        const activeUsers = users.filter((user) => user.active && user.enabled);
+
+        let usedStorage = 0;
+        let totalAllocatedStorage = 0;
+
+        activeUsers.forEach((user) => {
+          const used = convertDisplayToMB(user.permissions?.displayStorage);
+          const allowed = convertDisplayToMB(
+            user.permissions?.allowedStorageInBytesDisplay
+          );
+          usedStorage += used;
+          totalAllocatedStorage += allowed;
+        });
+
+        const availableStorage = Math.max(
+          totalAllocatedStorage - usedStorage,
+          0
+        );
+
+        // ✅ Full user stats pie (for all statuses)
+        setUserStatsData([
+          { name: "Active", value: active, color: "#91CC75" },
+          { name: "Inactive", value: inactive, color: "#EE6666" },
+          { name: "Pending", value: pending, color: "#5470C6" },
+        ]);
+
+        // ✅ Initial view should match "Active" click
+        setStorageStatusData([
+          { name: "Used", value: usedStorage, color: "#91CC75" },
+          { name: "Available", value: availableStorage, color: "#FAC858" },
+        ]);
+
+        // Show only active users in table initially
+        setFilteredUsers(activeUsers);
+
+        const userStorageData = users.map((user) => {
+          const name = user.name;
+          const storageUsed = convertDisplayToGB(
+            user.permissions?.displayStorage
+          ); // convert to GB
+          const storageAllocated = convertDisplayToGB(
+            user.permissions?.allowedStorageInBytesDisplay
+          ); // convert to GB
+
+          return {
+            id: user.id,
+            name,
+            storageUsed: Number(storageUsed.toFixed(2)),
+            storageAllocated: Number(storageAllocated.toFixed(2)) || 1, // Avoid divide by 0
+          };
+        });
+
+        // Sort initially by high usage
+        userStorageData.sort(
+          (a, b) =>
+            b.storageUsed / b.storageAllocated -
+            a.storageUsed / a.storageAllocated
+        );
+
+        // Save to state
+        setSortedStorageUsers(userStorageData);
+
+        const departments = await fetchAllDepartments();
+        console.log(">>>>departments", departments);
+
+        const departmentStorageData = departments.map((dept) => {
+          const name = dept.deptName || "Unnamed Dept";
+          const storageUsed = convertDisplayToGB(
+            dept?.permissions?.displayStorage
+          );
+          const storageAllocated = convertDisplayToGB(
+            dept?.permissions?.allowedStorageInBytesDisplay
+          );
+
+          return {
+            id: dept.id,
+            name,
+            storageUsed: storageUsed,
+            storageAllocated: Number(storageAllocated.toFixed(2)) || 1,
+          };
+        });
+
+        // Sort by high usage initially
+        departmentStorageData.sort(
+          (a, b) =>
+            b.storageUsed / b.storageAllocated -
+            a.storageUsed / a.storageAllocated
+        );
+
+        setSortedDepartments(departmentStorageData);
+
+        departments.forEach((dept) => {
+          const allowed = convertDisplayToGB(
+            dept?.permissions?.allowedStorageInBytesDisplay
+          );
+          totalDepartmentStorage += allowed;
+        });
+        console.log("totalDepartment", totalDepartmentStorage);
+
+        setStorageDistributionData([
+          { name: "User", value: totalUserStorage, color: "#91CC75" },
+          // { name: "Department", value: 2.5, color: "#FAC858" }, // dummy GB value
+          {
+            name: "Department",
+            value: Number(totalDepartmentStorage.toFixed(2)),
+            color: "#FAC858",
+          },
+        ]);
+      } catch (error) {
+        console.error("Error fetching user stats:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadUserStats();
   }, []);
 
-  const gaugeData = [
-    {
-      value: userStats.activeUsers,
-      label: "Active",
-      color: chartColors.success,
-    },
-    {
-      value: userStats.inactiveUsers,
-      label: "Inactive",
-      color: chartColors.warning,
-    },
-    {
-      value: userStats.pendingUsers,
-      label: "Pending",
-      color: chartColors.grey, // or any other color you prefer
-    },
-  ];
+  const LicenseCountdownBox = React.memo(({ licenses, chartColors }) => {
+    const [currentIndex, setCurrentIndex] = React.useState(0);
+    const [progress, setProgress] = React.useState(0);
+    const theme = useTheme();
 
-  const getSortedStorageUsers = () => {
-    const dashboardRows =
-      JSON.parse(localStorage.getItem("dashboardRows")) || [];
-    return dashboardRows
-      .map((user) => ({
-        name: user.name,
-        status: user.status, // Add this to track status
-        storageUsed: parseInt(
-          user.manageStorage?.replace(/[^0-9]/g, "") || "0"
-        ),
-        storageAllocated: parseInt(
-          user.storageUsed?.replace(/[^0-9]/g, "") || "0"
-        ),
-      }))
-      .sort((a, b) => b.storageUsed - a.storageUsed);
-  };
+    // Auto switch and progress bar
+    React.useEffect(() => {
+      const interval = setInterval(() => {
+        setProgress((old) => {
+          if (old >= 100) {
+            setCurrentIndex((prev) => (prev + 1) % licenses.length);
+            return 0;
+          }
+          return old + 5;
+        });
+      }, 150); // Smooth progress every 150ms (3s total)
 
-  const getSortedDepartments = () => {
-    const departments = JSON.parse(localStorage.getItem("departments")) || [];
-    return departments
-      .map((dept) => ({
-        name: dept.name,
-        displayName: dept.displayName,
-        storage: parseInt(dept.storage?.replace(/[^0-9]/g, "") || "0"),
-      }))
-      .sort((a, b) => b.storage - a.storage);
-  };
+      return () => clearInterval(interval);
+    }, [licenses.length]);
 
-  const StatCard = ({ icon: Icon, title, value, color, bgColor }) => (
-    <Paper
-      elevation={0}
-      sx={{
-        p: 1.5,
-        mb: 1,
-        backgroundColor: bgColor,
-        borderRadius: 2,
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        border: "1px solid",
-        borderColor: alpha(color, 0.1),
-      }}
-    >
-      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-        <Icon sx={{ color: color, fontSize: "1.2rem" }} />
-        <Typography variant="body2" color="text.secondary">
-          {title}
-        </Typography>
+    return (
+      <Box
+        sx={{
+          mt: 2,
+          position: "relative",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          overflow: "hidden",
+          height: 140,
+        }}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            transform: `translateX(-${currentIndex * 100}%)`,
+            transition: "transform 1s ease-in-out",
+            width: `${licenses.length * 100}%`,
+          }}
+        >
+          {licenses.map((license, i) => {
+            const { status, daysLeft } = getLicenseStatus(license.expiryDate);
+            const label = `${status} — ${license.expiryDate}`;
+
+            const { bg, color } =
+              status === "Expired"
+                ? { bg: alpha("#f44336", 0.1), color: "#f44336" }
+                : status === "Expiring Soon"
+                ? { bg: alpha("#ff9800", 0.1), color: "#ff9800" }
+                : { bg: alpha("#4caf50", 0.1), color: "#4caf50" };
+
+            return (
+              <Box
+                key={i}
+                sx={{
+                  flex: "0 0 100%",
+                  display: "flex",
+                  justifyContent: "center",
+                }}
+              >
+                <Box
+                  sx={{
+                    padding: 2,
+                    borderRadius: 3,
+                    boxShadow: `0 2px 10px ${alpha(color, 0.3)}`,
+                    backgroundColor: bg,
+                    minWidth: 250,
+                    maxWidth: 300,
+                    width: "100%",
+                    textAlign: "center",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    gap: 0.5,
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                      color: color,
+                    }}
+                  >
+                    {/* <License fontSize="small" /> */}
+                    <VerifiedUser fontSize="small" />
+
+                    <Typography
+                      variant="subtitle1"
+                      fontWeight={600}
+                      sx={{
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        maxWidth: "100%",
+                      }}
+                    >
+                      {license.name}
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color:
+                          status === "Expired"
+                            ? "#f44336"
+                            : status === "Expiring Soon"
+                            ? "#ff9800"
+                            : "#4caf50",
+                        fontWeight: 700,
+                        fontSize: "0.75rem",
+                        mt: 0.5,
+                      }}
+                    >
+                      {status}
+                    </Typography>
+                  </Box>
+
+                  <Typography
+                    variant="body2"
+                    sx={{ color: color, fontWeight: 500 }}
+                  >
+                    {label}
+                  </Typography>
+
+                  <Typography
+                    variant="h3"
+                    sx={{
+                      color: color,
+                      fontWeight: 800,
+                      fontSize: "2.5rem",
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    {daysLeft}
+                  </Typography>
+
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: color,
+                      fontWeight: 600,
+                      fontSize: "0.85rem",
+                      letterSpacing: 1,
+                    }}
+                  >
+                    DAYS LEFT
+                  </Typography>
+                </Box>
+              </Box>
+            );
+          })}
+        </Box>
       </Box>
-      <Typography variant="h6" sx={{ fontWeight: 600, color: color }}>
-        {value}
-      </Typography>
-    </Paper>
-  );
-
-  const licenseData = [
-    {
-      value: storageStats.totalAllocated,
-      label: "User",
-      color: chartColors.primary,
-    },
-    {
-      value: getSortedDepartments().reduce(
-        (sum, dept) => sum + dept.storage,
-        0
-      ),
-      label: "Department",
-      color: chartColors.warning,
-    },
-  ];
-
-  const UserDistributionChart = ({ data }) => {
-    const option = {
-      tooltip: {
-        trigger: "item",
-        formatter: (params) => {
-          return `<div style="font-weight: 700; font-size: 14px; color: #000;">
-                    ${params.name}: ${params.value}${
-            params.name.includes("Storage") ? "GB" : ""
-          } 
-                  </div>`;
-        },
-        backgroundColor: "rgba(255, 255, 255, 0.95)",
-        borderWidth: 1,
-        borderColor: "#e0e0e0",
-        padding: [8, 12],
-        textStyle: {
-          fontSize: 14,
-          fontWeight: 700,
-          color: "#000",
-        },
-      },
-
-      legend: {
-        orient: "horizontal",
-        top: "0%", // Position just below title
-        left: "center", // Center horizontally
-        itemGap: 20, // Space between legend items
-        itemWidth: 15,
-        itemHeight: 15,
-        textStyle: {
-          fontSize: 12,
-          padding: [3, 0, 3, 0], // Add vertical padding
-        },
-      },
-
-      series: [
-        {
-          name: "User Distribution",
-          type: "pie",
-          radius: "80%",
-          center: ["50%", "60%"], // Move chart down to make room for legend
-          data: [
-            {
-              value: data.activeUsers,
-              name: "Active",
-              itemStyle: { color: chartColorSchemes.userDistribution.active },
-            },
-            {
-              value: data.pendingUsers,
-              name: "Pending",
-              itemStyle: { color: chartColorSchemes.userDistribution.pending },
-            },
-            {
-              value: data.inactiveUsers,
-              name: "Inactive",
-              itemStyle: { color: chartColorSchemes.userDistribution.inactive },
-            },
-            {
-              value: data.availableUsers,
-              name: "Available",
-              itemStyle: {
-                color: chartColorSchemes.userDistribution.available,
-              },
-            },
-          ],
-          emphasis: {
-            itemStyle: {
-              shadowBlur: 10,
-              shadowOffsetX: 0,
-              shadowColor: "rgba(0, 0, 0, 0.5)",
-            },
-          },
-
-          label: {
-            show: true,
-            position: "inside",
-            formatter: "({d}%)",
-            fontSize: 12,
-            fontWeight: "bold",
-            color: "#ffff",
-            fontFamily: "Be Vietnam",
-          },
-        },
-      ],
-    };
-
-    return (
-      <ReactECharts
-        option={option}
-        style={{ height: "300px" }} // Increased height
-        opts={{ renderer: "svg" }}
-      />
     );
+  });
+
+  const loadUserPage = async (page) => {
+    try {
+      setUserTableLoading(true);
+      const response = await fetchUsers(page);
+      setUserPageData(response?.content || []);
+      setTotalPages(response?.totalPages || 1);
+    } catch (err) {
+      console.error("Failed to fetch paginated users:", err);
+    } finally {
+      setUserTableLoading(false);
+    }
   };
 
-  const StorageDistributionChart = ({ data }) => {
-    const option = {
-      tooltip: {
-        trigger: "item",
-        formatter: (params) => {
-          return `<div style="font-weight: 700; font-size: 14px; color: #000;">
-              ${params.name}: ${params.value}${
-            params.name.includes("Storage") ? "GB" : ""
-          } 
-            </div>`;
-        },
-        backgroundColor: "rgba(255, 255, 255, 0.95)",
-        borderWidth: 1,
-        borderColor: "#e0e0e0",
-        padding: [8, 12],
-        textStyle: {
-          fontSize: 14,
-          fontWeight: 700,
-          color: "#000",
-        },
-      },
-
-      legend: {
-        orient: "horizontal",
-        top: "0%", // Position just below title
-        left: "center", // Center horizontally
-        itemGap: 20, // Space between legend items
-        itemWidth: 15,
-        itemHeight: 15,
-        textStyle: {
-          fontSize: 12,
-          padding: [3, 0, 3, 0], // Add vertical padding
-        },
-      },
-      series: [
-        {
-          name: "Storage Distribution",
-          type: "pie",
-          radius: "80%",
-          center: ["50%", "60%"],
-          data: [
-            {
-              value: data.totalUsed,
-              name: "Used",
-              // itemStyle: { color: chartColors.primary },
-              itemStyle: { color: chartColorSchemes.storageDistribution.used },
-            },
-            {
-              value: data.totalUnused,
-              name: "Available",
-              // itemStyle: { color: chartColors.grey },
-              itemStyle: {
-                color: chartColorSchemes.storageDistribution.available,
-              },
-            },
-          ],
-          emphasis: {
-            itemStyle: {
-              shadowBlur: 10,
-              shadowOffsetX: 0,
-              shadowColor: "rgba(0, 0, 0, 0.5)",
-            },
-          },
-
-          label: {
-            show: true,
-            position: "inside",
-            formatter: "({d}%)",
-            fontSize: 12,
-            fontWeight: "bold",
-            color: "#ffff",
-            fontFamily: "Be Vietnam",
-          },
-        },
-      ],
-    };
-
-    return (
-      <ReactECharts
-        option={option}
-        style={{ height: "300px" }}
-        opts={{ renderer: "svg" }}
-      />
-    );
-  };
-
-  // For License Data chart:
-  const LicenseDataChart = ({ data }) => {
-    const option = {
-      tooltip: {
-        trigger: "item",
-        formatter: (params) => {
-          return `<div style="font-weight: 700; font-size: 14px; color: #000;">
-                    ${params.name}: ${params.value}${
-            params.name.includes("Storage") ? "GB" : ""
-          } 
-                  </div>`;
-        },
-        backgroundColor: "rgba(255, 255, 255, 0.95)",
-        borderWidth: 1,
-        borderColor: "#e0e0e0",
-        padding: [8, 12],
-        textStyle: {
-          fontSize: 14,
-          fontWeight: 700,
-          color: "#000",
-        },
-      },
-
-      legend: {
-        orient: "horizontal",
-        top: "0%", // Position just below title
-        left: "center", // Center horizontally
-        itemGap: 20, // Space between legend items
-        itemWidth: 15,
-        itemHeight: 15,
-        textStyle: {
-          fontSize: 12,
-          padding: [3, 0, 3, 0], // Add vertical padding
-        },
-      },
-      series: [
-        {
-          name: "License Data",
-          type: "pie",
-          radius: "80%",
-          center: ["50%", "60%"],
-          data: [
-            {
-              value: data.userStorage,
-              name: "User",
-              // itemStyle: { color: chartColors.primary },
-              itemStyle: { color: chartColorSchemes.licenseData.user },
-            },
-            {
-              value: data.departmentStorage,
-              name: "Department",
-              // itemStyle: { color: chartColors.warning },
-              itemStyle: { color: chartColorSchemes.licenseData.department },
-            },
-          ],
-          emphasis: {
-            itemStyle: {
-              shadowBlur: 10,
-              shadowOffsetX: 0,
-              shadowColor: "rgba(0, 0, 0, 0.5)",
-            },
-          },
-
-          label: {
-            show: true,
-            position: "inside",
-            formatter: "({d}%)",
-            fontSize: 12,
-            fontWeight: "bold",
-            color: "#ffff",
-            fontFamily: "Be Vietnam",
-          },
-        },
-      ],
-    };
-
-    return (
-      <ReactECharts
-        option={option}
-        style={{ height: "300px" }}
-        opts={{ renderer: "svg" }}
-      />
-    );
-  };
+  useEffect(() => {
+    loadUserPage(0);
+  }, []);
 
   return (
-    <Box className="child-container">
-      <div className="child">
-        <Box
-          sx={
-            {
-              // display: "grid",
-              // position: "relative",
-              // // height: "100vh",
-              // backgroundColor: "#f5f7fa",
-            }
-          }
-        >
-          <Grid
-            container
-            spacing={2}
-            sx={{ justifyContent: "center", alignItems: "stretch" }}
-          >
-            <Grid item xs={4}>
-              <Card
-                sx={{
-                  p: 1,
-                  borderRadius: 3,
-                  boxShadow: 3,
-                  height: "100%",
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "space-between",
-                }}
+    <>
+      {loading ? (
+        <Loading />
+      ) : (
+        <Box className="child-container">
+          <div className="child">
+            <Box
+              sx={{
+                animation: "slideInFromLeft 0.3s ease-in-out forwards",
+                opacity: 0, // Start with opacity 0
+                transform: "translateX(-50px)", // Start from left
+                "@keyframes slideInFromLeft": {
+                  "0%": {
+                    opacity: 0,
+                    transform: "translateX(-50px)",
+                  },
+                  "100%": {
+                    opacity: 1,
+                    transform: "translateX(0)",
+                  },
+                },
+              }}
+            >
+              <Grid
+                container
+                spacing={2}
+                sx={{ justifyContent: "center", alignItems: "stretch" }}
               >
-                <CardHeader
-                  sx={{ padding: "0px !important" }}
-                  title={
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "10px",
-                        justifyContent: "flex-start",
-                      }}
-                    >
-                      <GroupIcon color="primary" />
-                      <Typography variant="h6">License Status</Typography>
-                    </div>
-                  }
-                />
-                <CardContent
-                  sx={{
-                    mb: "auto",
-                    pb: "0 !important",
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <div>
-                    <UserDistributionChart data={userStats} />
-                  </div>
-                  <div
-                    style={{ display: "flex", flexDirection: "row-reverse" }}
+                <Grid item xs={12} sm={6} md={4}>
+                  <Card
+                    sx={{
+                      p: 1,
+                      borderRadius: 3,
+                      boxShadow: 3,
+                      height: "100%",
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "space-between",
+                    }}
                   >
-                    <Fab
-                      size="small"
-                      sx={{
-                        right: 0,
-                        backgroundColor: chartColors.success,
-                        "&:hover": {
-                          backgroundColor: alpha(chartColors.success, 0.85),
-                        },
-                      }}
-                    >
-                      <AddIcon sx={{ color: "#fff" }} />
-                    </Fab>
-                  </div>
-                </CardContent>
-              </Card>
-            </Grid>
-            <Grid item xs={4}>
-              <Card
-                sx={{
-                  p: 1,
-                  borderRadius: 3,
-                  boxShadow: 3,
-                  height: "100%",
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "space-between",
-                }}
-              >
-                <CardHeader
-                  sx={{ padding: "0px !important" }}
-                  title={
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "10px",
-                        justifyContent: "flex-start",
-                      }}
-                    >
-                      <GroupIcon color="primary" />
-                      <Typography variant="h6"> Storage Status</Typography>
-                    </div>
-                  }
-                />
-                <CardContent
-                  sx={{
-                    mb: "auto",
-                    pb: "0 !important",
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <div>
-                    <StorageDistributionChart data={storageStats} />
-                  </div>
-                  <div
-                    style={{ display: "flex", flexDirection: "row-reverse" }}
-                  >
-                    <Fab
-                      size="small"
-                      sx={{
-                        right: 0,
-                        backgroundColor: chartColors.success,
-                        "&:hover": {
-                          backgroundColor: alpha(chartColors.success, 0.85),
-                        },
-                      }}
-                    >
-                      <AddIcon sx={{ color: "#fff" }} />
-                    </Fab>
-                  </div>
-                </CardContent>
-              </Card>
-            </Grid>{" "}
-            <Grid item xs={4}>
-              <Card
-                sx={{
-                  p: 1,
-                  borderRadius: 3,
-                  boxShadow: 3,
-                  height: "100%",
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "space-between",
-                }}
-              >
-                <CardHeader
-                  sx={{ padding: "0px !important" }}
-                  title={
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "10px",
-                        justifyContent: "flex-start",
-                      }}
-                    >
-                      <GroupIcon color="primary" />
-                      <Typography variant="h6">
-                        {" "}
-                        Storage Distribution
-                      </Typography>
-                    </div>
-                  }
-                />
-                <CardContent
-                  sx={{
-                    mb: "auto",
-                    pb: "0 !important",
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <div>
-                    <LicenseDataChart
-                      data={{
-                        userStorage: storageStats.totalAllocated,
-                        departmentStorage: getSortedDepartments().reduce(
-                          (sum, dept) => sum + dept.storage,
-                          0
-                        ),
-                      }}
+                    <CardHeader
+                      sx={{ padding: "0px !important" }}
+                      title={
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "10px",
+                            justifyContent: "flex-start",
+                          }}
+                        >
+                          <Group color="primary" />
+                          <Typography variant="h6">User Status</Typography>
+                        </div>
+                      }
                     />
-                    <div style={{ display: "flex", justifyContent: "end" }}>
+                    <CardContent
+                      sx={{
+                        mb: "auto",
+                        pb: "0 !important",
+                        display: "flex",
+                        width: "100%",
+                        flexDirection: "column",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <div>
+                        <ReactECharts
+                          option={LicenseStatus}
+                          style={{ height: 300, width: "100%" }}
+                          onEvents={{
+                            click: handleChartClick,
+                          }}
+                        />
+                      </div>
+                    </CardContent>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        justifyContent: "flex-end",
+                        mt: 1,
+                      }}
+                    >
+                      <Tooltip title="Add User" arrow>
+                        <IconButton
+                          color="primary"
+                          size="small"
+                          onClick={() => setOpenCreateUser(true)} // ✅ open dialog
+                          sx={{
+                            backgroundColor: (theme) =>
+                              theme.palette.primary.light,
+                            color: (theme) =>
+                              theme.palette.primary.contrastText,
+                            "&:hover": {
+                              backgroundColor: (theme) =>
+                                theme.palette.primary.main,
+                              boxShadow: 3,
+                            },
+                            borderRadius: 2,
+                            transition: "all 0.3s ease-in-out",
+                          }}
+                        >
+                          <Add />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+                  </Card>
+                </Grid>
+
+                <Grid item xs={12} sm={6} md={4}>
+                  <Card
+                    sx={{
+                      p: 1,
+                      borderRadius: 3,
+                      boxShadow: 3,
+                      height: "100%",
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <CardHeader
+                      sx={{ padding: "0px !important" }}
+                      title={
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "10px",
+                            justifyContent: "flex-start",
+                          }}
+                        >
+                          <Group color="primary" />
+
+                          <Typography variant="h6">
+                            {storageTab === "status"
+                              ? "Storage Status"
+                              : "Storage Distribution"}
+                          </Typography>
+                        </div>
+                      }
+                    />
+
+                    <CardContent
+                      sx={{
+                        mb: "auto",
+                        pb: "0 !important",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                      }}
+                    >
                       <Box
                         sx={{
-                          gap: 0.5,
-                          // backgroundColor: alpha(chartColors.error, 0.1),
-                          padding: "8px 16px",
-                          borderRadius: 2,
-                          cursor: "pointer",
-                          transition: "all 0.3s ease",
-                          // border: `1px solid ${alpha(chartColors.error, 0.2)}`,
-                          boxShadow: `0 0 8px ${alpha(chartColors.error, 0.2)}`,
+                          width: "100%",
+                          height: 300,
+                          position: "relative",
+                        }}
+                      >
+                        <Fade
+                          in={storageTab === "status"}
+                          timeout={500}
+                          unmountOnExit
+                          appear
+                        >
+                          <Box
+                            sx={{
+                              width: "100%",
+                              height: "100%",
+                              position: "absolute",
+                              top: 0,
+                              left: 0,
+                            }}
+                          >
+                            <ReactECharts
+                              option={storageStatus}
+                              style={{ height: "100%", width: "100%" }}
+                            />
+                          </Box>
+                        </Fade>
+
+                        <Fade
+                          in={storageTab === "distribution"}
+                          timeout={500}
+                          unmountOnExit
+                          appear
+                        >
+                          <Box
+                            sx={{
+                              width: "100%",
+                              height: "100%",
+                              position: "absolute",
+                              top: 0,
+                              left: 0,
+                            }}
+                          >
+                            <ReactECharts
+                              option={storageDistribution}
+                              style={{ height: "100%", width: "100%" }}
+                            />
+                          </Box>
+                        </Fade>
+                      </Box>
+
+                      <IconButton
+                        onClick={() =>
+                          setStorageTab((prev) =>
+                            prev === "status" ? "distribution" : "status"
+                          )
+                        }
+                        sx={{
+                          mt: 2,
+                          border: "1px solid",
+                          borderColor: "divider",
+                          borderRadius: "50%",
+                          backgroundColor: "background.paper",
                           "&:hover": {
-                            backgroundColor: alpha(chartColors.error, 0.15),
-                            transform: "translateY(-1px)",
-                            boxShadow: `0 0 12px ${alpha(
-                              chartColors.error,
-                              0.3
-                            )}`,
+                            backgroundColor: "action.hover",
                           },
                         }}
                       >
+                        {storageTab === "status" ? (
+                          <ArrowForward />
+                        ) : (
+                          <ArrowBack />
+                        )}
+                      </IconButton>
+
+                      {selectedChart && (
                         <Typography
-                          variant="body2"
+                          variant="subtitle2"
                           sx={{
-                            color: chartColors.error,
-                            fontWeight: 500,
+                            color: "text.secondary",
+                            fontWeight: "bold",
+                            mt: 1,
                           }}
                         >
-                          {getRemainingDays() <= 30 ? "Renewal By" : "Validity"}
+                          Showing data for: {selectedChart}
                         </Typography>
-                        <Typography
-                          variant="h4"
+                      )}
+
+                      {selectedChart && (
+                        <Button
+                          size="small"
+                          onClick={handleBack}
                           sx={{
-                            color: chartColors.error,
-                            fontWeight: 700,
-                            lineHeight: 1,
-                            fontSize: "2rem",
+                            mt: 1,
+                            textTransform: "none",
+                            fontWeight: 600,
+                            color: "primary.main",
+                            "&:hover": {
+                              textDecoration: "underline",
+                            },
                           }}
                         >
-                          {getRemainingDays()}
-                        </Typography>
-                      </Box>
-                      {getRemainingDays() === 0 && (
+                          ← Back to Overview
+                        </Button>
+                      )}
+                    </CardContent>
+                  </Card>
+                </Grid>
+
+                <Grid item xs={12} sm={6} md={4}>
+                  <Card
+                    sx={{
+                      p: 1,
+                      borderRadius: 3,
+                      boxShadow: 3,
+                      height: "100%",
+                      display: "flex",
+                      flexDirection: "column",
+                    }}
+                  >
+                    <CardHeader
+                      sx={{ padding: "0px !important" }}
+                      title={
                         <Box
                           sx={{
                             display: "flex",
                             alignItems: "center",
+                            justifyContent: "space-between",
                             gap: 1,
-                            backgroundColor: alpha(chartColors.error, 0.15),
-                            padding: "8px 12px",
-                            borderRadius: 2,
-                            border: `1px solid ${alpha(
-                              chartColors.error,
-                              0.3
-                            )}`,
                           }}
                         >
-                          <WarningIcon sx={{ color: chartColors.error }} />
-                          <Box>
-                            <Typography
-                              variant="subtitle2"
-                              sx={{ color: chartColors.error, fontWeight: 600 }}
-                            >
-                              Account Block Warning
-                            </Typography>
-                            <Typography
-                              variant="body2"
-                              sx={{ color: chartColors.error }}
-                            >
-                              {`Grace Period: -${negativeCount} Days (Max: -10 Days)`}
-                            </Typography>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                            }}
+                          >
+                            <Dashboard color="primary" />
+                            <Typography variant="h6">License Status</Typography>
                           </Box>
+
+                          <Tooltip title="Add License" arrow>
+                            <input
+                              type="file"
+                              id="license-upload"
+                              accept=".json"
+                              style={{ display: "none" }}
+                              onChange={(e) => {
+                                const file = e.target.files[0];
+                                if (!file) return;
+
+                                if (file.type !== "application/json") {
+                                  setSnackbar({
+                                    open: true,
+                                    message: "Only JSON files are allowed.",
+                                    severity: "error",
+                                  });
+                                  return;
+                                }
+
+                                const reader = new FileReader();
+                                reader.onload = (event) => {
+                                  try {
+                                    const data = JSON.parse(
+                                      event.target.result
+                                    );
+
+                                    if (!data.name || !data.expiryDate) {
+                                      setSnackbar({
+                                        open: true,
+                                        message:
+                                          "JSON must contain 'name' and 'expiryDate'.",
+                                        severity: "error",
+                                      });
+                                      return;
+                                    }
+
+                                    const newLicense = {
+                                      id: licenses.length + 1,
+                                      name: data.name,
+                                      expiryDate: data.expiryDate,
+                                    };
+
+                                    setLicenses((prev) => [
+                                      ...prev,
+                                      newLicense,
+                                    ]);
+                                    setSnackbar({
+                                      open: true,
+                                      message: "License uploaded successfully.",
+                                      severity: "success",
+                                    });
+                                  } catch (err) {
+                                    setSnackbar({
+                                      open: true,
+                                      message: "Invalid JSON file.",
+                                      severity: "error",
+                                    });
+                                  }
+                                };
+
+                                reader.readAsText(file);
+                              }}
+                            />
+
+                            <label htmlFor="license-upload">
+                              <IconButton
+                                component="span"
+                                color="primary"
+                                size="small"
+                                sx={{
+                                  backgroundColor: (theme) =>
+                                    theme.palette.primary.light,
+                                  color: (theme) =>
+                                    theme.palette.primary.contrastText,
+                                  "&:hover": {
+                                    backgroundColor: (theme) =>
+                                      theme.palette.primary.main,
+                                    boxShadow: 3,
+                                  },
+                                  borderRadius: 2,
+                                  transition: "all 0.3s ease-in-out",
+                                }}
+                              >
+                                <Add />
+                              </IconButton>
+                            </label>
+                          </Tooltip>
                         </Box>
-                      )}
-                      <BlockWarningDialog />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </Grid>
-          </Grid>
-          <Grid container spacing={2}>
-            <Grid
-              item
-              xs={12}
-              md={6}
-              sx={{ marginTop: "20px", marginBottom: "15px" }}
-            >
-              <Paper elevation={0} sx={commonPaperStyles}>
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    mb: 3,
-                    gap: 1,
-                  }}
-                >
-                  <DashboardIcon color="primary" />
-                  <Typography variant="h6" color="primary">
-                    Top User Storage Usage
-                  </Typography>
-                </Box>
-                <Box>
-                  {getSortedStorageUsers()
-                    .slice(
-                      userPage * userRowsPerPage,
-                      userPage * userRowsPerPage + userRowsPerPage
-                    )
-                    .map((user, index) => (
+                      }
+                    />
+
+                    <CardContent
+                      sx={{
+                        flexGrow: 1,
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "center", // center vertically
+                        gap: 3,
+                        padding: "0px",
+                        paddingBottom: "0px",
+                      }}
+                    >
+                      <LicenseCountdownBox
+                        licenses={licenses}
+                        currentLicenseIndex={currentLicenseIndex}
+                        setCurrentLicenseIndex={setCurrentLicenseIndex}
+                        remainingDays={remainingDays}
+                        nextExpiringLicense={nextExpiringLicense}
+                        chartColors={chartColors}
+                      />
+
                       <Box
-                        key={index}
                         sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          p: 1,
-                          mb: 0.5,
-                          borderRadius: 1.5,
-                          backgroundColor:
-                            index % 2 === 0
-                              ? alpha(chartColors.primary, 0.02)
-                              : alpha(chartColors.primary, 0.06),
-                          "&:hover": {
-                            backgroundColor: alpha(chartColors.primary, 0.1),
-                            transform: "translateY(-1px)",
-                            transition: "all 0.2s ease-in-out",
+                          mt: 1,
+                          border: `1px solid ${isDark ? "#444" : "#e0e0e0"}`,
+                          borderRadius: 2,
+                          maxHeight: 200,
+                          overflowY: "auto",
+                          backgroundColor: isDark ? "#121212" : "#fff",
+                          "&::-webkit-scrollbar": {
+                            width: "4px",
+                          },
+                          "&::-webkit-scrollbar-thumb": {
+                            backgroundColor: isDark ? "#666" : "#ccc",
+                            borderRadius: "4px",
+                          },
+                          "&::-webkit-scrollbar-track": {
+                            backgroundColor: isDark ? "#1e1e1e" : "#f5f5f5",
                           },
                         }}
                       >
-                        <Box sx={{ minWidth: 120 }}>
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              fontWeight: 600,
-                              color: chartColors.primary,
-                              fontSize: "0.875rem",
+                        <table
+                          style={{
+                            width: "100%",
+                            borderCollapse: "collapse",
+                            tableLayout: "fixed",
+                          }}
+                        >
+                          <thead>
+                            <tr
+                              style={{
+                                background: isDark ? "#2b2b2b" : "#f5f5f5",
+                                color: isDark ? "#fff" : "#000",
+                                position: "sticky",
+                                top: 0,
+                                zIndex: 1,
+                              }}
+                            >
+                              {[
+                                "Name",
+                                "Issue Date",
+                                "Expiry Date",
+                                "Status",
+                                "Days Left",
+                                "Alert",
+                              ].map((header, i) => (
+                                <th
+                                  key={header}
+                                  style={{
+                                    padding: "8px",
+                                    fontWeight: "600",
+                                    fontSize: "0.9rem",
+                                    textAlign: i === 4 ? "center" : "left",
+                                    color: isDark ? "#fff" : "#000",
+                                  }}
+                                >
+                                  {header === "Alert" ? (
+                                    <Box
+                                      sx={{
+                                        display: "flex",
+                                        justifyContent: "center",
+                                        alignItems: "center",
+                                        gap: 1,
+                                      }}
+                                    >
+                                      <Typography
+                                        variant="body2"
+                                        sx={{
+                                          fontWeight: 600,
+                                          color: isDark ? "#fff" : "#000",
+                                        }}
+                                      >
+                                        Alert
+                                      </Typography>
+
+                                      <FormControl
+                                        size="small"
+                                        sx={{
+                                          width: 100,
+                                          "& .MuiOutlinedInput-root": {
+                                            height: 32,
+                                            fontSize: "0.75rem",
+                                            paddingRight: "32px", // Make space for icon
+                                            backgroundColor: isDark
+                                              ? "#424242"
+                                              : "#fff",
+                                          },
+                                          "& .MuiSelect-select": {
+                                            padding: "4px 8px",
+                                            display: "flex",
+                                            alignItems: "center",
+                                          },
+                                          "& .MuiSelect-icon": {
+                                            right: 8,
+                                            top: "calc(50% - 12px)", // center vertically
+                                            color: isDark ? "#ccc" : "#555",
+                                          },
+                                        }}
+                                      >
+                                        <Select
+                                          value={licenseFilter}
+                                          onChange={(e) =>
+                                            setLicenseFilter(e.target.value)
+                                          }
+                                          displayEmpty
+                                          renderValue={() => ""}
+                                        >
+                                          <MenuItem value="all">All</MenuItem>
+                                          <MenuItem value="active">
+                                            Active
+                                          </MenuItem>
+                                          <MenuItem value="expired">
+                                            Expired
+                                          </MenuItem>
+                                          <MenuItem value="expiring soon">
+                                            Expiring Soon
+                                          </MenuItem>
+                                        </Select>
+                                      </FormControl>
+                                    </Box>
+                                  ) : (
+                                    header
+                                  )}
+                                </th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {filteredLicenses.map((license, index) => {
+                              const { status, daysLeft } = getLicenseStatus(
+                                license.expiryDate
+                              );
+                              const colorMap = {
+                                Active: "#4caf50",
+                                "Expiring Soon": "#ff9800",
+                                Expired: "#f44336",
+                              };
+
+                              const isSelected = index === currentLicenseIndex;
+
+                              return (
+                                <tr
+                                  key={index}
+                                  onClick={() => {
+                                    const originalIndex = licenses.findIndex(
+                                      (l) => l.id === license.id
+                                    );
+                                    if (originalIndex !== -1) {
+                                      setCurrentLicenseIndex(originalIndex);
+                                    }
+                                  }}
+                                  style={{
+                                    borderBottom: `1px solid ${
+                                      isDark ? "#333" : "#eee"
+                                    }`,
+                                    cursor: "pointer",
+                                    backgroundColor: isSelected
+                                      ? isDark
+                                        ? "#263238"
+                                        : "rgba(25, 118, 210, 0.05)"
+                                      : isDark
+                                      ? "#1e1e1e"
+                                      : "#fff",
+                                    color: isDark ? "#e0e0e0" : "#000",
+                                    transition:
+                                      "background-color 0.3s ease-in-out",
+                                  }}
+                                >
+                                  <td
+                                    style={{
+                                      padding: "8px",
+                                      fontSize: "0.875rem",
+                                    }}
+                                  >
+                                    {license.name}
+                                  </td>
+                                  <td
+                                    style={{
+                                      padding: "8px",
+                                      fontSize: "0.875rem",
+                                    }}
+                                  >
+                                    {license.issueDate || "—"}
+                                  </td>
+                                  <td
+                                    style={{
+                                      padding: "8px",
+                                      fontSize: "0.875rem",
+                                    }}
+                                  >
+                                    {license.expiryDate}
+                                  </td>
+                                  <td
+                                    style={{
+                                      padding: "8px",
+                                      fontSize: "0.875rem",
+                                      color: colorMap[status],
+                                      fontWeight: 600,
+                                    }}
+                                  >
+                                    {status}
+                                  </td>
+                                  <td
+                                    style={{
+                                      padding: "8px",
+                                      fontSize: "0.875rem",
+                                    }}
+                                  >
+                                    {daysLeft}
+                                  </td>
+                                  <td
+                                    style={{
+                                      padding: "8px",
+                                      textAlign: "center",
+                                    }}
+                                  >
+                                    {status === "Expired" ? (
+                                      <Tooltip
+                                        title={`Your license "${license.name}" has expired. Please upgrade your plan.`}
+                                        arrow
+                                      >
+                                        <WarningAmber
+                                          sx={{
+                                            color: "#f44336",
+                                            cursor: "default",
+                                          }}
+                                          fontSize="small"
+                                        />
+                                      </Tooltip>
+                                    ) : (
+                                      <Typography
+                                        variant="caption"
+                                        color={
+                                          isDark ? "grey.500" : "text.secondary"
+                                        }
+                                      >
+                                        —
+                                      </Typography>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Grid>
+
+                <Grid item xs={12}>
+                  {selectedChart && filteredUsers && (
+                    <Paper
+                      ref={userTableRef}
+                      elevation={2}
+                      sx={{
+                        mt: 4,
+                        p: 2,
+                        borderRadius: 2,
+                        boxShadow: 3,
+                        backgroundColor: isDark ? "#1e1e1e" : "#fff",
+                        border: `1px solid ${isDark ? "#444" : "#e0e0e0"}`,
+                      }}
+                    >
+                      <Typography
+                        variant="h6"
+                        sx={{
+                          mb: 2,
+                          fontWeight: 600,
+                          color: isDark ? "#fff" : "#000",
+                        }}
+                      >
+                        {selectedChart} Users
+                      </Typography>
+
+                      <Box
+                        sx={{
+                          maxHeight: 350,
+                          overflowY: "auto",
+                          border: `1px solid ${isDark ? "#555" : "#ccc"}`,
+                          borderRadius: "6px",
+                          backgroundColor: isDark ? "#121212" : "#fafafa",
+                          "&::-webkit-scrollbar": {
+                            width: "6px",
+                          },
+                          "&::-webkit-scrollbar-thumb": {
+                            backgroundColor: isDark ? "#666" : "#888",
+                            borderRadius: "4px",
+                          },
+                          "&::-webkit-scrollbar-thumb:hover": {
+                            backgroundColor: isDark ? "#888" : "#555",
+                          },
+                        }}
+                      >
+                        <table
+                          className="user-table"
+                          style={{
+                            width: "100%",
+                            borderCollapse: "collapse",
+                          }}
+                        >
+                          <thead
+                            style={{
+                              backgroundColor: isDark ? "#333" : "#1976d2",
+                              color: "#fff",
+                              position: "sticky",
+                              top: 0,
+                              zIndex: 2,
+                              boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
                             }}
                           >
-                            {user.name}
-                          </Typography>
-                          <Typography
-                            variant="caption"
-                            sx={{
-                              color: "text.secondary",
-                              fontSize: "0.75rem",
-                            }}
-                          >
-                            {`${user.storageUsed}/${user.storageAllocated}GB`}
-                          </Typography>
-                        </Box>
-                        <Box sx={{ flex: 1, mx: 2 }}>
-                          <LinearProgress
-                            variant="determinate"
-                            value={
-                              (user.storageUsed / user.storageAllocated) * 100
+                            <tr>
+                              <th style={headerCellStyle}>Name</th>
+                              <th style={headerCellStyle}>Used</th>
+                              <th style={headerCellStyle}>Allocated</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {filteredUsers.length === 0 ? (
+                              <tr>
+                                <td
+                                  colSpan={3}
+                                  style={{
+                                    padding: "8px",
+                                    fontSize: "0.875rem",
+                                    color: isDark ? "#aaa" : "#000",
+                                  }}
+                                >
+                                  No users found.
+                                </td>
+                              </tr>
+                            ) : (
+                              filteredUsers.map((user, index) => (
+                                <tr
+                                  key={index}
+                                  style={{
+                                    borderBottom: `1px solid ${
+                                      isDark ? "#333" : "#f0f0f0"
+                                    }`,
+                                    backgroundColor: isDark
+                                      ? index % 2 === 0
+                                        ? "#1c1c1c"
+                                        : "#222"
+                                      : index % 2 === 0
+                                      ? "#fafafa"
+                                      : "#fff",
+                                  }}
+                                >
+                                  <td
+                                    style={{
+                                      ...rowCellStyle,
+                                      color: isDark ? "#eee" : "#000",
+                                    }}
+                                  >
+                                    {user.name}
+                                  </td>
+                                  <td
+                                    style={{
+                                      ...rowCellStyle,
+                                      color: isDark ? "#eee" : "#000",
+                                    }}
+                                  >
+                                    {user.permissions?.displayStorage || "—"}
+                                  </td>
+                                  <td
+                                    style={{
+                                      ...rowCellStyle,
+                                      color: isDark ? "#eee" : "#000",
+                                    }}
+                                  >
+                                    {user.permissions
+                                      ?.allowedStorageInBytesDisplay || "—"}
+                                  </td>
+                                </tr>
+                              ))
+                            )}
+                          </tbody>
+                        </table>
+                      </Box>
+                    </Paper>
+                  )}
+                </Grid>
+              </Grid>
+              <Grid container spacing={2}>
+                <Grid
+                  item
+                  xs={12}
+                  md={6}
+                  sx={{ marginTop: "20px", marginBottom: "15px" }}
+                >
+                  <Paper elevation={0} sx={commonPaperStyles}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        mb: 3,
+                        gap: 1,
+                      }}
+                    >
+                      <Dashboard color="primary" />
+                      <Typography variant="h6" color="primary">
+                        Storage Used (By Users)
+                      </Typography>
+
+                      <FormControl
+                        size="small"
+                        sx={{ display: "flex", marginLeft: "auto" }}
+                      >
+                        <Select
+                          value={userSortOption}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setUserSortOption(value);
+                            sortUsers(value); // Call sort logic
+                          }}
+                          displayEmpty
+                          renderValue={(value) => {
+                            switch (value) {
+                              case "high":
+                                return (
+                                  <>
+                                    <FilterList />
+                                  </>
+                                );
+                              case "low":
+                                return (
+                                  <>
+                                    <ArrowDownward />
+                                  </>
+                                );
+                              case "az":
+                                return (
+                                  // <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                                  <>
+                                    <SortByAlpha />
+                                  </>
+                                  // </div>
+                                );
+                              case "za":
+                                return (
+                                  // <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                                  <>
+                                    <SortByAlpha
+                                      sx={{ transform: "rotate(180deg)" }}
+                                    />
+                                  </>
+                                  // </div>
+                                );
+                              default:
+                                return null;
                             }
+                          }}
+                        >
+                          <MenuItem value="high">
+                            High Usage
+                            <ArrowUpward />
+                          </MenuItem>
+                          <MenuItem value="low">
+                            Low Usage
+                            <ArrowDownward />
+                          </MenuItem>
+                          <MenuItem value="az">A-Z</MenuItem>
+                          <MenuItem value="za">Z-A</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </Box>
+
+                    <Box>
+                      {getSortedStorageUsers
+                        .slice(
+                          userPage * userRowsPerPage,
+                          userPage * userRowsPerPage + userRowsPerPage
+                        )
+                        .map((user, index) => (
+                          <Box
+                            key={index}
                             sx={{
-                              height: 4,
-                              borderRadius: 2,
-                              [`&.MuiLinearProgress-root`]: {
+                              display: "flex",
+                              alignItems: "center",
+                              p: 1,
+                              mb: 0.5,
+                              borderRadius: 1.5,
+                              backgroundColor:
+                                index % 2 === 0
+                                  ? alpha(chartColors.primary, 0.02)
+                                  : alpha(chartColors.primary, 0.06),
+                              "&:hover": {
                                 backgroundColor: alpha(
                                   chartColors.primary,
-                                  0.12
+                                  0.1
                                 ),
-                              },
-                              [`& .MuiLinearProgress-bar`]: {
-                                borderRadius: 3,
-                                backgroundColor: chartColors.primary,
+                                transform: "translateY(-1px)",
+                                transition: "all 0.2s ease-in-out",
                               },
                             }}
-                          />
-                        </Box>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            minWidth: 40,
-                            textAlign: "right",
-                            fontWeight: 600,
-                            color: chartColors.primary,
-                            fontSize: "0.875rem",
-                          }}
-                        >
-                          {`${Math.round(
-                            (user.storageUsed / user.storageAllocated) * 100
-                          )}%`}
-                        </Typography>
-                      </Box>
-                    ))}
-                  <TablePagination
-                    component="div"
-                    count={getSortedStorageUsers().length}
-                    page={userPage}
-                    onPageChange={handleUserPageChange}
-                    rowsPerPage={userRowsPerPage}
-                    onRowsPerPageChange={handleUserRowsPerPageChange}
-                    rowsPerPageOptions={[5, 10, 15]}
-                    sx={{
-                      mt: 1,
-                      ".MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows":
-                        {
-                          margin: 0,
-                        },
-                    }}
-                  />
-                </Box>
-              </Paper>
-            </Grid>
-            <Grid item xs={12} md={6} sx={{ marginTop: "20px" }}>
-              <Paper elevation={0} sx={commonPaperStyles}>
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    mb: 3,
-                    gap: 1,
-                  }}
-                >
-                  <DashboardIcon color="primary" />
-                  <Typography variant="h6" color="primary">
-                    Top Department Storage Usage
-                  </Typography>
-                </Box>
-                <Box>
-                  {getSortedDepartments()
-                    .slice(
-                      deptPage * deptRowsPerPage,
-                      deptPage * deptRowsPerPage + deptRowsPerPage
-                    )
-                    .map((dept, index) => (
-                      <Box
-                        key={index}
+                          >
+                            <Box sx={{ minWidth: 120 }}>
+                              <Typography
+                                variant="body2"
+                                sx={{
+                                  fontWeight: 600,
+                                  color: chartColors.primary,
+                                  fontSize: "0.875rem",
+                                }}
+                              >
+                                {user.name}
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  color: "text.secondary",
+                                  fontSize: "0.75rem",
+                                }}
+                              >
+                                {`${user.storageUsed}/${user.storageAllocated}GB`}
+                              </Typography>
+                            </Box>
+                            <Box sx={{ flex: 1, mx: 2 }}>
+                              <LinearProgress
+                                variant="determinate"
+                                value={
+                                  (user.storageUsed / user.storageAllocated) *
+                                  100
+                                }
+                                sx={{
+                                  height: 10,
+                                  borderRadius: 2,
+                                  [`&.MuiLinearProgress-root`]: {
+                                    backgroundColor: alpha(
+                                      chartColors.primary,
+                                      0.12
+                                    ),
+                                  },
+                                  [`& .MuiLinearProgress-bar`]: {
+                                    borderRadius: 3,
+                                    backgroundColor: getProgressBarColor(
+                                      (user.storageUsed /
+                                        user.storageAllocated) *
+                                        100
+                                    ),
+                                  },
+                                }}
+                              />
+                            </Box>
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                minWidth: 40,
+                                textAlign: "right",
+                                fontWeight: 600,
+                                color: chartColors.primary,
+                                fontSize: "0.875rem",
+                              }}
+                            >
+                              {`${Math.round(
+                                (user.storageUsed / user.storageAllocated) * 100
+                              )}%`}
+                            </Typography>
+                            {/* <Tooltip title="Increase Storage" arrow>
+                              <IconButton
+                                size="small"
+                                onClick={() =>
+                                  console.log(
+                                    `Increase storage for ${user.name}`
+                                  )
+                                }
+                                sx={{
+                                  ml: 1,
+                                  width: 28,
+                                  height: 28,
+                                  padding: 0.5,
+                                  backgroundColor: (theme) =>
+                                    theme.palette.primary.light,
+                                  color: (theme) =>
+                                    theme.palette.primary.contrastText,
+                                  "&:hover": {
+                                    backgroundColor: (theme) =>
+                                      theme.palette.primary.main,
+                                    boxShadow: 2,
+                                  },
+                                  borderRadius: 2,
+                                  transition: "all 0.2s ease-in-out",
+                                }}
+                              >
+                                <Add fontSize="inherit" />
+                              </IconButton>
+                            </Tooltip> */}
+                          </Box>
+                        ))}
+                      <TablePagination
+                        component="div"
+                        count={getSortedStorageUsers.length}
+                        page={userPage}
+                        onPageChange={handleUserPageChange}
+                        rowsPerPage={userRowsPerPage}
+                        onRowsPerPageChange={handleUserRowsPerPageChange}
+                        rowsPerPageOptions={[5, 10, 15]}
                         sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          p: 1,
-                          mb: 0.5,
-                          borderRadius: 1.5,
-                          backgroundColor:
-                            index % 2 === 0
-                              ? alpha(chartColors.warning, 0.02)
-                              : alpha(chartColors.warning, 0.06),
-                          "&:hover": {
-                            backgroundColor: alpha(chartColors.warning, 0.1),
-                            transform: "translateY(-1px)",
-                            transition: "all 0.2s ease-in-out",
-                          },
+                          mt: 1,
+                          ".MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows":
+                            {
+                              margin: 0,
+                            },
                         }}
+                      />
+                    </Box>
+                  </Paper>
+                </Grid>
+                <Grid item xs={12} md={6} sx={{ marginTop: "20px" }}>
+                  <Paper elevation={0} sx={commonPaperStyles}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        mb: 3,
+                        gap: 1,
+                      }}
+                    >
+                      <Dashboard color="primary" />
+                      <Typography variant="h6" color="primary">
+                        Storage Used (By Departments)
+                      </Typography>
+                      <FormControl
+                        size="small"
+                        sx={{ display: "flex", marginLeft: "auto" }}
                       >
-                        <Box sx={{ minWidth: 120 }}>
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              fontWeight: 600,
-                              color: chartColors.warning,
-                              fontSize: "0.875rem",
-                            }}
-                          >
-                            {dept.name}
-                          </Typography>
-                          <Typography
-                            variant="caption"
-                            sx={{
-                              color: "text.secondary",
-                              fontSize: "0.75rem",
-                            }}
-                          >
-                            {`${dept.storage}GB`}
-                          </Typography>
-                        </Box>
-                        <Box sx={{ flex: 1, mx: 2 }}>
-                          <LinearProgress
-                            variant="determinate"
-                            value={(dept.storage / 200) * 100}
-                            sx={{
-                              height: 4,
-                              borderRadius: 2,
-                              [`&.MuiLinearProgress-root`]: {
-                                backgroundColor: alpha(
-                                  chartColors.warning,
-                                  0.12
-                                ),
-                              },
-                              [`& .MuiLinearProgress-bar`]: {
-                                borderRadius: 3,
-                                backgroundColor: chartColors.warning,
-                              },
-                            }}
-                          />
-                        </Box>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            minWidth: 40,
-                            textAlign: "right",
-                            fontWeight: 600,
-                            color: chartColors.warning,
-                            fontSize: "0.875rem",
+                        <Select
+                          value={deptSortOption}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setDeptSortOption(value);
+                            sortDepartments(value);
+                          }}
+                          displayEmpty
+                          renderValue={(value) => {
+                            switch (value) {
+                              case "high":
+                                return (
+                                  <>
+                                    <FilterList />
+                                  </>
+                                );
+                              case "low":
+                                return (
+                                  <>
+                                    <ArrowDownward />
+                                  </>
+                                );
+                              case "az":
+                                return (
+                                  <>
+                                    <SortByAlpha />
+                                  </>
+                                );
+                              case "za":
+                                return (
+                                  <>
+                                    <SortByAlpha
+                                      sx={{ transform: "rotate(180deg)" }}
+                                    />
+                                  </>
+                                );
+                              default:
+                                return null;
+                            }
                           }}
                         >
-                          {`${Math.round((dept.storage / 200) * 100)}%`}
-                        </Typography>
-                      </Box>
-                    ))}
-                  <TablePagination
-                    component="div"
-                    count={getSortedDepartments().length}
-                    page={deptPage}
-                    onPageChange={handleDeptPageChange}
-                    rowsPerPage={deptRowsPerPage}
-                    onRowsPerPageChange={handleDeptRowsPerPageChange}
-                    rowsPerPageOptions={[5, 10, 15]}
-                    sx={{
-                      mt: 1,
-                      ".MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows":
-                        {
-                          margin: 0,
-                        },
-                    }}
-                  />
-                </Box>
-              </Paper>
-            </Grid>
-          </Grid>
+                          <MenuItem value="high">
+                            High Usage <ArrowUpward />
+                          </MenuItem>
+                          <MenuItem value="low">
+                            Low Usage <ArrowDownward />
+                          </MenuItem>
+                          <MenuItem value="az">A-Z</MenuItem>
+                          <MenuItem value="za">Z-A</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </Box>
+                    <Box>
+                      {getSortedDepartments
+                        .slice(
+                          deptPage * deptRowsPerPage,
+                          deptPage * deptRowsPerPage + deptRowsPerPage
+                        )
+                        .map((dept, index) => (
+                          <Box
+                            key={index}
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              p: 1,
+                              mb: 0.5,
+                              borderRadius: 1.5,
+                              backgroundColor:
+                                index % 2 === 0
+                                  ? alpha(chartColors.primary, 0.02)
+                                  : alpha(chartColors.primary, 0.06),
+                              "&:hover": {
+                                backgroundColor: alpha(
+                                  chartColors.primary,
+                                  0.1
+                                ),
+                                transform: "translateY(-1px)",
+                                transition: "all 0.2s ease-in-out",
+                              },
+                            }}
+                          >
+                            <Box sx={{ minWidth: 120 }}>
+                              <Typography
+                                variant="body2"
+                                sx={{
+                                  fontWeight: 600,
+                                  color: chartColors.primary,
+                                  fontSize: "0.875rem",
+                                }}
+                              >
+                                {dept.name}
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  color: "text.secondary",
+                                  fontSize: "0.75rem",
+                                }}
+                              >
+                                {`${dept.storageUsed}/${dept.storageAllocated}GB`}
+                              </Typography>
+                            </Box>
+                            <Box sx={{ flex: 1, mx: 2 }}>
+                              <LinearProgress
+                                variant="determinate"
+                                value={
+                                  (dept.storageUsed / dept.storageAllocated) *
+                                  100
+                                }
+                                sx={{
+                                  height: 10,
+                                  borderRadius: 2,
+                                  [`&.MuiLinearProgress-root`]: {
+                                    backgroundColor: alpha(
+                                      chartColors.primary,
+                                      0.12
+                                    ),
+                                  },
+                                  [`& .MuiLinearProgress-bar`]: {
+                                    borderRadius: 3,
+                                    backgroundColor: getProgressBarColor(
+                                      (dept.storageUsed /
+                                        dept.storageAllocated) *
+                                        100
+                                    ),
+                                  },
+                                }}
+                              />
+                            </Box>
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                minWidth: 40,
+                                textAlign: "right",
+                                fontWeight: 600,
+                                color: chartColors.primary,
+                                fontSize: "0.875rem",
+                              }}
+                            >
+                              {`${Math.round(
+                                (dept.storageUsed / dept.storageAllocated) * 100
+                              )}%`}
+                            </Typography>
+                            {/* <Tooltip title="Increase Storage" arrow>
+                              <IconButton
+                                size="small"
+                                onClick={() =>
+                                  console.log(
+                                    `Increase storage for ${dept.name}`
+                                  )
+                                }
+                                sx={{
+                                  ml: 1,
+                                  width: 28,
+                                  height: 28,
+                                  padding: 0.5,
+                                  backgroundColor: (theme) =>
+                                    theme.palette.primary.light,
+                                  color: (theme) =>
+                                    theme.palette.primary.contrastText,
+                                  "&:hover": {
+                                    backgroundColor: (theme) =>
+                                      theme.palette.primary.main,
+                                    boxShadow: 2,
+                                  },
+                                  borderRadius: 2,
+                                  transition: "all 0.2s ease-in-out",
+                                }}
+                              >
+                                <Add fontSize="inherit" />
+                              </IconButton>
+                            </Tooltip> */}
+                          </Box>
+                        ))}
+                      <TablePagination
+                        component="div"
+                        count={getSortedDepartments.length}
+                        page={deptPage}
+                        onPageChange={handleDeptPageChange}
+                        rowsPerPage={deptRowsPerPage}
+                        onRowsPerPageChange={handleDeptRowsPerPageChange}
+                        rowsPerPageOptions={[5, 10, 15]}
+                        sx={{
+                          mt: 1,
+                          ".MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows":
+                            {
+                              margin: 0,
+                            },
+                        }}
+                      />
+                    </Box>
+                  </Paper>
+                </Grid>
+              </Grid>
+            </Box>
+          </div>
+          <Dialog
+            open={addLicenseDialogOpen}
+            onClose={() => setAddLicenseDialogOpen(false)}
+            sx={{
+              animation: "slideInFromLeft 0.2s ease-in-out forwards",
+              opacity: 0, // Start with opacity 0
+              transform: "translateX(-50px)", // Start from left
+              "@keyframes slideInFromLeft": {
+                "0%": {
+                  opacity: 0,
+                  transform: "translateX(-50px)",
+                },
+                "100%": {
+                  opacity: 1,
+                  transform: "translateX(0)",
+                },
+              },
+            }}
+          >
+            <DialogTitle
+              sx={{ backgroundColor: "primary.main", color: "#ffff" }}
+            >
+              Add New License
+            </DialogTitle>
+            <DialogContent
+              sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}
+            >
+              <TextField
+                label="License Name"
+                fullWidth
+                value={newLicense.name}
+                onChange={(e) =>
+                  setNewLicense({ ...newLicense, name: e.target.value })
+                }
+              />
+              <TextField
+                label="Expiry Date"
+                type="date"
+                fullWidth
+                InputLabelProps={{ shrink: true }}
+                value={newLicense.expiryDate}
+                onChange={(e) =>
+                  setNewLicense({ ...newLicense, expiryDate: e.target.value })
+                }
+              />
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setAddLicenseDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  if (newLicense.name && newLicense.expiryDate) {
+                    licenses.push({ ...newLicense, id: licenses.length + 1 });
+                    setAddLicenseDialogOpen(false);
+                    setNewLicense({ name: "", expiryDate: "" });
+                  }
+                }}
+                sx={{ background: "rgb(251, 68, 36)" }}
+                variant="contained"
+              >
+                Add
+              </Button>
+            </DialogActions>
+          </Dialog>
+          <Snackbar
+            open={snackbar.open}
+            autoHideDuration={4000}
+            onClose={() => setSnackbar({ ...snackbar, open: false })}
+            anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+          >
+            <Alert
+              onClose={() => setSnackbar({ ...snackbar, open: false })}
+              severity={snackbar.severity}
+              sx={{ width: "100%" }}
+            >
+              {snackbar.message}
+            </Alert>
+          </Snackbar>
         </Box>
-      </div>
-    </Box>
+      )}
+
+      <Dialog
+        open={openCreateUser}
+        onClose={() => setOpenCreateUser(false)}
+        TransitionComponent={Transition}
+        keepMounted
+        maxWidth="md" // Options: 'xs' | 'sm' | 'md' | 'lg' | 'xl'
+        fullWidth={false} // ❌ don't stretch full width
+      >
+        <CreateUser
+          handleClose={() => setOpenCreateUser(false)}
+          showSnackbar={showSnackbar}
+        />
+      </Dialog>
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={4000}
+        onClose={() => setSnackbarOpen(false)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setSnackbarOpen(false)}
+          severity={snackbarSeverity}
+          sx={{ width: "100%" }}
+          variant="filled"
+        >
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
+    </>
   );
 };
 

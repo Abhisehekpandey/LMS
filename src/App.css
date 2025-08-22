@@ -3,6 +3,14 @@
   overflow: hidden;
 }
 
+body,
+html {
+  margin: 0;
+  padding: 0;
+  /* overflow: hidden; */
+  height: 100%;
+}
+
 .App-logo {
   height: 40vmin;
   pointer-events: none;
@@ -43,15 +51,18 @@
   display: flex;
   background-color: whitesmoke;
   margin-left: 70px;
-     
+
 
 }
 
 .child {
-  background-color: white;
-  margin: 10px;
+  /* background-color: white; */
+  padding: 16px;
+  /* margin: 10px; */
   width: 100%;
-  border-radius: 20px;
-    box-shadow: 2px 1px 11px 5px rgba(0, 0, 0, 0.2) !important
+  /* border-radius: 20px; */
+  /* box-shadow: 2px 1px 11px 5px rgba(0, 0, 0, 0.2) !important */
   /* height: calc(100vh - 70px); */
 }
+
+.PaperUI {}

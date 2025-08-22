@@ -25,7 +25,7 @@ export const createUserAction = createAsyncThunkWithTokenRefresh(
     const headers = {
       pageNumber: payload.pageNumber || 0,
       pageSize: payload.pageSize || 7,
-      username: localStorage.getItem("username"),
+      username: sessionStorage.getItem("username"),
     };
 
     return axios.get(`/crm/api/createUser`, createAxiosConfig(token, headers));

@@ -1,14 +1,12 @@
-import React, { useState, useCallback, useEffect } from "react";
-// import '@fontsource/be-vietnam';
-import { useLocation } from "react-router-dom";
+import React, { useState, useCallback, useRef } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import Slide from "@mui/material/Slide";
 import {
   AppBar,
   Toolbar,
   Typography,
   InputBase,
   IconButton,
-  Menu,
-  MenuItem,
   Tooltip,
   Box,
   styled,
@@ -19,74 +17,77 @@ import {
   ListItemText,
   ClickAwayListener,
   Divider,
-  alpha,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Checkbox,
+  FormControlLabel,
+  TextField,
+  Radio,
+  RadioGroup,
+  FormControl,
+  Switch,
 } from "@mui/material";
+
 import SearchIcon from "@mui/icons-material/Search";
-import LanguageIcon from "@mui/icons-material/Language";
-import Brightness4Icon from "@mui/icons-material/Brightness4";
-import LogoutIcon from "@mui/icons-material/Logout";
-import { useNavigate } from "react-router-dom";
+import DarkModeIcon from "@mui/icons-material/DarkMode";
+import ExitToAppIcon from "@mui/icons-material/ExitToApp";
 import debounce from "lodash/debounce";
+import { fetchUsers } from "../api/userService";
+import { getDepartments } from "../api/departmentService";
+import { saveApmSettings } from "../api/apm"; // ✅ your API call here
+
+const Transition = React.forwardRef(function Transition(props, ref) {
+  return <Slide direction="left" ref={ref} {...props} timeout={200} />;
+});
 
 const StyledAppBar = styled(AppBar)(({ theme }) => ({
-  backgroundColor: "white", // Match sidebar color
-  color: "#424242",
-  boxShadow: "0 1px 2px rgba(0,0,0,0.15)",
-  height: "50px",
-  backdropFilter: "blur(8px)",
-  boxShadow: "0 1px 2px rgba(0,0,0,0.08)",
-  position: "relative", // Ensure backdrop-filter works properly
+  backgroundColor:
+    theme.palette.mode === "dark" ? theme.palette.background.paper : "white",
+  color: theme.palette.text.primary,
+  boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
+  height: "56px",
   zIndex: 1100,
-  fontFamily: '"Be Vietnam", sans-serif',
+  fontFamily: '"Poppins", sans-serif',
 }));
 
 const StyledToolbar = styled(Toolbar)({
-  minHeight: "48px !important",
+  minHeight: "56px !important",
   padding: "0 16px !important",
-  fontFamily: '"Be Vietnam", sans-serif',
 });
 
-const SearchWrapper = styled("div")({
+const SearchWrapper = styled("div")(({ theme }) => ({
   position: "relative",
   borderRadius: "20px",
-  backgroundColor: "rgba(246,249,254)", // Darker background for search
-  "&:hover": {
-    backgroundColor: "rgba(246,249,254)",
-
-  minHeight: 40,
-  position: 'relative',
-  '& .searchRoot': {
-    position: { xs: 'absolute', sm: 'relative' },
-    right: { xs: 0, sm: 'auto' },
-    top: { xs: 0, sm: 'auto' },
-
-},
-  },
-  marginRight: "20px",
-  marginLeft: "20px",
+  backgroundColor:
+    theme.palette.mode === "dark"
+      ? theme.palette.background.default
+      : "#f6f9fe",
+  marginLeft: "40px",
   width: "100%",
-  minWidth: "400px",
   maxWidth: "400px",
   display: "flex",
   alignItems: "center",
-  fontFamily: '"Be Vietnam", sans-serif',
-});
+}));
 
-const StyledInputBase = styled(InputBase)({
-  color: "inherit",
+const StyledInputBase = styled(InputBase)(({ theme }) => ({
+  color: theme.palette.text.primary,
   width: "100%",
   "& .MuiInputBase-input": {
     padding: "8px 12px 6px 40px",
     fontSize: "0.875rem",
-    width: "100%", // Ensure the input takes full width
     height: "1.5rem",
     "&::placeholder": {
-      color: "rgba(0, 0, 0, 0.5)",
+      color:
+        theme.palette.mode === "dark"
+          ? "rgba(255, 255, 255, 0.5)"
+          : "rgba(0, 0, 0, 0.5)",
       opacity: 1,
-      fontFamily: '"Be Vietnam", sans-serif',
     },
   },
-});
+}));
 
 const SearchIconWrapper = styled("div")({
   padding: "0 12px",
@@ -94,7 +95,7 @@ const SearchIconWrapper = styled("div")({
   position: "absolute",
   display: "flex",
   alignItems: "center",
-  left: 0, // Ensure it's properly positioned
+  left: 0,
   justifyContent: "center",
   pointerEvents: "none",
 });
@@ -106,128 +107,110 @@ const SearchResultWrapper = styled(Paper)(({ theme }) => ({
   width: "100%",
   "& .MuiListItem-root": {
     borderRadius: 1,
-    fontFamily: '"Be Vietnam", sans-serif',
     "&:hover": {
       backgroundColor: theme.palette.action.hover,
     },
   },
 }));
 
-const Navbar = ({ onThemeToggle, onSearch, currentPage }) => {
+const Navbar = ({ onThemeToggle, onSearch }) => {
+  console.log("ontehe", onThemeToggle);
   const location = useLocation();
   const navigate = useNavigate();
-  const [anchorEl, setAnchorEl] = useState(null);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searchAnchorEl, setSearchAnchorEl] = useState(null);
-  const [userData, setUserData] = useState([]);
+  const [apmDialogOpen, setApmDialogOpen] = useState(false);
 
-  // Load data from localStorage
-  useEffect(() => {
-    const loadUserData = () => {
-      const data = localStorage.getItem("dashboardRows");
-      if (data) {
-        setUserData(JSON.parse(data));
+  // APM Dialog States
+  const [apmScope, setApmScope] = useState("both");
+  const [apmEnabled, setApmEnabled] = useState(true);
+  const [logLevel, setLogLevel] = useState("info");
+  const [cacheBackend, setCacheBackend] = useState(true);
+  const [cacheFrontend, setCacheFrontend] = useState(false);
+
+  const debouncedSearch = useRef(
+    debounce(async (query) => {
+      if (!query) {
+        setSearchResults([]);
+        onSearch?.([]);
+        return;
       }
-    };
 
-    loadUserData();
-    // Add event listener for localStorage changes
-    window.addEventListener("storage", loadUserData);
-    return () => window.removeEventListener("storage", loadUserData);
-  }, []);
+      const lowercaseQuery = query.toLowerCase();
+      try {
+        let results = [];
 
-  const getFormattedPath = () => {
-    const path = location.pathname;
+        if (location.pathname === "/user") {
+          const firstPage = await fetchUsers(0);
+          let allUsers = [...firstPage.content];
+          const totalPages = firstPage.totalPages || 1;
 
-    // Handle root path
-    if (path === "/") return "";
+          const morePages = await Promise.all(
+            Array.from({ length: totalPages - 1 }, (_, i) => fetchUsers(i + 1))
+          );
+          morePages.forEach((res) => allUsers.push(...res.content));
 
-    // Remove leading slash and split by slashes
-    const segments = path.substring(1).split("/");
+          results = allUsers.filter(
+            (user) =>
+              user.name?.toLowerCase().includes(lowercaseQuery) ||
+              user.email?.toLowerCase().includes(lowercaseQuery) ||
+              user.roles?.[0]?.roleName
+                ?.toLowerCase()
+                .includes(lowercaseQuery) ||
+              user.roles?.[0]?.department?.deptName
+                ?.toLowerCase()
+                .includes(lowercaseQuery)
+          );
+        } else if (location.pathname === "/department") {
+          const res = await getDepartments(0, 100, query);
+          results = (res.content || []).filter(
+            (dept) =>
+              dept.deptName?.toLowerCase().includes(lowercaseQuery) ||
+              dept.deptDisplayName?.toLowerCase().includes(lowercaseQuery)
+          );
+        } else if (location.pathname === "/data-dictionary") {
+          const response = await fetch(
+            `${window.__ENV__.REACT_APP_ROUTE}/tenants/getAllDictionary`,
+            {
+              headers: {
+                Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+                username: `${sessionStorage.getItem("adminEmail")}`,
+              },
+            }
+          );
 
-    // Map path segments to more readable format
-    const pathMap = {
-      user: "Users",
-      department: "Departments",
-      angelbot: "AngelBot",
-      "ldap-config": "LDAP Settings",
-      "company-dashboard": "Company Dashboard",
-    };
+          const dictData = await response.json();
+          const items = dictData.data || [];
 
-    // Format each segment and join them
-    return segments
-      .map(
-        (segment) =>
-          pathMap[segment] || segment.charAt(0).toUpperCase() + segment.slice(1)
-      )
-      .join(" / ");
-  };
-  const formattedPath = getFormattedPath();
+          results = items.filter((item) =>
+            [item.key, item.value, item.applicatbleTo].some((val) =>
+              val?.toLowerCase().includes(lowercaseQuery)
+            )
+          );
+        }
 
-  const searchData = (query) => {
-    if (!query) {
-      setSearchResults([]);
-      onSearch?.([]);
-      return;
-    }
+        setSearchResults(results.slice(0, 5));
+        onSearch?.(results);
+      } catch (error) {
+        console.error("Search error:", error);
+        setSearchResults([]);
+      }
+    }, 300)
+  ).current;
 
-    const lowercaseQuery = query.toLowerCase();
-    let results = [];
-
-    if (currentPage === "departments") {
-      // Search in departments data
-      const departmentsData = JSON.parse(
-        localStorage.getItem("departments") || "[]"
-      );
-      results = departmentsData.filter(
-        (item) =>
-          item.name?.toLowerCase().includes(lowercaseQuery) ||
-          item.displayName?.toLowerCase().includes(lowercaseQuery) ||
-          item.storage?.toLowerCase().includes(lowercaseQuery) ||
-          item.roles?.some((role) =>
-            role.toLowerCase().includes(lowercaseQuery)
-          )
-      );
-    } else {
-      // Default user search
-      const userData = JSON.parse(
-        localStorage.getItem("dashboardRows") || "[]"
-      );
-      results = userData.filter(
-        (item) =>
-          item.username?.toLowerCase().includes(lowercaseQuery) ||
-          item.name?.toLowerCase().includes(lowercaseQuery) ||
-          item.email?.toLowerCase().includes(lowercaseQuery) ||
-          item.department?.toLowerCase().includes(lowercaseQuery) ||
-          item.role?.toLowerCase().includes(lowercaseQuery)
-      );
-    }
-
-    setSearchResults(results.slice(0, 5)); // Limit dropdown to 5 results
-    onSearch?.(results); // Pass all results to parent
-  };
-
-  // Debounced search
-  const debouncedSearch = useCallback(
-    debounce((query) => searchData(query), 300),
-    [userData]
-  );
-
-  const handleSearchChange = (event) => {
-    const { value } = event.target;
+  const handleSearchChange = (e) => {
+    const { value } = e.target;
     setSearchTerm(value);
-    setSearchAnchorEl(event.currentTarget);
+    setSearchAnchorEl(e.currentTarget);
     debouncedSearch(value);
   };
 
-  const handleSearchResultClick = (result) => {
-    console.log("Selected result:", result);
-    setSearchTerm("");
+  const handleSearchResultClick = () => {
     setSearchResults([]);
     setSearchAnchorEl(null);
-    // Add navigation logic if needed
+    setSearchTerm("");
   };
 
   const handleClickAway = () => {
@@ -235,341 +218,361 @@ const Navbar = ({ onThemeToggle, onSearch, currentPage }) => {
     setSearchAnchorEl(null);
   };
 
-  const handleLogout = () => {
-    sessionStorage.removeItem("user");
-    navigate("/login");
-  };
+  
+  const handleLogout = async () => {
+    try {
+      const formData = new FormData();
+      formData.append("refreshToken", sessionStorage.getItem("refreshToken"));
 
-  const handleLanguageClick = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleLanguageClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleLanguageChange = (language) => {
-    console.log(`Language changed to: ${language}`);
-    handleLanguageClose();
-  };
-
-  const renderSearchResult = (result) => {
-    if (currentPage === "departments") {
-      return (
-        <ListItemText
-          primary={`${result.name} / ${result.displayName}`}
-          secondary={
-            <React.Fragment>
-              <Typography
-                component="span"
-                variant="body2"
-                color="text.primary"
-                sx={{ fontFamily: '"Be Vietnam", sans-serif' }}
-              >
-                Storage: {result.storage}
-              </Typography>
-              <br />
-              <Typography
-                component="span"
-                variant="caption"
-                color="text.secondary"
-                sx={{ fontFamily: '"Be Vietnam", sans-serif' }}
-              >
-                Roles: {result.roles.join(", ")}
-              </Typography>
-            </React.Fragment>
-          }
-        />
-      );
-    }
-
-    // Default user search result display
-    return (
-      <ListItemText
-        primary={result.name}
-        secondary={
-          <React.Fragment>
-            <Typography
-              component="span"
-              variant="body2"
-              color="text.primary"
-              sx={{ fontFamily: '"Be Vietnam", sans-serif' }}
-            >
-              {result.department} - {result.role}
-            </Typography>
-            <br />
-            <Typography
-              component="span"
-              variant="caption"
-              color="text.secondary"
-              sx={{ fontFamily: '"Be Vietnam", sans-serif' }}
-            >
-              {result.email}
-            </Typography>
-          </React.Fragment>
+      const response = await fetch(
+        `${window.__ENV__.REACT_APP_ROUTE}/tenants/logout`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+            username: `${sessionStorage.getItem("adminEmail")}`,
+            Accept: "application/json",
+          },
+          body: formData,
         }
-      />
-    );
+      );
+
+      if (!response.ok) {
+        console.warn("⚠️ Logout API call failed:", await response.text());
+      }
+
+      // Always clear session (even if API fails)
+      sessionStorage.clear();
+      localStorage.clear();
+      navigate("/login");
+    } catch (error) {
+      console.error("❌ Logout error:", error);
+      sessionStorage.clear();
+      localStorage.clear();
+      navigate("/login");
+    }
   };
+
 
   return (
     <StyledAppBar position="static">
       <StyledToolbar>
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            flexGrow: 1, // This will push other elements to the right
-          }}
-        >
-          <Typography
-            variant="h6"
+        <Box sx={{ display: "flex", alignItems: "center", flexGrow: 1 }}>
+          <Box
             sx={{
-              fontSize: "1.1rem",
-              fontWeight: 600,
-              color: "inherit",
-              fontFamily: '"Be Vietnam", sans-serif',
+              ml: { xs: 8, sm: 6, md: 7, lg: 8 },
+              transition: "margin 0.3s",
             }}
           >
-            {/* Access Arc */}
-          </Typography>
-
-          {formattedPath && (
-            <>
-              {/* <Typography
-                sx={{
-                  fontSize: "1.1rem",
-                  fontWeight: 400,
-                  color: "rgba(255, 255, 255, 0.7)",
-                  mx: 0.5
-                }}
-              >
-              </Typography> */}
-              <Box
-                sx={{
-                  height: { xs: 56, sm: 60 },
-                  padding: 2.5,
-                  display: 'flex',
-                  flexDirection: 'row',
-                  cursor: 'pointer',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginLeft: "60px",
-                  '& svg': {
-                    height: { xs: 40, sm: 45 },
-                    width: '13rem',
-                  },
-                }}
-                className='app-logo'
-              >
-                {/* <Logo fill={theme.palette.primary.main} /> */}
-                {/* <img
-        src={theme.palette.mode === 'dark' ? dark : pic}
-        style={{width: '9rem', maxWidth: '100%', height: 'auto'}}
-      /> */}
-
-                <div>
-                  <Typography
-                    variant='h5'
-                    sx={{ fontSize: '1.6rem', color: '#00318e', fontWeight: 'bold' }}
-                  >
-                    Angel<span style={{ color: '#ff0000' }}>Bot</span>
-                  </Typography>
-                  <Divider>
-                    <Typography
-                      variant='h6'
-                      sx={{
-                        fontSize: '1rem',
-                        color: '#707070',
-                        fontFamily: 'fangsong',
-                      }}
-                    >
-                      Access Arc
-                    </Typography>
-                  </Divider>
-                </div>
-                <Box
-                  sx={{
-                    mt: 1,
-                    display: { xs: 'none', md: 'block' },
-                    '& svg': {
-                      height: { xs: 25, sm: 30 },
-                    },
-                  }}
-                >
-                  {/* <Kms fill={alpha(theme.palette.text.primary, 0.8)} /> */}
-                  <h1></h1>
-                  {/* <LogoText fill={alpha(theme.palette.text.primary, 0.8)} /> */}
-                </Box>
-              </Box>
-
-              {/* <Typography
-                sx={{
-                  fontSize: "1rem",
-                  fontWeight: 400,
-                  color: "rgba(0, 0, 0, 0.7)",
-                  fontFamily: '"Be Vietnam", sans-serif',
-                  marginLeft: "60px",
-                }}
-              >
-                {formattedPath}
-              </Typography> */}
-            </>
-          )}
+            <Typography
+              variant="h5"
+              sx={{
+                fontSize: "1.6rem",
+                color: "#00318e",
+                fontWeight: "bold",
+                lineHeight: 1,
+              }}
+            >
+              Angel<span style={{ color: "#ff0000" }}>Bot</span>
+            </Typography>
+            <Typography
+              variant="subtitle2"
+              sx={{
+                fontSize: "0.85rem",
+                color: "#707070",
+                fontFamily: "fangsong",
+              }}
+            >
+              Access Arc
+            </Typography>
+          </Box>
         </Box>
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 2,
-            justifyContent: "flex-end",
-            maxWidth: "1000px",
-          }}
-        >
+
+        {/* Search Center */}
+        {[
+          // "/user",
+          // "/department",
+          // "/data-dictionary",
+          // "/feed-context",
+          // "/department-type-setting",
+        ].includes(location.pathname) && (
           <SearchWrapper>
             <SearchIconWrapper>
               <SearchIcon sx={{ fontSize: "1.2rem", color: "inherit" }} />
             </SearchIconWrapper>
-
             <StyledInputBase
-              placeholder={
-                currentPage === "departments"
-                  ? "Search departments, roles..."
-                  : "Search users, departments, roles..."
-              }
+              placeholder={`Search ${
+                location.pathname === "/user" ? "users" : "departments"
+              }...`}
               value={searchTerm}
               onChange={handleSearchChange}
               inputProps={{ "aria-label": "search" }}
             />
-
             <ClickAwayListener onClickAway={handleClickAway}>
               <div>
-                {searchResults.length > 0 && searchAnchorEl && (
+                {searchAnchorEl && (
                   <Popper
-                    open={true}
+                    open
                     anchorEl={searchAnchorEl}
                     placement="bottom-start"
                     style={{
                       zIndex: 1301,
-                      width: searchAnchorEl ? searchAnchorEl.offsetWidth : 800,
+                      width: searchAnchorEl.offsetWidth,
                       marginTop: 4,
                     }}
                   >
                     <SearchResultWrapper elevation={3}>
-                      <List dense>
-                        {searchResults.map((result, index) => (
-                          <ListItem
-                            key={index}
-                            onClick={() => handleSearchResultClick(result)}
-                            button
-                          >
-                            {renderSearchResult(result)}
-                          </ListItem>
-                        ))}
-                      </List>
+                      {searchResults.length > 0 ? (
+                        <List dense>
+                          {searchResults.map((result, index) => (
+                            <ListItem
+                              key={index}
+                              onClick={handleSearchResultClick}
+                              button
+                            >
+                              <ListItemText
+                                primary={
+                                  location.pathname === "/user"
+                                    ? result.name
+                                    : location.pathname === "/department"
+                                    ? result.deptName
+                                    : result.key
+                                }
+                                secondary={
+                                  location.pathname === "/user" ? (
+                                    <>
+                                      <Typography
+                                        variant="body2"
+                                        color="text.primary"
+                                      >
+                                        {result.roles?.[0]?.department
+                                          ?.deptName || "N/A"}{" "}
+                                        - {result.roles?.[0]?.roleName || "N/A"}
+                                      </Typography>
+                                      <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                      >
+                                        {result.email}
+                                      </Typography>
+                                    </>
+                                  ) : location.pathname === "/department" ? (
+                                    <Typography
+                                      variant="caption"
+                                      color="text.secondary"
+                                    >
+                                      {result.deptDisplayName}
+                                    </Typography>
+                                  ) : (
+                                    <>
+                                      <Typography
+                                        variant="body2"
+                                        color="text.primary"
+                                      >
+                                        {result.value}
+                                      </Typography>
+                                      <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                      >
+                                        Applicable To: {result.applicatbleTo}
+                                      </Typography>
+                                    </>
+                                  )
+                                }
+                              />
+                            </ListItem>
+                          ))}
+                        </List>
+                      ) : (
+                        <Box sx={{ px: 2, py: 1 }}>
+                          <Typography variant="body2" color="text.secondary">
+                            No items found
+                          </Typography>
+                        </Box>
+                      )}
                     </SearchResultWrapper>
                   </Popper>
                 )}
               </div>
             </ClickAwayListener>
           </SearchWrapper>
+        )}
 
-          <Box sx={{ flexGrow: 1 }} />
+        {/* Actions Right */}
+        <Box sx={{ display: "flex", gap: 1.5, alignItems: "center", ml: 2 }}>
+          {/* <Button
+            variant="outlined"
+            size="small"
+            onClick={() => setApmDialogOpen(true)}
+            sx={{
+              textTransform: "none",
+              fontWeight: 500,
+              borderRadius: 2,
+              height: 32,
+              fontSize: "0.8rem",
+              color: "#1976d2",
+              borderColor: "#1976d2",
+              "&:hover": {
+                backgroundColor: "rgba(25, 118, 210, 0.08)",
+                borderColor: "#115293",
+              },
+            }}
+          >
+            APM Settings
+          </Button> */}
 
-          <Box sx={{ display: "flex", gap: 3 }}>
-            <Tooltip title="Toggle Theme" arrow>
-              <IconButton
-                onClick={onThemeToggle}
-                size="medium"
-                // sx={{ color: 'text.secondary' }}
-                sx={{
-                  borderRadius: '50%',
-                  width: 40,
-                  height: 35,
-                  marginTop: '3px',
-                  color: "rgba(0, 0, 0, 0.6)",
-                  backgroundColor: "rgba(246, 249, 254)",
-                  border: 1,
-                  borderColor: 'transparent',
-                  '&:hover, &:focus': {
-                    color: (theme) => theme.palette.text.primary,
-                    backgroundColor: "rgba(246,249,254)",
-                    borderColor: (theme) =>
-                      alpha(theme.palette.text.secondary, 0.25),
-                  },
-                }}
-              // sx={{ color: "rgba(0, 0, 0, 0.6)", backgroundColor: "rgba(246,249,254)" }}
-              >
-                <Brightness4Icon sx={{ fontSize: "1.2rem" }} />
-              </IconButton>
-            </Tooltip>
-
-            {/* <Tooltip title="Change Language" arrow>
-            <IconButton
-              onClick={handleLanguageClick}
-              size="small"
-              // sx={{ color: 'text.secondary' }}
-              sx={{ color: "rgba(0, 0, 0, 0.6)" }}
-            >
-              <LanguageIcon sx={{ fontSize: "1.2rem" }} />
+          {/* <Tooltip title="Toggle Theme" arrow>
+            <IconButton onClick={onThemeToggle} size="medium">
+              <DarkModeIcon sx={{ fontSize: "1.3rem", color: "#555" }} />
             </IconButton>
           </Tooltip> */}
 
-            <Tooltip title="Logout" arrow>
-              <IconButton
-                onClick={handleLogout}
-                size="medium"
-                sx={{
-                  borderRadius: '50%',
-                  width: 40,
-                  height: 35,
-                  marginTop: '3px',
-                  color: "rgba(0, 0, 0, 0.6)",
-                  backgroundColor: "rgba(246, 249, 254)",
-                  border: 1,
-                  borderColor: 'transparent',
-                  '&:hover, &:focus': {
-                    color: (theme) => theme.palette.text.primary,
-                    backgroundColor: "rgba(246,249,254)",
-                    borderColor: (theme) =>
-                      alpha(theme.palette.text.secondary, 0.25),
-                  },
-                }}
-              >
-                <LogoutIcon sx={{ fontSize: "1.2rem" }} />
-              </IconButton>
-            </Tooltip>
-          </Box>
-
-          {/* <Menu
-          anchorEl={anchorEl}
-          open={Boolean(anchorEl)}
-          onClose={handleLanguageClose}
-          PaperProps={{
-            sx: {
-              mt: 1.5,
-              fontFamily: '"Be Vietnam", sans-serif', 
-              "& .MuiMenuItem-root": {
-                fontSize: "0.875rem",
-                minHeight: "32px",
-              },
-            },
-          }}
-          transformOrigin={{ horizontal: "right", vertical: "top" }}
-          anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
-        >
-          <MenuItem dense onClick={() => handleLanguageChange("English")}>
-            English
-          </MenuItem>
-          <MenuItem dense onClick={() => handleLanguageChange("Spanish")}>
-            Spanish
-          </MenuItem>
-          <MenuItem dense onClick={() => handleLanguageChange("French")}>
-            French
-          </MenuItem>
-        </Menu> */}
+          <Tooltip title="Logout" arrow>
+            <IconButton onClick={handleLogout} size="medium">
+              <ExitToAppIcon sx={{ fontSize: "1.3rem", color: "#d32f2f" }} />
+            </IconButton>
+          </Tooltip>
         </Box>
       </StyledToolbar>
+
+      {/* APM Dialog */}
+      <Dialog
+        open={apmDialogOpen}
+        onClose={() => setApmDialogOpen(false)}
+        fullWidth
+        maxWidth="sm"
+        TransitionComponent={Transition}
+        keepMounted
+        transitionDuration={200}
+        PaperProps={{ sx: { borderRadius: 2, boxShadow: 6 } }}
+      >
+        <DialogTitle
+          sx={{
+            backgroundColor: "#1976d2",
+            color: "#fff",
+            fontWeight: "bold",
+            fontSize: "1.1rem",
+          }}
+        >
+          APM Settings
+        </DialogTitle>
+
+        <DialogContent dividers sx={{ p: 3 }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+            APM Configuration
+          </Typography>
+
+          <FormControl component="fieldset" sx={{ mb: 2, pl: 1 }}>
+            <Typography variant="body2" sx={{ mb: 0.5 }}>
+              APM Scope
+            </Typography>
+            <RadioGroup
+              row
+              value={apmScope}
+              onChange={(e) => setApmScope(e.target.value)}
+            >
+              <FormControlLabel
+                value="frontend"
+                control={<Radio />}
+                label="Frontend"
+              />
+              <FormControlLabel
+                value="backend"
+                control={<Radio />}
+                label="Backend"
+              />
+              <FormControlLabel value="both" control={<Radio />} label="Both" />
+            </RadioGroup>
+          </FormControl>
+
+          <FormControlLabel
+            control={
+              <Switch
+                checked={apmEnabled}
+                onChange={(e) => setApmEnabled(e.target.checked)}
+                color="primary"
+              />
+            }
+            label="Enable APM Monitoring"
+            sx={{ ml: 1, mb: 2 }}
+          />
+
+          <TextField
+            fullWidth
+            select
+            size="small"
+            label="Log Level"
+            value={logLevel}
+            onChange={(e) => setLogLevel(e.target.value)}
+            SelectProps={{ native: true }}
+          >
+            <option value="trace">Trace</option>
+            <option value="debug">Debug</option>
+            <option value="info">Info</option>
+            <option value="notice">Notice</option>
+            <option value="warning">Warning</option>
+            <option value="error">Error</option>
+            <option value="critical">Critical</option>
+            <option value="alert">Alert</option>
+            <option value="emergency">Emergency</option>
+          </TextField>
+
+          <Divider sx={{ my: 2 }} />
+
+          <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+            Caching Options
+          </Typography>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={cacheBackend}
+                onChange={(e) => setCacheBackend(e.target.checked)}
+                color="primary"
+              />
+            }
+            label="Enable Backend Caching"
+            sx={{ ml: 1, mb: 1 }}
+          />
+          <FormControlLabel
+            control={
+              <Switch
+                checked={cacheFrontend}
+                onChange={(e) => setCacheFrontend(e.target.checked)}
+                color="primary"
+              />
+            }
+            label="Enable Frontend Caching"
+            sx={{ ml: 1 }}
+          />
+        </DialogContent>
+
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setApmDialogOpen(false)} variant="outlined">
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={async () => {
+              const payload = {
+                apmScope,
+                apmEnabled,
+                logLevel,
+                cacheBackend,
+                cacheFrontend,
+              };
+              try {
+                await saveApmSettings(payload);
+                setApmDialogOpen(false);
+              } catch {
+                alert("Failed to save APM settings.");
+              }
+            }}
+          >
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
     </StyledAppBar>
   );
 };
