@@ -52,7 +52,7 @@
 
 # # Start Nginx server
 # ENTRYPOINT ["nginx", "-g", "daemon off;"]
-FROM default-route-openshift-image-registry.apps.lab.ocp.lan/test/custom_nginx_team_sync:base
+FROM image-registry.openshift-image-registry.svc:5000/test/custom_nginx_team_sync:base
 COPY ./build/ /usr/share/nginx/html/eoffice
 COPY ./nginx/default.conf /etc/nginx/conf.d/default.conf
 COPY ./nginx/nginx.conf /etc/nginx/nginx.conf
