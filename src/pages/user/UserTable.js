@@ -34,6 +34,8 @@ import {
   FormControlLabel,
   Slide,
 } from "@mui/material";
+import { CheckCircle } from "@mui/icons-material";
+
 import { Snackbar, Alert } from "@mui/material";
 import {
   Search,
@@ -417,40 +419,51 @@ export default function UserTable() {
     try {
       const fullDepartments = await fetchFullDepartments();
 
-      const deptObj = fullDepartments.find(
-        (d) => d.deptName?.toLowerCase() === editData.department?.toLowerCase()
-      );
+      let deptObj = null;
+      let roleObj = null;
 
-      if (!deptObj) {
-        toast.error("Invalid department selected.");
-        return;
-      }
+      if (editData.department) {
+        deptObj = fullDepartments.find(
+          (d) =>
+            d.deptName?.toLowerCase() === editData.department?.toLowerCase()
+        );
 
-      const roleObj = deptObj.roles?.find(
-        (r) => r.roleName?.toLowerCase() === editData.role?.toLowerCase()
-      );
+        if (!deptObj) {
+          toast.error("Invalid department selected.");
+          return;
+        }
 
-      if (!roleObj) {
-        toast.error("Invalid role selected.");
-        return;
+        if (editData.role) {
+          roleObj = deptObj.roles?.find(
+            (r) => r.roleName?.toLowerCase() === editData.role?.toLowerCase()
+          );
+
+          if (!roleObj) {
+            toast.error("Invalid role selected.");
+            return;
+          }
+        }
       }
 
       const userPayload = {
         userId: editData.id,
         userName: editData.name.trim(),
-        phoneNumber: editData.phoneNumber.trim(),
-        deptId: deptObj.id,
-        roleId: roleObj.id,
+        phoneNumber: editData.phoneNumber?.trim() || "",
+        reportingManager: editData.reportingManager?.trim() || "",
+        deptId: deptObj?.id || null,
+        roleId: roleObj?.id || null,
       };
 
       console.log("Final userPayload:", userPayload);
 
       await updateUser(userPayload);
 
-      setUserRoleMap((prev) => ({
-        ...prev,
-        [editData.id]: roleObj.id,
-      }));
+      if (roleObj) {
+        setUserRoleMap((prev) => ({
+          ...prev,
+          [editData.id]: roleObj.id,
+        }));
+      }
 
       toast.success("User updated successfully!");
       setEditDialogOpen(false);
@@ -523,6 +536,7 @@ export default function UserTable() {
         name: row.name || "",
         email: row.email || "",
         phoneNumber: row.phoneNumber || "",
+        reportingManager: row.reportingManager || "", // ✅ add this line
         department: deptName,
         role: matchedRole?.roleName || roleName,
         roles: row.roles || [],
@@ -542,27 +556,30 @@ export default function UserTable() {
   };
 
   const handleActivateAll = async () => {
-    const usersToActivate = rowsData
-      .filter((row) => selected.includes(row.id))
-      .map((user) => ({
-        id: user.id,
-        active: true,
-      }));
-
-    if (usersToActivate.length === 0) {
+    if (!rowData || rowData.length === 0) {
       toast.warn("No users selected for activation.");
       return;
     }
 
-    try {
-      await activateAll(usersToActivate); // ✅ new API call
+    // Build full user objects for payload
+    const usersToActivate = rowData.map((user) => ({
+      ...user, // include entire user object
+      active: true, // ensure active is true
+      permissions: {
+        ...user.permissions,
+        allowedStorageInBytesDisplay: "1GB", // ✅ override storage
+      },
+    }));
 
-      // Update local state
-      setRowsData((prev) =>
-        prev.map((user) =>
-          selected.includes(user.id) ? { ...user, active: true } : user
-        )
-      );
+    console.log("usersss", usersToActivate);
+
+    try {
+      await toggleUserStatusByUsername(usersToActivate, page); // ✅ send complete users
+
+      await refetchUsers();
+
+      setSelected([]);
+      setRowData([]);
 
       toast.success("Selected users have been activated.");
     } catch (error) {
@@ -960,6 +977,7 @@ export default function UserTable() {
                 <MenuItem value="name">Name</MenuItem>
                 <MenuItem value="email">Email</MenuItem>
                 <MenuItem value="department">Department</MenuItem>
+                <MenuItem value="role">Role</MenuItem> {/* ✅ Added */}
               </Select>
             </FormControl>
 
@@ -1007,6 +1025,7 @@ export default function UserTable() {
               <TableRow>
                 <TableCell padding="checkbox">
                   <Checkbox
+                    sx={{ padding: "1px 1px 1px 1px !important" }}
                     checked={selected.length === rowsData.length}
                     indeterminate={
                       selected.length > 0 && selected.length < rowsData.length
@@ -1016,7 +1035,7 @@ export default function UserTable() {
                 </TableCell>
 
                 <TableCell
-                  align="center"
+                  align="left"
                   sortDirection={orderBy === "name" ? order : false}
                 >
                   <TableSortLabel
@@ -1029,7 +1048,7 @@ export default function UserTable() {
                 </TableCell>
 
                 <TableCell
-                  align="center"
+                  align="left"
                   sortDirection={orderBy === "department" ? order : false}
                 >
                   <TableSortLabel
@@ -1042,7 +1061,7 @@ export default function UserTable() {
                 </TableCell>
 
                 <TableCell
-                  align="center"
+                  align="left"
                   sortDirection={orderBy === "role" ? order : false}
                 >
                   <TableSortLabel
@@ -1055,7 +1074,7 @@ export default function UserTable() {
                 </TableCell>
 
                 <TableCell
-                  align="center"
+                  align="left"
                   sortDirection={orderBy === "email" ? order : false}
                 >
                   <TableSortLabel
@@ -1068,7 +1087,7 @@ export default function UserTable() {
                 </TableCell>
 
                 <TableCell
-                  align="center"
+                  align="left"
                   sortDirection={orderBy === "name" ? order : false}
                 >
                   <TableSortLabel
@@ -1081,7 +1100,7 @@ export default function UserTable() {
                 </TableCell>
 
                 <TableCell
-                  align="center"
+                  align="left"
                   sx={{
                     whiteSpace: "nowrap",
                     textOverflow: "ellipsis",
@@ -1127,7 +1146,7 @@ export default function UserTable() {
                     </TableCell>
 
                     <TableCell
-                      align="center"
+                      align="left"
                       sx={{ padding: "10px 10px 10px 10px !important" }}
                     >
                       {/* {row.name} */}
@@ -1136,7 +1155,7 @@ export default function UserTable() {
                     </TableCell>
 
                     <TableCell
-                      align="center"
+                      align="left"
                       sx={{ padding: "10px 10px 10px 10px !important" }}
                     >
                       {(() => {
@@ -1152,7 +1171,7 @@ export default function UserTable() {
                     </TableCell>
 
                     <TableCell
-                      align="center"
+                      align="left"
                       sx={{ padding: "10px 10px 10px 10px !important" }}
                     >
                       {(() => {
@@ -1180,20 +1199,20 @@ export default function UserTable() {
                     </TableCell>
 
                     <TableCell
-                      align="center"
+                      align="left"
                       sx={{ padding: "10px 10px 10px 10px !important" }}
                     >
                       {row.email}
                     </TableCell>
                     <TableCell
-                      align="center"
+                      align="left"
                       sx={{ padding: "10px 10px 10px 10px !important" }}
                     >
                       {row.permissions?.displayStorage || "N/A"}
                     </TableCell>
 
                     <TableCell
-                      align="center"
+                      align="left"
                       sx={{
                         padding: "2px 8px",
                       }}
@@ -1405,6 +1424,40 @@ export default function UserTable() {
               alignItems: "center",
             }}
           >
+            {selected.length >= 1 && (
+              <Tooltip title="Activate All">
+                <IconButton
+                  sx={{
+                    bgcolor: "#4caf50", // ✅ Professional green background
+                    color: "white",
+                    boxShadow:
+                      "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.6)",
+                    "&:hover": {
+                      backgroundColor: "#43a047", // darker green on hover
+                      animation: "glowBorderActivate 1.5s ease-in-out infinite",
+                    },
+                    "@keyframes glowBorderActivate": {
+                      "0%": {
+                        boxShadow: "0 0 0px 2px #4caf50",
+                        borderColor: "transparent",
+                      },
+                      "50%": {
+                        boxShadow: "0 0 20px 5px #4caf50",
+                        borderColor: "#4caf50",
+                      },
+                      "100%": {
+                        boxShadow: "0 0 0px 2px #4caf50",
+                        borderColor: "transparent",
+                      },
+                    },
+                  }}
+                  onClick={handleActivateAll} // ✅ Your existing function
+                >
+                  <CheckCircle />
+                </IconButton>
+              </Tooltip>
+            )}
+
             {selected.length >= 1 && (
               <Tooltip title="Delete">
                 <IconButton
@@ -1803,16 +1856,48 @@ export default function UserTable() {
                   )}
                 />
               </Grid>
+
               <Grid item xs={6}>
                 <TextField
                   size="small"
                   label="Phone Number"
                   fullWidth
                   value={editData.phoneNumber || ""}
+                  onChange={(e) => {
+                    const input = e.target.value;
+
+                    // ✅ Allow only digits
+                    if (!/^\d*$/.test(input)) return;
+
+                    // ✅ Restrict to max 10 digits
+                    if (input.length > 10) return;
+
+                    setEditData((prev) => ({
+                      ...prev,
+                      phoneNumber: input,
+                    }));
+                  }}
+                  error={Boolean(
+                    editData.phoneNumber && editData.phoneNumber.length !== 10
+                  )}
+                  helperText={
+                    editData.phoneNumber && editData.phoneNumber.length !== 10
+                      ? "Phone number must be exactly 10 digits"
+                      : ""
+                  }
+                />
+              </Grid>
+
+              <Grid item xs={6}>
+                <TextField
+                  size="small"
+                  label="Reporting Manager"
+                  fullWidth
+                  value={editData.reportingManager || ""}
                   onChange={(e) =>
                     setEditData((prev) => ({
                       ...prev,
-                      phoneNumber: e.target.value,
+                      reportingManager: e.target.value,
                     }))
                   }
                 />

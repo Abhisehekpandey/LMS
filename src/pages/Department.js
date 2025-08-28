@@ -418,6 +418,25 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       return;
     }
 
+    // ✅ Only validate Change Owner if user typed something
+    if (
+      searchModerator &&
+      searchModerator !== editedDepartment.departmentModerator
+    ) {
+      const isValidOwner = filteredUsers.some(
+        (u) => u.name === searchModerator
+      );
+
+      if (!isValidOwner) {
+        setSnackbar({
+          open: true,
+          message: "Please select a valid Department Owner from the list",
+          severity: "error",
+        });
+        return;
+      }
+    }
+
     const payload = {
       deptName: editedDepartment.name.trim(),
       deptDisplayName: editedDepartment.displayName.trim(),
@@ -1228,6 +1247,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         message: `Department "${departmentToDelete.name}" deleted successfully`,
         severity: "success",
       });
+      fetchDepartments();
     } catch (error) {
       console.error("Error deleting department:", error);
       setSnackbar({
@@ -1456,7 +1476,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 onChange={(e) => setSearchColumn(e.target.value)}
                 label="Filter By"
               >
-                <MenuItem value="name">Department Name</MenuItem>
+                <MenuItem value="name">Department</MenuItem>
                 <MenuItem value="departmentModerator">Moderator</MenuItem>
                 <MenuItem value="displayName">Short Name</MenuItem>
               </Select>
@@ -1531,6 +1551,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                   height: "40px",
                   fontWeight: "bold",
                   color: "#444",
+                  textAlign: "left",
                 }}
               >
                 <TableSortLabel
@@ -1565,7 +1586,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                   height: "40px",
                   fontWeight: "bold",
                   color: "#444",
-                  textAlign: "center",
+                  textAlign: "left",
                 }}
               >
                 <TableSortLabel
@@ -1588,7 +1609,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                       letterSpacing: "-0.01em",
                     }}
                   >
-                    Short name
+                    Display name
                   </Typography>
                 </TableSortLabel>
               </TableCell>
@@ -1601,8 +1622,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                   height: "32px",
                   fontWeight: "bold",
                   color: "#444",
-                  textAlign: "center",
-                  alignItems: "center",
+                  textAlign: "left",
+                  // alignItems: "center",
                 }}
               >
                 <TableSortLabel
@@ -1626,7 +1647,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                       letterSpacing: "-0.01em",
                     }}
                   >
-                    Department Owner
+                    Owner
                   </Typography>
                 </TableSortLabel>
               </TableCell>
@@ -1638,7 +1659,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                   height: "32px",
                   fontWeight: "bold",
                   color: "#444",
-                  textAlign: "center",
+                  textAlign: "left",
                 }}
               >
                 <Typography
@@ -1660,7 +1681,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                   height: "32px",
                   fontWeight: "bold",
                   color: "#444",
-                  textAlign: "center",
+                  textAlign: "left",
                 }}
               >
                 <Typography
@@ -1674,42 +1695,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                   Manage Storage
                 </Typography>
               </TableCell>
-
-              {/* <TableCell
-                sx={{
-                  width: "150px",
-                  padding: "2px 8px",
-                  height: "32px",
-                  fontWeight: "bold",
-                  color: "#444",
-                  textAlign: "center",
-                }}
-              >
-                <TableSortLabel
-                  active={orderBy === "roles"}
-                  direction={orderBy === "roles" ? order : "asc"}
-                  onClick={() => handleRequestSort("roles")}
-                  sx={{
-                    "& .MuiTableSortLabel-icon": {
-                      fontSize: "1.125rem",
-                      color: "#64748b",
-                      fontWeight: "bold",
-                    },
-                  }}
-                >
-                  <Typography
-                    variant="body1"
-                    sx={{
-                      // ...commonTextStyle,
-                      fontWeight: "bold !important",
-                      fontSize: "15px",
-                      letterSpacing: "-0.01em",
-                    }}
-                  >
-                    Number of Users
-                  </Typography>
-                </TableSortLabel>
-              </TableCell> */}
 
               <TableCell
                 sx={{
@@ -1775,7 +1760,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     <TableCell
                       sx={{
                         // ...commonTextStyle,
-                        textAlign: "center",
+                        textAlign: "left",
                         padding: "2px 8px",
                       }}
                     >
@@ -1784,7 +1769,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     <TableCell
                       sx={{
                         // ...commonTextStyle,
-                        textAlign: "center",
+                        textAlign: "left",
                         padding: "2px 8px",
                       }}
                     >
@@ -1792,7 +1777,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     </TableCell>
                     <TableCell
                       sx={{
-                        textAlign: "center",
+                        textAlign: "left",
                         padding: "2px 8px",
                       }}
                     >
@@ -1801,7 +1786,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
                     <TableCell
                       sx={{
-                        textAlign: "center",
+                        textAlign: "left",
                         padding: "2px 8px",
                       }}
                     >
@@ -1826,41 +1811,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                         )}
                       </Select>
                     </TableCell>
-
-                    {/* <TableCell sx={{ padding: "2px 8px", textAlign: "center" }}>
-                      <Box
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 1,
-                          justifyContent: "center",
-                        }}
-                      >
-                        <Typography variant="body2">
-                          {5} 
-                        </Typography>
-
-                        <Tooltip title="Add User">
-                          <IconButton
-                            size="small"
-                            onClick={() => {
-                              setSelectedDepartment(dept);
-                              setAddUserAssignments([{ user: null, role: "" }]); // reset
-                              setShowAddUserDialog(true);
-                            }}
-                            sx={{
-                              padding: "2px",
-                              color: "primary.main",
-                              "&:hover": {
-                                backgroundColor: "primary.lighter",
-                              },
-                            }}
-                          >
-                            <AddCircleOutlineIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      </Box>
-                    </TableCell> */}
 
                     <TableCell sx={{ padding: "2px 8px" }}>
                       <Box
@@ -2213,9 +2163,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     }}
                     onClick={() => toggleExpand(index)}
                   >
-                    {/* <Typography variant="subtitle1">
-                      Department {index + 1}
-                    </Typography> */}
                     <Typography variant="subtitle1" sx={{ fontWeight: "bold" }}>
                       {dept.name ? dept.name : "Untitled Department"}
                       {dept.storage ? ` / ${dept.storage}` : ""}
@@ -2759,7 +2706,13 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                 {user.name}
                               </MenuItem>
                             ))}
-                          {filteredUsers.length === 0 && (
+
+                          {/* ✅ Show message when no match */}
+                          {filteredUsers.filter((user) =>
+                            user.name
+                              .toLowerCase()
+                              .includes(searchModerator.toLowerCase())
+                          ).length === 0 && (
                             <MenuItem disabled>No users found</MenuItem>
                           )}
                         </Box>
@@ -2797,36 +2750,85 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       <Dialog
         open={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}
+        maxWidth="xs"
+        fullWidth
       >
+        {/* Header with blue background */}
         <DialogTitle
           sx={{
-            backgroundColor: "#1976d2",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            backgroundColor: "#1976d2", // ✅ MUI blue
             color: "white",
-            fontWeight: "bold",
-            fontSize: "1.1rem",
+            py: 1.5,
+            px: 2,
           }}
         >
-          Confirm Delete
+          <Typography variant="h6" sx={{ fontWeight: "bold", color: "white" }}>
+            Confirm Delete
+          </Typography>
+          <IconButton
+            size="small"
+            onClick={() => setDeleteDialogOpen(false)}
+            sx={{ color: "white" }}
+          >
+            <CloseIcon fontSize="small" />
+          </IconButton>
         </DialogTitle>
 
-        <DialogContent>
-          Are you sure you want to delete department "{departmentToDelete?.name}
-          "? This action cannot be undone.
+        {/* Content */}
+        <DialogContent sx={{ py: 3, px: 2, mt: 2 }}>
+          <Typography variant="body1" sx={{ color: "#334155" }}>
+            Are you sure you want to delete{" "}
+            <Typography
+              component="span"
+              sx={{ fontWeight: "bold", color: "#dc2626" }}
+            >
+              {departmentToDelete?.name}
+            </Typography>
+            ? This action cannot be undone.
+          </Typography>
         </DialogContent>
 
+        {/* Actions */}
         <DialogActions
-          sx={{ display: "flex", justifyContent: "space-between" }}
+          sx={{
+            px: 2,
+            py: 1.5,
+            borderTop: "1px solid #e2e8f0",
+          }}
         >
-          <Box>
-            <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-            <Button
-              onClick={handleDeleteDepartment}
-              color="error"
-              variant="contained"
-            >
-              Delete
-            </Button>
-          </Box>
+          <Button
+            onClick={() => setDeleteDialogOpen(false)}
+            variant="outlined"
+            color="inherit"
+            sx={{
+              textTransform: "none",
+              borderRadius: "8px",
+              px: 2.5,
+              fontSize: "0.9rem",
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleDeleteDepartment}
+            variant="contained"
+            sx={{
+              textTransform: "none",
+              borderRadius: "8px",
+              px: 2.5,
+              fontSize: "0.9rem",
+              fontWeight: "bold",
+              background: "rgb(251, 68, 36)", // ✅ custom background
+              "&:hover": {
+                background: "rgb(220, 50, 20)", // darker shade on hover
+              },
+            }}
+          >
+            Delete
+          </Button>
         </DialogActions>
       </Dialog>
 

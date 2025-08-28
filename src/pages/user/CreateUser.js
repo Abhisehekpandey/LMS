@@ -56,6 +56,7 @@ const CreateUser = ({
   showSnackbar,
   allUsers = [],
 }) => {
+  const fileInputRef = useRef(null);
   const [formInitialValues, setFormInitialValues] = useState({
     users: [emptyUser],
   });
@@ -281,21 +282,47 @@ const CreateUser = ({
             return;
           }
 
-          // continue parsing safely
-          const cleanedUsers = results.data
-            .filter((row) => row["EMAIL"])
-            .map((row) => ({
-              name: row["NAME"]?.trim() || "",
-              // email: row["EMAIL"]?.trim() || "",
-              email: row["EMAIL"]?.trim().toLowerCase() || "",
-              phoneNumber: row["PHONE"]?.trim() || "",
-              storage: row["STORAGE"]?.trim() || null,
-              roleName: row["ROLE"]?.trim() || "",
-              deptName: row["DEPARTMENT"]?.trim() || "",
-              reportingManager: row["REPORTINGMANAGER"]?.trim() || "",
-            }));
-          console.log("CLEANED USERS:", cleanedUsers);
+          const cleanedUsers = [];
+          const invalidUsers = [];
 
+          results.data
+            .filter((row) => row["EMAIL"])
+            .forEach((row) => {
+              const phone = row["PHONE"]?.trim() || "";
+              const name = row["NAME"]?.trim() || "Unknown User";
+
+              // ✅ phone validation: numeric only & exactly 10 digits
+              if (!/^[0-9]{10}$/.test(phone)) {
+                invalidUsers.push({
+                  name,
+                  phone,
+                  email: row["EMAIL"],
+                });
+                return; // skip this user
+              }
+
+              cleanedUsers.push({
+                name,
+                email: row["EMAIL"]?.trim().toLowerCase() || "",
+                phoneNumber: phone,
+                storage: row["STORAGE"]?.trim() || null,
+                roleName: row["ROLE"]?.trim() || "",
+                deptName: row["DEPARTMENT"]?.trim() || "",
+                reportingManager: row["REPORTINGMANAGER"]?.trim() || "",
+              });
+            });
+
+          if (invalidUsers.length > 0) {
+            const phones = invalidUsers
+              .map((u) => `${u.name}: "${u.phone}"`)
+              .join(", ");
+            showSnackbar(
+              `Invalid phone numbers found → ${phones}. Must be numeric & 10 digits.`,
+              "error"
+            );
+          }
+
+          console.log("CLEANED USERS:", cleanedUsers);
           setCsvUsers(cleanedUsers);
         },
         error: (err) => {
@@ -541,15 +568,29 @@ const CreateUser = ({
             id="bulk-upload-input"
             type="file"
             style={{ display: "none" }}
-            accept=".csv" // File type jo allowed hai
-            onChange={handleFileChange} // File select hone par handleFileChange chalega
+            accept=".csv"
+            ref={fileInputRef} // ✅ attach ref
+            onChange={handleFileChange}
           />
 
-          {/* File name dikhana */}
           {fileName && (
-            <Typography variant="body2" sx={{ mt: 2 }}>
-              Selected File: {fileName}
-            </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 2 }}>
+              <Typography variant="body2">Selected File: {fileName}</Typography>
+              <IconButton
+                size="small"
+                color="error"
+                onClick={() => {
+                  setFileName("");
+                  setBulkFile(null);
+                  setCsvUsers([]);
+                  if (fileInputRef.current) {
+                    fileInputRef.current.value = ""; // ✅ reset file input
+                  }
+                }}
+              >
+                <Close fontSize="small" />
+              </IconButton>
+            </Box>
           )}
         </div>
         <Formik
@@ -1201,7 +1242,7 @@ const CreateUser = ({
             />
           </IconButton>
         </DialogTitle>
-        {/* <DialogContent> */}
+
         <DialogContent dividers padding="0 !important">
           <Grid container spacing={2}>
             <Grid item xs={6}>

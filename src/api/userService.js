@@ -57,7 +57,8 @@ export const toggleUserStatusByUsername = async (users, pageNumber) => {
       {
         headers: {
           Authorization: `Bearer ${token}`,
-          pageNumber: pageNumber.toString(), // or just pageNumber if backend expects number
+          // pageNumber: pageNumber.toString(),
+          pageNumber: pageNumber?.toString() ?? "0", // ✅ safe fallback
           userName: adminEmail,
         },
       }
@@ -69,6 +70,7 @@ export const toggleUserStatusByUsername = async (users, pageNumber) => {
 };
 
 export const activateAll = async (users) => {
+  console.log("AllUserss", users);
   const token = sessionStorage.getItem("authToken"); // Adjust key if different
   try {
     const response = await axios.post(
