@@ -34,6 +34,8 @@ import {
   FormControlLabel,
   Slide,
 } from "@mui/material";
+import { Menu } from "@mui/material";
+import FilterListIcon from "@mui/icons-material/FilterList";
 import { CheckCircle } from "@mui/icons-material";
 
 import { Snackbar, Alert } from "@mui/material";
@@ -267,8 +269,26 @@ const Transition = React.forwardRef(function Transition(props, ref) {
   return <Slide direction="right" ref={ref} {...props} />;
 });
 
+const allColumns = [
+  { id: "id", label: "User ID" },
+  { id: "name", label: "Name" },
+  { id: "department", label: "Department" },
+  { id: "role", label: "Role" },
+  { id: "email", label: "Email" },
+  { id: "storageUsed", label: "Storage" },
+  { id: "manageStorage", label: "Manage Storage" },
+  { id: "activeLicense", label: "Status" },
+  { id: "actions", label: "Actions" },
+];
+
 export default function UserTable() {
+  const [statusFilter, setStatusFilter] = useState("");
+  const [filterAnchor, setFilterAnchor] = useState(null);
   const [searchColumn, setSearchColumn] = useState("name");
+  const [visibleColumns, setVisibleColumns] = useState(
+    allColumns.reduce((acc, col) => ({ ...acc, [col.id]: true }), {})
+  );
+  const [anchorEl, setAnchorEl] = useState(null);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(searchQuery);
@@ -388,6 +408,8 @@ export default function UserTable() {
 
   const extractValue = (row, orderBy) => {
     switch (orderBy) {
+      case "id":
+        return row.id || "";
       case "name":
       case "email":
         return row[orderBy]?.toLowerCase() || "";
@@ -604,6 +626,7 @@ export default function UserTable() {
     };
 
     const extractRowData = (row) => ({
+      "User ID": row.id || "N/A", // ✅ New column
       Name: row.name || "N/A",
       Department: row.roles?.[0]?.department?.deptName || "N/A",
       Role: row.roles?.[0]?.roleName || "N/A",
@@ -623,6 +646,7 @@ export default function UserTable() {
     });
 
     worksheet["!cols"] = [
+      { wch: 12 },
       { wch: 20 },
       { wch: 20 },
       { wch: 25 },
@@ -880,6 +904,19 @@ export default function UserTable() {
   const filteredRows = rowsData.filter((row) => {
     const query = searchQuery.toLowerCase();
 
+    // ✅ Status filter
+    if (statusFilter) {
+      let status = "Inactive";
+      if (row.active && !row.enabled) status = "Pending";
+      else if (row.active && row.enabled) status = "Active";
+
+      if (status !== statusFilter) return false;
+    }
+
+    if (searchColumn === "id") {
+      return row.id?.toString().toLowerCase().includes(query);
+    }
+
     if (searchColumn === "name") {
       return row.name?.toLowerCase().includes(query);
     }
@@ -977,6 +1014,7 @@ export default function UserTable() {
                 <MenuItem value="name">Name</MenuItem>
                 <MenuItem value="email">Email</MenuItem>
                 <MenuItem value="department">Department</MenuItem>
+                <MenuItem value="id">User ID</MenuItem>
                 <MenuItem value="role">Role</MenuItem> {/* ✅ Added */}
               </Select>
             </FormControl>
@@ -1003,6 +1041,50 @@ export default function UserTable() {
               }}
             />
 
+            <Tooltip title="Filter by Status">
+              <IconButton onClick={(e) => setFilterAnchor(e.currentTarget)}>
+                <FilterListIcon />
+              </IconButton>
+            </Tooltip>
+
+            <Tooltip title="Show/Hide Columns">
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={(e) => setAnchorEl(e.currentTarget)}
+                sx={{ textTransform: "none", fontWeight: 500 }}
+              >
+                Columns
+              </Button>
+            </Tooltip>
+
+            <Menu
+              anchorEl={anchorEl}
+              open={Boolean(anchorEl)}
+              onClose={() => setAnchorEl(null)}
+              PaperProps={{
+                style: {
+                  maxHeight: 320,
+                  width: "200px",
+                },
+              }}
+            >
+              {allColumns.map((col) => (
+                <MenuItem key={col.id}>
+                  <Checkbox
+                    checked={visibleColumns[col.id]}
+                    onChange={() =>
+                      setVisibleColumns((prev) => ({
+                        ...prev,
+                        [col.id]: !prev[col.id],
+                      }))
+                    }
+                  />
+                  {col.label}
+                </MenuItem>
+              ))}
+            </Menu>
+
             <Button
               variant="outlined"
               color="error"
@@ -1020,12 +1102,63 @@ export default function UserTable() {
             </Button>
           </Box>
 
-          <Table stickyHeader>
+          <Menu
+            anchorEl={filterAnchor}
+            open={Boolean(filterAnchor)}
+            onClose={() => setFilterAnchor(null)}
+          >
+            <MenuItem
+              selected={statusFilter === ""}
+              onClick={() => {
+                setStatusFilter("");
+                setFilterAnchor(null);
+              }}
+            >
+              All
+            </MenuItem>
+            <MenuItem
+              selected={statusFilter === "Active"}
+              onClick={() => {
+                setStatusFilter("Active");
+                setFilterAnchor(null);
+              }}
+            >
+              Active
+            </MenuItem>
+            <MenuItem
+              selected={statusFilter === "Inactive"}
+              onClick={() => {
+                setStatusFilter("Inactive");
+                setFilterAnchor(null);
+              }}
+            >
+              Inactive
+            </MenuItem>
+            <MenuItem
+              selected={statusFilter === "Pending"}
+              onClick={() => {
+                setStatusFilter("Pending");
+                setFilterAnchor(null);
+              }}
+            >
+              Pending
+            </MenuItem>
+          </Menu>
+
+          <Table
+            sx={{
+              "& .MuiTableCell-root": { padding: "8px 16px" },
+              "& .MuiTableCell-head": {
+                fontWeight: "bold",
+                backgroundColor: "#f5f5f5",
+              },
+            }}
+          >
             <TableHead className={styles.tableHeader}>
               <TableRow>
                 <TableCell padding="checkbox">
                   <Checkbox
-                    sx={{ padding: "1px 1px 1px 1px !important" }}
+                    sx={{ padding: "1px !important" }}
                     checked={selected.length === rowsData.length}
                     indeterminate={
                       selected.length > 0 && selected.length < rowsData.length
@@ -1034,98 +1167,112 @@ export default function UserTable() {
                   />
                 </TableCell>
 
-                <TableCell
-                  align="left"
-                  sortDirection={orderBy === "name" ? order : false}
-                >
-                  <TableSortLabel
-                    active={orderBy === "name"}
-                    direction={orderBy === "name" ? order : "asc"}
-                    onClick={() => handleRequestSort("name")}
+                {visibleColumns.id && (
+                  <TableCell
+                    align="left"
+                    sortDirection={orderBy === "id" ? order : false}
                   >
-                    Name
-                  </TableSortLabel>
-                </TableCell>
+                    <TableSortLabel
+                      active={orderBy === "id"}
+                      direction={orderBy === "id" ? order : "asc"}
+                      onClick={() => handleRequestSort("id")}
+                    >
+                      User ID
+                    </TableSortLabel>
+                  </TableCell>
+                )}
 
-                <TableCell
-                  align="left"
-                  sortDirection={orderBy === "department" ? order : false}
-                >
-                  <TableSortLabel
-                    active={orderBy === "department"}
-                    direction={orderBy === "department" ? order : "asc"}
-                    onClick={() => handleRequestSort("department")}
+                {visibleColumns.name && (
+                  <TableCell
+                    align="left"
+                    sortDirection={orderBy === "name" ? order : false}
                   >
-                    Department
-                  </TableSortLabel>
-                </TableCell>
+                    <TableSortLabel
+                      active={orderBy === "name"}
+                      direction={orderBy === "name" ? order : "asc"}
+                      onClick={() => handleRequestSort("name")}
+                    >
+                      Name
+                    </TableSortLabel>
+                  </TableCell>
+                )}
 
-                <TableCell
-                  align="left"
-                  sortDirection={orderBy === "role" ? order : false}
-                >
-                  <TableSortLabel
-                    active={orderBy === "role"}
-                    direction={orderBy === "role" ? order : "asc"}
-                    onClick={() => handleRequestSort("role")}
+                {visibleColumns.department && (
+                  <TableCell
+                    align="left"
+                    sortDirection={orderBy === "department" ? order : false}
                   >
-                    Role
-                  </TableSortLabel>
-                </TableCell>
+                    <TableSortLabel
+                      active={orderBy === "department"}
+                      direction={orderBy === "department" ? order : "asc"}
+                      onClick={() => handleRequestSort("department")}
+                    >
+                      Department
+                    </TableSortLabel>
+                  </TableCell>
+                )}
 
-                <TableCell
-                  align="left"
-                  sortDirection={orderBy === "email" ? order : false}
-                >
-                  <TableSortLabel
-                    active={orderBy === "email"}
-                    direction={orderBy === "email" ? order : "asc"}
-                    onClick={() => handleRequestSort("email")}
+                {visibleColumns.role && (
+                  <TableCell
+                    align="left"
+                    sortDirection={orderBy === "role" ? order : false}
                   >
-                    Email
-                  </TableSortLabel>
-                </TableCell>
+                    <TableSortLabel
+                      active={orderBy === "role"}
+                      direction={orderBy === "role" ? order : "asc"}
+                      onClick={() => handleRequestSort("role")}
+                    >
+                      Role
+                    </TableSortLabel>
+                  </TableCell>
+                )}
 
-                <TableCell
-                  align="left"
-                  sortDirection={orderBy === "name" ? order : false}
-                >
-                  <TableSortLabel
-                    active={orderBy === "storageUsed"}
-                    direction={orderBy === "storageUsed" ? order : "asc"}
-                    onClick={() => handleRequestSort("storageUsed")}
+                {visibleColumns.email && (
+                  <TableCell
+                    align="left"
+                    sortDirection={orderBy === "email" ? order : false}
                   >
-                    Storage Used
-                  </TableSortLabel>
-                </TableCell>
+                    <TableSortLabel
+                      active={orderBy === "email"}
+                      direction={orderBy === "email" ? order : "asc"}
+                      onClick={() => handleRequestSort("email")}
+                    >
+                      Email
+                    </TableSortLabel>
+                  </TableCell>
+                )}
 
-                <TableCell
-                  align="left"
-                  sx={{
-                    whiteSpace: "nowrap",
-                    textOverflow: "ellipsis",
-                    overflow: "hidden",
-                    maxWidth: 140,
-                  }}
-                >
-                  Manage storage
-                </TableCell>
-                <TableCell
-                  align="center"
-                  sx={{
-                    whiteSpace: "nowrap",
-                    textOverflow: "ellipsis",
-                    overflow: "hidden",
-                    maxWidth: 140,
-                  }}
-                >
-                  Active license
-                </TableCell>
-                <TableCell align="center">Actions</TableCell>
+                {visibleColumns.storageUsed && (
+                  <TableCell
+                    align="left"
+                    sortDirection={orderBy === "storageUsed" ? order : false}
+                  >
+                    <TableSortLabel
+                      active={orderBy === "storageUsed"}
+                      direction={orderBy === "storageUsed" ? order : "asc"}
+                      onClick={() => handleRequestSort("storageUsed")}
+                    >
+                      Storage
+                    </TableSortLabel>
+                  </TableCell>
+                )}
+
+                {visibleColumns.manageStorage && (
+                  <TableCell align="left">Manage Storage</TableCell>
+                )}
+
+                {visibleColumns.activeLicense && (
+                  <TableCell align="center">Status</TableCell>
+                )}
+
+                {visibleColumns.actions && (
+                  <TableCell align="center">Actions</TableCell>
+                )}
               </TableRow>
             </TableHead>
+
             <TableBody>
-              {sortedRows.map((row, index) => {
+              {sortedRows.map((row) => {
                 const isItemSelected = isSelected(row.id);
 
                 return (
@@ -1138,265 +1285,247 @@ export default function UserTable() {
                   >
                     <TableCell padding="checkbox">
                       <Checkbox
-                        sx={{ padding: "1px 1px 1px 1px !important" }}
+                        sx={{ padding: "1px !important" }}
                         checked={isItemSelected}
                         onChange={() => handleClick(row)}
-                        disabled={row.email === adminEmail} // ✅ Disable admin's checkbox
+                        disabled={row.email === adminEmail}
                       />
                     </TableCell>
 
-                    <TableCell
-                      align="left"
-                      sx={{ padding: "10px 10px 10px 10px !important" }}
-                    >
-                      {/* {row.name} */}
-                      {row.name}
-                      {row.email === adminEmail && " (admin)"}
-                    </TableCell>
+                    {visibleColumns.id && (
+                      <TableCell align="left">{row.id}</TableCell>
+                    )}
 
-                    <TableCell
-                      align="left"
-                      sx={{ padding: "10px 10px 10px 10px !important" }}
-                    >
-                      {(() => {
-                        const selectedRoleId = userRoleMap[row.id];
-                        const selectedRole = row.roles?.find(
-                          (role) => role.id === selectedRoleId
-                        );
-                        const deptName =
-                          selectedRole?.department?.deptName ||
-                          row.roles?.[0]?.department?.deptName;
-                        return deptName || "N/A";
-                      })()}
-                    </TableCell>
+                    {visibleColumns.name && (
+                      <TableCell align="left">
+                        {row.name}
+                        {row.email === adminEmail && " (admin)"}
+                      </TableCell>
+                    )}
 
-                    <TableCell
-                      align="left"
-                      sx={{ padding: "10px 10px 10px 10px !important" }}
-                    >
-                      {(() => {
-                        const selectedRoleId = userRoleMap[row.id];
-                        const selectedRole = row.roles?.find(
-                          (role) => role.id === selectedRoleId
-                        );
-                        const deptId = selectedRole?.department?.id;
+                    {visibleColumns.department && (
+                      <TableCell align="left">
+                        {(() => {
+                          const selectedRoleId = userRoleMap[row.id];
+                          const selectedRole = row.roles?.find(
+                            (role) => role.id === selectedRoleId
+                          );
+                          const deptName =
+                            selectedRole?.department?.deptName ||
+                            row.roles?.[0]?.department?.deptName;
+                          return deptName || "N/A";
+                        })()}
+                      </TableCell>
+                    )}
 
-                        if (!deptId) return row.roles?.[0]?.roleName || "N/A";
+                    {visibleColumns.role && (
+                      <TableCell align="left">
+                        {(() => {
+                          const selectedRoleId = userRoleMap[row.id];
+                          const selectedRole = row.roles?.find(
+                            (role) => role.id === selectedRoleId
+                          );
+                          const deptId = selectedRole?.department?.id;
 
-                        const rolesInSameDept = row.roles.filter(
-                          (role) => role.department?.id === deptId
-                        );
-                        const uniqueRoleNames = [
-                          ...new Set(
-                            rolesInSameDept.map((role) => role.roleName)
-                          ),
-                        ];
+                          if (!deptId) return row.roles?.[0]?.roleName || "N/A";
 
-                        return uniqueRoleNames.length > 0
-                          ? uniqueRoleNames.join(", ")
-                          : "N/A";
-                      })()}
-                    </TableCell>
+                          const rolesInSameDept = row.roles.filter(
+                            (role) => role.department?.id === deptId
+                          );
+                          const uniqueRoleNames = [
+                            ...new Set(
+                              rolesInSameDept.map((role) => role.roleName)
+                            ),
+                          ];
 
-                    <TableCell
-                      align="left"
-                      sx={{ padding: "10px 10px 10px 10px !important" }}
-                    >
-                      {row.email}
-                    </TableCell>
-                    <TableCell
-                      align="left"
-                      sx={{ padding: "10px 10px 10px 10px !important" }}
-                    >
-                      {row.permissions?.displayStorage || "N/A"}
-                    </TableCell>
+                          return uniqueRoleNames.length > 0
+                            ? uniqueRoleNames.join(", ")
+                            : "N/A";
+                        })()}
+                      </TableCell>
+                    )}
 
-                    <TableCell
-                      align="left"
-                      sx={{
-                        padding: "2px 8px",
-                      }}
-                    >
-                      <FormControl sx={{ m: 0, minWidth: 120 }} size="small">
-                        <Select
-                          id={`manage-storage-${row.id}`}
-                          value={
-                            row.permissions?.allowedStorageInBytesDisplay || ""
-                          }
-                          onChange={async (e) => {
-                            const newDisplayValue = e.target.value;
-                            const newByteValue = toBytes(newDisplayValue);
+                    {visibleColumns.email && (
+                      <TableCell align="left">{row.email}</TableCell>
+                    )}
 
-                            const updated = rowsData.map((r) =>
-                              r.id === row.id
-                                ? {
-                                    ...r,
-                                    permissions: {
-                                      ...r.permissions,
-                                      allowedStorageInBytesDisplay:
-                                        newDisplayValue,
-                                      allowedStorageInBytes: newByteValue,
-                                    },
-                                  }
-                                : r
-                            );
+                    {visibleColumns.storageUsed && (
+                      <TableCell align="left">
+                        {row.permissions?.displayStorage || "N/A"}
+                      </TableCell>
+                    )}
 
-                            setRowsData(updated);
+                    {visibleColumns.manageStorage && (
+                      <TableCell align="left">
+                        <FormControl sx={{ m: 0, minWidth: 120 }} size="small">
+                          <Select
+                            id={`manage-storage-${row.id}`}
+                            value={
+                              row.permissions?.allowedStorageInBytesDisplay ||
+                              ""
+                            }
+                            onChange={async (e) => {
+                              const newDisplayValue = e.target.value;
+                              const newByteValue = toBytes(newDisplayValue);
 
-                            if (row.active) {
-                              const updatedRows = rowsData.map((u) =>
-                                u.id === row.id
+                              const updated = rowsData.map((r) =>
+                                r.id === row.id
                                   ? {
-                                      ...u,
+                                      ...r,
                                       permissions: {
-                                        ...u.permissions,
+                                        ...r.permissions,
                                         allowedStorageInBytesDisplay:
                                           newDisplayValue,
                                         allowedStorageInBytes: newByteValue,
                                       },
                                     }
-                                  : u
+                                  : r
                               );
 
-                              try {
-                                await toggleUserStatusByUsername(
-                                  updatedRows,
-                                  page
-                                );
-                                setRowsData(updatedRows);
-                                toast.success(
-                                  `Storage updated for ${row.name}`
-                                );
-                              } catch (error) {
-                                toast.error(
-                                  `Failed to update storage for ${row.name}`
-                                );
-                              }
-                            }
-                          }}
-                          displayEmpty
-                          sx={{
-                            width: "100px",
-                            height: "30px",
-                            borderRadius: "28px",
-                          }}
-                        >
-                          {(() => {
-                            const predefinedOptions = [
-                              "1GB",
-                              "5GB",
-                              "3GB",
-                              "10GB",
-                              "20GB",
-                              "40GB",
-                              "60GB",
-                            ];
-                            const currentValue =
-                              row.permissions?.allowedStorageInBytesDisplay;
-                            const allOptions = predefinedOptions.includes(
-                              currentValue
-                            )
-                              ? predefinedOptions
-                              : [currentValue, ...predefinedOptions];
-                            return allOptions.map((opt) => (
-                              <MenuItem key={opt} value={opt}>
-                                {opt}
-                              </MenuItem>
-                            ));
-                          })()}
-                        </Select>
-                      </FormControl>
-                    </TableCell>
+                              setRowsData(updated);
 
-                    <TableCell align="center">
-                      <Tooltip
-                        title={
-                          row.active && !row.enabled
-                            ? "Pending (Email Not Verified)"
-                            : !row.active
-                            ? "Inactive (Provide Storage"
-                            : "Active"
-                        }
-                      >
-                        <span>
-                          <FormControlLabel
-                            control={
-                              <IOSSwitch
-                                checked={row.active && row.enabled}
-                                onChange={() => handleStatusToggle(row.name)}
-                                disabled={
-                                  (row.active && !row.enabled) ||
-                                  (!row.active &&
-                                    (!row.permissions
-                                      ?.allowedStorageInBytesDisplay ||
-                                      row.permissions
-                                        ?.allowedStorageInBytesDisplay ===
-                                        "0 KB"))
+                              if (row.active) {
+                                const updatedRows = rowsData.map((u) =>
+                                  u.id === row.id
+                                    ? {
+                                        ...u,
+                                        permissions: {
+                                          ...u.permissions,
+                                          allowedStorageInBytesDisplay:
+                                            newDisplayValue,
+                                          allowedStorageInBytes: newByteValue,
+                                        },
+                                      }
+                                    : u
+                                );
+
+                                try {
+                                  await toggleUserStatusByUsername(
+                                    updatedRows,
+                                    page
+                                  );
+                                  setRowsData(updatedRows);
+                                  toast.success(
+                                    `Storage updated for ${row.name}`
+                                  );
+                                } catch (error) {
+                                  toast.error(
+                                    `Failed to update storage for ${row.name}`
+                                  );
                                 }
-                              />
-                            }
-                          />
-                        </span>
-                      </Tooltip>
-                    </TableCell>
-                    <TableCell
-                      align="center"
-                      sx={{
-                        width: "200px",
-                        padding: "10px 10px 10px 10px !important",
-                      }}
-                    >
-                      <>
-                        <Tooltip
-                          title={
-                            row.email === adminEmail
-                              ? "Admin user cannot be edited"
-                              : "Edit User"
-                          }
-                        >
-                          <span>
-                            <IconButton
-                              size="small"
-                              onClick={(e) => handleEdit(e, row)}
-                              disabled={row.email === adminEmail}
-                            >
-                              <Edit />
-                            </IconButton>
-                          </span>
-                        </Tooltip>
-
-                        <Tooltip
-                          title={
-                            row.email === adminEmail
-                              ? "Admin user cannot be deleted"
-                              : "Delete User"
-                          }
-                        >
-                          <span>
-                            <Tooltip
-                              title={
-                                row.email === adminEmail
-                                  ? "Admin user cannot be deleted"
-                                  : "Delete User"
                               }
-                            >
-                              <span>
-                                <IconButton
-                                  size="small"
-                                  color="error"
-                                  onClick={(e) => handleDelete(e, row)}
-                                  disabled={row.email === adminEmail}
-                                >
-                                  <Delete />
-                                </IconButton>
-                              </span>
-                            </Tooltip>
+                            }}
+                            displayEmpty
+                            sx={{
+                              width: "100px",
+                              height: "30px",
+                              borderRadius: "28px",
+                            }}
+                          >
+                            {(() => {
+                              const predefinedOptions = [
+                                "1GB",
+                                "3GB",
+                                "5GB",
+                                "10GB",
+                                "20GB",
+                                "40GB",
+                                "60GB",
+                              ];
+                              const currentValue =
+                                row.permissions?.allowedStorageInBytesDisplay;
+                              const allOptions = predefinedOptions.includes(
+                                currentValue
+                              )
+                                ? predefinedOptions
+                                : [currentValue, ...predefinedOptions];
+                              return allOptions.map((opt) => (
+                                <MenuItem key={opt} value={opt}>
+                                  {opt}
+                                </MenuItem>
+                              ));
+                            })()}
+                          </Select>
+                        </FormControl>
+                      </TableCell>
+                    )}
+
+                    {visibleColumns.activeLicense && (
+                      <TableCell align="center">
+                        <Tooltip
+                          title={
+                            row.active && !row.enabled
+                              ? "Pending (Email Not Verified)"
+                              : !row.active
+                              ? "Inactive (Provide Storage"
+                              : "Active"
+                          }
+                        >
+                          <span>
+                            <FormControlLabel
+                              control={
+                                <IOSSwitch
+                                  checked={row.active && row.enabled}
+                                  onChange={() => handleStatusToggle(row.name)}
+                                  disabled={
+                                    (row.active && !row.enabled) ||
+                                    (!row.active &&
+                                      (!row.permissions
+                                        ?.allowedStorageInBytesDisplay ||
+                                        row.permissions
+                                          ?.allowedStorageInBytesDisplay ===
+                                          "0 KB"))
+                                  }
+                                />
+                              }
+                            />
                           </span>
                         </Tooltip>
-                      </>
+                      </TableCell>
+                    )}
 
-                      {/* )} */}
-                    </TableCell>
+                    {visibleColumns.actions && (
+                      <TableCell align="center" sx={{ width: "200px" }}>
+                        <>
+                          <Tooltip
+                            title={
+                              row.email === adminEmail
+                                ? "Admin user cannot be edited"
+                                : "Edit User"
+                            }
+                          >
+                            <span>
+                              <IconButton
+                                size="small"
+                                onClick={(e) => handleEdit(e, row)}
+                                disabled={row.email === adminEmail}
+                              >
+                                <Edit />
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+
+                          <Tooltip
+                            title={
+                              row.email === adminEmail
+                                ? "Admin user cannot be deleted"
+                                : "Delete User"
+                            }
+                          >
+                            <span>
+                              <IconButton
+                                size="small"
+                                color="error"
+                                onClick={(e) => handleDelete(e, row)}
+                                disabled={row.email === adminEmail}
+                              >
+                                <Delete />
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                        </>
+                      </TableCell>
+                    )}
                   </TableRow>
                 );
               })}
@@ -1760,7 +1889,7 @@ export default function UserTable() {
           onClose={() => setEditDialogOpen(false)}
           maxWidth="sm"
         >
-          <DialogTitle
+          {/* <DialogTitle
             sx={{
               backgroundColor: (theme) => theme.palette.primary.main,
               color: "#fff",
@@ -1768,7 +1897,55 @@ export default function UserTable() {
             }}
           >
             Edit User
+          </DialogTitle> */}
+          <DialogTitle
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              p: 1,
+              backgroundColor: "primary.main",
+            }}
+          >
+            <Typography
+              variant="h6"
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                fontFamily: '"Be Vietnam", sans-serif',
+                color: "#fff",
+              }}
+            >
+              Edit User
+            </Typography>
+
+            <IconButton
+              onClick={handleCloseDialog} // make sure handleClose closes the dialog
+              size="small"
+              sx={{
+                color: "#fff",
+                width: 32,
+                height: 32,
+                border: "1px solid",
+                borderColor: "#fff",
+                bgcolor: "error.lighter",
+                borderRadius: "50%",
+                position: "relative",
+                "&:hover": {
+                  transform: "rotate(180deg)",
+                },
+                transition: "transform 0.3s ease",
+              }}
+            >
+              <Close
+                sx={{
+                  fontSize: "1rem",
+                  transition: "transform 0.2s ease",
+                }}
+              />
+            </IconButton>
           </DialogTitle>
+
           <DialogContent dividers>
             <Grid container spacing={2}>
               <Grid item xs={6}>
@@ -1905,10 +2082,16 @@ export default function UserTable() {
             </Grid>
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleCloseDialog} color="primary">
-              Cancel
-            </Button>
-            <Button onClick={handleSaveChanges} color="secondary">
+            <Button
+              onClick={handleSaveChanges}
+              color="secondary"
+              variant="contained"
+              sx={{
+                backgroundColor: "rgb(251, 68, 36)",
+                color: "white",
+                borderRadius: "8px",
+              }}
+            >
               Save
             </Button>
           </DialogActions>

@@ -6,6 +6,8 @@ import {
   Group,
   Warning,
 } from "@mui/icons-material";
+import Close from "@mui/icons-material/Close";
+import axios from "axios";
 
 import {
   alpha,
@@ -29,6 +31,7 @@ import {
   Select,
   MenuItem,
 } from "@mui/material";
+import { Delete } from "@mui/icons-material";
 import { TextField } from "@mui/material";
 
 import React, { useEffect, useState } from "react";
@@ -194,6 +197,13 @@ const AngelBot = () => {
   const [currentLicenseIndex, setCurrentLicenseIndex] = useState(0);
   const [openCreateUser, setOpenCreateUser] = useState(false);
 
+  // 🔹 Region Management States
+  const [openRegionDialog, setOpenRegionDialog] = useState(false);
+  const [regions, setRegions] = useState([]);
+  const [newRegion, setNewRegion] = useState("");
+  const [defaultRegion, setDefaultRegion] = useState("");
+  const [regionError, setRegionError] = useState("");
+
   const activeConfig = {
     storageStatusData: [
       { value: 100, name: "Used", color: "#91CC75" },
@@ -236,6 +246,29 @@ const AngelBot = () => {
     setSnackbarMessage(message);
     setSnackbarSeverity(severity);
     setSnackbarOpen(true);
+  };
+
+  const saveRegions = async (regions, defaultRegion) => {
+    try {
+      const response = await axios.post(
+        `${window.__ENV__.REACT_APP_ROUTE}/api/regions/save`, // ✅ adjust endpoint
+        {
+          regions,
+          defaultRegion,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+            "Content-Type": "application/json",
+            username: sessionStorage.getItem("adminEmail"), // same as your other APIs
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error saving regions:", error);
+      throw error;
+    }
   };
 
   const convertDisplayToGB = (value) => {
@@ -547,59 +580,6 @@ const AngelBot = () => {
       : `${(val / 1024).toFixed(1)} GB`;
   };
 
-  // const storageStatus = {
-  //   tooltip: {
-  //     trigger: "item",
-  //     formatter: function (params) {
-  //       const valueFormatted = formatSizestorage(params.value);
-  //       return `${params.name}: ${valueFormatted} (${params.percent}%)`;
-  //     },
-  //   },
-
-  //   legend: {
-  //     orient: "horizontal",
-  //     left: "center",
-  //     textStyle: {
-  //       color: isDark ? "#fff" : "#000",
-  //       // fontWeight: "bold",
-  //     },
-  //     formatter: function (name) {
-  //       const item = storageStatusData.find((d) => d.name === name);
-  //       return `${name} (${formatSize(item.value)})`;
-  //     },
-  //   },
-
-  //   series: [
-  //     {
-  //       name: "Status",
-  //       type: "pie",
-  //       radius: "75%",
-  //       center: ["50%", "50%"],
-
-  //       label: {
-  //         position: "inside",
-  //         fontSize: 13,
-  //         formatter: (params) => {
-  //           return params.percent > 0 ? `${params.percent}%` : "";
-  //         },
-  //       },
-
-  //       data: storageStatusData.map((item) => ({
-  //         value: item?.value,
-  //         name: item.name,
-  //         itemStyle: { color: item.color },
-  //         label: { show: true, formatter: "{d}%" },
-  //       })),
-  //       emphasis: {
-  //         itemStyle: {
-  //           shadowBlur: 10,
-  //           shadowOffsetX: 0,
-  //           shadowColor: "rgba(0, 0, 0, 0.5)",
-  //         },
-  //       },
-  //     },
-  //   ],
-  // };
   const storageStatus = {
     tooltip: {
       trigger: "item",
@@ -1428,7 +1408,13 @@ const AngelBot = () => {
                             <Typography variant="h6">License Status</Typography>
                           </Box>
 
-                          <Tooltip title="Add License" arrow>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                            }}
+                          >
                             <input
                               type="file"
                               id="license-upload"
@@ -1492,11 +1478,38 @@ const AngelBot = () => {
                               }}
                             />
 
-                            <label htmlFor="license-upload">
+                            {/* Tooltip works now ✅ */}
+                            <Tooltip title="Add License" arrow>
+                              <label htmlFor="license-upload">
+                                <IconButton
+                                  component="span"
+                                  color="primary"
+                                  size="small"
+                                  sx={{
+                                    backgroundColor: (theme) =>
+                                      theme.palette.primary.light,
+                                    color: (theme) =>
+                                      theme.palette.primary.contrastText,
+                                    "&:hover": {
+                                      backgroundColor: (theme) =>
+                                        theme.palette.primary.main,
+                                      boxShadow: 3,
+                                    },
+                                    borderRadius: 2,
+                                    transition: "all 0.3s ease-in-out",
+                                  }}
+                                >
+                                  <Add />
+                                </IconButton>
+                              </label>
+                            </Tooltip>
+
+                            {/* Create Region */}
+                            <Tooltip title="Create Region" arrow>
                               <IconButton
-                                component="span"
                                 color="primary"
                                 size="small"
+                                onClick={() => setOpenRegionDialog(true)} // ✅ Open dialog
                                 sx={{
                                   backgroundColor: (theme) =>
                                     theme.palette.primary.light,
@@ -1513,8 +1526,8 @@ const AngelBot = () => {
                               >
                                 <Add />
                               </IconButton>
-                            </label>
-                          </Tooltip>
+                            </Tooltip>
+                          </Box>
                         </Box>
                       }
                     />
@@ -2096,35 +2109,6 @@ const AngelBot = () => {
                                 (user.storageUsed / user.storageAllocated) * 100
                               )}%`}
                             </Typography>
-                            {/* <Tooltip title="Increase Storage" arrow>
-                              <IconButton
-                                size="small"
-                                onClick={() =>
-                                  console.log(
-                                    `Increase storage for ${user.name}`
-                                  )
-                                }
-                                sx={{
-                                  ml: 1,
-                                  width: 28,
-                                  height: 28,
-                                  padding: 0.5,
-                                  backgroundColor: (theme) =>
-                                    theme.palette.primary.light,
-                                  color: (theme) =>
-                                    theme.palette.primary.contrastText,
-                                  "&:hover": {
-                                    backgroundColor: (theme) =>
-                                      theme.palette.primary.main,
-                                    boxShadow: 2,
-                                  },
-                                  borderRadius: 2,
-                                  transition: "all 0.2s ease-in-out",
-                                }}
-                              >
-                                <Add fontSize="inherit" />
-                              </IconButton>
-                            </Tooltip> */}
                           </Box>
                         ))}
                       <TablePagination
@@ -2307,35 +2291,6 @@ const AngelBot = () => {
                                 (dept.storageUsed / dept.storageAllocated) * 100
                               )}%`}
                             </Typography>
-                            {/* <Tooltip title="Increase Storage" arrow>
-                              <IconButton
-                                size="small"
-                                onClick={() =>
-                                  console.log(
-                                    `Increase storage for ${dept.name}`
-                                  )
-                                }
-                                sx={{
-                                  ml: 1,
-                                  width: 28,
-                                  height: 28,
-                                  padding: 0.5,
-                                  backgroundColor: (theme) =>
-                                    theme.palette.primary.light,
-                                  color: (theme) =>
-                                    theme.palette.primary.contrastText,
-                                  "&:hover": {
-                                    backgroundColor: (theme) =>
-                                      theme.palette.primary.main,
-                                    boxShadow: 2,
-                                  },
-                                  borderRadius: 2,
-                                  transition: "all 0.2s ease-in-out",
-                                }}
-                              >
-                                <Add fontSize="inherit" />
-                              </IconButton>
-                            </Tooltip> */}
                           </Box>
                         ))}
                       <TablePagination
@@ -2455,6 +2410,215 @@ const AngelBot = () => {
           showSnackbar={showSnackbar}
         />
       </Dialog>
+
+      <Dialog
+        open={openRegionDialog}
+        onClose={() => setOpenRegionDialog(false)}
+        maxWidth="md" // ✅ wider than "sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            minHeight: "400px", // ✅ increase height
+            minWidth: "1200px", // ✅ increase width
+            borderRadius: 2, // rounded corners
+          },
+        }}
+      >
+        {/* <DialogTitle
+          sx={{
+            backgroundColor: (theme) => theme.palette.primary.main,
+            color: "#fff",
+            fontWeight: 600,
+          }}
+        >
+          Create Regions
+        </DialogTitle> */}
+        <DialogTitle
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            p: 1,
+            backgroundColor: "primary.main",
+          }}
+        >
+          <Typography
+            variant="h6"
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              fontFamily: '"Be Vietnam", sans-serif',
+              color: "#fff",
+            }}
+          >
+            Create Regions
+          </Typography>
+
+          <IconButton
+            onClick={() => setOpenRegionDialog(false)}
+            size="small"
+            sx={{
+              color: "#fff",
+              width: 32,
+              height: 32,
+              border: "1px solid",
+              borderColor: "#fff",
+              bgcolor: "error.lighter",
+              borderRadius: "50%",
+              position: "relative",
+              "&:hover": {
+                transform: "rotate(180deg)",
+              },
+              transition: "transform 0.3s ease",
+            }}
+          >
+            <Close
+              sx={{
+                fontSize: "1rem",
+                transition: "transform 0.2s ease",
+              }}
+            />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: "flex", gap: 2, alignItems: "center", mt: 2 }}>
+            <TextField
+              label="Region Name"
+              value={newRegion}
+              onChange={(e) => setNewRegion(e.target.value)}
+              error={!!regionError}
+              helperText={regionError}
+              size="small"
+              fullWidth
+            />
+            <Button
+              variant="contained"
+              onClick={() => {
+                const regex = /^[A-Za-z0-9\-_]{1,12}$/; // ✅ only A-Z, 0-9, -, _ (1–8 chars)
+                if (!regex.test(newRegion)) {
+                  setRegionError(
+                    "Region must be 1-12 chars, no spaces, only letters, numbers, - or _"
+                  );
+                  return;
+                }
+                if (regions.includes(newRegion)) {
+                  setRegionError("Region already exists.");
+                  return;
+                }
+                if (regions.length >= 25) {
+                  setRegionError("Maximum 25 regions allowed.");
+                  return;
+                }
+
+                setRegions([...regions, newRegion]);
+                setNewRegion("");
+                setRegionError("");
+              }}
+            >
+              Add
+            </Button>
+          </Box>
+
+          {/* Regions List */}
+          <Box
+            sx={{
+              mt: 2,
+              maxHeight: 250, // ✅ enough for ~5 rows
+              overflowY: "auto",
+              pr: 1, // add space for scrollbar
+              "&::-webkit-scrollbar": {
+                width: "6px",
+              },
+              "&::-webkit-scrollbar-thumb": {
+                backgroundColor: "#aaa",
+                borderRadius: "4px",
+              },
+              "&::-webkit-scrollbar-thumb:hover": {
+                backgroundColor: "#888",
+              },
+            }}
+          >
+            {regions.length === 0 ? (
+              <Typography variant="body2" color="text.secondary">
+                No regions added yet.
+              </Typography>
+            ) : (
+              regions.map((region, idx) => (
+                <Box
+                  key={idx}
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    p: 1,
+                    borderBottom: "1px solid #ddd",
+                  }}
+                >
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <input
+                      type="radio"
+                      name="defaultRegion"
+                      checked={defaultRegion === region}
+                      onChange={() => setDefaultRegion(region)}
+                    />
+                    <Typography>{region}</Typography>
+                  </Box>
+                  <IconButton
+                    size="small"
+                    color="error"
+                    onClick={() => {
+                      setRegions(regions.filter((r) => r !== region));
+                      if (defaultRegion === region) setDefaultRegion("");
+                    }}
+                  >
+                    <Delete fontSize="small" />
+                  </IconButton>
+                </Box>
+              ))
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            variant="contained"
+            sx={{
+              backgroundColor: "rgb(251, 68, 36)",
+              color: "white",
+              borderRadius: "8px",
+            }}
+            onClick={async () => {
+              if (regions.length === 0) {
+                setRegionError("At least one region is required.");
+                return;
+              }
+              if (!defaultRegion) {
+                setRegionError("Please select a default region.");
+                return;
+              }
+
+              try {
+                const result = await saveRegions(regions, defaultRegion);
+                setSnackbar({
+                  open: true,
+                  message: "Regions saved successfully!",
+                  severity: "success",
+                });
+                console.log("API Result:", result);
+                setOpenRegionDialog(false);
+              } catch (error) {
+                setSnackbar({
+                  open: true,
+                  message: "Failed to save regions.",
+                  severity: "error",
+                });
+              }
+            }}
+          >
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <Snackbar
         open={snackbarOpen}
         autoHideDuration={4000}

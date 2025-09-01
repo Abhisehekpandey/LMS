@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
+import Close from "@mui/icons-material/Close";
 import { saveAs } from "file-saver";
 import axios from "axios";
 import { Portal } from "@mui/material";
@@ -6,6 +7,8 @@ import { Portal } from "@mui/material";
 import PropTypes from "prop-types";
 import SearchIcon from "@mui/icons-material/Search";
 import InputAdornment from "@mui/material/InputAdornment";
+import { Menu } from "@mui/material";
+import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 
 import {
   Box,
@@ -195,6 +198,11 @@ const CustomSpinner = styled(CircularProgress)(({ theme }) => ({
 }));
 
 function Department({ departments, setDepartments, onThemeToggle }) {
+  const [openPopper, setOpenPopper] = useState(false);
+  const [selectedDeptUsers, setSelectedDeptUsers] = useState([]);
+  const anchorRef = useRef(null);
+  const [anchorEl, setAnchorEl] = useState(null);
+  // const [selectedDeptUsers, setSelectedDeptUsers] = useState([]);
   const [duplicateShortNameError, setDuplicateShortNameError] = useState(false);
 
   const [showAddUserDialog, setShowAddUserDialog] = useState(false);
@@ -230,7 +238,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
   const [hasMoreUsers, setHasMoreUsers] = useState(true);
   const loadingUsers = useRef(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
-  const anchorRef = useRef(null);
+  // const anchorRef = useRef(null);
 
   const [isAdminRole, setIsAdminRole] = useState(false);
   const [page, setPage] = useState(0);
@@ -329,6 +337,24 @@ function Department({ departments, setDepartments, onThemeToggle }) {
   console.log("departmentMigrat", departmentToMigrate);
   console.log("targetDepatment", targetDepartment);
 
+  const handleToggle = (users) => {
+    setSelectedDeptUsers(users);
+    setOpenPopper((prev) => !prev);
+  };
+
+  const handleClose1 = () => {
+    setOpenPopper(false);
+  };
+
+  const handleClick1 = (event, users) => {
+    setAnchorEl(event.currentTarget);
+    setSelectedDeptUsers(users);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
   const loadMoreDepartments = async () => {
     if (loadingDepartments.current || !hasMoreDepartments) return;
     loadingDepartments.current = true;
@@ -373,6 +399,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
       // Map backend data to expected frontend format
       const mapped = apiDepartments.map((dept) => ({
+        id: dept.id, // 👈 add this
         name: dept.deptName,
         displayName: dept.deptDisplayName,
         departmentModerator:
@@ -402,6 +429,103 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const DeptUsersDropdown = ({ users, onEditUser, onDeleteUser }) => {
+    const [open, setOpen] = useState(false);
+    const [search, setSearch] = useState("");
+    const anchorRef = useRef(null);
+
+    const handleToggle = () => setOpen((prev) => !prev);
+    const handleClose = () => setOpen(false);
+
+    // Filter users based on search input
+    const filteredUsers = useMemo(() => {
+      return users.filter((user) =>
+        user.name.toLowerCase().includes(search.toLowerCase())
+      );
+    }, [users, search]);
+
+    return (
+      <>
+        <IconButton ref={anchorRef} size="small" onClick={handleToggle}>
+          {users.length} <ArrowDropDownIcon />
+        </IconButton>
+
+        <Popper
+          open={open}
+          anchorEl={anchorRef.current}
+          placement="bottom-start"
+          disablePortal
+          style={{ zIndex: 1300 }}
+        >
+          <ClickAwayListener onClickAway={handleClose}>
+            <Paper
+              style={{
+                maxHeight: 300, // max height for 5 rows
+                overflowY: "auto", // scroll if more than 5 items
+                minWidth: 250,
+                padding: 8,
+              }}
+            >
+              <TextField
+                size="small"
+                placeholder="Search users"
+                fullWidth
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                sx={{ mb: 1 }}
+              />
+
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Name</TableCell>
+                    <TableCell>Action</TableCell>
+                  </TableRow>
+                </TableHead>
+
+                <TableBody>
+                  {filteredUsers.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={2} align="center">
+                        No Users
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredUsers.slice(0, 5).map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell>{user.name}</TableCell>
+                        <TableCell>
+                          <IconButton
+                            size="small"
+                            onClick={() => onEditUser(user)}
+                          >
+                            <EditIcon
+                              fontSize="small"
+                              sx={{ color: "primary.main" }}
+                            />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            onClick={() => onDeleteUser(user)}
+                          >
+                            <DeleteIcon
+                              fontSize="small"
+                              sx={{ color: "error.main" }}
+                            />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </Paper>
+          </ClickAwayListener>
+        </Popper>
+      </>
+    );
   };
 
   const handleUpdateDepartment = async () => {
@@ -1477,8 +1601,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 label="Filter By"
               >
                 <MenuItem value="name">Department</MenuItem>
-                <MenuItem value="departmentModerator">Moderator</MenuItem>
+                <MenuItem value="departmentModerator">Owner</MenuItem>
                 <MenuItem value="displayName">Short Name</MenuItem>
+                <MenuItem value="id">Department Id</MenuItem>
               </Select>
             </FormControl>
 
@@ -1521,9 +1646,24 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           </Box>
         </Box>
 
-        <Table sx={{ border: "0px solid #e2e8f0 !important" }}>
+        <Table
+          sx={{
+            border: "0px solid #e2e8f0 !important",
+            "& .MuiTableCell-root": {
+              padding: "8px 12px", // ✅ consistent default padding
+              height: "40px",
+              fontSize: "14px",
+            },
+            "& .MuiTableCell-head": {
+              fontWeight: "bold",
+              color: "#444",
+              backgroundColor: "#f8fafc",
+            },
+          }}
+        >
           <TableHead className={styles.tableHeader}>
             <TableRow>
+              {/* Checkbox column */}
               <TableCell
                 padding="checkbox"
                 sx={{ width: "48px", textAlign: "center" }}
@@ -1538,189 +1678,78 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     sortedDepartments.length > 0 &&
                     selected.length === sortedDepartments.length
                   }
-                  onChange={() => setSelectAllData(true)} // ✅ New line
+                  onChange={() => setSelectAllData(true)}
                   inputProps={{ "aria-label": "select all departments" }}
                   size="small"
                 />
               </TableCell>
 
-              <TableCell
-                sx={{
-                  width: "100px",
-                  padding: "8px 8px",
-                  height: "40px",
-                  fontWeight: "bold",
-                  color: "#444",
-                  textAlign: "left",
-                }}
-              >
+              <TableCell sx={{ width: "120px" }}>
+                <TableSortLabel
+                  active={orderBy === "id"}
+                  direction={orderBy === "id" ? order : "asc"}
+                  onClick={() => handleRequestSort("id")}
+                >
+                  Department Id
+                </TableSortLabel>
+              </TableCell>
+
+              {/* Department */}
+              <TableCell sx={{ width: "120px" }}>
                 <TableSortLabel
                   active={orderBy === "name"}
                   direction={orderBy === "name" ? order : "asc"}
                   onClick={() => handleRequestSort("name")}
-                  sx={{
-                    "& .MuiTableSortLabel-icon": {
-                      fontSize: "1.125rem",
-                      color: "#64748b",
-                      fontWeight: "bold",
-                    },
-                  }}
                 >
-                  <Typography
-                    variant="body1"
-                    sx={{
-                      fontWeight: "bold !important",
-                      fontSize: "15px",
-                      letterSpacing: "-0.01em",
-                    }}
-                  >
-                    Department
-                  </Typography>
+                  Department
                 </TableSortLabel>
               </TableCell>
 
-              <TableCell
-                sx={{
-                  width: "150px",
-                  padding: "8px 8px",
-                  height: "40px",
-                  fontWeight: "bold",
-                  color: "#444",
-                  textAlign: "left",
-                }}
-              >
+              {/* Display Name */}
+              <TableCell sx={{ width: "150px" }}>
                 <TableSortLabel
                   active={orderBy === "displayName"}
                   direction={orderBy === "displayName" ? order : "asc"}
                   onClick={() => handleRequestSort("displayName")}
-                  sx={{
-                    "& .MuiTableSortLabel-icon": {
-                      fontSize: "1.125rem",
-                      color: "#64748b",
-                      fontWeight: "bold",
-                    },
-                  }}
                 >
-                  <Typography
-                    variant="body1"
-                    sx={{
-                      fontWeight: "bold !important",
-                      fontSize: "15px",
-                      letterSpacing: "-0.01em",
-                    }}
-                  >
-                    Display name
-                  </Typography>
+                  Display name
                 </TableSortLabel>
               </TableCell>
 
-              <TableCell
-                sx={{
-                  // ...commonTextStyle,
-                  width: "200px",
-                  padding: "2px 8px",
-                  height: "32px",
-                  fontWeight: "bold",
-                  color: "#444",
-                  textAlign: "left",
-                  // alignItems: "center",
-                }}
-              >
+              {/* Owner */}
+              <TableCell sx={{ width: "200px" }}>
                 <TableSortLabel
                   active={orderBy === "departmentModerator"}
                   direction={orderBy === "departmentModerator" ? order : "asc"}
                   onClick={() => handleRequestSort("departmentModerator")}
-                  sx={{
-                    "& .MuiTableSortLabel-icon": {
-                      fontSize: "1.125rem",
-                      color: "#64748b",
-                      fontWeight: "bold",
-                    },
-                  }}
                 >
-                  <Typography
-                    variant="body1"
-                    sx={{
-                      // ...commonTextStyle,
-                      fontWeight: "bold !important",
-                      fontSize: "15px",
-                      letterSpacing: "-0.01em",
-                    }}
-                  >
-                    Owner
-                  </Typography>
+                  Owner
                 </TableSortLabel>
               </TableCell>
 
-              <TableCell
-                sx={{
-                  width: "150px",
-                  padding: "2px 8px",
-                  height: "32px",
-                  fontWeight: "bold",
-                  color: "#444",
-                  textAlign: "left",
-                }}
-              >
-                <Typography
-                  variant="body1"
-                  sx={{
-                    fontWeight: "bold !important",
-                    fontSize: "15px",
-                    letterSpacing: "-0.01em",
-                  }}
+              {/* Storage */}
+              <TableCell sx={{ width: "150px" }}>Storage</TableCell>
+
+              {/* Manage Storage */}
+              <TableCell sx={{ width: "150px" }}>Manage Storage</TableCell>
+
+              <TableCell sx={{ width: "150px" }}>
+                <TableSortLabel
+                  active={orderBy === "noOfUsers"}
+                  direction={orderBy === "noOfUsers" ? order : "asc"}
+                  onClick={() => handleRequestSort("noOfUsers")}
                 >
-                  Storage
-                </Typography>
+                  No of Users
+                </TableSortLabel>
               </TableCell>
 
-              <TableCell
-                sx={{
-                  width: "150px",
-                  padding: "2px 8px",
-                  height: "32px",
-                  fontWeight: "bold",
-                  color: "#444",
-                  textAlign: "left",
-                }}
-              >
-                <Typography
-                  variant="body1"
-                  sx={{
-                    fontWeight: "bold !important",
-                    fontSize: "15px",
-                    letterSpacing: "-0.01em",
-                  }}
-                >
-                  Manage Storage
-                </Typography>
-              </TableCell>
-
-              <TableCell
-                sx={{
-                  // ...commonTextStyle,
-                  width: "150px",
-                  padding: "2px 8px",
-                  height: "32px",
-                  fontWeight: "bold",
-                  color: "#444",
-                  textAlign: "center",
-                }}
-              >
-                <Typography
-                  variant="body1"
-                  // fontWeight="bold"
-                  sx={{
-                    fontWeight: "bold !important",
-                    fontSize: "15px",
-                    letterSpacing: "-0.01em",
-                  }}
-                >
-                  Actions
-                </Typography>
+              {/* Actions */}
+              <TableCell sx={{ width: "150px", textAlign: "center" }}>
+                Actions
               </TableCell>
             </TableRow>
           </TableHead>
+
           <TableBody>
             {filteredDepartments1?.map((dept, index) => {
               const isItemSelected = isSelected(dept.name);
@@ -1732,66 +1761,35 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     aria-checked={isItemSelected}
                     tabIndex={-1}
                     selected={isItemSelected}
-                    sx={{
-                      cursor: "default", // Change cursor to default instead of pointer
-                    }}
+                    sx={{ cursor: "default" }}
                   >
-                    <TableCell
-                      padding="checkbox"
-                      sx={{
-                        width: "48px",
-                        padding: "2px 8px",
-                        height: "32px",
-                        textAlign: "center",
-                      }}
-                    >
+                    {/* Checkbox */}
+                    <TableCell padding="checkbox" sx={{ textAlign: "center" }}>
                       <Checkbox
                         color="primary"
                         checked={isItemSelected}
                         size="small"
-                        // onClick={(event) => event.stopPropagation()}
                         onChange={(event) => handleClick(event, dept.name)}
                       />
                     </TableCell>
 
-                    <TableCell sx={{ padding: "2px 8px" }}>
-                      {dept.name}
-                    </TableCell>
-                    <TableCell
-                      sx={{
-                        // ...commonTextStyle,
-                        textAlign: "left",
-                        padding: "2px 8px",
-                      }}
-                    >
-                      {dept.displayName}
-                    </TableCell>
-                    <TableCell
-                      sx={{
-                        // ...commonTextStyle,
-                        textAlign: "left",
-                        padding: "2px 8px",
-                      }}
-                    >
-                      {dept.departmentModerator}
-                    </TableCell>
-                    <TableCell
-                      sx={{
-                        textAlign: "left",
-                        padding: "2px 8px",
-                      }}
-                    >
-                      {dept.storage}
-                    </TableCell>
+                    <TableCell>{dept.id}</TableCell>
 
-                    <TableCell
-                      sx={{
-                        textAlign: "left",
-                        padding: "2px 8px",
-                      }}
-                    >
+                    {/* Department */}
+                    <TableCell>{dept.name}</TableCell>
+
+                    {/* Display name */}
+                    <TableCell>{dept.displayName}</TableCell>
+
+                    {/* Owner */}
+                    <TableCell>{dept.departmentModerator}</TableCell>
+
+                    {/* Storage */}
+                    <TableCell>{dept.storage}</TableCell>
+
+                    {/* Manage Storage */}
+                    <TableCell>
                       <Select
-                        // value={dept.storage}
                         value={dept.allowedStorage}
                         onChange={(e) =>
                           handleStorageChange(dept.name, e.target.value)
@@ -1812,11 +1810,21 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                       </Select>
                     </TableCell>
 
-                    <TableCell sx={{ padding: "2px 8px" }}>
+                    <TableCell align="center">
+                      <DeptUsersDropdown
+                        users={dept.roles.flatMap((role) => role.user)}
+                        onEditUser={(user) => console.log("Edit user:", user)}
+                        onDeleteUser={(user) =>
+                          console.log("Delete user:", user)
+                        }
+                      />
+                    </TableCell>
+
+                    {/* Actions */}
+                    <TableCell sx={{ textAlign: "center" }}>
                       <Box
                         sx={{
                           display: "flex",
-                          alignItems: "center",
                           justifyContent: "center",
                           gap: 0.5,
                         }}
@@ -1825,12 +1833,11 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                           size="small"
                           onClick={() => handleEditDepartment(dept)}
                           sx={{
-                            color: "#1976d2", // Brighter blue
+                            color: "#1976d2",
                             "&:hover": {
-                              backgroundColor: "#e3f2fd", // Light blue background on hover
-                              color: "#1565c0", // Darker blue on hover
+                              backgroundColor: "#e3f2fd",
+                              color: "#1565c0",
                             },
-                            padding: "4px",
                           }}
                           title="Edit Department"
                         >
@@ -1843,12 +1850,11 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                             setDeleteDialogOpen(true);
                           }}
                           sx={{
-                            color: "#d32f2f", // Brighter red
+                            color: "#d32f2f",
                             "&:hover": {
-                              backgroundColor: "#ffebee", // Light red background on hover
-                              color: "#c62828", // Darker red on hover
+                              backgroundColor: "#ffebee",
+                              color: "#c62828",
                             },
-                            padding: "4px",
                           }}
                           title="Delete Department"
                         >
@@ -1858,7 +1864,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     </TableCell>
                   </StyledTableRow>
 
-                  <StyledTableRow key={index}>
+                  {/* Expandable row for roles */}
+                  <StyledTableRow>
                     <TableCell
                       style={{
                         paddingBottom: 0,
@@ -1866,7 +1873,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                         borderBottom: "none",
                         height: "auto",
                       }}
-                      colSpan={6}
+                      colSpan={7}
                     >
                       <ClickAwayListener
                         onClickAway={() =>
@@ -1884,7 +1891,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                               left: "75%",
                               transform: "translateX(-50%)",
                               width: "250px",
-                              backgroundColor: "#ffff",
+                              backgroundColor: "#fff",
                               borderRadius: "8px",
                               border: "1px solid #e2e8f0",
                               boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
@@ -1892,17 +1899,10 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                               marginTop: "4px",
                               maxHeight: "240px",
                               overflowY: "auto",
-
-                              // ✅ Custom scrollbar width
-                              "&::-webkit-scrollbar": {
-                                width: "6px", // set to 6px or smaller
-                              },
+                              "&::-webkit-scrollbar": { width: "6px" },
                               "&::-webkit-scrollbar-thumb": {
-                                backgroundColor: "#cbd5e1", // light gray
+                                backgroundColor: "#cbd5e1",
                                 borderRadius: "4px",
-                              },
-                              "&::-webkit-scrollbar-track": {
-                                backgroundColor: "#f1f5f9", // optional
                               },
                             }}
                           >
@@ -1912,12 +1912,10 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                   <TableCell
                                     sx={{
                                       backgroundColor: "#f1f5f9",
-                                      fontWeight: "600 !important",
+                                      fontWeight: 600,
                                       color: "#475569",
                                       fontSize: "0.75rem",
                                       borderBottom: "1px solid #e2e8f0",
-                                      padding: "8px 12px",
-                                      // ...commonTextStyle,
                                     }}
                                   >
                                     Role Name
@@ -1926,11 +1924,10 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                     align="right"
                                     sx={{
                                       backgroundColor: "#f1f5f9",
-                                      fontWeight: "600 !important",
+                                      fontWeight: 600,
                                       color: "#475569",
                                       fontSize: "0.75rem",
                                       borderBottom: "1px solid #e2e8f0",
-                                      padding: "8px 12px",
                                       width: "60px",
                                     }}
                                   >
@@ -1944,7 +1941,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                     key={roleIndex}
                                     sx={{
                                       "&:hover": {
-                                        backgroundColor: "rgba(0, 0, 0, 0.02)",
+                                        backgroundColor: "rgba(0,0,0,0.02)",
                                       },
                                       "& td": {
                                         borderBottom:
@@ -1956,7 +1953,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                   >
                                     <TableCell
                                       sx={{
-                                        // ...commonTextStyle,
                                         padding: "6px 12px",
                                         fontSize: "0.75rem",
                                         color: "#334155",
@@ -1966,39 +1962,26 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                     </TableCell>
                                     <TableCell
                                       align="right"
-                                      sx={{
-                                        padding: "4px 8px",
-                                      }}
+                                      sx={{ padding: "4px 8px" }}
                                     >
-                                      <Box
+                                      <IconButton
+                                        size="small"
+                                        onClick={() =>
+                                          handleDeleteRole(dept.name, roleIndex)
+                                        }
                                         sx={{
-                                          display: "flex",
-                                          gap: 0.5,
-                                          justifyContent: "flex-end",
+                                          padding: "2px",
+                                          color: "error.main",
+                                          "&:hover": {
+                                            backgroundColor: "error.lighter",
+                                          },
                                         }}
+                                        title="Delete Role"
                                       >
-                                        <IconButton
-                                          size="small"
-                                          onClick={() =>
-                                            handleDeleteRole(
-                                              dept.name,
-                                              roleIndex
-                                            )
-                                          }
-                                          sx={{
-                                            padding: "2px",
-                                            color: "error.main",
-                                            "&:hover": {
-                                              backgroundColor: "error.lighter",
-                                            },
-                                          }}
-                                          title="Delete Role"
-                                        >
-                                          <DeleteIcon
-                                            sx={{ fontSize: "0.875rem" }}
-                                          />
-                                        </IconButton>
-                                      </Box>
+                                        <DeleteIcon
+                                          sx={{ fontSize: "0.875rem" }}
+                                        />
+                                      </IconButton>
                                     </TableCell>
                                   </TableRow>
                                 ))}
@@ -2030,7 +2013,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         }}
       >
         <TablePagination
-          rowsPerPageOptions={[10]}
+          rowsPerPageOptions={[10, 20, 30, 50, 100]}
           component="div"
           count={totalDepartments}
           rowsPerPage={rowsPerPage}
@@ -2122,26 +2105,51 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         }}
       >
         <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-          {/* Header */}
           <Box
             sx={{
-              borderBottom: "1px solid #eee",
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
-              p: 2,
+              p: 1,
               backgroundColor: "primary.main",
             }}
           >
-            <Typography variant="h6" sx={{ color: "#fff" }}>
+            <Typography
+              variant="h6"
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                fontFamily: '"Be Vietnam", sans-serif',
+                color: "#fff",
+              }}
+            >
               Create New Department
             </Typography>
+
             <IconButton
               onClick={() => setShowAddDepartment(false)}
               size="small"
-              sx={{ color: "#fff" }}
+              sx={{
+                color: "#fff",
+                width: 32,
+                height: 32,
+                border: "1px solid",
+                borderColor: "#fff",
+                bgcolor: "error.lighter",
+                borderRadius: "50%",
+                position: "relative",
+                "&:hover": {
+                  transform: "rotate(180deg)",
+                },
+                transition: "transform 0.3s ease",
+              }}
             >
-              <CloseIcon />
+              <Close
+                sx={{
+                  fontSize: "1rem",
+                  transition: "transform 0.2s ease",
+                }}
+              />
             </IconButton>
           </Box>
 
@@ -2554,32 +2562,46 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
+            p: 1,
             backgroundColor: "primary.main",
-            // borderRadius:"20px",
-            margin: 0,
-            padding: 1,
           }}
         >
-          <Typography variant="h6" sx={{ color: "#ffff" }}>
-            Edit Department
-          </Typography>
-          <IconButton
-            onClick={() => setEditDialogOpen(false)}
+          <Typography
+            variant="h6"
             sx={{
-              color: "#ffff",
-              border: "1px solid",
-              borderColor: "#ffff",
-              bgcolor: "error.lighter",
-              "&:hover": {
-                // bgcolor: "error.light",
-                transform: "rotate(180deg)",
-              },
-              transition: "all 0.3s ease",
-              borderRadius: "50%",
-              size: "small",
+              display: "flex",
+              alignItems: "center",
+              fontFamily: '"Be Vietnam", sans-serif',
+              color: "#fff",
             }}
           >
-            <CloseIcon />
+            Edit Department
+          </Typography>
+
+          <IconButton
+            onClick={() => setEditDialogOpen(false)}
+            size="small"
+            sx={{
+              color: "#fff",
+              width: 32,
+              height: 32,
+              border: "1px solid",
+              borderColor: "#fff",
+              bgcolor: "error.lighter",
+              borderRadius: "50%",
+              position: "relative",
+              "&:hover": {
+                transform: "rotate(180deg)",
+              },
+              transition: "transform 0.3s ease",
+            }}
+          >
+            <Close
+              sx={{
+                fontSize: "1rem",
+                transition: "transform 0.2s ease",
+              }}
+            />
           </IconButton>
         </Box>
 
@@ -2728,8 +2750,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         <Box
           sx={{ display: "flex", justifyContent: "flex-end", gap: 1, mt: 3 }}
         >
-          <Button onClick={() => setEditDialogOpen(false)}>Cancel</Button>
-
           <Button
             onClick={handleUpdateDepartment}
             variant="contained"
@@ -2753,27 +2773,51 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         maxWidth="xs"
         fullWidth
       >
-        {/* Header with blue background */}
         <DialogTitle
           sx={{
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            backgroundColor: "#1976d2", // ✅ MUI blue
-            color: "white",
-            py: 1.5,
-            px: 2,
+            p: 1,
+            backgroundColor: "primary.main",
           }}
         >
-          <Typography variant="h6" sx={{ fontWeight: "bold", color: "white" }}>
+          <Typography
+            variant="h6"
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              fontFamily: '"Be Vietnam", sans-serif',
+              color: "#fff",
+            }}
+          >
             Confirm Delete
           </Typography>
+
           <IconButton
-            size="small"
             onClick={() => setDeleteDialogOpen(false)}
-            sx={{ color: "white" }}
+            size="small"
+            sx={{
+              color: "#fff",
+              width: 32,
+              height: 32,
+              border: "1px solid",
+              borderColor: "#fff",
+              bgcolor: "error.lighter",
+              borderRadius: "50%",
+              position: "relative",
+              "&:hover": {
+                transform: "rotate(180deg)",
+              },
+              transition: "transform 0.3s ease",
+            }}
           >
-            <CloseIcon fontSize="small" />
+            <Close
+              sx={{
+                fontSize: "1rem",
+                transition: "transform 0.2s ease",
+              }}
+            />
           </IconButton>
         </DialogTitle>
 
@@ -2799,19 +2843,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             borderTop: "1px solid #e2e8f0",
           }}
         >
-          <Button
-            onClick={() => setDeleteDialogOpen(false)}
-            variant="outlined"
-            color="inherit"
-            sx={{
-              textTransform: "none",
-              borderRadius: "8px",
-              px: 2.5,
-              fontSize: "0.9rem",
-            }}
-          >
-            Cancel
-          </Button>
           <Button
             onClick={handleDeleteDepartment}
             variant="contained"
@@ -3012,6 +3043,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 });
 
                 const mapped = allDepartments.map((dept) => ({
+                  id: dept.id, // 👈 add this
                   name: dept.deptName,
                   displayName: dept.deptDisplayName,
                   departmentModerator:

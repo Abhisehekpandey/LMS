@@ -407,7 +407,6 @@ const DataDictionary = ({ searchResults = [] }) => {
           },
         }}
       >
-       
         <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, p: 2 }}>
           <TextField
             select
@@ -493,19 +492,19 @@ const DataDictionary = ({ searchResults = [] }) => {
           <Table stickyHeader>
             <TableHead>
               <TableRow
-                sx={(theme) => ({
-                  height: 64,
-                  // backgroundColor: theme.palette.primary.main,
+                sx={{
+                  height: 56, // match typical Material-UI dense header
                   "& td, & th": {
-                    padding: "6px 8px",
-                    // color: theme.palette.primary.contrastText,
-                    fontWeight: "bold",
+                    padding: "8px 12px", // consistent padding
+                    fontWeight: 600,
+                    fontSize: "0.9rem",
                     fontFamily: '"Be Vietnam", sans-serif',
                     textAlign: "center",
+                    backgroundColor: (theme) =>
+                      theme.palette.mode === "dark" ? "#2c2c2c" : "#f5f5f5",
                   },
-                })}
+                }}
               >
-                {/* Checkbox column */}
                 <TableCell padding="checkbox" sx={{ textAlign: "center" }}>
                   <Checkbox
                     indeterminate={
@@ -518,7 +517,7 @@ const DataDictionary = ({ searchResults = [] }) => {
                     }
                     onChange={handleSelectAllClick}
                     sx={{
-                      color: (theme) => theme.palette.text.primary, // ✅ dynamic color
+                      color: (theme) => theme.palette.text.primary,
                       "&.Mui-checked": {
                         color: (theme) => theme.palette.primary.main,
                       },
@@ -529,11 +528,10 @@ const DataDictionary = ({ searchResults = [] }) => {
                   />
                 </TableCell>
 
-                {/* S.No column */}
-                <TableCell align="center">S.No</TableCell>
+                <TableCell>S.No</TableCell>
 
-                {/* Key column */}
-                <TableCell align="center">
+                {/* Key column with sort + filter */}
+                <TableCell>
                   <Box
                     sx={{
                       display: "grid",
@@ -576,7 +574,7 @@ const DataDictionary = ({ searchResults = [] }) => {
                 </TableCell>
 
                 {/* Value column */}
-                <TableCell align="center">
+                <TableCell>
                   <Box
                     sx={{
                       display: "grid",
@@ -621,7 +619,7 @@ const DataDictionary = ({ searchResults = [] }) => {
                 </TableCell>
 
                 {/* Applicable To column */}
-                <TableCell align="center">
+                <TableCell>
                   <Box
                     sx={{
                       display: "grid",
@@ -665,8 +663,7 @@ const DataDictionary = ({ searchResults = [] }) => {
                   </Box>
                 </TableCell>
 
-                {/* Actions column */}
-                <TableCell align="center">Actions</TableCell>
+                <TableCell>Actions</TableCell>
               </TableRow>
             </TableHead>
 
@@ -679,32 +676,27 @@ const DataDictionary = ({ searchResults = [] }) => {
                     hover
                     selected={isSelected(globalIndex)}
                     sx={{
-                      height: 36, // ⬅️ reduce row height
+                      height: 44,
                       "& td": {
-                        padding: "6px 8px", // ⬅️ reduce cell padding
+                        padding: "8px 12px",
+                        fontSize: "0.875rem",
+                        fontFamily: '"Be Vietnam", sans-serif',
+                        textAlign: "center",
                       },
                     }}
                   >
-                    <TableCell padding="checkbox" sx={{ textAlign: "center" }}>
+                    <TableCell padding="checkbox">
                       <Checkbox
                         checked={isSelected(globalIndex)}
                         onChange={() => handleClick(globalIndex)}
-                        size="small" // ⬅️ smaller checkbox
+                        size="small"
                       />
                     </TableCell>
-                    <TableCell sx={{ textAlign: "center" }}>
-                      {globalIndex + 1}
-                    </TableCell>
-                    <TableCell sx={{ textAlign: "center" }}>
-                      {row.key}
-                    </TableCell>
-                    <TableCell sx={{ textAlign: "center" }}>
-                      {row.value}
-                    </TableCell>
-                    <TableCell sx={{ textAlign: "center" }}>
-                      {getApplicableToText(row)}
-                    </TableCell>
-                    <TableCell sx={{ textAlign: "center" }}>
+                    <TableCell>{globalIndex + 1}</TableCell>
+                    <TableCell>{row.key}</TableCell>
+                    <TableCell>{row.value}</TableCell>
+                    <TableCell>{getApplicableToText(row)}</TableCell>
+                    <TableCell>
                       <Tooltip title="Edit">
                         <IconButton
                           color="primary"
@@ -721,7 +713,7 @@ const DataDictionary = ({ searchResults = [] }) => {
                           size="small"
                           onClick={() => {
                             setDeleteDialogOpen(true);
-                            setDeleteTarget(row); // Save full row so we have access to its ID
+                            setDeleteTarget(row);
                           }}
                         >
                           <DeleteIcon fontSize="small" />

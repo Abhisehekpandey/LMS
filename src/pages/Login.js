@@ -144,8 +144,11 @@ const Login = () => {
     setLoading(true);
     try {
       const normalizedEmail = formData.email.trim().toLowerCase();
+      console.log("normall",normalizedEmail)
       const encryptedPassword = encryptFun(formData.password, normalizedEmail);
+      console.log("encrypt",encryptedPassword)
       const data = await loginUser(normalizedEmail, encryptedPassword);
+      console.log("dataaa",data);
 
       const { access_token, refresh_token, expires_in, refresh_expires_in } =
         data;
