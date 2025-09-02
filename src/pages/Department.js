@@ -9,6 +9,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import InputAdornment from "@mui/material/InputAdornment";
 import { Menu } from "@mui/material";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
+import AddIcon from "@mui/icons-material/Add";
 
 import {
   Box,
@@ -197,10 +198,27 @@ const CustomSpinner = styled(CircularProgress)(({ theme }) => ({
   thickness: 2,
 }));
 
+const allColumns = [
+  { id: "id", label: "Department Id" },
+  { id: "name", label: "Department" },
+  { id: "displayName", label: "Display Name" },
+  { id: "owner", label: "Owner" },
+  { id: "storage", label: "Storage" },
+  { id: "storage", label: "Manage Storage" },
+  { id: "users", label: "No of Users" },
+  { id: "actions", label: "Actions" },
+];
+
 function Department({ departments, setDepartments, onThemeToggle }) {
   const [openPopper, setOpenPopper] = useState(false);
   const [selectedDeptUsers, setSelectedDeptUsers] = useState([]);
   const anchorRef = useRef(null);
+  const [visibleColumns, setVisibleColumns] = useState(
+    allColumns.reduce((acc, col) => {
+      acc[col.id] = true; // all visible by default
+      return acc;
+    }, {})
+  );
   const [anchorEl, setAnchorEl] = useState(null);
   // const [selectedDeptUsers, setSelectedDeptUsers] = useState([]);
   const [duplicateShortNameError, setDuplicateShortNameError] = useState(false);
@@ -431,27 +449,102 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     }
   };
 
-  const DeptUsersDropdown = ({ users, onEditUser, onDeleteUser }) => {
+  const DeptUsersDropdown = ({
+    users,
+    departmentId,
+    onEditUser,
+    onDeleteUser,
+    addUsersToDepartment,
+  }) => {
     const [open, setOpen] = useState(false);
     const [search, setSearch] = useState("");
+    const [addDialogOpen, setAddDialogOpen] = useState(false);
+    const [allUsers, setAllUsers] = useState([]);
+    const [selectedUsers, setSelectedUsers] = useState([]);
+    const [loading, setLoading] = useState(false);
     const anchorRef = useRef(null);
 
     const handleToggle = () => setOpen((prev) => !prev);
     const handleClose = () => setOpen(false);
 
-    // Filter users based on search input
+    // Filter users in dropdown
     const filteredUsers = useMemo(() => {
       return users.filter((user) =>
         user.name.toLowerCase().includes(search.toLowerCase())
       );
     }, [users, search]);
 
+    // Open Add Users dialog and fetch all users
+    const handleOpenAddDialog = async () => {
+      setAddDialogOpen(true);
+      setLoading(true);
+      try {
+        const res = await fetchUsers(0, 100); // fetch first 100 users
+        setAllUsers(res.content || []);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const handleCloseAddDialog = () => {
+      setAddDialogOpen(false);
+      setSelectedUsers([]);
+    };
+
+    const handleToggleSelectUser = (user) => {
+      setSelectedUsers((prev) =>
+        prev.some((u) => u.id === user.id)
+          ? prev.filter((u) => u.id !== user.id)
+          : [...prev, user]
+      );
+    };
+
+    const handleAddSelectedUsers = () => {
+      if (addUsersToDepartment) {
+        addUsersToDepartment(
+          departmentId,
+          selectedUsers.map((u) => u.id)
+        );
+      }
+      handleCloseAddDialog();
+    };
+
+    const filteredAllUsers = useMemo(() => {
+      return allUsers.filter((user) =>
+        user.name.toLowerCase().includes(search.toLowerCase())
+      );
+    }, [allUsers, search]);
+
     return (
-      <>
+      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+        {/* Count + dropdown */}
         <IconButton ref={anchorRef} size="small" onClick={handleToggle}>
           {users.length} <ArrowDropDownIcon />
         </IconButton>
 
+        {/* Add Users button */}
+        <Tooltip title="Add Users">
+          <IconButton
+            onClick={handleOpenAddDialog}
+            sx={{
+              border: "1px solid",
+              borderColor: "primary.main",
+              borderRadius: "50%",
+              color: "primary.main",
+              width: 28,
+              height: 28,
+              p: 0,
+              ml: 1,
+              "&:hover": { backgroundColor: "primary.light" },
+            }}
+          >
+            <AddIcon fontSize="inherit" />
+          </IconButton>
+        </Tooltip>
+
+        {/* Dropdown table */}
         <Popper
           open={open}
           anchorEl={anchorRef.current}
@@ -462,8 +555,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           <ClickAwayListener onClickAway={handleClose}>
             <Paper
               style={{
-                maxHeight: 300, // max height for 5 rows
-                overflowY: "auto", // scroll if more than 5 items
+                maxHeight: 300,
+                overflowY: "auto",
                 minWidth: 250,
                 padding: 8,
               }}
@@ -476,7 +569,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 onChange={(e) => setSearch(e.target.value)}
                 sx={{ mb: 1 }}
               />
-
               <Table size="small">
                 <TableHead>
                   <TableRow>
@@ -484,7 +576,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     <TableCell>Action</TableCell>
                   </TableRow>
                 </TableHead>
-
                 <TableBody>
                   {filteredUsers.length === 0 ? (
                     <TableRow>
@@ -524,7 +615,119 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             </Paper>
           </ClickAwayListener>
         </Popper>
-      </>
+
+        <Dialog
+          open={addDialogOpen}
+          onClose={handleCloseAddDialog}
+          fullWidth
+          maxWidth="sm"
+        >
+          <DialogTitle
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              p: 1,
+              backgroundColor: "primary.main",
+            }}
+          >
+            <Typography
+              variant="h6"
+              sx={{
+                alignItems: "center",
+                display: "flex",
+                fontFamily: '"Be Vietnam", sans-serif',
+                color: "#ffff",
+              }}
+            >
+              ADD NEW USER
+            </Typography>
+
+            <IconButton
+              onClick={handleCloseAddDialog}
+              size="small"
+              sx={{
+                color: "#ffff",
+                width: 32,
+                height: 32,
+                border: "1px solid",
+                borderColor: "#ffff",
+                bgcolor: "error.lighter",
+                borderRadius: "50%",
+                position: "relative",
+                "&:hover": {
+                  transform: "rotate(180deg)",
+                },
+                transition: "transform 0.3s ease",
+              }}
+            >
+              <Close
+                sx={{
+                  fontSize: "1rem",
+                  transition: "transform 0.2s ease",
+                }}
+              />
+            </IconButton>
+          </DialogTitle>
+
+          <DialogContent sx={{ mt: 1 }}>
+            {loading ? (
+              <CircularProgress size={24} />
+            ) : (
+              <>
+                <TextField
+                  size="small"
+                  placeholder="Search users"
+                  fullWidth
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  sx={{ mb: 1 }}
+                />
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Name</TableCell>
+                      <TableCell>Select</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {filteredAllUsers.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell>{user.name}</TableCell>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedUsers.some(
+                              (u) => u.id === user.id
+                            )}
+                            onChange={() => handleToggleSelectUser(user)}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {filteredAllUsers.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={2} align="center">
+                          No Users Found
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </>
+            )}
+          </DialogContent>
+
+          <DialogActions>
+            <Button
+              variant="contained"
+              onClick={handleAddSelectedUsers}
+              disabled={selectedUsers.length === 0}
+            >
+              Add Selected
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </div>
     );
   };
 
@@ -1629,6 +1832,44 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               }}
             />
 
+            <Tooltip title="Show/Hide Columns">
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={(e) => setAnchorEl(e.currentTarget)}
+                sx={{ textTransform: "none", fontWeight: 500 }}
+              >
+                Columns
+              </Button>
+            </Tooltip>
+
+            <Menu
+              anchorEl={anchorEl}
+              open={Boolean(anchorEl)}
+              onClose={() => setAnchorEl(null)}
+              PaperProps={{
+                style: {
+                  maxHeight: 320,
+                  width: "200px",
+                },
+              }}
+            >
+              {allColumns.map((col) => (
+                <MenuItem key={col.id}>
+                  <Checkbox
+                    checked={visibleColumns[col.id]}
+                    onChange={() =>
+                      setVisibleColumns((prev) => ({
+                        ...prev,
+                        [col.id]: !prev[col.id],
+                      }))
+                    }
+                  />
+                  {col.label}
+                </MenuItem>
+              ))}
+            </Menu>
+
             <Button
               variant="outlined"
               color="error"
@@ -1684,69 +1925,82 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 />
               </TableCell>
 
-              <TableCell sx={{ width: "120px" }}>
-                <TableSortLabel
-                  active={orderBy === "id"}
-                  direction={orderBy === "id" ? order : "asc"}
-                  onClick={() => handleRequestSort("id")}
-                >
-                  Department Id
-                </TableSortLabel>
-              </TableCell>
+             
+              {visibleColumns.id && (
+                <TableCell sx={{ width: "120px" }}>
+                  <TableSortLabel
+                    active={orderBy === "id"}
+                    direction={orderBy === "id" ? order : "asc"}
+                    onClick={() => handleRequestSort("id")}
+                  >
+                    Department Id
+                  </TableSortLabel>
+                </TableCell>
+              )}
 
-              {/* Department */}
-              <TableCell sx={{ width: "120px" }}>
-                <TableSortLabel
-                  active={orderBy === "name"}
-                  direction={orderBy === "name" ? order : "asc"}
-                  onClick={() => handleRequestSort("name")}
-                >
-                  Department
-                </TableSortLabel>
-              </TableCell>
+              {visibleColumns.name && (
+                <TableCell sx={{ width: "120px" }}>
+                  <TableSortLabel
+                    active={orderBy === "name"}
+                    direction={orderBy === "name" ? order : "asc"}
+                    onClick={() => handleRequestSort("name")}
+                  >
+                    Department
+                  </TableSortLabel>
+                </TableCell>
+              )}
 
-              {/* Display Name */}
-              <TableCell sx={{ width: "150px" }}>
-                <TableSortLabel
-                  active={orderBy === "displayName"}
-                  direction={orderBy === "displayName" ? order : "asc"}
-                  onClick={() => handleRequestSort("displayName")}
-                >
-                  Display name
-                </TableSortLabel>
-              </TableCell>
+              {visibleColumns.displayName && (
+                <TableCell sx={{ width: "150px" }}>
+                  <TableSortLabel
+                    active={orderBy === "displayName"}
+                    direction={orderBy === "displayName" ? order : "asc"}
+                    onClick={() => handleRequestSort("displayName")}
+                  >
+                    Display Name
+                  </TableSortLabel>
+                </TableCell>
+              )}
 
-              {/* Owner */}
-              <TableCell sx={{ width: "200px" }}>
-                <TableSortLabel
-                  active={orderBy === "departmentModerator"}
-                  direction={orderBy === "departmentModerator" ? order : "asc"}
-                  onClick={() => handleRequestSort("departmentModerator")}
-                >
-                  Owner
-                </TableSortLabel>
-              </TableCell>
+              {visibleColumns.owner && (
+                <TableCell sx={{ width: "200px" }}>
+                  <TableSortLabel
+                    active={orderBy === "departmentModerator"}
+                    direction={
+                      orderBy === "departmentModerator" ? order : "asc"
+                    }
+                    onClick={() => handleRequestSort("departmentModerator")}
+                  >
+                    Owner
+                  </TableSortLabel>
+                </TableCell>
+              )}
 
-              {/* Storage */}
-              <TableCell sx={{ width: "150px" }}>Storage</TableCell>
+              {visibleColumns.storage && (
+                <TableCell sx={{ width: "150px" }}>Storage</TableCell>
+              )}
 
-              {/* Manage Storage */}
-              <TableCell sx={{ width: "150px" }}>Manage Storage</TableCell>
+              {visibleColumns.manageStorage && (
+                <TableCell sx={{ width: "150px" }}>Manage Storage</TableCell>
+              )}
 
-              <TableCell sx={{ width: "150px" }}>
-                <TableSortLabel
-                  active={orderBy === "noOfUsers"}
-                  direction={orderBy === "noOfUsers" ? order : "asc"}
-                  onClick={() => handleRequestSort("noOfUsers")}
-                >
-                  No of Users
-                </TableSortLabel>
-              </TableCell>
+              {visibleColumns.users && (
+                <TableCell sx={{ width: "150px" }}>
+                  <TableSortLabel
+                    active={orderBy === "noOfUsers"}
+                    direction={orderBy === "noOfUsers" ? order : "asc"}
+                    onClick={() => handleRequestSort("noOfUsers")}
+                  >
+                    No of Users
+                  </TableSortLabel>
+                </TableCell>
+              )}
 
-              {/* Actions */}
-              <TableCell sx={{ width: "150px", textAlign: "center" }}>
-                Actions
-              </TableCell>
+              {visibleColumns.actions && (
+                <TableCell sx={{ width: "150px", textAlign: "center" }}>
+                  Actions
+                </TableCell>
+              )}
             </TableRow>
           </TableHead>
 
@@ -1763,7 +2017,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     selected={isItemSelected}
                     sx={{ cursor: "default" }}
                   >
-                    {/* Checkbox */}
                     <TableCell padding="checkbox" sx={{ textAlign: "center" }}>
                       <Checkbox
                         color="primary"
@@ -1773,95 +2026,149 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                       />
                     </TableCell>
 
-                    <TableCell>{dept.id}</TableCell>
+                                       {visibleColumns.id && <TableCell>{dept.id}</TableCell>}
 
-                    {/* Department */}
-                    <TableCell>{dept.name}</TableCell>
+                    {visibleColumns.name && <TableCell>{dept.name}</TableCell>}
 
-                    {/* Display name */}
-                    <TableCell>{dept.displayName}</TableCell>
+                    {visibleColumns.displayName && (
+                      <TableCell>{dept.displayName}</TableCell>
+                    )}
 
-                    {/* Owner */}
-                    <TableCell>{dept.departmentModerator}</TableCell>
+                    {visibleColumns.owner && (
+                      <TableCell>{dept.departmentModerator}</TableCell>
+                    )}
 
-                    {/* Storage */}
-                    <TableCell>{dept.storage}</TableCell>
+                    {visibleColumns.storage && (
+                      <TableCell>{dept.storage}</TableCell>
+                    )}
 
-                    {/* Manage Storage */}
-                    <TableCell>
-                      <Select
-                        value={dept.allowedStorage}
-                        onChange={(e) =>
-                          handleStorageChange(dept.name, e.target.value)
-                        }
-                        sx={{
-                          width: "100px",
-                          height: "30px",
-                          borderRadius: "28px",
-                        }}
-                      >
-                        {getStorageOptions(dept.allowedStorage).map(
-                          (option) => (
-                            <MenuItem key={option} value={option}>
-                              {option}
-                            </MenuItem>
-                          )
-                        )}
-                      </Select>
-                    </TableCell>
-
-                    <TableCell align="center">
-                      <DeptUsersDropdown
-                        users={dept.roles.flatMap((role) => role.user)}
-                        onEditUser={(user) => console.log("Edit user:", user)}
-                        onDeleteUser={(user) =>
-                          console.log("Delete user:", user)
-                        }
-                      />
-                    </TableCell>
-
-                    {/* Actions */}
-                    <TableCell sx={{ textAlign: "center" }}>
-                      <Box
-                        sx={{
-                          display: "flex",
-                          justifyContent: "center",
-                          gap: 0.5,
-                        }}
-                      >
-                        <IconButton
-                          size="small"
-                          onClick={() => handleEditDepartment(dept)}
+                    {visibleColumns.manageStorage && (
+                      <TableCell>
+                        <Select
+                          value={dept.allowedStorage}
+                          onChange={(e) =>
+                            handleStorageChange(dept.name, e.target.value)
+                          }
                           sx={{
-                            color: "#1976d2",
-                            "&:hover": {
-                              backgroundColor: "#e3f2fd",
-                              color: "#1565c0",
-                            },
+                            width: "100px",
+                            height: "30px",
+                            borderRadius: "28px",
                           }}
-                          title="Edit Department"
                         >
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          onClick={() => {
-                            setDepartmentToDelete(dept);
-                            setDeleteDialogOpen(true);
+                          {getStorageOptions(dept.allowedStorage).map(
+                            (option) => (
+                              <MenuItem key={option} value={option}>
+                                {option}
+                              </MenuItem>
+                            )
+                          )}
+                        </Select>
+                      </TableCell>
+                    )}
+
+                    {visibleColumns.users && (
+                      <TableCell align="center">
+                        <DeptUsersDropdown
+                          users={dept.roles.flatMap((role) => role.user)}
+                          departmentId={dept.id}
+                          onEditUser={(user) => console.log("Edit user:", user)}
+                          onDeleteUser={(user) =>
+                            console.log("Delete user:", user)
+                          }
+                          addUsersToDepartment={async (
+                            deptId,
+                            selectedUserIds
+                          ) => {
+                            try {
+                              const response = await axios.post(
+                                `${window.__ENV__.REACT_APP_ROUTE}/${deptId}/addUsers`,
+                                { userIds: selectedUserIds },
+                                {
+                                  headers: {
+                                    "Content-Type": "application/json",
+                                    Authorization: `Bearer ${sessionStorage.getItem(
+                                      "authToken"
+                                    )}`,
+                                    username: `${sessionStorage.getItem(
+                                      "adminEmail"
+                                    )}`,
+                                  },
+                                }
+                              );
+
+                              if (response.status === 200) {
+                                setSnackbar({
+                                  open: true,
+                                  message: "Users added successfully!",
+                                  severity: "success",
+                                });
+
+                                // ✅ Refresh department users after success
+                                if (fetchDepartments) {
+                                  await fetchDepartments();
+                                }
+                              } else {
+                                setSnackbar({
+                                  open: true,
+                                  message: `Failed to add users: ${response.statusText}`,
+                                  severity: "error",
+                                });
+                              }
+                            } catch (error) {
+                              setSnackbar({
+                                open: true,
+                                message: `Error: ${error.message}`,
+                                severity: "error",
+                              });
+                            }
                           }}
+                        />
+                      </TableCell>
+                    )}
+
+                    {visibleColumns.actions && (
+                      <TableCell sx={{ textAlign: "center" }}>
+                        <Box
                           sx={{
-                            color: "#d32f2f",
-                            "&:hover": {
-                              backgroundColor: "#ffebee",
-                              color: "#c62828",
-                            },
+                            display: "flex",
+                            justifyContent: "center",
+                            gap: 0.5,
                           }}
-                          title="Delete Department"
                         >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </Box>
-                    </TableCell>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleEditDepartment(dept)}
+                            sx={{
+                              color: "#1976d2",
+                              "&:hover": {
+                                backgroundColor: "#e3f2fd",
+                                color: "#1565c0",
+                              },
+                            }}
+                            title="Edit Department"
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            onClick={() => {
+                              setDepartmentToDelete(dept);
+                              setDeleteDialogOpen(true);
+                            }}
+                            sx={{
+                              color: "#d32f2f",
+                              "&:hover": {
+                                backgroundColor: "#ffebee",
+                                color: "#c62828",
+                              },
+                            }}
+                            title="Delete Department"
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
+                      </TableCell>
+                    )}
                   </StyledTableRow>
 
                   {/* Expandable row for roles */}
@@ -2213,23 +2520,36 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                             value={dept.name}
                             onChange={(e) => {
                               const value = e.target.value;
+
+                              // Regex: allow only letters, numbers, dash, underscore
+                              const hasInvalidChar = /[^A-Za-z0-9-_]/.test(
+                                value
+                              );
+
                               if (value.length <= 35) {
                                 updateDepartmentField(index, "name", value);
                                 setDuplicateDepartmentError(false);
                                 checkDuplicateDepartment(value);
                               }
+
+                              // Track invalid char status
+                              updateDepartmentField(
+                                index,
+                                "hasInvalidChar",
+                                hasInvalidChar
+                              );
                             }}
                             error={
                               (!dept.name && dept.submitted) ||
                               duplicateDepartmentError ||
-                              /\s/.test(dept.name) ||
-                              dept.name.length > 35
+                              dept.name.length > 35 ||
+                              dept.hasInvalidChar
                             }
                             helperText={
                               !dept.name && dept.submitted
                                 ? "Required"
-                                : /\s/.test(dept.name)
-                                ? "No spaces allowed"
+                                : dept.hasInvalidChar
+                                ? "Only letters, numbers, - and _ are allowed"
                                 : duplicateDepartmentError
                                 ? "Already exists"
                                 : dept.name.length > 35
@@ -2243,23 +2563,41 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                           <TextField
                             fullWidth
                             size="small"
-                            label=" Department Short Name"
+                            label="Department Short Name"
                             value={dept.displayName}
                             onChange={(e) => {
                               const value = e.target.value.toUpperCase();
-                              if (value.length <= 8) {
+
+                              // Check if special characters exist
+                              const hasSpecialChar = /[^A-Z0-9]/.test(value);
+
+                              // Store clean value (remove special chars for saving)
+                              const validValue = value.replace(
+                                /[^A-Z0-9]/g,
+                                ""
+                              );
+
+                              if (validValue.length <= 8) {
                                 updateDepartmentField(
                                   index,
                                   "displayName",
-                                  value
+                                  validValue
                                 );
-                                checkDuplicateShortName(value);
+                                checkDuplicateShortName(validValue);
                               }
+
+                              // Add a flag for validation
+                              updateDepartmentField(
+                                index,
+                                "hasSpecialChar",
+                                hasSpecialChar
+                              );
                             }}
                             error={
                               (!dept.displayName && dept.submitted) ||
                               duplicateShortNameError ||
-                              dept.displayName.length > 8
+                              dept.displayName.length > 8 ||
+                              dept.hasSpecialChar
                             }
                             helperText={
                               !dept.displayName && dept.submitted
@@ -2268,6 +2606,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                 ? "Already exists"
                                 : dept.displayName.length > 8
                                 ? "Max 8 characters"
+                                : dept.hasSpecialChar
+                                ? "Special characters not allowed"
                                 : ""
                             }
                           />

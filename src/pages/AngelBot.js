@@ -251,7 +251,7 @@ const AngelBot = () => {
   const saveRegions = async (regions, defaultRegion) => {
     try {
       const response = await axios.post(
-        `${window.__ENV__.REACT_APP_ROUTE}/api/regions/save`, // ✅ adjust endpoint
+        `${window.__ENV__.REACT_APP_ROUTE}/tenants/addRegion`, // ✅ adjust endpoint
         {
           regions,
           defaultRegion,
@@ -267,6 +267,46 @@ const AngelBot = () => {
       return response.data;
     } catch (error) {
       console.error("Error saving regions:", error);
+      throw error;
+    }
+  };
+
+  const getRegions = async () => {
+    try {
+      const response = await axios.get(
+        `${window.__ENV__.REACT_APP_ROUTE}/tenants/getRegion`,
+        {
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+            "Content-Type": "application/json",
+            username: sessionStorage.getItem("adminEmail"), // same as your other APIs
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching regions:", error);
+      throw error;
+    }
+  };
+
+  const deleteRegion = async (regionName) => {
+    try {
+      const response = await axios.delete(
+        `${
+          window.__ENV__.REACT_APP_ROUTE
+        }/tenants/deleteIn?value=${encodeURIComponent(regionName)}`,
+        {
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+            "Content-Type": "application/json",
+            username: sessionStorage.getItem("adminEmail"), // same as your other APIs
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error deleting region:", error);
       throw error;
     }
   };
@@ -1504,12 +1544,25 @@ const AngelBot = () => {
                               </label>
                             </Tooltip>
 
-                            {/* Create Region */}
                             <Tooltip title="Create Region" arrow>
                               <IconButton
                                 color="primary"
                                 size="small"
-                                onClick={() => setOpenRegionDialog(true)} // ✅ Open dialog
+                                onClick={async () => {
+                                  try {
+                                    const data = await getRegions();
+                                    // Assuming backend returns something like { regions: ["US", "EU"], defaultRegion: "US" }
+                                    setRegions(data.regions || []);
+                                    setDefaultRegion(data.defaultRegion || "");
+                                    setOpenRegionDialog(true);
+                                  } catch (error) {
+                                    setSnackbar({
+                                      open: true,
+                                      message: "Failed to load regions.",
+                                      severity: "error",
+                                    });
+                                  }
+                                }}
                                 sx={{
                                   backgroundColor: (theme) =>
                                     theme.palette.primary.light,
@@ -2555,20 +2608,39 @@ const AngelBot = () => {
                   }}
                 >
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <input
-                      type="radio"
-                      name="defaultRegion"
-                      checked={defaultRegion === region}
-                      onChange={() => setDefaultRegion(region)}
-                    />
                     <Typography>{region}</Typography>
+                    <Button
+                      size="small"
+                      variant={
+                        defaultRegion === region ? "contained" : "outlined"
+                      }
+                      color="primary"
+                      onClick={() => setDefaultRegion(region)}
+                    >
+                      {defaultRegion === region ? "Default" : "Set Default"}
+                    </Button>
                   </Box>
+
                   <IconButton
                     size="small"
                     color="error"
-                    onClick={() => {
-                      setRegions(regions.filter((r) => r !== region));
-                      if (defaultRegion === region) setDefaultRegion("");
+                    onClick={async () => {
+                      try {
+                        await deleteRegion(region);
+                        setRegions(regions.filter((r) => r !== region));
+                        if (defaultRegion === region) setDefaultRegion("");
+                        setSnackbar({
+                          open: true,
+                          message: `Region "${region}" deleted successfully.`,
+                          severity: "success",
+                        });
+                      } catch (error) {
+                        setSnackbar({
+                          open: true,
+                          message: "Failed to delete region.",
+                          severity: "error",
+                        });
+                      }
                     }}
                   >
                     <Delete fontSize="small" />

@@ -38,6 +38,7 @@ import {
 } from "../../api/departmentService";
 import { createUsers } from "../../api/userService";
 import { fetchUsers } from "../../api/userService";
+import { MenuItem } from "@mui/material";
 
 const emptyUser = {
   name: "",
@@ -63,6 +64,9 @@ const CreateUser = ({
   const [bulkSuccessMessage, setBulkSuccessMessage] = useState("");
   const [bulkWarningMessage, setBulkWarningMessage] = useState("");
   const [isAdminRole, setIsAdminRole] = useState(false);
+  const [regions, setRegions] = useState([]);
+  const [defaultRegion, setDefaultRegion] = useState("");
+  const [selectedRegion, setSelectedRegion] = useState("");
 
   const [bulkFile, setBulkFile] = useState(null);
   const [fileName, setFileName] = useState("");
@@ -396,6 +400,32 @@ const CreateUser = ({
     }
   }, [open]);
 
+  useEffect(() => {
+    if (open) {
+      const fetchRegions = async () => {
+        try {
+          const response = await axios.get(
+            `${window.__ENV__.REACT_APP_ROUTE}/tenants/getRegion`,
+            {
+              headers: {
+                Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+                "Content-Type": "application/json",
+                username: sessionStorage.getItem("adminEmail"), // same as your other APIs
+              },
+            }
+          );
+          setRegions(response.data.regions || []);
+          setDefaultRegion(response.data.defaultRegion || "");
+          setSelectedRegion(response.data.defaultRegion || "");
+        } catch (err) {
+          console.error("Failed to fetch regions:", err);
+        }
+      };
+
+      fetchRegions();
+    }
+  }, [open]);
+
   return (
     <>
       <DialogTitle
@@ -617,6 +647,7 @@ const CreateUser = ({
                 phoneNumber: user.phone,
                 storage: user.storage?.trim() ? user.storage : null,
                 reportingManager: user.reportingManager,
+                region: user.region || defaultRegion, // ✅ include region
               }));
 
               const response = await createUsers(transformedUsers);
@@ -894,84 +925,39 @@ const CreateUser = ({
                                   )}
                                 />
                               </Grid>
-                              {/* <Grid item xs={3}>
-                                <Autocomplete
-                                  options={[
-                                    { isAddOption: true },
-                                    ...departments,
-                                  ]}
-                                  getOptionLabel={(option) =>
-                                    option.isAddOption
-                                      ? "Add New Department"
-                                      : option.deptName || ""
+
+                              <Grid item xs={3}>
+                                <TextField
+                                  select
+                                  label={
+                                    <>
+                                      Region{" "}
+                                      <span style={{ color: "red" }}> *</span>
+                                    </>
                                   }
-                                  ListboxProps={{
-                                    style: { maxHeight: 300, overflow: "auto" },
-                                    onScroll: (event) => {
-                                      const listboxNode = event.currentTarget;
-                                      const threshold = 50;
-                                      if (
-                                        listboxNode.scrollTop +
-                                          listboxNode.clientHeight >=
-                                        listboxNode.scrollHeight - threshold
-                                      ) {
-                                        loadMoreDepartments();
-                                      }
-                                    },
-                                  }}
-                                  renderOption={(props, option) => (
-                                    <li
-                                      {...props}
-                                      style={{
-                                        fontStyle: option.isAddOption
-                                          ? "normal"
-                                          : "normal",
-                                        color: option.isAddOption
-                                          ? "#1976d2"
-                                          : "inherit",
-                                        fontWeight: option.isAddOption
-                                          ? 600
-                                          : "normal",
-                                        borderTop: option.isAddOption
-                                          ? "1px solid #eee"
-                                          : "none",
-                                        padding: "10px 16px",
-                                        backgroundColor: option.isAddOption
-                                          ? "#f9f9f9"
-                                          : "inherit",
-                                      }}
-                                    >
-                                      {option.isAddOption
-                                        ? "➕ Add New "
-                                        : option.deptName}
-                                    </li>
+                                  name={`users[${index}].region`}
+                                  value={user.region || defaultRegion}
+                                  onChange={formik.handleChange}
+                                  fullWidth
+                                  size="small"
+                                  FormHelperTextProps={{ sx: { ml: 0 } }}
+                                  error={Boolean(
+                                    formik.touched.users?.[index]?.region &&
+                                      formik.errors.users?.[index]?.region
                                   )}
-                                  value={user.department || ""}
-                                  onChange={(e, value) => {
-                                    if (value?.isAddOption) {
-                                      setAddDepartment(true);
-                                      return;
-                                    }
-                                    formik.setFieldValue(
-                                      `users[${index}].department`,
-                                      value
-                                    );
-                                    formik.setFieldValue(
-                                      `users[${index}].role`,
-                                      value?.role || ""
-                                    );
-                                  }}
-                                  renderInput={(params) => (
-                                    <TextField
-                                      {...params}
-                                      label="Department"
-                                      fullWidth
-                                      size="small"
-                                      autoComplete="off"
-                                    />
-                                  )}
-                                />
-                              </Grid> */}
+                                  helperText={
+                                    formik.touched.users?.[index]?.region &&
+                                    formik.errors.users?.[index]?.region
+                                  }
+                                >
+                                  {regions.map((region) => (
+                                    <MenuItem key={region} value={region}>
+                                      {region}
+                                    </MenuItem>
+                                  ))}
+                                </TextField>
+                              </Grid>
+
                               <Grid item xs={3}>
                                 <Autocomplete
                                   options={departments}
@@ -1151,6 +1137,7 @@ const CreateUser = ({
                             role: "",
                             department: "",
                             reportingManager: "",
+                            region: defaultRegion,
                           });
                         }}
                       >
