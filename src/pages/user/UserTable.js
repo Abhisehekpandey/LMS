@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import * as XLSX from "xlsx"; // Add this at the top of the file
+import axios from "axios";
+
 import {
   Box,
   Paper,
@@ -275,6 +277,7 @@ const allColumns = [
   { id: "department", label: "Department" },
   { id: "role", label: "Role" },
   { id: "email", label: "Email" },
+  { id: "region", label: "Region" },
   { id: "storageUsed", label: "Storage" },
   { id: "manageStorage", label: "Manage Storage" },
   { id: "activeLicense", label: "Status" },
@@ -331,6 +334,7 @@ export default function UserTable() {
   const [selectedDepartment, setSelectedDepartment] = useState(null);
   const [userRoleMap, setUserRoleMap] = useState({});
   const [fullDepartments, setFullDepartments] = useState([]);
+  const [regions, setRegions] = useState([]);
 
   <Autocomplete
     options={departments}
@@ -365,6 +369,37 @@ export default function UserTable() {
       />
     )}
   />;
+
+  const getRegions = async () => {
+    try {
+      const response = await axios.get(
+        `${window.__ENV__.REACT_APP_ROUTE}/tenants/getRegion`,
+        {
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+            "Content-Type": "application/json",
+            username: sessionStorage.getItem("adminEmail"), // same as your other APIs
+          },
+        }
+      );
+
+      const data = response?.data || {};
+      const regionsArray = Array.isArray(data.regions) ? data.regions : [];
+
+      // normalize to array of strings
+      const list = regionsArray
+        .map((r) => (typeof r === "string" ? r : r?.regionName || ""))
+        .filter(Boolean);
+
+      return {
+        list, // ✅ cleaned-up region strings for Autocomplete
+        defaultRegion: data.defaultRegion || "",
+      };
+    } catch (error) {
+      console.error("Error fetching regions:", error);
+      return { list: [], defaultRegion: "" }; // safe fallback
+    }
+  };
 
   const handleCloseDialog = () => {
     setEditDialogOpen(false);
@@ -417,6 +452,8 @@ export default function UserTable() {
         return row.roles?.[0]?.department?.deptName?.toLowerCase() || "";
       case "role":
         return row.roles?.[0]?.roleName?.toLowerCase() || "";
+      case "region": // ✅ NEW
+        return row.region?.toLowerCase() || "";
       case "storageUsed":
         return toBytes(row.permissions?.displayStorage);
       default:
@@ -474,6 +511,7 @@ export default function UserTable() {
         reportingManager: editData.reportingManager?.trim() || "",
         deptId: deptObj?.id || null,
         roleId: roleObj?.id || null,
+        region: editData.region?.trim() || "", // ✅ Added
       };
 
       console.log("Final userPayload:", userPayload);
@@ -538,6 +576,12 @@ export default function UserTable() {
       const fullDepartments = await fetchFullDepartments();
       setFullDepartments(fullDepartments);
 
+      const { list, defaultRegion } = await getRegions();
+      setRegions(list);
+
+      // Prefill region: current row > default from API > first option > ""
+      const prefillRegion = row.region || defaultRegion || list[0] || "";
+
       const savedRoleId = userRoleMap[row.id];
       const currentRole =
         row.roles?.find((r) => r.id === savedRoleId) || row.roles?.[0];
@@ -562,6 +606,7 @@ export default function UserTable() {
         department: deptName,
         role: matchedRole?.roleName || roleName,
         roles: row.roles || [],
+        region: prefillRegion,
       };
 
       setEditData(newEditData);
@@ -576,6 +621,11 @@ export default function UserTable() {
   const handleMigration = () => {
     setMigrationDialog(true);
   };
+
+  const regionOptions = React.useMemo(
+    () => [...new Set([editData.region, ...regions].filter(Boolean))],
+    [regions, editData.region]
+  );
 
   const handleActivateAll = async () => {
     if (!rowData || rowData.length === 0) {
@@ -631,6 +681,7 @@ export default function UserTable() {
       Department: row.roles?.[0]?.department?.deptName || "N/A",
       Role: row.roles?.[0]?.roleName || "N/A",
       "User Email": row.email || "N/A",
+      Region: row.region || "N/A", // ✅ NEW COLUMN
       "Phone Number": row.phoneNumber || "N/A",
       "Reporting Manager": row.reportingManager?.name || "N/A",
       "Storage Used": row.permissions?.displayStorage || "N/A",
@@ -1014,7 +1065,7 @@ export default function UserTable() {
                 <MenuItem value="name">Name</MenuItem>
                 <MenuItem value="email">Email</MenuItem>
                 <MenuItem value="department">Department</MenuItem>
-                <MenuItem value="id">User ID</MenuItem>
+                {/* <MenuItem value="id">User ID</MenuItem> */}
                 <MenuItem value="role">Role</MenuItem> {/* ✅ Added */}
               </Select>
             </FormControl>
@@ -1241,6 +1292,20 @@ export default function UserTable() {
                     </TableSortLabel>
                   </TableCell>
                 )}
+                {visibleColumns.region && (
+                  <TableCell
+                    align="left"
+                    sortDirection={orderBy === "region" ? order : false}
+                  >
+                    <TableSortLabel
+                      active={orderBy === "region"}
+                      direction={orderBy === "region" ? order : "asc"}
+                      onClick={() => handleRequestSort("region")}
+                    >
+                      Region
+                    </TableSortLabel>
+                  </TableCell>
+                )}
 
                 {visibleColumns.storageUsed && (
                   <TableCell
@@ -1347,6 +1412,9 @@ export default function UserTable() {
 
                     {visibleColumns.email && (
                       <TableCell align="left">{row.email}</TableCell>
+                    )}
+                    {visibleColumns.region && (
+                      <TableCell align="left">{row.region || "N/A"}</TableCell>
                     )}
 
                     {visibleColumns.storageUsed && (
@@ -1889,15 +1957,6 @@ export default function UserTable() {
           onClose={() => setEditDialogOpen(false)}
           maxWidth="sm"
         >
-          {/* <DialogTitle
-            sx={{
-              backgroundColor: (theme) => theme.palette.primary.main,
-              color: "#fff",
-              fontWeight: "bold",
-            }}
-          >
-            Edit User
-          </DialogTitle> */}
           <DialogTitle
             sx={{
               display: "flex",
@@ -2077,6 +2136,20 @@ export default function UserTable() {
                       reportingManager: e.target.value,
                     }))
                   }
+                />
+              </Grid>
+
+              <Grid item xs={6}>
+                <Autocomplete
+                  size="small"
+                  options={regionOptions} // array of strings
+                  value={editData.region || null} // current value
+                  onChange={(e, value) =>
+                    setEditData((prev) => ({ ...prev, region: value || "" }))
+                  }
+                  renderInput={(params) => (
+                    <TextField {...params} label="Region" fullWidth />
+                  )}
                 />
               </Grid>
             </Grid>

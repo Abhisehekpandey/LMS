@@ -283,6 +283,7 @@ const AngelBot = () => {
           },
         }
       );
+      console.log("region",response.data)
       return response.data;
     } catch (error) {
       console.error("Error fetching regions:", error);
