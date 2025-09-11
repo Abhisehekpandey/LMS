@@ -1,1008 +1,573 @@
-import React, { useState, useEffect } from "react";
-import { TableSortLabel } from "@mui/material";
-
+import React, { useState } from "react";
 import {
-  Paper,
+  Box,
+  Typography,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Typography,
-  Box,
+  TablePagination,
+  Checkbox,
   IconButton,
   TextField,
-  TablePagination,
+  InputAdornment,
+  Paper,
+  Menu,
+  MenuItem,
   Tooltip,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
   Button,
-  Snackbar,
-  Alert,
-  MenuItem,
-  Select,
-  FormControl,
-  InputLabel,
-  CircularProgress,
-  Autocomplete,
   Chip,
-  Checkbox, // ✅ ADD THIS LINE
-  Menu,
-  InputAdornment,
+  Autocomplete,
 } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
+import MenuBookIcon from "@mui/icons-material/MenuBook";
+import LibraryAddIcon from "@mui/icons-material/LibraryAdd";
+import SearchIcon from "@mui/icons-material/Search";
+import ClearIcon from "@mui/icons-material/Clear";
+import FilterListIcon from "@mui/icons-material/FilterList";
+import SimCardDownloadIcon from "@mui/icons-material/SimCardDownload";
 
-import {
-  AddCircle as AddCircleIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Clear as ClearIcon,
-  Search as SearchIcon,
-} from "@mui/icons-material";
-import { Add } from "@mui/icons-material";
-import axios from "axios";
+const dictionaryRows = [
+  {
+    id: 1,
+    word: "Onboarding",
+    description: "Process of integrating a new employee",
+    department: "Human Resource",
+    date: "25-08-2025",
+  },
+  {
+    id: 2,
+    word: "Ledger",
+    description: "Financial record of transactions",
+    department: "Finance",
+    date: "26-08-2025",
+  },
+  {
+    id: 3,
+    word: "Firewall",
+    description: "Network security system",
+    department: "IT",
+    date: "26-08-2025",
+  },
+  {
+    id: 4,
+    word: "Campaign",
+    description: "Planned set of marketing activities",
+    department: "Marketing",
+    date: "27-08-2025",
+  },
+  {
+    id: 5,
+    word: "Lead",
+    description: "Potential sales contact",
+    department: "Sales",
+    date: "28-08-2025",
+  },
+  {
+    id: 6,
+    word: "Compliance",
+    description: "Adherence to legal and regulatory requirements",
+    department: "Legal",
+    date: "29-08-2025",
+  },
+  {
+    id: 7,
+    word: "Encryption",
+    description: "Process of securing data by encoding",
+    department: "IT",
+    date: "30-08-2025",
+  },
+  {
+    id: 8,
+    word: "Budgeting",
+    description: "Process of planning future income and expenses",
+    department: "Finance",
+    date: "31-08-2025",
+  },
+  {
+    id: 9,
+    word: "Retention",
+    description: "Strategies to retain employees in an organization",
+    department: "Human Resource",
+    date: "01-09-2025",
+  },
+  {
+    id: 10,
+    word: "Segmentation",
+    description: "Dividing market into distinct customer groups",
+    department: "Marketing",
+    date: "02-09-2025",
+  },
+  {
+    id: 11,
+    word: "Prospect",
+    description: "Potential customer identified for sales",
+    department: "Sales",
+    date: "03-09-2025",
+  },
+  {
+    id: 12,
+    word: "Patent",
+    description: "Legal protection for an invention",
+    department: "Legal",
+    date: "04-09-2025",
+  },
+  {
+    id: 13,
+    word: "Bandwidth",
+    description: "Maximum data transfer rate of a network",
+    department: "IT",
+    date: "05-09-2025",
+  },
+  {
+    id: 14,
+    word: "Payroll",
+    description: "System for paying employee salaries",
+    department: "Human Resource",
+    date: "06-09-2025",
+  },
+  {
+    id: 15,
+    word: "Forecasting",
+    description: "Predicting future business trends",
+    department: "Finance",
+    date: "07-09-2025",
+  },
+];
 
-// const DataDictionary = () => {
-const DataDictionary = ({ searchResults = [] }) => {
-  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
+const columns = [
+  { key: "word", label: "Word" },
+  { key: "description", label: "Description" },
+  { key: "department", label: "Department" },
+  { key: "date", label: "Date" },
+];
 
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState(null);
-
-  const [data, setData] = useState([]);
-  const [selected, setSelected] = useState([]);
-
-  const [rows, setRows] = useState([]);
-  const [searchTerm, setSearchTerm] = useState("");
+export default function DataDictionary() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [openDialog, setOpenDialog] = useState(false);
-  const [newEntry, setNewEntry] = useState({
-    key: "",
-    value: "",
-    applicableTo: "",
-    selectedUsers: [],
-    selectedDepartments: [],
-  });
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editIndex, setEditIndex] = useState(null);
-
-  const [users, setUsers] = useState([]);
-  const [userPage, setUserPage] = useState(0);
-  const [loadingUsers, setLoadingUsers] = useState(false);
-
-  const [departments, setDepartments] = useState([]);
-  const [deptPage, setDeptPage] = useState(0);
-  const [loadingDepts, setLoadingDepts] = useState(false);
-
+  const [filters, setFilters] = useState({});
   const [anchorEl, setAnchorEl] = useState(null);
-  const handleOpenMenu = (event) => setAnchorEl(event.currentTarget);
-  const handleCloseMenu = () => setAnchorEl(null);
+  const [filterColumn, setFilterColumn] = useState(null);
+  const [selected, setSelected] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
 
-  const [searchColumn, setSearchColumn] = useState("key");
-  const [searchText, setSearchText] = useState("");
-  const [columnFilters, setColumnFilters] = useState({
-    key: "",
-    value: "",
-    applicableTo: "",
-  });
+  const [openDialog, setOpenDialog] = useState(false);
+  const [department, setDepartment] = useState(null);
+  const [newWord, setNewWord] = useState("");
+  const [definition, setDefinition] = useState("");
+  const [recentAdditions, setRecentAdditions] = useState([
+    "Repository",
+    "Curriculum",
+    "Ambiguity",
+    "Optimization",
+  ]);
 
-  const isSelected = (id) => selected.indexOf(id) !== -1;
+  const handleOpenDialog = () => setOpenDialog(true);
+  const handleCloseDialog = () => setOpenDialog(false);
 
-  const handleSort = (columnKey) => {
-    let direction = "asc";
-    if (sortConfig.key === columnKey && sortConfig.direction === "asc") {
-      direction = "desc";
-    }
-    setSortConfig({ key: columnKey, direction });
+  const handleSaveWord = () => {
+    if (!newWord || !definition || !department) return;
+    setRecentAdditions([newWord, ...recentAdditions]);
+    setNewWord("");
+    setDefinition("");
+    setDepartment(null);
+    setOpenDialog(false);
   };
 
-  const getUniqueValues = (key) => {
-    const values = filteredRows.map((r) => r[key]).filter(Boolean);
-    return [...new Set(values)];
+  const handleChangePage = (event, newPage) => setPage(newPage);
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
   };
 
-  const fetchDataDictionary = async () => {
-    try {
-      const response = await axios.get(
-        `${window.__ENV__.REACT_APP_ROUTE}/tenants/getAllDictionary`,
-        {
-          headers: {
-            Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
-            username: `${sessionStorage.getItem("adminEmail")}`,
-          },
-        }
-      );
-      console.log("responseDictionary", response);
-
-      const fetchedData = (response.data.data || []).map((item) => ({
-        ...item,
-        applicableTo: item.applicatbleTo || "All", // Normalize here
-      }));
-
-      setData(fetchedData);
-    } catch (error) {
-      console.error("Failed to fetch data dictionary:", error);
-    }
+  const handleOpenFilter = (event, column) => {
+    setAnchorEl(event.currentTarget);
+    setFilterColumn(column);
   };
-
-  const handleClick = (id) => {
-    const selectedIndex = selected.indexOf(id);
-    let newSelected = [];
-
-    if (selectedIndex === -1) {
-      newSelected = [...selected, id];
-    } else if (selectedIndex === 0) {
-      newSelected = selected.slice(1);
-    } else if (selectedIndex === selected.length - 1) {
-      newSelected = selected.slice(0, -1);
-    } else if (selectedIndex > 0) {
-      newSelected = [
-        ...selected.slice(0, selectedIndex),
-        ...selected.slice(selectedIndex + 1),
-      ];
-    }
-
-    setSelected(newSelected);
+  const handleCloseFilter = () => {
+    setAnchorEl(null);
+    setFilterColumn(null);
   };
-
-  const handleSelectAllClick = (event) => {
-    if (event.target.checked) {
-      const newSelected = paginatedRows.map(
-        (_, index) => page * rowsPerPage + index
-      );
-      setSelected(newSelected);
-      return;
-    }
-    setSelected([]);
-  };
-
-  const fetchUsers = async (page = 0) => {
-    try {
-      setLoadingUsers(true);
-      const response = await axios.get(
-        `${window.__ENV__.REACT_APP_ROUTE}/tenants/users`,
-        {
-          headers: {
-            Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
-            pageNumber: page.toString(),
-            username: `${sessionStorage.getItem("adminEmail")}`,
-          },
-        }
-      );
-      const newUsers = response.data?.content || [];
-      setUsers((prev) => [...prev, ...newUsers]);
-      setLoadingUsers(false);
-    } catch (error) {
-      console.error("Failed to fetch users:", error);
-      setLoadingUsers(false);
-    }
-  };
-
-  const fetchDepartments = async (page = 0) => {
-    try {
-      setLoadingDepts(true);
-      const response = await axios.get(
-        `${window.__ENV__.REACT_APP_ROUTE}/tenants/departments`,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
-            username: `${sessionStorage.getItem("adminEmail")}`,
-          },
-          params: {
-            search: "",
-            pageNumber: page,
-            pageSize: 10,
-          },
-        }
-      );
-      const newDepts = response.data?.content || [];
-      setDepartments((prev) => [...prev, ...newDepts]);
-      setLoadingDepts(false);
-    } catch (error) {
-      console.error("Failed to fetch departments:", error);
-      setLoadingDepts(false);
-    }
-  };
-
-  const handleOpenDialog = () => {
-    setIsEditing(false);
-    setNewEntry({
-      key: "",
-      value: "",
-      applicableTo: "",
-      selectedUsers: [],
-      selectedDepartments: [],
+  const handleToggleFilterValue = (value) => {
+    setFilters((prev) => {
+      const current = prev[filterColumn] || [];
+      const updated = current.includes(value)
+        ? current.filter((v) => v !== value)
+        : [...current, value];
+      const newFilters = { ...prev };
+      if (updated.length > 0) newFilters[filterColumn] = updated;
+      else delete newFilters[filterColumn];
+      return newFilters;
     });
-    setUsers([]);
-    setUserPage(0);
-    setDepartments([]);
-    setDeptPage(0);
-    setOpenDialog(true);
   };
 
-  const handleEditRow = (row, index) => {
-    setIsEditing(true);
-    setEditIndex(index);
-    setNewEntry(row);
-    setUsers([]);
-    setUserPage(0);
-    setDepartments([]);
-    setDeptPage(0);
-    setOpenDialog(true);
-  };
-
-  const handleDeleteRow = (index) => {
-    // const updated = [...rows];
-    const updated = [...data];
-    setData(updated);
-    updated.splice(index, 1);
-    setRows(updated);
-    setSnackbarOpen(true);
-  };
-
-  const handleSave = async () => {
-    console.log("newEntry", newEntry);
-    if (!newEntry.key || !newEntry.value || !newEntry.applicableTo) return;
-
-    const payload = {
-      id: isEditing ? newEntry.id : undefined, // required for update
-      key: newEntry.key,
-      value: newEntry.value,
-      applicatbleTo:
-        newEntry.applicableTo?.charAt(0).toUpperCase() +
-        newEntry.applicableTo?.slice(1),
-      usernames: newEntry.selectedUsers?.map((u) => u.name) || [],
-      deptNames: newEntry.selectedDepartments?.map((d) => d.deptName) || [],
-    };
-
-    try {
-      if (isEditing) {
-        await axios.put(
-          `${window.__ENV__.REACT_APP_ROUTE}/tenants/updateDictionary`,
-          payload,
-          {
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
-              username: `${sessionStorage.getItem("adminEmail")}`,
-            },
-          }
-        );
-        const updated = [...data];
-        updated[editIndex] = newEntry;
-        setData(updated);
-      } else {
-        await axios.post(
-          `${window.__ENV__.REACT_APP_ROUTE}/tenants/addDictionary`,
-          payload,
-          {
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
-              username: `${sessionStorage.getItem("adminEmail")}`,
-            },
-          }
-        );
-        const updatedData = [newEntry, ...data];
-        setData(updatedData);
-        setPage(0);
-      }
-
-      setSnackbarOpen(true);
-      setOpenDialog(false);
-    } catch (err) {
-      console.error("Failed to save entry:", err);
-    }
-  };
-
-  const filteredRows = (
-    Array.isArray(searchResults) && searchResults.length > 0
-      ? searchResults
-      : Array.isArray(data)
-      ? data
-      : []
-  ).filter((row) => {
-    const match = row[searchColumn]
-      ?.toLowerCase()
-      .includes(searchText.toLowerCase());
-    const columnMatch = Object.entries(columnFilters).every(
-      ([colKey, filterVal]) => {
-        if (!filterVal) return true;
-        return row[colKey]?.toLowerCase().includes(filterVal.toLowerCase());
-      }
+  const filteredRows = dictionaryRows.filter((row) => {
+    const passesFilters = Object.entries(filters).every(([key, values]) =>
+      values.length ? values.includes(row[key]) : true
     );
-    return match && columnMatch;
+    const passesSearch =
+      searchTerm.trim() === "" ||
+      Object.values(row).some(
+        (val) =>
+          typeof val === "string" &&
+          val.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    return passesFilters && passesSearch;
   });
 
-  const sortedRows = [...filteredRows].sort((a, b) => {
-    if (!sortConfig.key) return 0;
-    const aVal = a[sortConfig.key]?.toString().toLowerCase() ?? "";
-    const bVal = b[sortConfig.key]?.toString().toLowerCase() ?? "";
-    if (aVal < bVal) return sortConfig.direction === "asc" ? -1 : 1;
-    if (aVal > bVal) return sortConfig.direction === "asc" ? 1 : -1;
-    return 0;
-  });
-
-  const paginatedRows = sortedRows.slice(
-    page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage
-  );
-
-  useEffect(() => {
-    if (newEntry.applicableTo === "user" && users.length === 0) {
-      fetchUsers(0);
-    } else if (
-      newEntry.applicableTo === "department" &&
-      departments.length === 0
-    ) {
-      fetchDepartments(0);
-    }
-  }, [newEntry.applicableTo]);
-
-  const handleUserScroll = (e) => {
-    const bottom =
-      e.target.scrollTop + e.target.clientHeight >= e.target.scrollHeight - 10;
-    if (bottom && !loadingUsers) {
-      const nextPage = userPage + 1;
-      fetchUsers(nextPage);
-      setUserPage(nextPage);
-    }
-  };
-  useEffect(() => {
-    fetchDataDictionary();
-  }, []);
-
-  const searchableColumns = [
-    { value: "key", label: "Key" },
-    { value: "value", label: "Value" },
-    { value: "applicableTo", label: "Applicable To" },
+  const getColumnValues = (colKey) => [
+    ...new Set(dictionaryRows.map((row) => row[colKey])),
   ];
 
-  const handleDeptScroll = (e) => {
-    const bottom =
-      e.target.scrollTop + e.target.clientHeight >= e.target.scrollHeight - 10;
-    if (bottom && !loadingDepts) {
-      const nextPage = deptPage + 1;
-      fetchDepartments(nextPage);
-      setDeptPage(nextPage);
-    }
+  const isSelected = (id) => selected.includes(id);
+  const handleSelectAllClick = (event) => {
+    if (event.target.checked) setSelected(filteredRows.map((r) => r.id));
+    else setSelected([]);
+  };
+  const handleClick = (id) => {
+    setSelected((prev) =>
+      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
+    );
   };
 
-  const getApplicableToText = (entry) => {
-    const applicable = entry.applicableTo?.toLowerCase(); // <-- now this works
-
-    if (applicable === "user") {
-      return "User";
-    } else if (applicable === "department") {
-      return "Department";
-    }
-    return "All";
+  const handleDownload = () => {
+    const rows = dictionaryRows.filter((r) => selected.includes(r.id));
+    if (rows.length === 0) return;
+    const headers = columns.map((c) => c.label);
+    const csvRows = [
+      headers.join(","),
+      ...rows.map((row) =>
+        columns.map((c) => `"${row[c.key] ?? ""}"`).join(",")
+      ),
+    ];
+    const csvContent = csvRows.join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "data_dictionary.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
-    <Box sx={{ pt: 1.5, px: 3, ml: "72px" }}>
-      <Paper
-        elevation={20}
-        sx={{
-          width: "100%",
-          overflow: "hidden",
-          borderRadius: "20px",
-          animation: "slideInFromLeft 0.3s ease-in-out forwards",
-          opacity: 0,
-          transform: "translateX(-50px)",
-          "@keyframes slideInFromLeft": {
-            "0%": {
-              opacity: 0,
-              transform: "translateX(-50px)",
-            },
-            "100%": {
-              opacity: 1,
-              transform: "translateX(0)",
-            },
-          },
-        }}
+    <Box sx={{ p: 2, ml: "75px" }}>
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={2}
       >
-        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, p: 2 }}>
-          <TextField
-            select
-            size="small"
-            label="By"
-            value={searchColumn}
-            onChange={(e) => setSearchColumn(e.target.value)}
-            sx={{
-              minWidth: 130,
-              height: 30,
-              "& .MuiInputBase-root": {
-                height: 30,
-                fontSize: "0.8rem",
-              },
-              "& .MuiInputLabel-root": {
-                top: "-6px",
-              },
-            }}
-          >
-            {searchableColumns.map((col) => (
-              <MenuItem key={col.value} value={col.value}>
-                {col.label}
-              </MenuItem>
-            ))}
-          </TextField>
+        <Typography variant="h5" fontWeight={700}>
+          <MenuBookIcon sx={{ mr: 1, color: "green" }} />
+          Data Dictionary
+        </Typography>
 
+        <Box display="flex" alignItems="center" gap={1}>
           <TextField
+            placeholder="Search"
             size="small"
-            label="Search"
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <SearchIcon fontSize="small" />
+                  <SearchIcon />
                 </InputAdornment>
               ),
             }}
             sx={{
-              minWidth: 180,
-              height: 30,
-              "& .MuiInputBase-root": {
-                height: 30,
-                fontSize: "0.8rem",
-              },
-              "& .MuiInputLabel-root": {
-                top: "-6px",
-              },
+              borderRadius: 3,
+              backgroundColor: "#fff",
+              "& fieldset": { border: "none" },
             }}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
 
-          <Tooltip title="Clear All Filters">
-            <span>
-              <Button
-                variant="outlined"
-                size="small"
-                color="error"
-                startIcon={<ClearIcon />}
-                onClick={() => {
-                  setSearchText("");
-                  setColumnFilters({ key: "", value: "", applicableTo: "" });
-                }}
-                disabled={!searchText.trim()}
-                sx={{
-                  height: 30,
-                  fontSize: "0.75rem",
-                  padding: "0 12px",
-                }}
-              >
-                Clear
-              </Button>
-            </span>
+          <Tooltip title="Add to Dictionary" arrow>
+            <IconButton color="success" onClick={handleOpenDialog}>
+              <LibraryAddIcon />
+            </IconButton>
           </Tooltip>
 
-          <Menu
-            anchorEl={anchorEl}
-            open={Boolean(anchorEl)}
-            onClose={handleCloseMenu}
-          ></Menu>
-        </Box>
-
-        <TableContainer sx={{ maxHeight: "80vh", height: "80vh" }}>
-          <Table stickyHeader>
-            <TableHead>
-              <TableRow
-                sx={{
-                  height: 56, // match typical Material-UI dense header
-                  "& td, & th": {
-                    padding: "8px 12px", // consistent padding
-                    fontWeight: 600,
-                    fontSize: "0.9rem",
-                    fontFamily: '"Be Vietnam", sans-serif',
-                    textAlign: "center",
-                    backgroundColor: (theme) =>
-                      theme.palette.mode === "dark" ? "#2c2c2c" : "#f5f5f5",
-                  },
-                }}
+          <Tooltip title="Download" arrow>
+            <span>
+              <IconButton
+                color="primary"
+                disabled={selected.length === 0}
+                onClick={handleDownload}
               >
-                <TableCell padding="checkbox" sx={{ textAlign: "center" }}>
+                <SimCardDownloadIcon />
+              </IconButton>
+            </span>
+          </Tooltip>
+        </Box>
+      </Box>
+
+      <Paper sx={{ borderRadius: 3, overflow: "hidden" }}>
+        <TableContainer sx={{ maxHeight: 450 }}>
+          <Table stickyHeader size="small">
+            <TableHead sx={{ backgroundColor: "#f5f5f5" }}>
+              <TableRow>
+                <TableCell padding="checkbox" sx={{ fontWeight: "bold" }}>
                   <Checkbox
                     indeterminate={
                       selected.length > 0 &&
-                      selected.length < paginatedRows.length
+                      selected.length < filteredRows.length
                     }
                     checked={
-                      paginatedRows.length > 0 &&
-                      selected.length === paginatedRows.length
+                      filteredRows.length > 0 &&
+                      selected.length === filteredRows.length
                     }
                     onChange={handleSelectAllClick}
-                    sx={{
-                      color: (theme) => theme.palette.text.primary,
-                      "&.Mui-checked": {
-                        color: (theme) => theme.palette.primary.main,
-                      },
-                      "&.MuiCheckbox-indeterminate": {
-                        color: (theme) => theme.palette.primary.main,
-                      },
-                    }}
+                    size="small"
                   />
                 </TableCell>
-
-                <TableCell>S.No</TableCell>
-
-                {/* Key column with sort + filter */}
-                <TableCell>
-                  <Box
-                    sx={{
-                      display: "grid",
-                      gridTemplateColumns: "auto auto",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: 1,
-                    }}
-                  >
-                    <TableSortLabel
-                      active={sortConfig.key === "key"}
-                      direction={
-                        sortConfig.key === "key" ? sortConfig.direction : "asc"
-                      }
-                      onClick={() => handleSort("key")}
-                    >
-                      Key
-                    </TableSortLabel>
-                    <Select
-                      value={columnFilters.key}
-                      onChange={(e) =>
-                        setColumnFilters((prev) => ({
-                          ...prev,
-                          key: e.target.value,
-                        }))
-                      }
-                      displayEmpty
-                      variant="standard"
-                      disableUnderline
-                      sx={{ fontSize: "0.75rem", minWidth: 70 }}
-                    >
-                      <MenuItem value="">All</MenuItem>
-                      {getUniqueValues("key").map((val) => (
-                        <MenuItem key={val} value={val}>
-                          {val}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </Box>
-                </TableCell>
-
-                {/* Value column */}
-                <TableCell>
-                  <Box
-                    sx={{
-                      display: "grid",
-                      gridTemplateColumns: "auto auto",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: 1,
-                    }}
-                  >
-                    <TableSortLabel
-                      active={sortConfig.key === "value"}
-                      direction={
-                        sortConfig.key === "value"
-                          ? sortConfig.direction
-                          : "asc"
-                      }
-                      onClick={() => handleSort("value")}
-                    >
-                      Value
-                    </TableSortLabel>
-                    <Select
-                      value={columnFilters.value}
-                      onChange={(e) =>
-                        setColumnFilters((prev) => ({
-                          ...prev,
-                          value: e.target.value,
-                        }))
-                      }
-                      displayEmpty
-                      variant="standard"
-                      disableUnderline
-                      sx={{ fontSize: "0.75rem", minWidth: 70 }}
-                    >
-                      <MenuItem value="">All</MenuItem>
-                      {getUniqueValues("value").map((val) => (
-                        <MenuItem key={val} value={val}>
-                          {val}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </Box>
-                </TableCell>
-
-                {/* Applicable To column */}
-                <TableCell>
-                  <Box
-                    sx={{
-                      display: "grid",
-                      gridTemplateColumns: "auto auto",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: 1,
-                    }}
-                  >
-                    <TableSortLabel
-                      active={sortConfig.key === "applicableTo"}
-                      direction={
-                        sortConfig.key === "applicableTo"
-                          ? sortConfig.direction
-                          : "asc"
-                      }
-                      onClick={() => handleSort("applicableTo")}
-                    >
-                      Applicable To
-                    </TableSortLabel>
-                    <Select
-                      value={columnFilters.applicableTo}
-                      onChange={(e) =>
-                        setColumnFilters((prev) => ({
-                          ...prev,
-                          applicableTo: e.target.value,
-                        }))
-                      }
-                      displayEmpty
-                      variant="standard"
-                      disableUnderline
-                      sx={{ fontSize: "0.75rem", minWidth: 70 }}
-                    >
-                      <MenuItem value="">All</MenuItem>
-                      {getUniqueValues("applicableTo").map((val) => (
-                        <MenuItem key={val} value={val}>
-                          {val}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </Box>
-                </TableCell>
-
-                <TableCell>Actions</TableCell>
+                {columns.map((col) => {
+                  const isFiltered = Boolean(filters[col.key]);
+                  return (
+                    <TableCell key={col.key} sx={{ fontWeight: "bold" }}>
+                      <Box display="flex" alignItems="center">
+                        {col.label}
+                        {isFiltered ? (
+                          <IconButton
+                            size="small"
+                            onClick={() =>
+                              setFilters((prev) => {
+                                const updated = { ...prev };
+                                delete updated[col.key];
+                                return updated;
+                              })
+                            }
+                          >
+                            <ClearIcon fontSize="small" color="error" />
+                          </IconButton>
+                        ) : (
+                          <IconButton
+                            size="small"
+                            onClick={(e) => handleOpenFilter(e, col.key)}
+                          >
+                            <FilterListIcon fontSize="small" />
+                          </IconButton>
+                        )}
+                      </Box>
+                    </TableCell>
+                  );
+                })}
               </TableRow>
             </TableHead>
 
             <TableBody>
-              {paginatedRows.map((row, index) => {
-                const globalIndex = page * rowsPerPage + index;
-                return (
+              {filteredRows
+                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                .map((row, index) => (
                   <TableRow
-                    key={globalIndex}
+                    key={row.id}
                     hover
-                    selected={isSelected(globalIndex)}
                     sx={{
-                      height: 44,
-                      "& td": {
-                        padding: "8px 12px",
-                        fontSize: "0.875rem",
-                        fontFamily: '"Be Vietnam", sans-serif',
-                        textAlign: "center",
-                      },
+                      height: 40,
+                      backgroundColor: index % 2 === 0 ? "#f9f9f9" : "#ffffff", // alternate colors
                     }}
                   >
-                    <TableCell padding="checkbox">
+                    <TableCell padding="checkbox" sx={{ py: 0.5 }}>
                       <Checkbox
-                        checked={isSelected(globalIndex)}
-                        onChange={() => handleClick(globalIndex)}
+                        checked={isSelected(row.id)}
+                        onChange={() => handleClick(row.id)}
                         size="small"
                       />
                     </TableCell>
-                    <TableCell>{globalIndex + 1}</TableCell>
-                    <TableCell>{row.key}</TableCell>
-                    <TableCell>{row.value}</TableCell>
-                    <TableCell>{getApplicableToText(row)}</TableCell>
-                    <TableCell>
-                      <Tooltip title="Edit">
-                        <IconButton
-                          color="primary"
-                          size="small"
-                          onClick={() => handleEditRow(row, globalIndex)}
-                        >
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-
-                      <Tooltip title="Delete">
-                        <IconButton
-                          color="error"
-                          size="small"
-                          onClick={() => {
-                            setDeleteDialogOpen(true);
-                            setDeleteTarget(row);
-                          }}
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </TableCell>
+                    <TableCell sx={{ py: 0.5 }}>{row.word}</TableCell>
+                    <TableCell sx={{ py: 0.5 }}>{row.description}</TableCell>
+                    <TableCell sx={{ py: 0.5 }}>{row.department}</TableCell>
+                    <TableCell sx={{ py: 0.5 }}>{row.date}</TableCell>
                   </TableRow>
-                );
-              })}
-              {paginatedRows.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={7} sx={{ textAlign: "center" }}>
-                    No entries found.
-                  </TableCell>
-                </TableRow>
-              )}
+                ))}
             </TableBody>
           </Table>
         </TableContainer>
 
         <TablePagination
-          rowsPerPageOptions={[10, 15]}
-          // component="div"
+          rowsPerPageOptions={[5, 10, 25, 50]}
+          component="div"
           count={filteredRows.length}
           rowsPerPage={rowsPerPage}
           page={page}
-          onPageChange={(e, newPage) => setPage(newPage)}
-          onRowsPerPageChange={(e) => {
-            setRowsPerPage(parseInt(e.target.value, 10));
-            setPage(0);
-          }}
-          sx={{
-            "& .MuiTablePagination-toolbar": {
-              px: 2,
-              py: 1,
-              justifyContent: "flex-start", // ✅ Aligns pagination to the left
-            },
-          }}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+          labelRowsPerPage="Per page"
+          labelDisplayedRows={({ from, to, count }) =>
+            `Showing ${from}-${to} of ${count}`
+          }
         />
       </Paper>
 
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleCloseFilter}
+        PaperProps={{
+          style: { maxHeight: 300, width: 220 }, // limit height
+        }}
+      >
+        <Box sx={{ p: 1 }}>
+          <TextField
+            size="small"
+            placeholder="Search..."
+            fullWidth
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </Box>
+
+        <Box sx={{ maxHeight: 200, overflowY: "auto" }}>
+          {filterColumn &&
+            getColumnValues(filterColumn)
+              .filter((option) =>
+                option.toLowerCase().includes(searchTerm.toLowerCase())
+              )
+              .map((option) => {
+                const selectedVal =
+                  filters[filterColumn]?.includes(option) || false;
+                return (
+                  <MenuItem
+                    key={option}
+                    onClick={() => handleToggleFilterValue(option)}
+                  >
+                    <Checkbox checked={selectedVal} size="small" />
+                    <Typography variant="body2">{option}</Typography>
+                  </MenuItem>
+                );
+              })}
+        </Box>
+      </Menu>
+
       <Dialog
         open={openDialog}
-        onClose={() => setOpenDialog(false)}
-        fullWidth
+        onClose={handleCloseDialog}
         maxWidth="sm"
+        fullWidth
       >
         <DialogTitle
           sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            p: 1,
             backgroundColor: "primary.main",
-            color: "white",
-            fontWeight: "bold",
-            fontSize: "1.2rem",
           }}
         >
-          {isEditing ? "Edit Entry" : "Add Data Dictionary Entry"}
+          <Typography
+            variant="h6"
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              fontFamily: '"Be Vietnam", sans-serif',
+              color: "#fff",
+            }}
+          >
+            Add to Dictionary
+          </Typography>
+
+          <IconButton
+            onClick={handleCloseDialog}
+            size="small"
+            sx={{
+              color: "#fff",
+              width: 32,
+              height: 32,
+              border: "1px solid",
+              borderColor: "#fff",
+              bgcolor: "error.lighter",
+              borderRadius: "50%",
+              position: "relative",
+              "&:hover": {
+                transform: "rotate(180deg)",
+              },
+              transition: "transform 0.3s ease",
+            }}
+          >
+            <CloseIcon
+              sx={{
+                fontSize: "1rem",
+                transition: "transform 0.2s ease",
+              }}
+            />
+          </IconButton>
         </DialogTitle>
-        <DialogContent
-          dividers
-          sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}
-        >
-          <TextField
-            label="Key"
-            fullWidth
-            value={newEntry.key}
-            onChange={(e) => setNewEntry({ ...newEntry, key: e.target.value })}
-          />
-          <TextField
-            label="Value"
-            fullWidth
-            value={newEntry.value}
-            onChange={(e) =>
-              setNewEntry({ ...newEntry, value: e.target.value })
-            }
-          />
-          <FormControl fullWidth>
-            <InputLabel>Applicable To</InputLabel>
-            <Select
-              value={newEntry.applicableTo}
-              label="Applicable To"
-              onChange={(e) =>
-                setNewEntry({ ...newEntry, applicableTo: e.target.value })
-              }
-            >
-              <MenuItem value="user">User</MenuItem>
-              <MenuItem value="department">Department</MenuItem>
-              <MenuItem value="all">All</MenuItem>
-            </Select>
-          </FormControl>
-
-          {newEntry.applicableTo === "user" && (
+        <DialogContent dividers>
+          <Box display="flex" gap={2} mb={2} width="100%">
             <Autocomplete
-              multiple
-              value={newEntry.selectedUsers}
-              onChange={(e, newValue) =>
-                setNewEntry({ ...newEntry, selectedUsers: newValue })
-              }
-              onOpen={() => {
-                if (users.length === 0) fetchUsers(0);
-              }}
-              options={users}
-              getOptionLabel={(option) => option.name || ""}
-              loading={loadingUsers}
-              ListboxProps={{
-                onScroll: handleUserScroll,
-                style: { maxHeight: 200, overflowY: "auto" },
-              }}
+              options={[
+                "IT",
+                "HR",
+                "Finance",
+                "Admin",
+                "Operations",
+                "Support",
+                "Legal",
+                "Engineering",
+                "Design",
+                "Product",
+                "Security",
+                "QA",
+              ]}
+              value={department}
+              onChange={(e, newValue) => setDepartment(newValue)}
+              filterSelectedOptions
               renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="Select Users"
-                  InputProps={{
-                    ...params.InputProps,
-                    endAdornment: (
-                      <>
-                        {loadingUsers ? (
-                          <CircularProgress size={20} sx={{ mr: 1 }} />
-                        ) : null}
-                        {params.InputProps.endAdornment}
-                      </>
-                    ),
-                  }}
-                />
+                <TextField {...params} label="Choose Department" />
               )}
-              renderTags={(value, getTagProps) =>
-                value.map((option, index) => (
-                  <Chip label={option.name} {...getTagProps({ index })} />
-                ))
-              }
+              ListboxProps={{
+                style: {
+                  maxHeight: 200,
+                  overflow: "auto",
+                },
+              }}
+              sx={{ flex: 0.6 }}
             />
-          )}
 
-          {newEntry.applicableTo === "department" && (
-            <Autocomplete
-              multiple
-              value={newEntry.selectedDepartments}
-              onChange={(e, newValue) =>
-                setNewEntry({ ...newEntry, selectedDepartments: newValue })
-              }
-              onOpen={() => {
-                if (departments.length === 0) fetchDepartments(0);
-              }}
-              options={departments}
-              getOptionLabel={(option) => option.deptName || ""}
-              loading={loadingDepts}
-              ListboxProps={{
-                onScroll: handleDeptScroll,
-                style: { maxHeight: 200, overflowY: "auto" },
-              }}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="Select Departments"
-                  InputProps={{
-                    ...params.InputProps,
-                    endAdornment: (
-                      <>
-                        {loadingDepts ? (
-                          <CircularProgress size={20} sx={{ mr: 1 }} />
-                        ) : null}
-                        {params.InputProps.endAdornment}
-                      </>
-                    ),
-                  }}
-                />
-              )}
-              renderTags={(value, getTagProps) =>
-                value.map((option, index) => (
-                  <Chip label={option.deptName} {...getTagProps({ index })} />
-                ))
-              }
+            <TextField
+              label="Add New Word"
+              value={newWord}
+              onChange={(e) => setNewWord(e.target.value)}
+              sx={{ flex: 1 }}
             />
-          )}
+          </Box>
+
+          <TextField
+            label="Definition"
+            multiline
+            minRows={3}
+            value={definition}
+            onChange={(e) => setDefinition(e.target.value)}
+            fullWidth
+            sx={{ mb: 2 }}
+          />
+          <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+            Recent Additions
+          </Typography>
+          <Box display="flex" gap={1} flexWrap="wrap">
+            {recentAdditions.map((word, idx) => (
+              <Chip key={idx} label={word} color="primary" variant="outlined" />
+            ))}
+          </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
-          <Button onClick={handleSave} variant="contained">
+          <Button
+            variant="contained"
+            onClick={handleSaveWord}
+            disabled={!newWord || !definition || !department}
+          >
             Save
           </Button>
         </DialogActions>
       </Dialog>
-
-      <Dialog
-        open={deleteDialogOpen}
-        onClose={() => setDeleteDialogOpen(false)}
-      >
-        <DialogTitle
-          sx={{
-            backgroundColor: "primary.main", // MUI blue
-            color: "white",
-            fontWeight: "bold",
-          }}
-        >
-          Confirm Deletion
-        </DialogTitle>
-        <DialogContent>
-          Are you sure you want to delete <b>{deleteTarget?.key}</b>?
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-          <Button
-            onClick={async () => {
-              try {
-                await axios.delete(
-                  `${window.__ENV__.REACT_APP_ROUTE}/tenants/deleteDictionary/${deleteTarget?.id}`,
-                  {
-                    headers: {
-                      Authorization: `Bearer ${sessionStorage.getItem(
-                        "authToken"
-                      )}`,
-                      username: `${sessionStorage.getItem("adminEmail")}`,
-                    },
-                  }
-                );
-                setData((prev) =>
-                  prev.filter((item) => item.id !== deleteTarget?.id)
-                );
-                setSnackbarOpen(true);
-              } catch (err) {
-                console.error("Delete failed", err);
-              } finally {
-                setDeleteDialogOpen(false);
-              }
-            }}
-            variant="contained"
-            color="error"
-          >
-            Confirm
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      <Snackbar
-        open={snackbarOpen}
-        autoHideDuration={3000}
-        onClose={() => setSnackbarOpen(false)}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-      >
-        <Alert
-          onClose={() => setSnackbarOpen(false)}
-          severity="success"
-          variant="filled"
-          sx={{ width: "100%" }}
-        >
-          Operation successful!
-        </Alert>
-      </Snackbar>
-      <Tooltip title="Add New Entry">
-        <IconButton
-          onClick={handleOpenDialog}
-          sx={{
-            position: "fixed",
-            bottom: 20,
-            right: 38,
-            backgroundColor: "primary.main",
-            color: "#fff",
-            boxShadow: 3,
-            "&:hover": {
-              backgroundColor: "primary.dark",
-            },
-            bgcolor: "orange", // Solid orange background color
-            color: "white",
-            boxShadow:
-              "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.6)", // Default shadow
-            "&:hover": {
-              backgroundColor: "orange", // Keep the background color on hover
-              animation: "glowBorder 1.5s ease-in-out infinite", // Apply glowing animation on hover
-            },
-            "@keyframes glowBorder": {
-              "0%": {
-                boxShadow: "0 0 0px 2px rgba(251, 68, 36, 0.5)", // Start with soft glow
-                borderColor: "transparent", // Initial transparent border
-              },
-              "50%": {
-                boxShadow: "0 0 20px 5px rgba(251, 68, 36, 0.8)", // Stronger glow
-                borderColor: "rgb(251, 68, 36)", // Glowing orange border
-              },
-              "100%": {
-                boxShadow: "0 0 0px 2px rgba(251, 68, 36, 0.5)", // Glow fades out
-                borderColor: "transparent", // Reset to transparent
-              },
-            },
-          }}
-        >
-          <Add fontSize="medium" />
-        </IconButton>
-      </Tooltip>
     </Box>
   );
-};
-
-export default DataDictionary;
+}

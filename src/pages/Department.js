@@ -297,6 +297,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       displayName: "",
       storage: "1 GB",
       departmentModerator: "",
+      role: "",
+      permission: "ADMIN", // default
       submitted: false,
     },
   ]);
@@ -452,6 +454,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
   const DeptUsersDropdown = ({
     users,
     departmentId,
+    departmentRoles = [], // NEW: roles available in this department
     onEditUser,
     onDeleteUser,
     addUsersToDepartment,
@@ -461,20 +464,19 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     const [addDialogOpen, setAddDialogOpen] = useState(false);
     const [allUsers, setAllUsers] = useState([]);
     const [selectedUsers, setSelectedUsers] = useState([]);
+    const [selectedRoles, setSelectedRoles] = useState({}); // NEW: map userId -> role
     const [loading, setLoading] = useState(false);
     const anchorRef = useRef(null);
 
     const handleToggle = () => setOpen((prev) => !prev);
     const handleClose = () => setOpen(false);
 
-    // Filter users in dropdown
     const filteredUsers = useMemo(() => {
       return users.filter((user) =>
         user.name.toLowerCase().includes(search.toLowerCase())
       );
     }, [users, search]);
 
-    // Open Add Users dialog and fetch all users
     const handleOpenAddDialog = async () => {
       setAddDialogOpen(true);
       setLoading(true);
@@ -491,6 +493,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     const handleCloseAddDialog = () => {
       setAddDialogOpen(false);
       setSelectedUsers([]);
+      setSelectedRoles({});
     };
 
     const handleToggleSelectUser = (user) => {
@@ -499,14 +502,28 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           ? prev.filter((u) => u.id !== user.id)
           : [...prev, user]
       );
+      // if deselected, remove role
+      if (selectedUsers.some((u) => u.id === user.id)) {
+        setSelectedRoles((prev) => {
+          const copy = { ...prev };
+          delete copy[user.id];
+          return copy;
+        });
+      }
+    };
+
+    const handleRoleChange = (userId, role) => {
+      setSelectedRoles((prev) => ({ ...prev, [userId]: role }));
     };
 
     const handleAddSelectedUsers = () => {
+      const usersWithRoles = selectedUsers.map((u) => ({
+        id: u.id,
+        role: selectedRoles[u.id] || null, // default null if not selected
+      }));
+
       if (addUsersToDepartment) {
-        addUsersToDepartment(
-          departmentId,
-          selectedUsers.map((u) => u.id)
-        );
+        addUsersToDepartment(departmentId, usersWithRoles);
       }
       handleCloseAddDialog();
     };
@@ -616,6 +633,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           </ClickAwayListener>
         </Popper>
 
+        {/* Add New User Dialog */}
         <Dialog
           open={addDialogOpen}
           onClose={handleCloseAddDialog}
@@ -655,17 +673,12 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 bgcolor: "error.lighter",
                 borderRadius: "50%",
                 position: "relative",
-                "&:hover": {
-                  transform: "rotate(180deg)",
-                },
+                "&:hover": { transform: "rotate(180deg)" },
                 transition: "transform 0.3s ease",
               }}
             >
               <Close
-                sx={{
-                  fontSize: "1rem",
-                  transition: "transform 0.2s ease",
-                }}
+                sx={{ fontSize: "1rem", transition: "transform 0.2s ease" }}
               />
             </IconButton>
           </DialogTitle>
@@ -687,6 +700,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                   <TableHead>
                     <TableRow>
                       <TableCell>Name</TableCell>
+                      <TableCell>Role</TableCell>
                       <TableCell>Select</TableCell>
                     </TableRow>
                   </TableHead>
@@ -694,6 +708,26 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     {filteredAllUsers.map((user) => (
                       <TableRow key={user.id}>
                         <TableCell>{user.name}</TableCell>
+                        <TableCell>
+                          <TextField
+                            select
+                            size="small"
+                            fullWidth
+                            value={selectedRoles[user.id] || ""}
+                            onChange={(e) =>
+                              handleRoleChange(user.id, e.target.value)
+                            }
+                          >
+                            <MenuItem value="">
+                              <em>None</em>
+                            </MenuItem>
+                            {departmentRoles.map((role) => (
+                              <MenuItem key={role} value={role}>
+                                {role.name}
+                              </MenuItem>
+                            ))}
+                          </TextField>
+                        </TableCell>
                         <TableCell>
                           <Checkbox
                             checked={selectedUsers.some(
@@ -706,7 +740,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     ))}
                     {filteredAllUsers.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={2} align="center">
+                        <TableCell colSpan={3} align="center">
                           No Users Found
                         </TableCell>
                       </TableRow>
@@ -730,7 +764,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       </div>
     );
   };
-
   const handleUpdateDepartment = async () => {
     if (
       !editedDepartment?.name ||
@@ -1436,6 +1469,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           deptDisplayName: dept.displayName.trim(),
           deptModerator: dept.departmentModerator.trim(),
           storage: dept.storage.trim(),
+          role: dept.role.trim(),
+          permission: dept.permission,
         });
       }
       fetchDepartments();
@@ -1925,7 +1960,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 />
               </TableCell>
 
-             
               {visibleColumns.id && (
                 <TableCell sx={{ width: "120px" }}>
                   <TableSortLabel
@@ -2026,7 +2060,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                       />
                     </TableCell>
 
-                                       {visibleColumns.id && <TableCell>{dept.id}</TableCell>}
+                    {visibleColumns.id && <TableCell>{dept.id}</TableCell>}
 
                     {visibleColumns.name && <TableCell>{dept.name}</TableCell>}
 
@@ -2071,27 +2105,38 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                         <DeptUsersDropdown
                           users={dept.roles.flatMap((role) => role.user)}
                           departmentId={dept.id}
+                          departmentRoles={dept.roles.map((role) => ({
+                            id: role.id,
+                            name: role.roleName,
+                          }))}
                           onEditUser={(user) => console.log("Edit user:", user)}
                           onDeleteUser={(user) =>
                             console.log("Delete user:", user)
                           }
                           addUsersToDepartment={async (
                             deptId,
-                            selectedUserIds
+                            selectedUsers
                           ) => {
+                            // selectedUsers = [{ id, role: { id, name } }]
+                            console.log("selected", selectedUsers);
+
                             try {
+                              const payload = selectedUsers.map((u) => [
+                                u.id,
+                                u.role.id,
+                              ]); // ✅ backend expects [userId, roleId]
+
                               const response = await axios.post(
-                                `${window.__ENV__.REACT_APP_ROUTE}/${deptId}/addUsers`,
-                                { userIds: selectedUserIds },
+                                `${window.__ENV__.REACT_APP_ROUTE}/tenants/department/addInExisting/${deptId}`,
+                                payload,
                                 {
                                   headers: {
                                     "Content-Type": "application/json",
                                     Authorization: `Bearer ${sessionStorage.getItem(
                                       "authToken"
                                     )}`,
-                                    username: `${sessionStorage.getItem(
-                                      "adminEmail"
-                                    )}`,
+                                    username:
+                                      sessionStorage.getItem("adminEmail"),
                                   },
                                 }
                               );
@@ -2103,10 +2148,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                   severity: "success",
                                 });
 
-                                // ✅ Refresh department users after success
-                                if (fetchDepartments) {
-                                  await fetchDepartments();
-                                }
+                                if (fetchDepartments) await fetchDepartments();
                               } else {
                                 setSnackbar({
                                   open: true,
@@ -2697,6 +2739,48 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                               />
                             )}
                           />
+                        </Grid>
+                        <Grid item xs={6}>
+                          <TextField
+                            label="Role"
+                            value={dept.role || ""}
+                            onChange={(e) =>
+                              updateDepartmentField(
+                                index,
+                                "role",
+                                e.target.value
+                              )
+                            }
+                            fullWidth
+                            size="small"
+                          />
+                        </Grid>
+
+                        {/* Permission Dropdown */}
+                        <Grid item xs={6}>
+                          <FormControl fullWidth size="small">
+                            <InputLabel>Permission</InputLabel>
+                            <Select
+                              value={dept.permission || ""}
+                              onChange={(e) =>
+                                updateDepartmentField(
+                                  index,
+                                  "permission",
+                                  e.target.value
+                                )
+                              }
+                              label="Permission"
+                            >
+                              <MenuItem value="ADMIN">ADMIN</MenuItem>
+                              <MenuItem value="VIEWER">VIEWER</MenuItem>
+                              <MenuItem value="EDITOR">EDITOR</MenuItem>
+                              <MenuItem value="COMMENTOR">COMMENTOR</MenuItem>
+                              <MenuItem value="CONTRIBUTOR">
+                                CONTRIBUTOR
+                              </MenuItem>
+                              <MenuItem value="NO_ROLE">NO_ROLE</MenuItem>
+                            </Select>
+                          </FormControl>
                         </Grid>
                       </Grid>
                     </Box>

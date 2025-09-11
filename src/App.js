@@ -28,6 +28,8 @@ import DepartmentTypeSetting from "./pages/DepartmentTypeSetting";
 import DataDictionary from "./pages/DataDictionary";
 import FeedContext from "./pages/FeedContext";
 import ThemeSetting from "./pages/ThemeSetting";
+import FeedbackDashboard from "./pages/FeedBackDashboard";
+import FeedbackTable from "./pages/FeedbackTable";
 
 function App() {
   const [dictionarySearchResults, setDictionarySearchResults] = useState([]);
@@ -155,7 +157,17 @@ function App() {
             element={
               <Layout onThemeToggle={toggleTheme}>
                 <ProtectedRoute>
-                  <FeedContext />
+                  <FeedbackDashboard />
+                </ProtectedRoute>
+              </Layout>
+            }
+          />
+          <Route
+            path="/feedback-table"
+            element={
+              <Layout onThemeToggle={toggleTheme}>
+                <ProtectedRoute>
+                  <FeedbackTable />
                 </ProtectedRoute>
               </Layout>
             }

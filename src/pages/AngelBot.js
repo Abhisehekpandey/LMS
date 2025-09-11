@@ -2592,6 +2592,7 @@ const AngelBot = () => {
               },
             }}
           >
+           
             {regions.length === 0 ? (
               <Typography variant="body2" color="text.secondary">
                 No regions added yet.
@@ -2608,8 +2609,11 @@ const AngelBot = () => {
                     borderBottom: "1px solid #ddd",
                   }}
                 >
+                  {/* Region name */}
+                  <Typography>{region}</Typography>
+
+                  {/* Actions aligned together */}
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <Typography>{region}</Typography>
                     <Button
                       size="small"
                       variant={
@@ -2617,35 +2621,36 @@ const AngelBot = () => {
                       }
                       color="primary"
                       onClick={() => setDefaultRegion(region)}
+                      sx={{ minWidth: 90 }}
                     >
                       {defaultRegion === region ? "Default" : "Set Default"}
                     </Button>
-                  </Box>
 
-                  <IconButton
-                    size="small"
-                    color="error"
-                    onClick={async () => {
-                      try {
-                        await deleteRegion(region);
-                        setRegions(regions.filter((r) => r !== region));
-                        if (defaultRegion === region) setDefaultRegion("");
-                        setSnackbar({
-                          open: true,
-                          message: `Region "${region}" deleted successfully.`,
-                          severity: "success",
-                        });
-                      } catch (error) {
-                        setSnackbar({
-                          open: true,
-                          message: "Failed to delete region.",
-                          severity: "error",
-                        });
-                      }
-                    }}
-                  >
-                    <Delete fontSize="small" />
-                  </IconButton>
+                    <IconButton
+                      size="small"
+                      color="error"
+                      onClick={async () => {
+                        try {
+                          await deleteRegion(region);
+                          setRegions(regions.filter((r) => r !== region));
+                          if (defaultRegion === region) setDefaultRegion("");
+                          setSnackbar({
+                            open: true,
+                            message: `Region "${region}" deleted successfully.`,
+                            severity: "success",
+                          });
+                        } catch (error) {
+                          setSnackbar({
+                            open: true,
+                            message: "Failed to delete region.",
+                            severity: "error",
+                          });
+                        }
+                      }}
+                    >
+                      <Delete fontSize="small" />
+                    </IconButton>
+                  </Box>
                 </Box>
               ))
             )}

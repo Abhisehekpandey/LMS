@@ -15,6 +15,7 @@ import { Settings as SettingsIcon } from "@mui/icons-material";
 import { MenuBook as DictionaryIcon } from "@mui/icons-material";
 import { DynamicFeed as FeedContextIcon } from "@mui/icons-material";
 import { Palette as PaletteIcon } from "@mui/icons-material";
+import TableChartIcon from "@mui/icons-material/TableChart";
 
 
 
@@ -161,7 +162,12 @@ const Sidebar = () => {
      {
        path: "/feed-context",
        icon: <FeedContextIcon />,
-       text: "Docutalk Feedback",
+       text: "Feedback Dashboard",
+     },
+     {
+       path: "/feedback-table",
+       icon: <TableChartIcon />,
+       text: "Feedback Table",
      },
      {
        path: "/theme-setting",

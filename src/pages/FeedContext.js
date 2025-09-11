@@ -34,6 +34,7 @@ import { parseISO, isAfter, isBefore } from "date-fns";
 import SearchIcon from "@mui/icons-material/Search";
 import ClearIcon from "@mui/icons-material/Clear";
 import { InputAdornment, Tooltip, IconButton } from "@mui/material";
+import FeedbackDashboard from "./FeedBackDashboard";
 
 const dummyData = [
   {
@@ -279,6 +280,8 @@ function FeedContext() {
 
   return (
     <Box sx={{ p: 2, ml: { xs: 0, sm: "70px", md: "75px" } }}>
+      {/* Dashboard Section */}
+      <FeedbackDashboard />
       <Paper
         elevation={2}
         sx={{
