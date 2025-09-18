@@ -59,7 +59,7 @@ import {
   FilterList,
 } from "@mui/icons-material";
 import SearchIcon from "@mui/icons-material/Search";
-
+import { PolymorphicTable } from "polymorphic-table";
 import styles from "./user.module.css";
 import DeleteUser from "./DeleteUser";
 import Migration from "./Migration";
@@ -74,7 +74,8 @@ import { updateUser } from "../../api/userService";
 // import { activateAll } from "../../api/userService";
 import { TableSortLabel } from "@mui/material";
 import { searchUsers } from "../../api/userService";
-import { debounce } from "lodash";
+import _, { debounce } from "lodash";
+import { render } from "react-dom";
 
 const CustomSwitch = styled(Switch)(({ theme, checked }) => ({
   "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
@@ -120,92 +121,92 @@ const CustomSpinner = styled(CircularProgress)(({ theme }) => ({
   thickness: 2,
 }));
 
-const rows = [
-  {
-    id: "1",
-    name: "kunal kamboj",
-    department: "Frontend",
-    role: "Software Engineer",
-    email: "kunal@appolo.com",
-    storageUsed: "200 MB",
-    manageStorage: "1 GB",
-    status: false,
+// const rows = [
+//   {
+//     id: "1",
+//     name: "kunal kamboj",
+//     department: "Frontend",
+//     role: "Software Engineer",
+//     email: "kunal@appolo.com",
+//     storageUsed: "200 MB",
+//     manageStorage: "1 GB",
+//     status: false,
 
-    phone: "1234567890",
-  },
-  {
-    id: "2",
-    name: "Pratibha thakur",
-    department: "Frontend",
-    role: "Frontend Developer",
-    email: "pratibha@appolo.com",
-    storageUsed: "200 MB",
-    manageStorage: "1 GB",
-    status: false,
+//     phone: "1234567890",
+//   },
+//   {
+//     id: "2",
+//     name: "Pratibha thakur",
+//     department: "Frontend",
+//     role: "Frontend Developer",
+//     email: "pratibha@appolo.com",
+//     storageUsed: "200 MB",
+//     manageStorage: "1 GB",
+//     status: false,
 
-    phone: "9876543201",
-  },
-  {
-    id: "3",
-    name: "Abhishek Panday",
-    department: "Frontend",
-    role: "Software Developer",
-    email: "abhishek@appolo.com",
-    storageUsed: "800 MB",
-    manageStorage: "1 GB",
-    status: true,
+//     phone: "9876543201",
+//   },
+//   {
+//     id: "3",
+//     name: "Abhishek Panday",
+//     department: "Frontend",
+//     role: "Software Developer",
+//     email: "abhishek@appolo.com",
+//     storageUsed: "800 MB",
+//     manageStorage: "1 GB",
+//     status: true,
 
-    phone: "1234567890",
-  },
-  {
-    id: "4",
-    name: "Dhruv Sethi",
-    department: "Backend",
-    role: "Manager",
-    email: "dhruv@appolo.com",
-    storageUsed: "800 MB",
-    manageStorage: "1 GB",
-    status: true,
+//     phone: "1234567890",
+//   },
+//   {
+//     id: "4",
+//     name: "Dhruv Sethi",
+//     department: "Backend",
+//     role: "Manager",
+//     email: "dhruv@appolo.com",
+//     storageUsed: "800 MB",
+//     manageStorage: "1 GB",
+//     status: true,
 
-    phone: "1234567890",
-  },
-  {
-    id: "5",
-    name: "Manish Yadav",
-    department: "Backend",
-    role: "Software engineer",
-    email: "manish@appolo.com",
-    storageUsed: "800 MB",
-    manageStorage: "1 GB",
-    status: true,
+//     phone: "1234567890",
+//   },
+//   {
+//     id: "5",
+//     name: "Manish Yadav",
+//     department: "Backend",
+//     role: "Software engineer",
+//     email: "manish@appolo.com",
+//     storageUsed: "800 MB",
+//     manageStorage: "1 GB",
+//     status: true,
 
-    phone: "1234567890",
-  },
-  {
-    id: "6",
-    name: "Prince Tiwari",
-    department: "Backend",
-    role: "Backend developer",
-    email: "prince@appolo.com",
-    storageUsed: "800 MB",
-    manageStorage: "1 GB",
-    status: true,
+//     phone: "1234567890",
+//   },
+//   {
+//     id: "6",
+//     name: "Prince Tiwari",
+//     department: "Backend",
+//     role: "Backend developer",
+//     email: "prince@appolo.com",
+//     storageUsed: "800 MB",
+//     manageStorage: "1 GB",
+//     status: true,
 
-    phone: "1234567890",
-  },
-  {
-    id: "7",
-    name: "Dheeraj",
-    department: "Frontend",
-    role: "Senior Frontend Developer",
-    email: "dheeraj@appolo.com",
-    storageUsed: "800 MB",
-    manageStorage: "1 GB",
-    status: true,
+//     phone: "1234567890",
+//   },
+//   {
+//     id: "7",
+//     name: "Dheeraj",
+//     department: "Frontend",
+//     role: "Senior Frontend Developer",
+//     email: "dheeraj@appolo.com",
+//     storageUsed: "800 MB",
+//     manageStorage: "1 GB",
+//     status: true,
 
-    phone: "1234567890",
-  },
-];
+//     phone: "1234567890",
+//   },
+// ];
 
 const IOSSwitch = styled((props) => (
   <Switch focusVisibleClassName=".Mui-focusVisible" disableRipple {...props} />
@@ -722,7 +723,7 @@ export default function UserTable() {
     setSelected([]);
     setRowData([]);
 
-    // ✅ Show success message
+    //  Show success message
     setSnackbarMessage("User data downloaded successfully");
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
@@ -843,7 +844,6 @@ export default function UserTable() {
       setSelectAllData(true);
     } else {
       setSelected([]);
-
       const selectedFullRows = rowsData.filter((r) => selected.includes(r.id));
       setRowData(selectedFullRows);
 
@@ -1005,24 +1005,364 @@ export default function UserTable() {
   });
 
   const sortedRows = [...filteredRows].sort(getComparator(order, orderBy));
+  const userColumns = [
+    {
+      id: "user id",
+      header: "id",
+      accessor: "id",
+      sortable: true,
+      filterable: true,
+      width: "200px",
+    },
+
+    {
+      id: "name",
+      header: "Name",
+      accessor: "name",
+      sortable: true,
+      filterable: true,
+      width: "200px",
+    },
+    {
+      id: "department",
+      header: "Department",
+      accessor: "department",
+      sortable: true,
+      filterable: true,
+      width: "200px",
+      render: (_, row) => {
+        const selectedRoleId = userRoleMap[row.id];
+        const selectedRole = row.roles?.find(
+          (role) => role.id === selectedRoleId
+        );
+        const deptName =
+          selectedRole?.department?.deptName ||
+          row.roles?.[0]?.department?.deptName;
+
+        return deptName || "N/A";
+      },
+    },
+
+    {
+      id: "email",
+      header: "Email",
+      accessor: "email",
+      sortable: true,
+      filterable: true,
+      width: "250px",
+    },
+    {
+      id: "role",
+      header: "Role",
+      sortable: true,
+      filterable: true,
+      width: "180px",
+
+      //  Custom cell rendering
+      render: (_, row) => {
+        const selectedRoleId = userRoleMap[row.id];
+        const selectedRole = row.roles?.find(
+          (role) => role.id === selectedRoleId
+        );
+        const deptId = selectedRole?.department?.id;
+
+        if (!deptId) return row.roles?.[0]?.roleName || "N/A";
+
+        const rolesInSameDept = row.roles.filter(
+          (role) => role.department?.id === deptId
+        );
+        const uniqueRoleNames = [
+          ...new Set(rolesInSameDept.map((role) => role.roleName)),
+        ];
+
+        return uniqueRoleNames.length > 0 ? uniqueRoleNames.join(", ") : "N/A";
+      },
+    },
+    {
+      id: "storageUsed",
+      header: "StorageUsed",
+      accessor: "storageUsed",
+      sortable: true,
+      filterable: true,
+      width: "150px",
+      align: "center",
+      render: (_, row) => row.permissions?.displayStorage || "—",
+    },
+    {
+      id: "manage storage",
+      header: "Manage Storage",
+      accessor: "Manage Storage",
+      width: "150px",
+      align: "center",
+      render: (_, row) => (
+        <FormControl sx={{ m: 0, minWidth: 120 }} size="small">
+          <Select
+            id={`manage-storage-${row.id}`}
+            value={row.permissions?.allowedStorageInBytesDisplay || ""}
+            onChange={async (e) => {
+              const newDisplayValue = e.target.value;
+              const newByteValue = toBytes(newDisplayValue);
+
+              const updated = rowsData.map((r) =>
+                r.id === row.id
+                  ? {
+                      ...r,
+                      permissions: {
+                        ...r.permissions,
+                        allowedStorageInBytesDisplay: newDisplayValue,
+                        allowedStorageInBytes: newByteValue,
+                      },
+                    }
+                  : r
+              );
+
+              setRowsData(updated);
+
+              if (row.active) {
+                const updatedRows = rowsData.map((u) =>
+                  u.id === row.id
+                    ? {
+                        ...u,
+                        permissions: {
+                          ...u.permissions,
+                          allowedStorageInBytesDisplay: newDisplayValue,
+                          allowedStorageInBytes: newByteValue,
+                        },
+                      }
+                    : u
+                );
+
+                try {
+                  await toggleUserStatusByUsername(updatedRows, page);
+                  setRowsData(updatedRows);
+                  toast.success(`Storage updated for ${row.name}`);
+                } catch (error) {
+                  toast.error(`Failed to update storage for ${row.name}`);
+                }
+              }
+            }}
+            displayEmpty
+            sx={{
+              width: "100px",
+              height: "30px",
+              borderRadius: "28px",
+            }}
+          >
+            {(() => {
+              const predefinedOptions = [
+                "1GB",
+                "3GB",
+                "5GB",
+                "10GB",
+                "20GB",
+                "40GB",
+                "60GB",
+              ];
+              const currentValue =
+                row.permissions?.allowedStorageInBytesDisplay;
+              const allOptions = predefinedOptions.includes(currentValue)
+                ? predefinedOptions
+                : [currentValue, ...predefinedOptions];
+              return allOptions.map((opt) => (
+                <MenuItem key={opt} value={opt}>
+                  {opt}
+                </MenuItem>
+              ));
+            })()}
+          </Select>
+        </FormControl>
+      ),
+    },
+
+    {
+      id: "region",
+      header: "region",
+      accessor: "region",
+      sortable: true,
+      filterable: true,
+      width: "150px",
+      align: "center",
+    },
+    {
+      id: "status",
+      header: "Status",
+      accessor: "activeLicense",
+      sortable: true,
+      // filterable: true,
+      width: "150px",
+      render: (_, row) => (
+        <Tooltip
+          title={
+            row.active && !row.enabled
+              ? "Pending (Email Not Verified)"
+              : !row.active
+              ? "Inactive (Provide Storage)"
+              : "Active"
+          }
+        >
+          <span>
+            <FormControlLabel
+              control={
+                <IOSSwitch
+                  checked={row.active && row.enabled}
+                  onChange={() => handleStatusToggle(row.name)}
+                  disabled={
+                    (row.active && !row.enabled) ||
+                    (!row.active &&
+                      (!row.permissions?.allowedStorageInBytesDisplay ||
+                        row.permissions?.allowedStorageInBytesDisplay ===
+                          "0 KB"))
+                  }
+                />
+              }
+            />
+          </span>
+        </Tooltip>
+      ),
+    },
+
+    {
+      id: "actions",
+      header: "Actions",
+      accessor: "actions",
+      isActionColumn: true,
+      width: "200px",
+      render: (_, row) => (
+        <div style={{ display: "flex", gap: "8px" }}>
+          <>
+            <Tooltip
+              title={
+                row.email === adminEmail
+                  ? "Admin user cannot be edited"
+                  : "Edit User"
+              }
+            >
+              <span>
+                <IconButton
+                  size="small"
+                  onClick={(e) => handleEdit(e, row)}
+                  disabled={row.email === adminEmail}
+                >
+                  <Edit />
+                </IconButton>
+              </span>
+            </Tooltip>
+
+            <Tooltip
+              title={
+                row.email === adminEmail
+                  ? "Admin user cannot be deleted"
+                  : "Delete User"
+              }
+            >
+              <span>
+                <IconButton
+                  size="small"
+                  color="error"
+                  onClick={(e) => handleDelete(e, row)}
+                  disabled={row.email === adminEmail}
+                >
+                  <Delete />
+                </IconButton>
+              </span>
+            </Tooltip>
+          </>
+        </div>
+      ),
+    },
+  ];
 
   return (
     <Box
       sx={{
-        marginLeft: "14px",
         bgcolor: "whitesmoke",
-        overflow: "hidden",
-        height: "calc(100vh - 48px)",
         padding: "15px",
       }}
     >
-      <Paper
+      <Box
         elevation={24}
         sx={{
-          width: "100%",
           overflow: "hidden",
+         padding: "10px", 
           borderRadius: "20px",
           animation: "slideInFromLeft 0.3s ease-in-out forwards",
+          opacity: 0, // Start with opacity 0
+          transform: "translateX(-50px)", // Start from left
+          "@keyframes slideInFromLeft": {
+            "0%": { opacity: 0, transform: "translateX(-50px)" },
+            "100%": { opacity: 1, transform: "translateX(0)" },
+          },
+        }}
+      >
+        <div style={{ overflowX: "auto" }}>
+          <PolymorphicTable
+            data={rowsData} // new state for rows
+            columns={userColumns} //  define your columns config separately
+            rowKey="id"
+            showGlobalSearch
+            showColumnToggles
+            showFilters
+            showPagination
+            selectable
+            stickyHeader
+            enableExport
+            tableHeight="85vh"
+            tableWidth="93vw"
+            // extra props you can wire with your new logic:
+            page={page}
+            rowsPerPage={rowsPerPage}
+            totalCount={totalCount}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            selectedRowKeys={selected}
+            onRowSelect={(ids) => setSelected(ids)}
+            renderTableFooterRight={() => (
+              <Tooltip title="Add New User">
+                <IconButton
+                  sx={{
+                    bgcolor: "orange", // Solid orange background color
+                    color: "white",
+                    boxShadow:
+                      "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.6)", // Default shadow
+                    "&:hover": {
+                      backgroundColor: "orange", // Keep the background color on hover
+                      animation: "glowBorder 1.5s ease-in-out infinite", // Apply glowing animation on hover
+                    },
+                    "@keyframes glowBorder": {
+                      "0%": {
+                        boxShadow: "0 0 0px 2px rgba(251, 68, 36, 0.5)", // Start with soft glow
+                        borderColor: "transparent", // Initial transparent border
+                      },
+                      "50%": {
+                        boxShadow: "0 0 20px 5px rgba(251, 68, 36, 0.8)", // Stronger glow
+                        borderColor: "rgb(251, 68, 36)", // Glowing orange border
+                      },
+                      "100%": {
+                        boxShadow: "0 0 0px 2px rgba(251, 68, 36, 0.5)", // Glow fades out
+                        borderColor: "transparent", // Reset to transparent
+                      },
+                    },
+                  }}
+                  onClick={handleCreateUser}
+                >
+                  <Add />
+                </IconButton>
+              </Tooltip>
+            )}
+          />
+        </div>
+      </Box>
+      {/* all dialog box here  */}
+      <Dialog
+        open={createUser}
+        onClose={() => setCreateUser(false)}
+        fullWidth
+        keepMounted
+        TransitionComponent={Transition}
+        aria-describedby="alert-dialog-slide-description"
+        maxWidth="md"
+        sx={{
+          animation: "slideInFromLeft 0.2s ease-in-out forwards",
           opacity: 0, // Start with opacity 0
           transform: "translateX(-50px)", // Start from left
           "@keyframes slideInFromLeft": {
@@ -1036,1156 +1376,388 @@ export default function UserTable() {
             },
           },
         }}
-        className="PaperUI"
       >
-        <TableContainer sx={{ maxHeight: "83vh", height: "80vh" }}>
-          <Box
-            display="flex"
-            alignItems="center"
-            gap={2}
-            sx={{ px: 2, mb: 2, py: 1 }}
-          >
-            <FormControl
-              size="small"
-              sx={{
-                minWidth: 160,
-                height: 30,
-                "& .MuiInputBase-root": {
-                  height: 30,
-                  fontSize: "0.8rem",
-                },
-              }}
-            >
-              <InputLabel>Filter By</InputLabel>
-              <Select
-                value={searchColumn}
-                onChange={(e) => setSearchColumn(e.target.value)}
-                label="Filter By"
-              >
-                <MenuItem value="name">Name</MenuItem>
-                <MenuItem value="email">Email</MenuItem>
-                <MenuItem value="department">Department</MenuItem>
-                {/* <MenuItem value="id">User ID</MenuItem> */}
-                <MenuItem value="role">Role</MenuItem> {/* ✅ Added */}
-              </Select>
-            </FormControl>
+        <CreateUser
+          open={createUser} // 👈 Add this line
+          handleClose={() => setCreateUser(false)}
+          onUserCreated={(page, newUserEmails) => {
+            refetchUsers(page, newUserEmails);
+          }}
+          showSnackbar={(message, severity = "success") => {
+            setSnackbarMessage(message);
+            setSnackbarSeverity(severity);
+            setSnackbarOpen(true);
+          }}
+          allUsers={rowsData} // <-- pass all users here
+        />
+      </Dialog>
 
-            <TextField
-              size="small"
-              placeholder="Search"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              sx={{
-                width: 250,
-                height: 30,
-                "& .MuiInputBase-root": {
-                  height: 30,
-                  fontSize: "0.8rem",
-                },
-              }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon color="action" fontSize="small" />
-                  </InputAdornment>
-                ),
-              }}
-            />
+      <Dialog open={deleteUser} onClose={() => setDeleteUser(false)}>
+        <DeleteUser
+          handleClose={() => {
+            setDeleteUser(false);
+            setSelected([]); //  Clear selected IDs
+            setRowData([]); //  Clear selected row data
+            refetchUsers(); //  Then refresh the table
+          }}
+          rowId={selected}
+        />
+      </Dialog>
+      <Dialog
+        open={selectAllData}
+        onClose={() => setSelectAllData(false)}
+        fullWidth
+      >
+        <DialogTitle sx={{ fontWeight: "13px", padding: "3px 7px" }}>
+          Select Users
+        </DialogTitle>
 
-            <Tooltip title="Filter by Status">
-              <IconButton onClick={(e) => setFilterAnchor(e.currentTarget)}>
-                <FilterListIcon />
-              </IconButton>
-            </Tooltip>
-
-            <Tooltip title="Show/Hide Columns">
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={(e) => setAnchorEl(e.currentTarget)}
-                sx={{ textTransform: "none", fontWeight: 500 }}
-              >
-                Columns
-              </Button>
-            </Tooltip>
-
-            <Menu
-              anchorEl={anchorEl}
-              open={Boolean(anchorEl)}
-              onClose={() => setAnchorEl(null)}
-              PaperProps={{
-                style: {
-                  maxHeight: 320,
-                  width: "200px",
-                },
-              }}
-            >
-              {allColumns.map((col) => (
-                <MenuItem key={col.id}>
-                  <Checkbox
-                    checked={visibleColumns[col.id]}
-                    onChange={() =>
-                      setVisibleColumns((prev) => ({
-                        ...prev,
-                        [col.id]: !prev[col.id],
-                      }))
-                    }
-                  />
-                  {col.label}
-                </MenuItem>
-              ))}
-            </Menu>
-
-            <Button
-              variant="outlined"
-              color="error"
-              onClick={() => setSearchQuery("")}
-              disabled={!searchQuery.trim()} // ✅ disable if input is empty or just spaces
-              sx={{
-                height: 30,
-                padding: "0 12px",
-                fontSize: "0.75rem",
-                minWidth: 80,
-                whiteSpace: "nowrap",
-              }}
-            >
-              ✖ CLEAR
-            </Button>
-          </Box>
-
-          <Menu
-            anchorEl={filterAnchor}
-            open={Boolean(filterAnchor)}
-            onClose={() => setFilterAnchor(null)}
-          >
-            <MenuItem
-              selected={statusFilter === ""}
-              onClick={() => {
-                setStatusFilter("");
-                setFilterAnchor(null);
-              }}
-            >
-              All
-            </MenuItem>
-            <MenuItem
-              selected={statusFilter === "Active"}
-              onClick={() => {
-                setStatusFilter("Active");
-                setFilterAnchor(null);
-              }}
-            >
-              Active
-            </MenuItem>
-            <MenuItem
-              selected={statusFilter === "Inactive"}
-              onClick={() => {
-                setStatusFilter("Inactive");
-                setFilterAnchor(null);
-              }}
-            >
-              Inactive
-            </MenuItem>
-            <MenuItem
-              selected={statusFilter === "Pending"}
-              onClick={() => {
-                setStatusFilter("Pending");
-                setFilterAnchor(null);
-              }}
-            >
-              Pending
-            </MenuItem>
-          </Menu>
-
-          <Table
-            sx={{
-              "& .MuiTableCell-root": { padding: "8px 16px" },
-              "& .MuiTableCell-head": {
-                fontWeight: "bold",
-                backgroundColor: "#f5f5f5",
-              },
-            }}
-          >
-            <TableHead className={styles.tableHeader}>
-              <TableRow>
-                <TableCell padding="checkbox">
-                  <Checkbox
-                    sx={{ padding: "1px !important" }}
-                    checked={selected.length === rowsData.length}
-                    indeterminate={
-                      selected.length > 0 && selected.length < rowsData.length
-                    }
-                    onChange={handleSelectAllClick}
-                  />
-                </TableCell>
-
-                {visibleColumns.id && (
-                  <TableCell
-                    align="left"
-                    sortDirection={orderBy === "id" ? order : false}
-                  >
-                    <TableSortLabel
-                      active={orderBy === "id"}
-                      direction={orderBy === "id" ? order : "asc"}
-                      onClick={() => handleRequestSort("id")}
-                    >
-                      User ID
-                    </TableSortLabel>
-                  </TableCell>
-                )}
-
-                {visibleColumns.name && (
-                  <TableCell
-                    align="left"
-                    sortDirection={orderBy === "name" ? order : false}
-                  >
-                    <TableSortLabel
-                      active={orderBy === "name"}
-                      direction={orderBy === "name" ? order : "asc"}
-                      onClick={() => handleRequestSort("name")}
-                    >
-                      Name
-                    </TableSortLabel>
-                  </TableCell>
-                )}
-
-                {visibleColumns.department && (
-                  <TableCell
-                    align="left"
-                    sortDirection={orderBy === "department" ? order : false}
-                  >
-                    <TableSortLabel
-                      active={orderBy === "department"}
-                      direction={orderBy === "department" ? order : "asc"}
-                      onClick={() => handleRequestSort("department")}
-                    >
-                      Department
-                    </TableSortLabel>
-                  </TableCell>
-                )}
-
-                {visibleColumns.role && (
-                  <TableCell
-                    align="left"
-                    sortDirection={orderBy === "role" ? order : false}
-                  >
-                    <TableSortLabel
-                      active={orderBy === "role"}
-                      direction={orderBy === "role" ? order : "asc"}
-                      onClick={() => handleRequestSort("role")}
-                    >
-                      Role
-                    </TableSortLabel>
-                  </TableCell>
-                )}
-
-                {visibleColumns.email && (
-                  <TableCell
-                    align="left"
-                    sortDirection={orderBy === "email" ? order : false}
-                  >
-                    <TableSortLabel
-                      active={orderBy === "email"}
-                      direction={orderBy === "email" ? order : "asc"}
-                      onClick={() => handleRequestSort("email")}
-                    >
-                      Email
-                    </TableSortLabel>
-                  </TableCell>
-                )}
-                {visibleColumns.region && (
-                  <TableCell
-                    align="left"
-                    sortDirection={orderBy === "region" ? order : false}
-                  >
-                    <TableSortLabel
-                      active={orderBy === "region"}
-                      direction={orderBy === "region" ? order : "asc"}
-                      onClick={() => handleRequestSort("region")}
-                    >
-                      Region
-                    </TableSortLabel>
-                  </TableCell>
-                )}
-
-                {visibleColumns.storageUsed && (
-                  <TableCell
-                    align="left"
-                    sortDirection={orderBy === "storageUsed" ? order : false}
-                  >
-                    <TableSortLabel
-                      active={orderBy === "storageUsed"}
-                      direction={orderBy === "storageUsed" ? order : "asc"}
-                      onClick={() => handleRequestSort("storageUsed")}
-                    >
-                      Storage
-                    </TableSortLabel>
-                  </TableCell>
-                )}
-
-                {visibleColumns.manageStorage && (
-                  <TableCell align="left">Manage Storage</TableCell>
-                )}
-
-                {visibleColumns.activeLicense && (
-                  <TableCell align="center">Status</TableCell>
-                )}
-
-                {visibleColumns.actions && (
-                  <TableCell align="center">Actions</TableCell>
-                )}
-              </TableRow>
-            </TableHead>
-
-            <TableBody>
-              {sortedRows.map((row) => {
-                const isItemSelected = isSelected(row.id);
-
-                return (
-                  <TableRow
-                    key={row.id}
-                    hover
-                    selected={isItemSelected}
-                    onMouseEnter={() => setHoveredRow(row.id)}
-                    onMouseLeave={() => setHoveredRow(null)}
-                  >
-                    <TableCell padding="checkbox">
-                      <Checkbox
-                        sx={{ padding: "1px !important" }}
-                        checked={isItemSelected}
-                        onChange={() => handleClick(row)}
-                        disabled={row.email === adminEmail}
-                      />
-                    </TableCell>
-
-                    {visibleColumns.id && (
-                      <TableCell align="left">{row.id}</TableCell>
-                    )}
-
-                    {visibleColumns.name && (
-                      <TableCell align="left">
-                        {row.name}
-                        {row.email === adminEmail && " (admin)"}
-                      </TableCell>
-                    )}
-
-                    {visibleColumns.department && (
-                      <TableCell align="left">
-                        {(() => {
-                          const selectedRoleId = userRoleMap[row.id];
-                          const selectedRole = row.roles?.find(
-                            (role) => role.id === selectedRoleId
-                          );
-                          const deptName =
-                            selectedRole?.department?.deptName ||
-                            row.roles?.[0]?.department?.deptName;
-                          return deptName || "N/A";
-                        })()}
-                      </TableCell>
-                    )}
-
-                    {visibleColumns.role && (
-                      <TableCell align="left">
-                        {(() => {
-                          const selectedRoleId = userRoleMap[row.id];
-                          const selectedRole = row.roles?.find(
-                            (role) => role.id === selectedRoleId
-                          );
-                          const deptId = selectedRole?.department?.id;
-
-                          if (!deptId) return row.roles?.[0]?.roleName || "N/A";
-
-                          const rolesInSameDept = row.roles.filter(
-                            (role) => role.department?.id === deptId
-                          );
-                          const uniqueRoleNames = [
-                            ...new Set(
-                              rolesInSameDept.map((role) => role.roleName)
-                            ),
-                          ];
-
-                          return uniqueRoleNames.length > 0
-                            ? uniqueRoleNames.join(", ")
-                            : "N/A";
-                        })()}
-                      </TableCell>
-                    )}
-
-                    {visibleColumns.email && (
-                      <TableCell align="left">{row.email}</TableCell>
-                    )}
-                    {visibleColumns.region && (
-                      <TableCell align="left">{row.region || "N/A"}</TableCell>
-                    )}
-
-                    {visibleColumns.storageUsed && (
-                      <TableCell align="left">
-                        {row.permissions?.displayStorage || "N/A"}
-                      </TableCell>
-                    )}
-
-                    {visibleColumns.manageStorage && (
-                      <TableCell align="left">
-                        <FormControl sx={{ m: 0, minWidth: 120 }} size="small">
-                          <Select
-                            id={`manage-storage-${row.id}`}
-                            value={
-                              row.permissions?.allowedStorageInBytesDisplay ||
-                              ""
-                            }
-                            onChange={async (e) => {
-                              const newDisplayValue = e.target.value;
-                              const newByteValue = toBytes(newDisplayValue);
-
-                              const updated = rowsData.map((r) =>
-                                r.id === row.id
-                                  ? {
-                                      ...r,
-                                      permissions: {
-                                        ...r.permissions,
-                                        allowedStorageInBytesDisplay:
-                                          newDisplayValue,
-                                        allowedStorageInBytes: newByteValue,
-                                      },
-                                    }
-                                  : r
-                              );
-
-                              setRowsData(updated);
-
-                              if (row.active) {
-                                const updatedRows = rowsData.map((u) =>
-                                  u.id === row.id
-                                    ? {
-                                        ...u,
-                                        permissions: {
-                                          ...u.permissions,
-                                          allowedStorageInBytesDisplay:
-                                            newDisplayValue,
-                                          allowedStorageInBytes: newByteValue,
-                                        },
-                                      }
-                                    : u
-                                );
-
-                                try {
-                                  await toggleUserStatusByUsername(
-                                    updatedRows,
-                                    page
-                                  );
-                                  setRowsData(updatedRows);
-                                  toast.success(
-                                    `Storage updated for ${row.name}`
-                                  );
-                                } catch (error) {
-                                  toast.error(
-                                    `Failed to update storage for ${row.name}`
-                                  );
-                                }
-                              }
-                            }}
-                            displayEmpty
-                            sx={{
-                              width: "100px",
-                              height: "30px",
-                              borderRadius: "28px",
-                            }}
-                          >
-                            {(() => {
-                              const predefinedOptions = [
-                                "1GB",
-                                "3GB",
-                                "5GB",
-                                "10GB",
-                                "20GB",
-                                "40GB",
-                                "60GB",
-                              ];
-                              const currentValue =
-                                row.permissions?.allowedStorageInBytesDisplay;
-                              const allOptions = predefinedOptions.includes(
-                                currentValue
-                              )
-                                ? predefinedOptions
-                                : [currentValue, ...predefinedOptions];
-                              return allOptions.map((opt) => (
-                                <MenuItem key={opt} value={opt}>
-                                  {opt}
-                                </MenuItem>
-                              ));
-                            })()}
-                          </Select>
-                        </FormControl>
-                      </TableCell>
-                    )}
-
-                    {visibleColumns.activeLicense && (
-                      <TableCell align="center">
-                        <Tooltip
-                          title={
-                            row.active && !row.enabled
-                              ? "Pending (Email Not Verified)"
-                              : !row.active
-                              ? "Inactive (Provide Storage"
-                              : "Active"
-                          }
-                        >
-                          <span>
-                            <FormControlLabel
-                              control={
-                                <IOSSwitch
-                                  checked={row.active && row.enabled}
-                                  onChange={() => handleStatusToggle(row.name)}
-                                  disabled={
-                                    (row.active && !row.enabled) ||
-                                    (!row.active &&
-                                      (!row.permissions
-                                        ?.allowedStorageInBytesDisplay ||
-                                        row.permissions
-                                          ?.allowedStorageInBytesDisplay ===
-                                          "0 KB"))
-                                  }
-                                />
-                              }
-                            />
-                          </span>
-                        </Tooltip>
-                      </TableCell>
-                    )}
-
-                    {visibleColumns.actions && (
-                      <TableCell align="center" sx={{ width: "200px" }}>
-                        <>
-                          <Tooltip
-                            title={
-                              row.email === adminEmail
-                                ? "Admin user cannot be edited"
-                                : "Edit User"
-                            }
-                          >
-                            <span>
-                              <IconButton
-                                size="small"
-                                onClick={(e) => handleEdit(e, row)}
-                                disabled={row.email === adminEmail}
-                              >
-                                <Edit />
-                              </IconButton>
-                            </span>
-                          </Tooltip>
-
-                          <Tooltip
-                            title={
-                              row.email === adminEmail
-                                ? "Admin user cannot be deleted"
-                                : "Delete User"
-                            }
-                          >
-                            <span>
-                              <IconButton
-                                size="small"
-                                color="error"
-                                onClick={(e) => handleDelete(e, row)}
-                                disabled={row.email === adminEmail}
-                              >
-                                <Delete />
-                              </IconButton>
-                            </span>
-                          </Tooltip>
-                        </>
-                      </TableCell>
-                    )}
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </TableContainer>
-        <Divider />
-        <div style={{ display: "flex", justifyContent: "space-between" }}>
-          <TablePagination
-            // rowsPerPageOptions={[10]}
-            rowsPerPageOptions={[10, 20, 30, 50, 100]}
-            component="div"
-            count={totalCount}
-            rowsPerPage={rowsPerPage}
-            page={page}
-            onPageChange={handleChangePage}
-            onRowsPerPageChange={handleChangeRowsPerPage}
-          />
-          <div
-            style={{
-              gap: "5px",
-              marginRight: "7px",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            {selected.length >= 1 && (
-              <Tooltip title="Activate All">
-                <IconButton
-                  sx={{
-                    bgcolor: "#4caf50", // ✅ Professional green background
-                    color: "white",
-                    boxShadow:
-                      "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.6)",
-                    "&:hover": {
-                      backgroundColor: "#43a047", // darker green on hover
-                      animation: "glowBorderActivate 1.5s ease-in-out infinite",
-                    },
-                    "@keyframes glowBorderActivate": {
-                      "0%": {
-                        boxShadow: "0 0 0px 2px #4caf50",
-                        borderColor: "transparent",
-                      },
-                      "50%": {
-                        boxShadow: "0 0 20px 5px #4caf50",
-                        borderColor: "#4caf50",
-                      },
-                      "100%": {
-                        boxShadow: "0 0 0px 2px #4caf50",
-                        borderColor: "transparent",
-                      },
-                    },
-                  }}
-                  onClick={handleActivateAll} // ✅ Your existing function
-                >
-                  <CheckCircle />
-                </IconButton>
-              </Tooltip>
-            )}
-
-            {selected.length >= 1 && (
-              <Tooltip title="Delete">
-                <IconButton
-                  sx={{
-                    bgcolor: "#d32f2f", // Solid orange background color
-                    color: "white",
-                    boxShadow:
-                      "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.6)", // Default shadow
-                    "&:hover": {
-                      backgroundColor: "#d32f2f", // Keep the background color on hover
-                      animation: "glowBorderDelete 1.5s ease-in-out infinite", // Apply glowing animation on hover
-                    },
-                    "@keyframes glowBorderDelete": {
-                      "0%": {
-                        boxShadow: "0 0 0px 2px #d32f2f", // Start with soft glow
-                        borderColor: "transparent", // Initial transparent border
-                      },
-                      "50%": {
-                        boxShadow: "0 0 20px 5px #d32f2f",
-                        borderColor: "#d32f2f", // Glowing orange border
-                      },
-                      "100%": {
-                        boxShadow: "0 0 0px 2px #d32f2f", // Glow fades out
-                        borderColor: "transparent", // Reset to transparent
-                      },
-                    },
-                  }}
-                  onClick={handleDelete}
-                >
-                  <Delete />
-                </IconButton>
-              </Tooltip>
-            )}
-
-            <div
-              style={{
-                gap: "5px",
-                marginRight: "7px",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              {selected.length > 0 && (
-                <Typography
-                  variant="subtitle2"
-                  sx={{
-                    fontWeight: "bold",
-                    color: "#333",
-                    marginRight: "10px",
-                  }}
-                >
-                  Total Selected: {selected.length} User
-                  {selected.length > 1 ? "s" : ""}
-                </Typography>
-              )}
-            </div>
-
-            {selected.length >= 1 && (
-              <Tooltip title="Download Selected">
-                <IconButton
-                  variant="contained"
-                  sx={{
-                    backgroundColor: "rgba(25,118,210,1)",
-                    color: "white",
-                    boxShadow:
-                      "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.6)", // Default shadow
-                    "&:hover": {
-                      backgroundColor: "rgba(25,118,210,0.8)", // Keep the background color on hover
-                      animation: "glowBorderDownload 1.5s ease-in-out infinite", // Apply glowing animation on hover
-                    },
-                    "@keyframes glowBorderDownload": {
-                      "0%": {
-                        boxShadow: "0 0 0px 2px rgba(25,118,210,0.8)", // Start with soft glow
-                        borderColor: "transparent", // Initial transparent border
-                      },
-                      "50%": {
-                        boxShadow: "0 0 20px 5px rgba(25,118,210,0.8)",
-                        borderColor: "rgba(25,118,210,0.8)", // Glowing orange border
-                      },
-                      "100%": {
-                        boxShadow: "0 0 0px 2px rgba(25,118,210,0.8)", // Glow fades out
-                        borderColor: "transparent", // Reset to transparent
-                      },
-                    },
-                  }}
-                  onClick={handleBulkDownload}
-                >
-                  <FileDownload />
-                </IconButton>
-              </Tooltip>
-            )}
-            <Tooltip title="Add New User">
-              <IconButton
-                sx={{
-                  bgcolor: "orange", // Solid orange background color
-                  color: "white",
-                  boxShadow:
-                    "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.6)", // Default shadow
-                  "&:hover": {
-                    backgroundColor: "orange", // Keep the background color on hover
-                    animation: "glowBorder 1.5s ease-in-out infinite", // Apply glowing animation on hover
-                  },
-                  "@keyframes glowBorder": {
-                    "0%": {
-                      boxShadow: "0 0 0px 2px rgba(251, 68, 36, 0.5)", // Start with soft glow
-                      borderColor: "transparent", // Initial transparent border
-                    },
-                    "50%": {
-                      boxShadow: "0 0 20px 5px rgba(251, 68, 36, 0.8)", // Stronger glow
-                      borderColor: "rgb(251, 68, 36)", // Glowing orange border
-                    },
-                    "100%": {
-                      boxShadow: "0 0 0px 2px rgba(251, 68, 36, 0.5)", // Glow fades out
-                      borderColor: "transparent", // Reset to transparent
-                    },
-                  },
-                }}
-                onClick={handleCreateUser}
-              >
-                <Add />
-              </IconButton>
-            </Tooltip>
-          </div>
-        </div>
-
-        <Dialog open={deleteUser} onClose={() => setDeleteUser(false)}>
-          <DeleteUser
-            handleClose={() => {
-              setDeleteUser(false);
-              setSelected([]); // ✅ Clear selected IDs
-              setRowData([]); // ✅ Clear selected row data
-              refetchUsers(); // ✅ Then refresh the table
-            }}
-            rowId={selected}
-          />
-        </Dialog>
-
-        <Dialog
-          open={selectAllData}
-          onClose={() => setSelectAllData(false)}
-          fullWidth
+        <DialogContent dividers>
+          <Typography>
+            Do you want to select all users or just the current page
+          </Typography>
+        </DialogContent>
+        <DialogActions
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
         >
-          <DialogTitle sx={{ fontWeight: "13px", padding: "3px 7px" }}>
-            Select Users
-          </DialogTitle>
+          <Button
+            style={{
+              backgroundColor: "#9e9e9e",
+              color: "white",
 
-          <DialogContent dividers>
-            <Typography>
-              Do you want to select all users or just the current page
-            </Typography>
-          </DialogContent>
-          <DialogActions
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
+              border: "none",
+              cursor: "pointer",
+              borderRadius: "4px",
+            }}
+            onClick={() => {
+              setSelected([]); // Deselect all rows
+              setSelectAllData(false); // Close the dialog
             }}
           >
+            Cancel
+          </Button>
+          <div style={{ gap: "4px" }}>
             <Button
               style={{
-                backgroundColor: "#9e9e9e",
+                backgroundColor: "#1976d2",
                 color: "white",
-
+                marginRight: "4px",
                 border: "none",
                 cursor: "pointer",
                 borderRadius: "4px",
               }}
               onClick={() => {
-                setSelected([]); // Deselect all rows
-                setSelectAllData(false); // Close the dialog
+                const filteredPageRows = rowsData.filter(
+                  (n) => n.email !== adminEmail
+                );
+                const currentPageIds = filteredPageRows.map((n) => n.id);
+
+                setSelected(currentPageIds); // Select only non-admin users
+                setRowData(filteredPageRows); // Store current page data without admin
+                setSelectAllData(false); // Mark selectAllData as false
               }}
             >
-              Cancel
+              Select Current Page ({rowsData.length} rows)
             </Button>
-            <div style={{ gap: "4px" }}>
-              <Button
-                style={{
-                  backgroundColor: "#1976d2",
-                  color: "white",
-                  marginRight: "4px",
-                  border: "none",
-                  cursor: "pointer",
-                  borderRadius: "4px",
-                }}
-                onClick={() => {
-                  const filteredPageRows = rowsData.filter(
-                    (n) => n.email !== adminEmail
-                  );
-                  const currentPageIds = filteredPageRows.map((n) => n.id);
 
-                  setSelected(currentPageIds); // Select only non-admin users
-                  setRowData(filteredPageRows); // Store current page data without admin
-                  setSelectAllData(false); // Mark selectAllData as false
-                }}
-              >
-                Select Current Page ({rowsData.length} rows)
-              </Button>
+            <Button
+              style={{
+                backgroundColor: "#d32f2f",
+                color: "white",
+                border: "none",
+                cursor: "pointer",
+                borderRadius: "4px",
+              }}
+              onClick={async () => {
+                try {
+                  setSelectAllData(false); // Close dialog
 
-              <Button
-                style={{
-                  backgroundColor: "#d32f2f",
-                  color: "white",
-                  border: "none",
-                  cursor: "pointer",
-                  borderRadius: "4px",
-                }}
-                onClick={async () => {
-                  try {
-                    setSelectAllData(false); // Close dialog
+                  let allUsers = [];
+                  let page = 0;
+                  let totalPages = 1;
 
-                    let allUsers = [];
-                    let page = 0;
-                    let totalPages = 1;
+                  const firstResponse = await fetchUsers(0);
+                  totalPages = firstResponse.totalPages;
+                  allUsers = [...firstResponse.content];
 
-                    const firstResponse = await fetchUsers(0);
-                    totalPages = firstResponse.totalPages;
-                    allUsers = [...firstResponse.content];
-
-                    const remainingFetches = [];
-                    for (let p = 1; p < totalPages; p++) {
-                      remainingFetches.push(fetchUsers(p));
-                    }
-
-                    const results = await Promise.all(remainingFetches);
-                    results.forEach((res) => {
-                      allUsers.push(...res.content);
-                    });
-
-                    // ✅ Exclude admin user
-                    const nonAdminUsers = allUsers.filter(
-                      (u) => u.email !== adminEmail
-                    );
-
-                    const allIds = nonAdminUsers.map((u) => u.id);
-                    setSelected(allIds);
-                    setRowData(nonAdminUsers); // Store only non-admin users
-                  } catch (error) {
-                    console.error("Failed to fetch all users:", error);
-                    alert("Something went wrong while selecting all users.");
+                  const remainingFetches = [];
+                  for (let p = 1; p < totalPages; p++) {
+                    remainingFetches.push(fetchUsers(p));
                   }
-                }}
-              >
-                Select All Page Users
-              </Button>
-            </div>
-          </DialogActions>
-        </Dialog>
 
-        <Dialog open={migrationDialog} onClose={handleClose} fullWidth>
-          <Migration
-            handleClos={handleClose}
-            rowData={rowData}
-            rows={rowsData}
-            onMigrationComplete={handleMigrationComplete}
-          />
-        </Dialog>
+                  const results = await Promise.all(remainingFetches);
+                  results.forEach((res) => {
+                    allUsers.push(...res.content);
+                  });
 
-        <Dialog
-          open={createUser}
-          onClose={() => setCreateUser(false)}
-          fullWidth
-          keepMounted
-          TransitionComponent={Transition}
-          aria-describedby="alert-dialog-slide-description"
-          maxWidth="md"
+                  // ✅ Exclude admin user
+                  const nonAdminUsers = allUsers.filter(
+                    (u) => u.email !== adminEmail
+                  );
+
+                  const allIds = nonAdminUsers.map((u) => u.id);
+                  setSelected(allIds);
+                  setRowData(nonAdminUsers); // Store only non-admin users
+                } catch (error) {
+                  console.error("Failed to fetch all users:", error);
+                  alert("Something went wrong while selecting all users.");
+                }
+              }}
+            >
+              Select All Page Users
+            </Button>
+          </div>
+        </DialogActions>
+      </Dialog>
+      <Dialog open={migrationDialog} onClose={handleClose} fullWidth>
+        <Migration
+          handleClos={handleClose}
+          rowData={rowData}
+          rows={rowsData}
+          onMigrationComplete={handleMigrationComplete}
+        />
+      </Dialog>
+
+      <Dialog
+        open={editDialogOpen}
+        onClose={() => setEditDialogOpen(false)}
+        maxWidth="sm"
+      >
+        <DialogTitle
           sx={{
-            animation: "slideInFromLeft 0.2s ease-in-out forwards",
-            opacity: 0, // Start with opacity 0
-            transform: "translateX(-50px)", // Start from left
-            "@keyframes slideInFromLeft": {
-              "0%": {
-                opacity: 0,
-                transform: "translateX(-50px)",
-              },
-              "100%": {
-                opacity: 1,
-                transform: "translateX(0)",
-              },
-            },
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            p: 1,
+            backgroundColor: "primary.main",
           }}
         >
-          <CreateUser
-            open={createUser} // 👈 Add this line
-            handleClose={() => setCreateUser(false)}
-            onUserCreated={(page, newUserEmails) => {
-              refetchUsers(page, newUserEmails);
-            }}
-            showSnackbar={(message, severity = "success") => {
-              setSnackbarMessage(message);
-              setSnackbarSeverity(severity);
-              setSnackbarOpen(true);
-            }}
-            allUsers={rowsData} // <-- pass all users here
-          />
-        </Dialog>
-
-        <Dialog
-          open={editDialogOpen}
-          onClose={() => setEditDialogOpen(false)}
-          maxWidth="sm"
-        >
-          <DialogTitle
+          <Typography
+            variant="h6"
             sx={{
               display: "flex",
-              justifyContent: "space-between",
               alignItems: "center",
-              p: 1,
-              backgroundColor: "primary.main",
+              fontFamily: '"Be Vietnam", sans-serif',
+              color: "#fff",
             }}
           >
-            <Typography
-              variant="h6"
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                fontFamily: '"Be Vietnam", sans-serif',
-                color: "#fff",
-              }}
-            >
-              Edit User
-            </Typography>
+            Edit User
+          </Typography>
 
-            <IconButton
-              onClick={handleCloseDialog} // make sure handleClose closes the dialog
-              size="small"
-              sx={{
-                color: "#fff",
-                width: 32,
-                height: 32,
-                border: "1px solid",
-                borderColor: "#fff",
-                bgcolor: "error.lighter",
-                borderRadius: "50%",
-                position: "relative",
-                "&:hover": {
-                  transform: "rotate(180deg)",
-                },
-                transition: "transform 0.3s ease",
-              }}
-            >
-              <Close
-                sx={{
-                  fontSize: "1rem",
-                  transition: "transform 0.2s ease",
-                }}
-              />
-            </IconButton>
-          </DialogTitle>
-
-          <DialogContent dividers>
-            <Grid container spacing={2}>
-              <Grid item xs={6}>
-                <TextField
-                  size="small"
-                  label="Full Name"
-                  fullWidth
-                  value={editData.name || ""}
-                  onChange={(e) =>
-                    setEditData((prev) => ({ ...prev, name: e.target.value }))
-                  }
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <Tooltip title="Email cannot be edited">
-                  <span>
-                    <TextField
-                      size="small"
-                      label="Email"
-                      fullWidth
-                      value={editData.email || ""}
-                      disabled
-                      sx={{ pointerEvents: "none" }} // ensures tooltip still shows
-                    />
-                  </span>
-                </Tooltip>
-              </Grid>
-              <Grid item xs={6}>
-                {console.log("Selected Department Roles:", selectedDepartment)}
-
-                <Autocomplete
-                  size="small"
-                  options={fullDepartments} // ✅ from state
-                  getOptionLabel={(option) => option.deptName}
-                  value={
-                    fullDepartments.find(
-                      (d) => d.deptName === editData.department
-                    ) || null
-                  }
-                  onChange={(e, value) => {
-                    setEditData((prev) => ({
-                      ...prev,
-                      department: value?.deptName || "",
-                      role: "",
-                    }));
-                    setSelectedDepartment(value || null); // updates role dropdown
-                  }}
-                  renderInput={(params) => (
-                    <TextField {...params} label="Department" fullWidth />
-                  )}
-                />
-              </Grid>
-              <Grid item xs={6}>
-                {console.log(
-                  "Roles in selectedDepartment:",
-                  selectedDepartment?.roles
-                )}
-
-                <Autocomplete
-                  size="small"
-                  options={selectedDepartment?.roles || []}
-                  getOptionLabel={(option) => option.roleName || ""}
-                  value={
-                    selectedDepartment?.roles?.find(
-                      (r) => r.roleName === editData.role
-                    ) || null
-                  }
-                  onChange={(e, value) => {
-                    setEditData((prev) => ({
-                      ...prev,
-                      role: value?.roleName || "",
-                    }));
-                  }}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      label={
-                        selectedDepartment?.roles?.length > 0
-                          ? "Role"
-                          : "No roles available"
-                      }
-                      fullWidth
-                      disabled={selectedDepartment?.roles?.length === 0}
-                    />
-                  )}
-                />
-              </Grid>
-
-              <Grid item xs={6}>
-                <TextField
-                  size="small"
-                  label="Phone Number"
-                  fullWidth
-                  value={editData.phoneNumber || ""}
-                  onChange={(e) => {
-                    const input = e.target.value;
-
-                    // ✅ Allow only digits
-                    if (!/^\d*$/.test(input)) return;
-
-                    // ✅ Restrict to max 10 digits
-                    if (input.length > 10) return;
-
-                    setEditData((prev) => ({
-                      ...prev,
-                      phoneNumber: input,
-                    }));
-                  }}
-                  error={Boolean(
-                    editData.phoneNumber && editData.phoneNumber.length !== 10
-                  )}
-                  helperText={
-                    editData.phoneNumber && editData.phoneNumber.length !== 10
-                      ? "Phone number must be exactly 10 digits"
-                      : ""
-                  }
-                />
-              </Grid>
-
-              <Grid item xs={6}>
-                <TextField
-                  size="small"
-                  label="Reporting Manager"
-                  fullWidth
-                  value={editData.reportingManager || ""}
-                  onChange={(e) =>
-                    setEditData((prev) => ({
-                      ...prev,
-                      reportingManager: e.target.value,
-                    }))
-                  }
-                />
-              </Grid>
-
-              <Grid item xs={6}>
-                <Autocomplete
-                  size="small"
-                  options={regionOptions} // array of strings
-                  value={editData.region || null} // current value
-                  onChange={(e, value) =>
-                    setEditData((prev) => ({ ...prev, region: value || "" }))
-                  }
-                  renderInput={(params) => (
-                    <TextField {...params} label="Region" fullWidth />
-                  )}
-                />
-              </Grid>
-            </Grid>
-          </DialogContent>
-          <DialogActions>
-            <Button
-              onClick={handleSaveChanges}
-              color="secondary"
-              variant="contained"
-              sx={{
-                backgroundColor: "rgb(251, 68, 36)",
-                color: "white",
-                borderRadius: "8px",
-              }}
-            >
-              Save
-            </Button>
-          </DialogActions>
-        </Dialog>
-
-        <Snackbar
-          open={snackbarOpen}
-          autoHideDuration={3000}
-          onClose={() => setSnackbarOpen(false)}
-          anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-        >
-          <Alert
-            onClose={() => setSnackbarOpen(false)}
-            severity={snackbarSeverity}
-            variant="filled"
-            sx={{ width: "100%" }}
+          <IconButton
+            onClick={handleCloseDialog} // make sure handleClose closes the dialog
+            size="small"
+            sx={{
+              color: "#fff",
+              width: 32,
+              height: 32,
+              border: "1px solid",
+              borderColor: "#fff",
+              bgcolor: "error.lighter",
+              borderRadius: "50%",
+              position: "relative",
+              "&:hover": {
+                transform: "rotate(180deg)",
+              },
+              transition: "transform 0.3s ease",
+            }}
           >
-            {snackbarMessage}
-          </Alert>
-        </Snackbar>
-      </Paper>
+            <Close
+              sx={{
+                fontSize: "1rem",
+                transition: "transform 0.2s ease",
+              }}
+            />
+          </IconButton>
+        </DialogTitle>
+
+        <DialogContent dividers>
+          <Grid container spacing={2}>
+            <Grid item xs={6}>
+              <TextField
+                size="small"
+                label="Full Name"
+                fullWidth
+                value={editData.name || ""}
+                onChange={(e) =>
+                  setEditData((prev) => ({ ...prev, name: e.target.value }))
+                }
+              />
+            </Grid>
+            <Grid item xs={6}>
+              <Tooltip title="Email cannot be edited">
+                <span>
+                  <TextField
+                    size="small"
+                    label="Email"
+                    fullWidth
+                    value={editData.email || ""}
+                    disabled
+                    sx={{ pointerEvents: "none" }} // ensures tooltip still shows
+                  />
+                </span>
+              </Tooltip>
+            </Grid>
+            <Grid item xs={6}>
+              {console.log("Selected Department Roles:", selectedDepartment)}
+
+              <Autocomplete
+                size="small"
+                options={fullDepartments} // ✅ from state
+                getOptionLabel={(option) => option.deptName}
+                value={
+                  fullDepartments.find(
+                    (d) => d.deptName === editData.department
+                  ) || null
+                }
+                onChange={(e, value) => {
+                  setEditData((prev) => ({
+                    ...prev,
+                    department: value?.deptName || "",
+                    role: "",
+                  }));
+                  setSelectedDepartment(value || null); // updates role dropdown
+                }}
+                renderInput={(params) => (
+                  <TextField {...params} label="Department" fullWidth />
+                )}
+              />
+            </Grid>
+            <Grid item xs={6}>
+              {console.log(
+                "Roles in selectedDepartment:",
+                selectedDepartment?.roles
+              )}
+
+              <Autocomplete
+                size="small"
+                options={selectedDepartment?.roles || []}
+                getOptionLabel={(option) => option.roleName || ""}
+                value={
+                  selectedDepartment?.roles?.find(
+                    (r) => r.roleName === editData.role
+                  ) || null
+                }
+                onChange={(e, value) => {
+                  setEditData((prev) => ({
+                    ...prev,
+                    role: value?.roleName || "",
+                  }));
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label={
+                      selectedDepartment?.roles?.length > 0
+                        ? "Role"
+                        : "No roles available"
+                    }
+                    fullWidth
+                    disabled={selectedDepartment?.roles?.length === 0}
+                  />
+                )}
+              />
+            </Grid>
+
+            <Grid item xs={6}>
+              <TextField
+                size="small"
+                label="Phone Number"
+                fullWidth
+                value={editData.phoneNumber || ""}
+                onChange={(e) => {
+                  const input = e.target.value;
+
+                  // ✅ Allow only digits
+                  if (!/^\d*$/.test(input)) return;
+
+                  // ✅ Restrict to max 10 digits
+                  if (input.length > 10) return;
+
+                  setEditData((prev) => ({
+                    ...prev,
+                    phoneNumber: input,
+                  }));
+                }}
+                error={Boolean(
+                  editData.phoneNumber && editData.phoneNumber.length !== 10
+                )}
+                helperText={
+                  editData.phoneNumber && editData.phoneNumber.length !== 10
+                    ? "Phone number must be exactly 10 digits"
+                    : ""
+                }
+              />
+            </Grid>
+
+            <Grid item xs={6}>
+              <TextField
+                size="small"
+                label="Reporting Manager"
+                fullWidth
+                value={editData.reportingManager || ""}
+                onChange={(e) =>
+                  setEditData((prev) => ({
+                    ...prev,
+                    reportingManager: e.target.value,
+                  }))
+                }
+              />
+            </Grid>
+
+            <Grid item xs={6}>
+              <Autocomplete
+                size="small"
+                options={regionOptions} // array of strings
+                value={editData.region || null} // current value
+                onChange={(e, value) =>
+                  setEditData((prev) => ({ ...prev, region: value || "" }))
+                }
+                renderInput={(params) => (
+                  <TextField {...params} label="Region" fullWidth />
+                )}
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={handleSaveChanges}
+            color="secondary"
+            variant="contained"
+            sx={{
+              backgroundColor: "rgb(251, 68, 36)",
+              color: "white",
+              borderRadius: "8px",
+            }}
+          >
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+{/* select all logic here  */}
+
+      {/* snack bar here  */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={3000}
+        onClose={() => setSnackbarOpen(false)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setSnackbarOpen(false)}
+          severity={snackbarSeverity}
+          variant="filled"
+          sx={{ width: "100%" }}
+        >
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }
