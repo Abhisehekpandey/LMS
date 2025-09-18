@@ -170,7 +170,17 @@ const Login = () => {
         severity: "success",
       });
 
-      setTimeout(() => navigate("/angelbot"), 1000);
+      // setTimeout(() => navigate("/angelbot"), 1000);
+      setTimeout(() => {
+        const deptAdmin = sessionStorage.getItem("deptAdmin") === "true";
+        const superAdmin = sessionStorage.getItem("superAdmin") === "true";
+
+        if (deptAdmin && !superAdmin) {
+          navigate("/department");
+        } else {
+          navigate("/angelbot");
+        }
+      }, 1000);
     } catch (error) {
       setSnackbar({
         open: true,

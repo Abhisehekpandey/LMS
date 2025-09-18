@@ -204,12 +204,16 @@ const allColumns = [
   { id: "displayName", label: "Display Name" },
   { id: "owner", label: "Owner" },
   { id: "storage", label: "Storage" },
-  { id: "storage", label: "Manage Storage" },
+  // { id: "storage", label: "Manage Storage" },
+  { id: "manageStorage", label: "Manage Storage" }, // ✅ unique id
   { id: "users", label: "No of Users" },
   { id: "actions", label: "Actions" },
 ];
 
 function Department({ departments, setDepartments, onThemeToggle }) {
+  const deptAdmin = sessionStorage.getItem("deptAdmin") === "true";
+  const superAdmin = sessionStorage.getItem("superAdmin") === "true";
+
   const [openPopper, setOpenPopper] = useState(false);
   const [selectedDeptUsers, setSelectedDeptUsers] = useState([]);
   const anchorRef = useRef(null);
@@ -334,7 +338,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
   const getStorageOptions = (deptAllowedValue) => {
     const baseOptions = [
-      "0 GB",
+      "1 GB",
+      "2 GB",
       "25 GB",
       "50 GB",
       "75 GB",
@@ -607,16 +612,41 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                         <TableCell>
                           <IconButton
                             size="small"
-                            onClick={() => onEditUser(user)}
-                          >
-                            <EditIcon
-                              fontSize="small"
-                              sx={{ color: "primary.main" }}
-                            />
-                          </IconButton>
-                          <IconButton
-                            size="small"
-                            onClick={() => onDeleteUser(user)}
+                            onClick={async () => {
+                              try {
+                                const response = await axios.delete(
+                                  `${window.__ENV__.REACT_APP_ROUTE}/tenants/department/deleteExistingUser/${departmentId}/${user.id}`,
+                                  {
+                                    headers: {
+                                      Authorization: `Bearer ${sessionStorage.getItem(
+                                        "authToken"
+                                      )}`,
+                                      username:
+                                        sessionStorage.getItem("adminEmail"),
+                                    },
+                                  }
+                                );
+
+                                if (response.status === 200) {
+                                  setSnackbar({
+                                    open: true,
+                                    message: `User "${user.name}" removed from department successfully`,
+                                    severity: "success",
+                                  });
+
+                                  // ✅ refresh department list after deletion
+                                  if (fetchDepartments)
+                                    await fetchDepartments();
+                                }
+                              } catch (error) {
+                                console.error("Failed to delete user:", error);
+                                setSnackbar({
+                                  open: true,
+                                  message: `Failed to remove user "${user.name}"`,
+                                  severity: "error",
+                                });
+                              }
+                            }}
                           >
                             <DeleteIcon
                               fontSize="small"
@@ -2168,7 +2198,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                       </TableCell>
                     )}
 
-                    {visibleColumns.actions && (
+                    {/* {visibleColumns.actions && (
                       <TableCell sx={{ textAlign: "center" }}>
                         <Box
                           sx={{
@@ -2208,6 +2238,71 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                           >
                             <DeleteIcon fontSize="small" />
                           </IconButton>
+                        </Box>
+                      </TableCell>
+                    )} */}
+
+                    {visibleColumns.actions && (
+                      <TableCell sx={{ textAlign: "center" }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            justifyContent: "center",
+                            gap: 0.5,
+                          }}
+                        >
+                          {deptAdmin && !superAdmin ? (
+                            <>
+                              <Tooltip title="Only Super Admin can perform action">
+                                <span>
+                                  <IconButton size="small" disabled>
+                                    <EditIcon fontSize="small" />
+                                  </IconButton>
+                                </span>
+                              </Tooltip>
+                              <Tooltip title="Only Super Admin can perform action">
+                                <span>
+                                  <IconButton size="small" disabled>
+                                    <DeleteIcon fontSize="small" />
+                                  </IconButton>
+                                </span>
+                              </Tooltip>
+                            </>
+                          ) : (
+                            <>
+                              <IconButton
+                                size="small"
+                                onClick={() => handleEditDepartment(dept)}
+                                sx={{
+                                  color: "#1976d2",
+                                  "&:hover": {
+                                    backgroundColor: "#e3f2fd",
+                                    color: "#1565c0",
+                                  },
+                                }}
+                                title="Edit Department"
+                              >
+                                <EditIcon fontSize="small" />
+                              </IconButton>
+                              <IconButton
+                                size="small"
+                                onClick={() => {
+                                  setDepartmentToDelete(dept);
+                                  setDeleteDialogOpen(true);
+                                }}
+                                sx={{
+                                  color: "#d32f2f",
+                                  "&:hover": {
+                                    backgroundColor: "#ffebee",
+                                    color: "#c62828",
+                                  },
+                                }}
+                                title="Delete Department"
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </>
+                          )}
                         </Box>
                       </TableCell>
                     )}
@@ -2386,7 +2481,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             accept=".xlsx,.xls"
             style={{ display: "none" }}
           />
-          <Tooltip title="Add Department" placement="left">
+          {/* <Tooltip title="Add Department" placement="left">
             <SpeedDial
               ariaLabel="Department actions"
               icon={<Add />}
@@ -2409,7 +2504,60 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 },
               }}
             />
-          </Tooltip>
+          </Tooltip> */}
+
+          {deptAdmin && !superAdmin ? (
+            <Tooltip
+              title="Only Super Admin can add Department"
+              placement="left"
+            >
+              <span>
+                <SpeedDial
+                  ariaLabel="Department actions"
+                  icon={<Add />}
+                  onClick={() => setShowAddDepartment(true)}
+                  direction="left"
+                  FabProps={{
+                    disabled: true,
+                    sx: {
+                      bgcolor: "#9e9e9e", // greyed out
+                      width: 37,
+                      height: 30,
+                      "& .MuiSpeedDialIcon-root": {
+                        fontSize: "1.2rem",
+                        color: "white",
+                      },
+                      "&:hover": { backgroundColor: "#9e9e9e" }, // keep grey on hover
+                    },
+                  }}
+                />
+              </span>
+            </Tooltip>
+          ) : (
+            <Tooltip title="Add Department" placement="left">
+              <SpeedDial
+                ariaLabel="Department actions"
+                icon={<Add />}
+                onClick={() => setShowAddDepartment(true)}
+                direction="left"
+                FabProps={{
+                  sx: {
+                    bgcolor: "orange",
+                    "&:hover": {
+                      backgroundColor: "orange", // Keep the background color on hover
+                      animation: "glowBorder 1.5s ease-in-out infinite", // Apply glowing animation on hover
+                    },
+                    width: 37,
+                    height: 30,
+                    "& .MuiSpeedDialIcon-root": {
+                      fontSize: "1.2rem",
+                      color: "white",
+                    },
+                  },
+                }}
+              />
+            </Tooltip>
+          )}
 
           {selected.length > 0 && (
             <Tooltip title="Bulk Download" placement="left">

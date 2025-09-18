@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import {
   Box,
   Typography,
@@ -25,6 +26,12 @@ import {
   Chip,
   Autocomplete,
 } from "@mui/material";
+import DeleteIcon from "@mui/icons-material/Delete";
+import EditIcon from "@mui/icons-material/Edit";
+import AddIcon from "@mui/icons-material/Add";
+
+import { Snackbar, Alert } from "@mui/material";
+
 import CloseIcon from "@mui/icons-material/Close";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
 import LibraryAddIcon from "@mui/icons-material/LibraryAdd";
@@ -32,123 +39,27 @@ import SearchIcon from "@mui/icons-material/Search";
 import ClearIcon from "@mui/icons-material/Clear";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import SimCardDownloadIcon from "@mui/icons-material/SimCardDownload";
-
-const dictionaryRows = [
-  {
-    id: 1,
-    word: "Onboarding",
-    description: "Process of integrating a new employee",
-    department: "Human Resource",
-    date: "25-08-2025",
-  },
-  {
-    id: 2,
-    word: "Ledger",
-    description: "Financial record of transactions",
-    department: "Finance",
-    date: "26-08-2025",
-  },
-  {
-    id: 3,
-    word: "Firewall",
-    description: "Network security system",
-    department: "IT",
-    date: "26-08-2025",
-  },
-  {
-    id: 4,
-    word: "Campaign",
-    description: "Planned set of marketing activities",
-    department: "Marketing",
-    date: "27-08-2025",
-  },
-  {
-    id: 5,
-    word: "Lead",
-    description: "Potential sales contact",
-    department: "Sales",
-    date: "28-08-2025",
-  },
-  {
-    id: 6,
-    word: "Compliance",
-    description: "Adherence to legal and regulatory requirements",
-    department: "Legal",
-    date: "29-08-2025",
-  },
-  {
-    id: 7,
-    word: "Encryption",
-    description: "Process of securing data by encoding",
-    department: "IT",
-    date: "30-08-2025",
-  },
-  {
-    id: 8,
-    word: "Budgeting",
-    description: "Process of planning future income and expenses",
-    department: "Finance",
-    date: "31-08-2025",
-  },
-  {
-    id: 9,
-    word: "Retention",
-    description: "Strategies to retain employees in an organization",
-    department: "Human Resource",
-    date: "01-09-2025",
-  },
-  {
-    id: 10,
-    word: "Segmentation",
-    description: "Dividing market into distinct customer groups",
-    department: "Marketing",
-    date: "02-09-2025",
-  },
-  {
-    id: 11,
-    word: "Prospect",
-    description: "Potential customer identified for sales",
-    department: "Sales",
-    date: "03-09-2025",
-  },
-  {
-    id: 12,
-    word: "Patent",
-    description: "Legal protection for an invention",
-    department: "Legal",
-    date: "04-09-2025",
-  },
-  {
-    id: 13,
-    word: "Bandwidth",
-    description: "Maximum data transfer rate of a network",
-    department: "IT",
-    date: "05-09-2025",
-  },
-  {
-    id: 14,
-    word: "Payroll",
-    description: "System for paying employee salaries",
-    department: "Human Resource",
-    date: "06-09-2025",
-  },
-  {
-    id: 15,
-    word: "Forecasting",
-    description: "Predicting future business trends",
-    department: "Finance",
-    date: "07-09-2025",
-  },
-];
+import { getDepartments } from "../api/departmentService";
 
 const columns = [
-  { key: "word", label: "Word" },
-  { key: "description", label: "Description" },
-  { key: "department", label: "Department" },
-  { key: "date", label: "Date" },
+  { key: "word", label: "Word", width: "15%" },
+  { key: "description", label: "Description", width: "35%" },
+  { key: "department", label: "Department", width: "20%" },
+  { key: "date", label: "Date", width: "20%" },
+  { key: "actions", label: "Action", width: "10%" },
 ];
 
 export default function DataDictionary() {
+  const [dictionaryData, setDictionaryData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [editingRow, setEditingRow] = useState(null);
+
+  const [departments, setDepartments] = useState([]);
+  const [deptPage, setDeptPage] = useState(0);
+  const [hasMoreDepts, setHasMoreDepts] = useState(true);
+  const [loadingDepts, setLoadingDepts] = useState(false);
+
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [filters, setFilters] = useState({});
@@ -156,28 +67,237 @@ export default function DataDictionary() {
   const [filterColumn, setFilterColumn] = useState(null);
   const [selected, setSelected] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
 
   const [openDialog, setOpenDialog] = useState(false);
   const [department, setDepartment] = useState(null);
   const [newWord, setNewWord] = useState("");
   const [definition, setDefinition] = useState("");
-  const [recentAdditions, setRecentAdditions] = useState([
-    "Repository",
-    "Curriculum",
-    "Ambiguity",
-    "Optimization",
-  ]);
 
-  const handleOpenDialog = () => setOpenDialog(true);
-  const handleCloseDialog = () => setOpenDialog(false);
+  const [recentAdditions, setRecentAdditions] = useState([]);
 
-  const handleSaveWord = () => {
-    if (!newWord || !definition || !department) return;
-    setRecentAdditions([newWord, ...recentAdditions]);
+  const handleCloseSnackbar = () => {
+    setSnackbar((prev) => ({ ...prev, open: false }));
+  };
+
+  const handleOpenAddDialog = () => {
+    setEditMode(false);
+    setEditingRow(null);
+    setDepartment(null);
     setNewWord("");
     setDefinition("");
-    setDepartment(null);
-    setOpenDialog(false);
+    setOpenDialog(true);
+  };
+
+  const handleOpenEditDialog = (row) => {
+    setEditMode(true);
+    setEditingRow(row);
+    setDepartment({ deptName: row.department });
+    setNewWord(row.word);
+    setDefinition(row.description);
+    setOpenDialog(true);
+  };
+
+  const handleCloseDialog = () => setOpenDialog(false);
+
+  const handleDeleteWord = async (id) => {
+    try {
+      await axios.delete(
+        `${window.__ENV__.REACT_APP_ROUTE}/tenants/department/deletedataDictionary/${id}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+            username: sessionStorage.getItem("adminEmail"),
+          },
+        }
+      );
+
+      setDictionaryData((prev) => prev.filter((row) => row.id !== id));
+
+      setSnackbar({
+        open: true,
+        message: "Word deleted successfully!",
+        severity: "success",
+      });
+    } catch (err) {
+      console.error("Error deleting word:", err);
+      setSnackbar({
+        open: true,
+        message: "Failed to delete word.",
+        severity: "error",
+      });
+    }
+  };
+
+  const updateDictionaryWord = async (payload) => {
+    try {
+      const response = await axios.put(
+        `${window.__ENV__.REACT_APP_ROUTE}/tenants/department/dataDictionary`,
+        payload,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+            username: sessionStorage.getItem("adminEmail"),
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Failed to update dictionary word:", error);
+      throw error;
+    }
+  };
+
+  const handleDeleteWords = async (ids) => {
+    if (!ids || ids.length === 0) return;
+    try {
+      await axios.delete(
+        `${window.__ENV__.REACT_APP_ROUTE}/tenants/department/deletedataDictionary`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+            username: sessionStorage.getItem("adminEmail"),
+          },
+          data: ids, // 👈 send array in body
+        }
+      );
+
+      setDictionaryData((prev) => prev.filter((row) => !ids.includes(row.id)));
+      setSelected([]); // clear selection
+
+      setSnackbar({
+        open: true,
+        message: "Word(s) deleted successfully!",
+        severity: "success",
+      });
+    } catch (err) {
+      console.error("Error deleting word(s):", err);
+      setSnackbar({
+        open: true,
+        message: "Failed to delete word(s).",
+        severity: "error",
+      });
+    }
+  };
+
+  const fetchDictionaryData = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(
+        `${window.__ENV__.REACT_APP_ROUTE}/tenants/department/getdataDictionary`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+            username: sessionStorage.getItem("adminEmail"),
+          },
+        }
+      );
+
+      const data = response.data.map((item, index) => ({
+        id: item.id,
+        word: item.word,
+        description: item.description,
+        department: item.deptName,
+        date: item.createdOn
+          ? new Date(item.createdOn).toLocaleDateString()
+          : "",
+      }));
+
+      setDictionaryData(data);
+
+      const recentWords = data
+        .filter((d) => d.word)
+        .sort((a, b) => new Date(b.date) - new Date(a.date))
+        .slice(0, 5)
+        .map((d) => d.word);
+
+      setRecentAdditions(recentWords);
+    } catch (err) {
+      console.error("Failed to fetch dictionary data:", err);
+      setSnackbar({
+        open: true,
+        message: "Failed to load dictionary data.",
+        severity: "error",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const saveDictionaryWord = async (payload) => {
+    try {
+      const response = await axios.post(
+        `${window.__ENV__.REACT_APP_ROUTE}/tenants/department/dataDictionary`,
+        payload,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+            username: sessionStorage.getItem("adminEmail"),
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Failed to save dictionary word:", error);
+      throw error;
+    }
+  };
+
+  const handleSaveWord = async () => {
+    if (!newWord || !definition || !department) return;
+
+    const payload = [
+      {
+        id: editingRow?.id, // include id in case of edit
+        word: newWord,
+        description: definition,
+        deptName: department.deptName,
+      },
+    ];
+
+    try {
+      if (editMode) {
+        await updateDictionaryWord(payload);
+        setSnackbar({
+          open: true,
+          message: "Word updated successfully!",
+          severity: "success",
+        });
+      } else {
+        await saveDictionaryWord(payload);
+        setSnackbar({
+          open: true,
+          message: "Word saved successfully!",
+          severity: "success",
+        });
+      }
+
+      setRecentAdditions([newWord, ...recentAdditions]);
+      setNewWord("");
+      setDefinition("");
+      setDepartment(null);
+      setEditingRow(null);
+      setEditMode(false);
+      setOpenDialog(false);
+
+      fetchDictionaryData();
+    } catch (err) {
+      console.error("Error saving/updating word:", err);
+      setSnackbar({
+        open: true,
+        message: "Failed to save word. Please try again.",
+        severity: "error",
+      });
+    }
   };
 
   const handleChangePage = (event, newPage) => setPage(newPage);
@@ -207,7 +327,7 @@ export default function DataDictionary() {
     });
   };
 
-  const filteredRows = dictionaryRows.filter((row) => {
+  const filteredRows = dictionaryData.filter((row) => {
     const passesFilters = Object.entries(filters).every(([key, values]) =>
       values.length ? values.includes(row[key]) : true
     );
@@ -222,7 +342,7 @@ export default function DataDictionary() {
   });
 
   const getColumnValues = (colKey) => [
-    ...new Set(dictionaryRows.map((row) => row[colKey])),
+    ...new Set(dictionaryData.map((row) => row[colKey])),
   ];
 
   const isSelected = (id) => selected.includes(id);
@@ -237,7 +357,7 @@ export default function DataDictionary() {
   };
 
   const handleDownload = () => {
-    const rows = dictionaryRows.filter((r) => selected.includes(r.id));
+    const rows = dictionaryData.filter((r) => selected.includes(r.id));
     if (rows.length === 0) return;
     const headers = columns.map((c) => c.label);
     const csvRows = [
@@ -256,6 +376,34 @@ export default function DataDictionary() {
     link.click();
     document.body.removeChild(link);
   };
+
+  useEffect(() => {
+    if (openDialog) {
+      fetchDepartments(deptPage);
+    }
+  }, [openDialog, deptPage]);
+
+  const fetchDepartments = async (page) => {
+    if (loadingDepts || !hasMoreDepts) return;
+    setLoadingDepts(true);
+    try {
+      const res = await getDepartments(page, 10, "");
+      if (res?.content?.length) {
+        setDepartments((prev) => [...prev, ...res.content]);
+        setHasMoreDepts(!res.last);
+      } else {
+        setHasMoreDepts(false);
+      }
+    } catch (err) {
+      console.error("Error fetching departments:", err);
+    } finally {
+      setLoadingDepts(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDictionaryData();
+  }, []);
 
   return (
     <Box sx={{ p: 2, ml: "75px" }}>
@@ -291,9 +439,47 @@ export default function DataDictionary() {
           />
 
           <Tooltip title="Add to Dictionary" arrow>
-            <IconButton color="success" onClick={handleOpenDialog}>
-              <LibraryAddIcon />
+            <IconButton
+              sx={{
+                bgcolor: "orange", // Solid orange background
+                color: "white", // White icon
+                width: 36,
+                height: 36,
+                "&:hover": {
+                  backgroundColor: "orange", // Keep background on hover
+                  animation: "glowBorder 1.5s ease-in-out infinite", // Glowing border animation
+                },
+                "@keyframes glowBorder": {
+                  "0%": {
+                    boxShadow: "0 0 0px 2px rgba(251, 68, 36, 0.5)",
+                    borderColor: "transparent",
+                  },
+                  "50%": {
+                    boxShadow: "0 0 12px 3px rgba(251, 68, 36, 0.8)",
+                    borderColor: "rgb(251, 68, 36)",
+                  },
+                  "100%": {
+                    boxShadow: "0 0 0px 2px rgba(251, 68, 36, 0.5)",
+                    borderColor: "transparent",
+                  },
+                },
+              }}
+              onClick={handleOpenAddDialog}
+            >
+              <AddIcon fontSize="small" />
             </IconButton>
+          </Tooltip>
+
+          <Tooltip title="Delete Selected" arrow>
+            <span>
+              <IconButton
+                color="error"
+                disabled={selected.length === 0}
+                onClick={() => handleDeleteWords(selected)}
+              >
+                <DeleteIcon />
+              </IconButton>
+            </span>
           </Tooltip>
 
           <Tooltip title="Download" arrow>
@@ -329,33 +515,38 @@ export default function DataDictionary() {
                     size="small"
                   />
                 </TableCell>
+
                 {columns.map((col) => {
                   const isFiltered = Boolean(filters[col.key]);
                   return (
-                    <TableCell key={col.key} sx={{ fontWeight: "bold" }}>
+                    <TableCell
+                      key={col.key}
+                      sx={{ fontWeight: "bold", width: col.width }}
+                    >
                       <Box display="flex" alignItems="center">
                         {col.label}
-                        {isFiltered ? (
-                          <IconButton
-                            size="small"
-                            onClick={() =>
-                              setFilters((prev) => {
-                                const updated = { ...prev };
-                                delete updated[col.key];
-                                return updated;
-                              })
-                            }
-                          >
-                            <ClearIcon fontSize="small" color="error" />
-                          </IconButton>
-                        ) : (
-                          <IconButton
-                            size="small"
-                            onClick={(e) => handleOpenFilter(e, col.key)}
-                          >
-                            <FilterListIcon fontSize="small" />
-                          </IconButton>
-                        )}
+                        {col.key !== "actions" &&
+                          (isFiltered ? (
+                            <IconButton
+                              size="small"
+                              onClick={() =>
+                                setFilters((prev) => {
+                                  const updated = { ...prev };
+                                  delete updated[col.key];
+                                  return updated;
+                                })
+                              }
+                            >
+                              <ClearIcon fontSize="small" color="error" />
+                            </IconButton>
+                          ) : (
+                            <IconButton
+                              size="small"
+                              onClick={(e) => handleOpenFilter(e, col.key)}
+                            >
+                              <FilterListIcon fontSize="small" />
+                            </IconButton>
+                          ))}
                       </Box>
                     </TableCell>
                   );
@@ -372,7 +563,7 @@ export default function DataDictionary() {
                     hover
                     sx={{
                       height: 40,
-                      backgroundColor: index % 2 === 0 ? "#f9f9f9" : "#ffffff", // alternate colors
+                      backgroundColor: index % 2 === 0 ? "#f9f9f9" : "#ffffff",
                     }}
                   >
                     <TableCell padding="checkbox" sx={{ py: 0.5 }}>
@@ -382,10 +573,35 @@ export default function DataDictionary() {
                         size="small"
                       />
                     </TableCell>
-                    <TableCell sx={{ py: 0.5 }}>{row.word}</TableCell>
-                    <TableCell sx={{ py: 0.5 }}>{row.description}</TableCell>
-                    <TableCell sx={{ py: 0.5 }}>{row.department}</TableCell>
-                    <TableCell sx={{ py: 0.5 }}>{row.date}</TableCell>
+                    {columns.map((col) =>
+                      col.key === "actions" ? (
+                        <TableCell
+                          key={col.key}
+                          sx={{ py: 0.5, width: col.width }}
+                        >
+                          <IconButton
+                            color="primary"
+                            onClick={() => handleOpenEditDialog(row)}
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+
+                          <IconButton
+                            color="error"
+                            onClick={() => handleDeleteWords([row.id])}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </TableCell>
+                      ) : (
+                        <TableCell
+                          key={col.key}
+                          sx={{ py: 0.5, width: col.width }}
+                        >
+                          {row[col.key]}
+                        </TableCell>
+                      )
+                    )}
                   </TableRow>
                 ))}
             </TableBody>
@@ -412,7 +628,7 @@ export default function DataDictionary() {
         open={Boolean(anchorEl)}
         onClose={handleCloseFilter}
         PaperProps={{
-          style: { maxHeight: 300, width: 220 }, // limit height
+          style: { maxHeight: 300, width: 220 },
         }}
       >
         <Box sx={{ p: 1 }}>
@@ -428,19 +644,24 @@ export default function DataDictionary() {
         <Box sx={{ maxHeight: 200, overflowY: "auto" }}>
           {filterColumn &&
             getColumnValues(filterColumn)
-              .filter((option) =>
-                option.toLowerCase().includes(searchTerm.toLowerCase())
+              .filter(
+                (option) =>
+                  option &&
+                  option
+                    .toString()
+                    .toLowerCase()
+                    .includes(searchTerm.toLowerCase())
               )
               .map((option) => {
                 const selectedVal =
                   filters[filterColumn]?.includes(option) || false;
                 return (
                   <MenuItem
-                    key={option}
+                    key={option || "null-" + Math.random()}
                     onClick={() => handleToggleFilterValue(option)}
                   >
                     <Checkbox checked={selectedVal} size="small" />
-                    <Typography variant="body2">{option}</Typography>
+                    <Typography variant="body2">{option || "-"}</Typography>
                   </MenuItem>
                 );
               })}
@@ -471,7 +692,7 @@ export default function DataDictionary() {
               color: "#fff",
             }}
           >
-            Add to Dictionary
+            {editMode ? "Edit Dictionary Word" : "Add to Dictionary"}
           </Typography>
 
           <IconButton
@@ -503,33 +724,29 @@ export default function DataDictionary() {
         <DialogContent dividers>
           <Box display="flex" gap={2} mb={2} width="100%">
             <Autocomplete
-              options={[
-                "IT",
-                "HR",
-                "Finance",
-                "Admin",
-                "Operations",
-                "Support",
-                "Legal",
-                "Engineering",
-                "Design",
-                "Product",
-                "Security",
-                "QA",
-              ]}
+              options={departments}
+              getOptionLabel={(option) => option.deptName || ""}
               value={department}
               onChange={(e, newValue) => setDepartment(newValue)}
-              filterSelectedOptions
               renderInput={(params) => (
                 <TextField {...params} label="Choose Department" />
               )}
               ListboxProps={{
-                style: {
-                  maxHeight: 200,
-                  overflow: "auto",
+                style: { maxHeight: 200, overflow: "auto" },
+                onScroll: (event) => {
+                  const listboxNode = event.currentTarget;
+                  if (
+                    listboxNode.scrollTop + listboxNode.clientHeight >=
+                    listboxNode.scrollHeight - 1
+                  ) {
+                    if (!loadingDepts && hasMoreDepts) {
+                      setDeptPage((prev) => prev + 1);
+                    }
+                  }
                 },
               }}
               sx={{ flex: 0.6 }}
+              loading={loadingDepts}
             />
 
             <TextField
@@ -568,6 +785,20 @@ export default function DataDictionary() {
           </Button>
         </DialogActions>
       </Dialog>
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbar.severity}
+          sx={{ width: "100%" }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

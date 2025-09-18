@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -13,13 +13,19 @@ import {
   IconButton,
   TextField,
   InputAdornment,
-  Chip,
   Paper,
+  Tooltip,
   Menu,
   MenuItem,
-  Tooltip,
-  Button,
-  Stack,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  CircularProgress,
+  Snackbar,
+  Alert,
+  Tabs,
+  Tab,
+  ButtonBase,
 } from "@mui/material";
 
 import FeedbackIcon from "@mui/icons-material/Feedback";
@@ -28,158 +34,10 @@ import CheckIcon from "@mui/icons-material/Check";
 import ClearIcon from "@mui/icons-material/Clear";
 import DeleteIcon from "@mui/icons-material/Delete";
 import FilterListIcon from "@mui/icons-material/FilterList";
-import DescriptionIcon from "@mui/icons-material/Description";
-import VisibilityIcon from "@mui/icons-material/Visibility";
-import DownloadIcon from "@mui/icons-material/Download";
 import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 import ThumbDownIcon from "@mui/icons-material/ThumbDown";
-import { Dialog, DialogTitle, DialogContent } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
-import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import SimCardDownloadIcon from "@mui/icons-material/SimCardDownload";
-
-const feedbackRows = [
-  {
-    id: 1,
-    department: "Human Resource",
-    user: "John Mauris",
-    document: "Offer Letter.docx",
-    role: "Editor",
-    source: "DocuTalk",
-    feedback: "like",
-    latestFBC: "What is leave Policy?",
-    latestFBA: "The leave policy for employees is strict.",
-    date: "25-08-2025",
-    time: "12:26 p.m.",
-    status: "APPROVED",
-  },
-  {
-    id: 2,
-    department: "Finance",
-    user: "Akhil Gupta",
-    document: "Purchase.pptx",
-    role: "Viewer",
-    source: "DBTalk",
-    feedback: "dislike",
-    latestFBC: "Receivables for this year?",
-    latestFBA: "The total receivables for FY 2025 are $1.25",
-    date: "25-08-2025",
-    time: "12:26 p.m.",
-    status: "REJECTED",
-  },
-  {
-    id: 3,
-    department: "IT",
-    user: "Sanya Roy",
-    document: "IT Policy.pdf",
-    role: "Contributor",
-    source: "DocuTalk",
-    feedback: "like",
-    latestFBC: "IT support hours?",
-    latestFBA: "IT support is available from 9am-6pm",
-    date: "25-08-2025",
-    time: "1:15 p.m.",
-    status: "VIEW",
-  },
-  {
-    id: 4,
-    department: "Marketing",
-    user: "Rohit Sharma",
-    document: "Campaign Plan.docx",
-    role: "Editor",
-    source: "DocuTalk",
-    feedback: "like",
-    latestFBC: "Q3 campaign budget?",
-    latestFBA: "The Q3 marketing budget is $50,000",
-    date: "26-08-2025",
-    time: "10:00 a.m.",
-    status: "APPROVED",
-  },
-  {
-    id: 5,
-    department: "Sales",
-    user: "Priya Singh",
-    document: "Leads.xlsx",
-    role: "Viewer",
-    source: "DBTalk",
-    feedback: "dislike",
-    latestFBC: "Top leads this month?",
-    latestFBA: "Top leads are listed in the spreadsheet",
-    date: "26-08-2025",
-    time: "11:45 a.m.",
-    status: "VIEW",
-  },
-  {
-    id: 6,
-    department: "Finance",
-    user: "Amit Verma",
-    document: "Invoice.pdf",
-    role: "Contributor",
-    source: "DocuTalk",
-    feedback: "like",
-    latestFBC: "Pending invoices?",
-    latestFBA: "There are 5 pending invoices this month",
-    date: "26-08-2025",
-    time: "2:30 p.m.",
-    status: "REJECTED",
-  },
-  {
-    id: 7,
-    department: "Human Resource",
-    user: "Neha Kapoor",
-    document: "Training Schedule.xlsx",
-    role: "Editor",
-    source: "DBTalk",
-    feedback: "like",
-    latestFBC: "Next training date?",
-    latestFBA: "Next training is on 30th August",
-    date: "27-08-2025",
-    time: "9:15 a.m.",
-    status: "APPROVED",
-  },
-  {
-    id: 8,
-    department: "IT",
-    user: "Vikram Joshi",
-    document: "Server Report.pdf",
-    role: "Viewer",
-    source: "DocuTalk",
-    feedback: "dislike",
-    latestFBC: "Server downtime logs?",
-    latestFBA: "Downtime logged on 22nd August for 2 hours",
-    date: "27-08-2025",
-    time: "3:45 p.m.",
-    status: "VIEW",
-  },
-  {
-    id: 9,
-    department: "Marketing",
-    user: "Anjali Mehra",
-    document: "Social Media Plan.docx",
-    role: "Contributor",
-    source: "DBTalk",
-    feedback: "like",
-    latestFBC: "Instagram engagement stats?",
-    latestFBA: "Engagement increased by 15% last week",
-    date: "28-08-2025",
-    time: "11:00 a.m.",
-    status: "REJECTED",
-  },
-  {
-    id: 10,
-    department: "Sales",
-    user: "Rahul Desai",
-    document: "Client Contracts.pdf",
-    role: "Editor",
-    source: "DocuTalk",
-    feedback: "like",
-    latestFBC: "Top client contracts?",
-    latestFBA: "Top 3 clients this month are listed in the document",
-    date: "28-08-2025",
-    time: "4:20 p.m.",
-    status: "APPROVED",
-  },
-];
 
 const columns = [
   { key: "document", label: "Document" },
@@ -188,43 +46,32 @@ const columns = [
   { key: "role", label: "Role" },
   { key: "source", label: "Source" },
   { key: "feedback", label: "Feedback" },
-  { key: "latestChat", label: "Latest Chat" }, // merged column
+  { key: "latestChat", label: "Latest Chat" },
   { key: "dateTime", label: "Date & Time" },
   { key: "status", label: "Status" },
 ];
 
-const ChatHistoryDialog = ({ open, onClose, row }) => {
-  const [selectedChats, setSelectedChats] = React.useState([]);
+const ChatHistoryDialog = ({
+  open,
+  onClose,
+  row,
+  updateAction,
+  setSnackbar,
+  setSnackbarOpen,
+}) => {
+  const [selectedChats, setSelectedChats] = useState([]);
 
-  const sortedHistory = React.useMemo(() => {
-    if (!row) return [];
+  const hasSelected = selectedChats.length > 0;
 
-    const history = [
-      {
-        question: row.latestFBC || "",
-        answer: row.latestFBA || "",
-        date: row.date || "",
-        time: row.time || "",
-      },
-      {
-        question: "Previous question?",
-        answer: "Previous answer...",
-        date: "24-08-2025",
-        time: "10:30 a.m.",
-      },
-    ];
-
-    return [...history].sort((a, b) => {
-      const dateA = new Date(`${a.date} ${a.time}`);
-      const dateB = new Date(`${b.date} ${b.time}`);
-      return dateA - dateB;
-    });
+  const sortedHistory = useMemo(() => {
+    if (!row || !row.feedResponses) return [];
+    return [...row.feedResponses].sort(
+      (a, b) => new Date(a.date) - new Date(b.date)
+    );
   }, [row]);
 
-  React.useEffect(() => {
-    if (sortedHistory.length > 0) {
-      setSelectedChats([sortedHistory.length - 1]);
-    }
+  useEffect(() => {
+    if (sortedHistory.length > 0) setSelectedChats([sortedHistory.length - 1]);
   }, [sortedHistory]);
 
   const toggleChatSelection = (index) => {
@@ -233,26 +80,53 @@ const ChatHistoryDialog = ({ open, onClose, row }) => {
     );
   };
 
-  const handleApprove = () => console.log("Approve clicked", row);
-  const handleReject = () => console.log("Reject clicked", row);
-  const handleDelete = () => console.log("Delete clicked", row);
+  const handleBulkAction = async (actionType) => {
+    try {
+      for (const idx of selectedChats) {
+        const chat = sortedHistory[idx];
+        if (chat.responseId) {
+          await updateAction(row.conversationId, chat.responseId, actionType);
+        }
+      }
+      setSnackbar({
+        message: `${actionType} successful for selected chats!`,
+        severity: "success",
+      });
+      setSnackbarOpen(true);
+      onClose(); // close dialog after action
+    } catch (err) {
+      setSnackbar({
+        message: `Failed to ${actionType} chats`,
+        severity: "error",
+      });
+      setSnackbarOpen(true);
+    }
+  };
 
-  const handleDownloadHistory = (historyData, rowData) => {
+  const handleDownloadHistory = (historyData, rowData, downloadAll = false) => {
     if (!historyData || historyData.length === 0) return;
+
+    const dataToDownload = downloadAll
+      ? historyData
+      : historyData.filter((_, idx) => selectedChats.includes(idx));
+
+    if (dataToDownload.length === 0) return; // nothing to download
 
     const headers = ["Question", "Answer", "Date", "Time"];
     const csvRows = [
       headers.join(","),
-      ...historyData.map(
+      ...dataToDownload.map(
         (chat) =>
-          `"${chat.question}","${chat.answer}","${chat.date}","${chat.time}"`
+          `"${chat.questionText}","${chat.answerText}","${chat.date}","${
+            chat.time || ""
+          }"`
       ),
     ];
 
-    const csvContent = csvRows.join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const blob = new Blob([csvRows.join("\n")], {
+      type: "text/csv;charset=utf-8;",
+    });
     const url = URL.createObjectURL(blob);
-
     const link = document.createElement("a");
     link.href = url;
     link.setAttribute(
@@ -275,168 +149,224 @@ const ChatHistoryDialog = ({ open, onClose, row }) => {
           alignItems: "center",
           p: 1,
           backgroundColor: "primary.main",
+          color: "#fff",
         }}
       >
-        <Typography
-          variant="h6"
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            fontFamily: '"Be Vietnam", sans-serif',
-            color: "#fff",
-          }}
-        >
-          Chat History
-        </Typography>
-
-        <IconButton
-          onClick={onClose}
-          size="small"
-          sx={{
-            color: "#fff",
-            width: 32,
-            height: 32,
-            border: "1px solid",
-            borderColor: "#fff",
-            bgcolor: "error.lighter",
-            borderRadius: "50%",
-            position: "relative",
-            "&:hover": { transform: "rotate(180deg)" },
-            transition: "transform 0.3s ease",
-          }}
-        >
-          <CloseIcon
-            sx={{ fontSize: "1rem", transition: "transform 0.2s ease" }}
-          />
+        <Typography variant="h6">Chat History</Typography>
+        <IconButton onClick={onClose} size="small" sx={{ color: "#fff" }}>
+          <CloseIcon fontSize="small" />
         </IconButton>
       </DialogTitle>
-
       <DialogContent dividers>
-        {sortedHistory.map((chat, index) => (
+        {sortedHistory.length === 0 ? (
           <Box
-            key={index}
             display="flex"
-            flexDirection="column"
-            gap={0.5}
-            mb={2}
+            justifyContent="center"
+            alignItems="center"
+            sx={{ height: 200 }}
           >
-            <Box display="flex" alignItems="flex-start" gap={1}>
+            <Typography variant="body2" color="text.secondary">
+              No history found
+            </Typography>
+          </Box>
+        ) : (
+          <>
+            <Box display="flex" alignItems="center" mb={2}>
               <Checkbox
-                checked={selectedChats.includes(index)}
-                onChange={() => toggleChatSelection(index)}
-                size="small"
+                checked={selectedChats.length === sortedHistory.length}
+                indeterminate={
+                  selectedChats.length > 0 &&
+                  selectedChats.length < sortedHistory.length
+                }
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setSelectedChats(sortedHistory.map((_, i) => i)); // select all
+                  } else {
+                    setSelectedChats([]); // clear all
+                  }
+                }}
               />
+              <Typography variant="body2">Select All</Typography>
+            </Box>
+            {sortedHistory.map((chat, index) => (
               <Box
+                key={index}
                 display="flex"
                 flexDirection="column"
-                alignItems="flex-start"
+                gap={0.5}
+                mb={2}
               >
+                <Box display="flex" alignItems="flex-start" gap={1}>
+                  {(chat.status === 1 || chat.status === -1) && (
+                    <Checkbox
+                      checked={selectedChats.includes(index)}
+                      onChange={() => toggleChatSelection(index)}
+                      size="small"
+                    />
+                  )}
+
+                  <Box
+                    display="flex"
+                    flexDirection="column"
+                    alignItems="flex-start"
+                  >
+                    <Box
+                      sx={{
+                        backgroundColor: "#e0e0e0",
+                        borderRadius: 2,
+                        p: 1,
+                        maxWidth: "100%",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
+                      <Typography variant="body2" noWrap>
+                        {chat.questionText}
+                      </Typography>
+                    </Box>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ ml: 1 }}
+                    >
+                      {new Date(chat.date).toLocaleDateString()}{" "}
+                      {new Date(chat.date).toLocaleTimeString()}
+                    </Typography>
+                  </Box>
+                </Box>
+
                 <Box
-                  sx={{
-                    backgroundColor: "#e0e0e0",
-                    borderRadius: 2,
-                    p: 1,
-                    maxWidth: "100%",
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                  }}
+                  display="flex"
+                  flexDirection="column"
+                  alignItems="flex-end"
                 >
-                  <Typography variant="body2" sx={{ whiteSpace: "nowrap" }}>
-                    {chat.question}
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "flex-end",
+                      maxWidth: "70%",
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        backgroundColor: "#2196f3",
+                        color: "white",
+                        borderRadius: 2,
+                        p: 1,
+                        wordBreak: "break-word",
+                        alignSelf: "flex-end",
+                      }}
+                    >
+                      <Typography variant="body2">{chat.answerText}</Typography>
+                    </Box>
+
+                    <Box
+                      sx={{
+                        display: "flex",
+                        justifyContent: "flex-end",
+                        gap: 0.5,
+                        mt: 0.3,
+                      }}
+                    >
+                      {chat.status === 1 && (
+                        <ThumbUpIcon
+                          fontSize="small"
+                          sx={{ color: "limegreen" }}
+                        />
+                      )}
+                      {chat.status === -1 && (
+                        <ThumbDownIcon fontSize="small" sx={{ color: "red" }} />
+                      )}
+                    </Box>
+                  </Box>
+
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ mr: 1 }}
+                  >
+                    {new Date(chat.date).toLocaleDateString()}{" "}
+                    {new Date(chat.date).toLocaleTimeString()}
                   </Typography>
                 </Box>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ ml: 1 }}
+              </Box>
+            ))}
+
+            <Box mt={2} display="flex" justifyContent="flex-end" gap={1}>
+              <Tooltip title="Download Selected">
+                <span>
+                  <IconButton
+                    color="primary"
+                    size="small"
+                    disabled={selectedChats.length === 0}
+                    onClick={() =>
+                      handleDownloadHistory(sortedHistory, row, false)
+                    }
+                  >
+                    <SimCardDownloadIcon fontSize="small" />
+                  </IconButton>
+                </span>
+              </Tooltip>
+
+              <Tooltip title="Download All">
+                <IconButton
+                  color="secondary"
+                  size="small"
+                  onClick={() =>
+                    handleDownloadHistory(sortedHistory, row, true)
+                  }
                 >
-                  {chat.date} {chat.time}
-                </Typography>
-              </Box>
-            </Box>
+                  <SimCardDownloadIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
 
-            <Box display="flex" flexDirection="column" alignItems="flex-end">
-              <Box
-                sx={{
-                  backgroundColor: "#2196f3",
-                  color: "white",
-                  borderRadius: 2,
-                  p: 1,
-                  maxWidth: "70%",
-                  wordBreak: "break-word",
-                }}
-              >
-                <Typography variant="body2">{chat.answer}</Typography>
-              </Box>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ mr: 1 }}
-              >
-                {chat.date} {chat.time}
-              </Typography>
-            </Box>
-          </Box>
-        ))}
-
-        <Box
-          mt={2}
-          display="flex"
-          justifyContent="space-between"
-          alignItems="center"
-        >
-          <Tooltip title="Download History" arrow>
-            <IconButton
-              color="primary"
-              size="small"
-              onClick={() => handleDownloadHistory(sortedHistory, row)}
-            >
-              <SimCardDownloadIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-
-          <Box display="flex" gap={1}>
-            {row.status === "VIEW" ? (
-              <>
-                <Tooltip title="Approve" arrow>
+              <Tooltip title="Approve Selected">
+                <span>
                   <IconButton
                     color="success"
                     size="small"
-                    onClick={handleApprove}
+                    disabled={!hasSelected}
+                    onClick={() => handleBulkAction("Approved")}
                   >
                     <CheckIcon fontSize="small" />
                   </IconButton>
-                </Tooltip>
-                <Tooltip title="Reject" arrow>
-                  <IconButton color="error" size="small" onClick={handleReject}>
-                    <ClearIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="Delete" arrow>
-                  <IconButton color="error" size="small" onClick={handleDelete}>
-                    <DeleteIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-              </>
-            ) : (
-              <Tooltip title="Delete" arrow>
-                <IconButton color="error" size="small" onClick={handleDelete}>
-                  <DeleteIcon fontSize="small" />
-                </IconButton>
+                </span>
               </Tooltip>
-            )}
-          </Box>
-        </Box>
+
+              <Tooltip title="Reject Selected">
+                <span>
+                  <IconButton
+                    color="error"
+                    size="small"
+                    disabled={!hasSelected}
+                    onClick={() => handleBulkAction("Rejected")}
+                  >
+                    <CloseIcon fontSize="small" />
+                  </IconButton>
+                </span>
+              </Tooltip>
+            </Box>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );
 };
 
 export default function FeedbackTable() {
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbar, setSnackbar] = useState({
+    message: "",
+    severity: "success", // "success" | "error" | "info" | "warning"
+  });
+  const [feedbackRows, setFeedbackRows] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
   const [historyOpen, setHistoryOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
-
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [filters, setFilters] = useState({});
@@ -445,9 +375,186 @@ export default function FeedbackTable() {
   const [selected, setSelected] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const handleChangePage = (event, newPage) => setPage(newPage);
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
+  const [activeTab, setActiveTab] = useState(0); // 0 = ALL, 1 = APPROVED, 2 = REJECTED
+
+  const handleTabChange = (event, newValue) => {
+    setActiveTab(newValue);
+    setPage(0); // Reset to first page when changing tabs
+  };
+
+  useEffect(() => {
+    const fetchFeedback = async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(
+          `${window.__ENV__.REACT_APP_ROUTE}/mainGpt/feedbackData`,
+          {
+            headers: {
+              Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+              username: `${sessionStorage.getItem("adminEmail")}`,
+            },
+          }
+        );
+        if (!res.ok) throw new Error("Failed to fetch feedback");
+        const data = await res.json();
+
+        const rows = [];
+        data.feedback.forEach((item) => {
+          item.feedResponses.forEach((fr) => {
+            const status = fr.actionType || "VIEW";
+
+            rows.push({
+              id: `${item.id}-${fr.query_id}-${fr.date}`,
+              department: item.department || "N/A",
+              conversationId: item.conversationId,
+              user: item.username || "N/A",
+              role: item.role || "N/A",
+              source: item.source || "N/A",
+              document: "N/A",
+              latestChat: `${fr.questionText} / ${fr.answerText}`,
+              latestFBC: fr.questionText || "",
+              latestFBA: fr.answerText || "",
+              feedback:
+                fr.status === 1 ? "like" : fr.status === -1 ? "dislike" : "N/A",
+              date: fr.date ? new Date(fr.date).toLocaleDateString() : "N/A",
+              time: fr.date ? new Date(fr.date).toLocaleTimeString() : "N/A",
+              status: status,
+              responseId: fr.responseId, //  add this
+              feedResponses: item.feedResponses || [], // <- keep all responses for the document
+            });
+          });
+        });
+
+        setFeedbackRows(rows);
+        setError(null);
+      } catch (err) {
+        console.error(err);
+        setError(err.message || "Something went wrong");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFeedback();
+  }, []);
+
+  const fetchChatHistory = async (conversationId) => {
+    try {
+      const res = await fetch(
+        `${window.__ENV__.REACT_APP_ROUTE}/mainGpt/history/?conversationId=${conversationId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+            username: `${sessionStorage.getItem("adminEmail")}`,
+          },
+        }
+      );
+      if (!res.ok) throw new Error("Failed to fetch chat history");
+      const data = await res.json();
+      return data.history || [];
+    } catch (err) {
+      console.error(err);
+      return [];
+    }
+  };
+
+  const handleDelete = async (conversationId) => {
+    if (!conversationId) return;
+
+    try {
+      const res = await fetch(
+        `${window.__ENV__.REACT_APP_ROUTE}/mainGpt/deleteFeedback?conversationId=${conversationId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+            username: sessionStorage.getItem("adminEmail"),
+          },
+        }
+      );
+
+      if (!res.ok) throw new Error("Failed to delete feedback");
+
+      setFeedbackRows((prev) =>
+        prev.filter((row) => row.conversationId !== conversationId)
+      );
+
+      setSnackbar({
+        message: "Feedback deleted successfully",
+        severity: "success",
+      });
+      setSnackbarOpen(true);
+    } catch (err) {
+      console.error("Error deleting feedback:", err);
+
+      setSnackbar({ message: "Failed to delete feedback", severity: "error" });
+      setSnackbarOpen(true);
+    }
+  };
+
+  const updateAction = async (conversationId, responseId, actionType) => {
+    try {
+      const res = await fetch(
+        `${window.__ENV__.REACT_APP_ROUTE}/mainGpt/updateAction?conversationId=${conversationId}&responseId=${responseId}&actionType=${actionType}`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+            username: `${sessionStorage.getItem("adminEmail")}`,
+          },
+        }
+      );
+
+      if (!res.ok) throw new Error(`Failed to ${actionType}`);
+      const data = await res.json();
+      return data;
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+  };
+
+  const handleUpdateAction = async (conversationId, responseId, actionType) => {
+    try {
+      await updateAction(conversationId, responseId, actionType);
+
+      // Update local feedbackRows
+      setFeedbackRows((prevRows) =>
+        prevRows.map((row) => {
+          if (
+            row.conversationId === conversationId &&
+            row.responseId === responseId
+          ) {
+            return { ...row, status: actionType }; // update status
+          }
+          return row;
+        })
+      );
+
+      setSnackbar({
+        message: `${actionType} successful!`,
+        severity: "success",
+      });
+      setSnackbarOpen(true);
+    } catch (err) {
+      setSnackbar({
+        message: `Failed to ${actionType}`,
+        severity: "error",
+      });
+      setSnackbarOpen(true);
+    }
+  };
+
+  const truncateText = (text, wordLimit = 5) => {
+    if (!text) return "";
+    const words = text.split(" ");
+    if (words.length <= wordLimit) return text;
+    return words.slice(0, wordLimit).join(" ") + " ...";
+  };
+
+  const handleChangePage = (_, newPage) => setPage(newPage);
+  const handleChangeRowsPerPage = (e) => {
+    setRowsPerPage(parseInt(e.target.value, 10));
     setPage(0);
   };
 
@@ -459,6 +566,7 @@ export default function FeedbackTable() {
     setAnchorEl(null);
     setFilterColumn(null);
   };
+
   const handleToggleFilterValue = (value) => {
     setFilters((prev) => {
       const current = prev[filterColumn] || [];
@@ -466,64 +574,61 @@ export default function FeedbackTable() {
         ? current.filter((v) => v !== value)
         : [...current, value];
       const newFilters = { ...prev };
-      if (updated.length > 0) {
-        newFilters[filterColumn] = updated;
-      } else {
-        delete newFilters[filterColumn];
-      }
+      if (updated.length > 0) newFilters[filterColumn] = updated;
+      else delete newFilters[filterColumn];
       return newFilters;
     });
   };
 
-  const filteredRows = feedbackRows.filter((row) => {
-    const passesFilters = Object.entries(filters).every(([key, values]) => {
-      if (values.length === 0) return true;
+  // MODIFIED: Add tab-based filtering to filteredRows
+  const filteredRows = useMemo(() => {
+    return feedbackRows.filter((row) => {
+      if (activeTab === 1 && row.status !== "Approved") return false;
+      if (activeTab === 2 && row.status !== "rejected") return false;
+      if (activeTab === 3 && row.status !== "VIEW") return false;
+      // activeTab === 0 means ALL, so no additional filtering needed
 
-      if (key === "latestChat") {
-        const combined = `${row.latestFBC} ${row.latestFBA}`;
-        return values.some((v) => combined.includes(v));
-      }
+      const passesFilters = Object.entries(filters).every(([key, values]) => {
+        if (values.length === 0) return true;
+        if (key === "latestChat") {
+          const combined = `${row.latestFBC} ${row.latestFBA}`;
+          return values.some((v) => combined.includes(v));
+        }
+        if (key === "dateTime") {
+          const combined = `${row.date} ${row.time}`;
+          return values.some((v) => combined.includes(v));
+        }
+        return values.includes(row[key]);
+      });
 
-      if (key === "dateTime") {
-        const combined = `${row.date} ${row.time}`;
-        return values.some((v) => combined.includes(v));
-      }
+      const passesSearch =
+        searchTerm.trim() === "" ||
+        Object.values(row).some(
+          (val) =>
+            typeof val === "string" &&
+            val.toLowerCase().includes(searchTerm.toLowerCase())
+        );
 
-      return values.includes(row[key]);
+      return passesFilters && passesSearch;
     });
-
-    const passesSearch =
-      searchTerm.trim() === "" ||
-      Object.values(row).some(
-        (val) =>
-          typeof val === "string" &&
-          val.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-
-    return passesFilters && passesSearch;
-  });
+  }, [filters, searchTerm, feedbackRows, activeTab]); // Add activeTab to dependencies
 
   const getColumnValues = (colKey) => {
-    if (colKey === "latestChat") {
+    if (colKey === "latestChat")
       return [
         ...new Set(
           feedbackRows.map((row) => `${row.latestFBC} ${row.latestFBA}`)
         ),
       ];
-    }
-    if (colKey === "dateTime") {
+    if (colKey === "dateTime")
       return [...new Set(feedbackRows.map((row) => `${row.date} ${row.time}`))];
-    }
     return [...new Set(feedbackRows.map((row) => row[colKey]))];
   };
 
   const isSelected = (id) => selected.includes(id);
   const handleSelectAllClick = (event) => {
-    if (event.target.checked) {
-      setSelected(filteredRows.map((r) => r.id));
-    } else {
-      setSelected([]);
-    }
+    if (event.target.checked) setSelected(filteredRows.map((r) => r.id));
+    else setSelected([]);
   };
   const handleClick = (id) => {
     setSelected((prev) =>
@@ -537,16 +642,16 @@ export default function FeedbackTable() {
 
     const headers = columns.map((c) => c.label);
     const csvRows = [
-      headers.join(","), // header row
+      headers.join(","),
       ...rows.map((row) =>
         columns.map((c) => `"${row[c.key] ?? ""}"`).join(",")
       ),
     ];
 
-    const csvContent = csvRows.join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const blob = new Blob([csvRows.join("\n")], {
+      type: "text/csv;charset=utf-8;",
+    });
     const url = URL.createObjectURL(blob);
-
     const link = document.createElement("a");
     link.href = url;
     link.setAttribute("download", "feedback_export.csv");
@@ -554,6 +659,14 @@ export default function FeedbackTable() {
     link.click();
     document.body.removeChild(link);
   };
+
+  if (loading)
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", mt: 5 }}>
+        <CircularProgress />
+      </Box>
+    );
+  if (error) return <Typography color="error">{error}</Typography>;
 
   return (
     <Box sx={{ p: 2, ml: "75px" }}>
@@ -563,10 +676,52 @@ export default function FeedbackTable() {
         alignItems="center"
         mb={2}
       >
-        <Typography variant="h5" fontWeight={700}>
-          <FeedbackIcon sx={{ mr: 1, color: "orange" }} />
-          Feedback Table
-        </Typography>
+        {/* MODIFIED: Header with title and tabs */}
+        <Box display="flex" alignItems="center" gap={2}>
+          <Typography variant="h5" fontWeight={700}>
+            <FeedbackIcon sx={{ mr: 1, color: "orange" }} />
+            Feedback Table
+          </Typography>
+
+          {/* <Tabs
+            value={activeTab}
+            onChange={handleTabChange}
+            sx={{
+              "& .MuiTab-root": {
+                minWidth: "auto",
+                fontSize: "0.9rem",
+                textTransform: "none",
+                fontWeight: 500,
+              },
+            }}
+          >
+            <Tab label="ALL" />
+            <Tab label="APPROVED" />
+            <Tab label="REJECTED" />
+            <Tab label="VIEW" />
+          </Tabs> */}
+          <Tabs
+            value={activeTab}
+            onChange={handleTabChange}
+            sx={{
+              "& .MuiTab-root": {
+                minWidth: "auto",
+                fontSize: "0.9rem",
+                textTransform: "none",
+                fontWeight: 600,
+              },
+              "& .Mui-selected": {
+                fontWeight: "bold", // 🔥 active tab bold
+                color: "black", // make it stand out
+              },
+            }}
+          >
+            <Tab label="ALL" />
+            <Tab label="APPROVED" />
+            <Tab label="REJECTED" />
+            <Tab label="VIEW" />
+          </Tabs>
+        </Box>
 
         <Box display="flex" alignItems="center" gap={1}>
           <TextField
@@ -587,7 +742,6 @@ export default function FeedbackTable() {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-
           <Tooltip title="Download" arrow>
             <span>
               <IconButton
@@ -607,7 +761,6 @@ export default function FeedbackTable() {
           <Table stickyHeader size="small">
             <TableHead sx={{ backgroundColor: "#fffdfdff" }}>
               <TableRow sx={{ height: 30 }}>
-                {" "}
                 <TableCell
                   padding="checkbox"
                   sx={{ fontWeight: "bold", py: 0.5 }}
@@ -673,7 +826,6 @@ export default function FeedbackTable() {
                     hover
                     sx={{
                       height: 28,
-
                       backgroundColor: index % 2 === 0 ? "#f9f9f9" : "#ffffff",
                     }}
                   >
@@ -684,7 +836,6 @@ export default function FeedbackTable() {
                         size="small"
                       />
                     </TableCell>
-
                     <TableCell
                       sx={{
                         py: 0.5,
@@ -694,12 +845,11 @@ export default function FeedbackTable() {
                         whiteSpace: "nowrap",
                         overflow: "hidden",
                         textOverflow: "ellipsis",
-                        maxWidth: 200, // adjust width as needed
+                        maxWidth: 200,
                       }}
                     >
                       {row.document}
                     </TableCell>
-
                     <TableCell
                       sx={{
                         py: 0.5,
@@ -707,12 +857,11 @@ export default function FeedbackTable() {
                         whiteSpace: "nowrap",
                         overflow: "hidden",
                         textOverflow: "ellipsis",
-                        maxWidth: 180, // adjust width as needed
+                        maxWidth: 180,
                       }}
                     >
                       {row.department}
                     </TableCell>
-
                     <TableCell
                       sx={{
                         py: 0.5,
@@ -720,12 +869,11 @@ export default function FeedbackTable() {
                         whiteSpace: "nowrap",
                         overflow: "hidden",
                         textOverflow: "ellipsis",
-                        maxWidth: 160, // adjust width as needed
+                        maxWidth: 160,
                       }}
                     >
                       {row.user}
                     </TableCell>
-
                     <TableCell sx={{ py: 0.5, fontSize: "0.8rem" }}>
                       {row.role}
                     </TableCell>
@@ -740,96 +888,92 @@ export default function FeedbackTable() {
                       )}
                     </TableCell>
 
-                    <TableCell
-                      sx={{ py: 0.5, fontSize: "0.8rem", maxWidth: 240 }}
-                    >
+                    <TableCell sx={{ py: 0.5, maxWidth: 240 }}>
                       <Tooltip
                         arrow
                         title={
                           <Box sx={{ maxWidth: 400, whiteSpace: "normal" }}>
                             <Typography
                               fontWeight="bold"
-                              sx={{ fontSize: "0.85rem", whiteSpace: "normal" }}
+                              sx={{ fontSize: "0.85rem" }}
                             >
                               {row.latestFBC}
                             </Typography>
-                            <Typography
-                              sx={{ fontSize: "0.8rem", whiteSpace: "normal" }}
-                            >
+                            <Typography sx={{ fontSize: "0.8rem" }}>
                               {row.latestFBA}
                             </Typography>
                           </Box>
                         }
                       >
-                        <Box
-                          sx={{
-                            display: "flex",
-                            flexDirection: "column",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap", // keep truncation only in table cell
-                            maxWidth: 180,
-                          }}
-                        >
+                        <Box>
                           <Typography
-                            noWrap
                             fontWeight="bold"
-                            sx={{ fontSize: "0.8rem" }}
+                            sx={{ fontSize: "0.85rem", lineHeight: 1.2 }}
                           >
                             {row.latestFBC}
                           </Typography>
                           <Typography
-                            noWrap
-                            sx={{
-                              fontSize: "0.75rem",
-                              color: "text.secondary",
-                            }}
+                            sx={{ fontSize: "0.8rem", lineHeight: 1.2 }}
                           >
-                            {row.latestFBA}
+                            {truncateText(row.latestFBA, 5)}
                           </Typography>
                         </Box>
                       </Tooltip>
                     </TableCell>
 
-                    <TableCell sx={{ py: 0.5, fontSize: "0.8rem" }}>
-                      <Typography variant="body2" fontWeight="bold">
-                        {row.time}
-                      </Typography>
-                      <Typography variant="body2">{row.date}</Typography>
+                    <TableCell sx={{ py: 0.5 }}>
+                      <Box display="flex" flexDirection="column">
+                        <Typography
+                          fontWeight="bold"
+                          sx={{ fontSize: "0.85rem" }}
+                        >
+                          {row.date}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {row.time}
+                        </Typography>
+                      </Box>
                     </TableCell>
 
-                    <TableCell sx={{ py: 0.5 }}>
-                      <Chip
-                        label={row.status}
-                        size="small"
-                        onClick={() => {
-                          setSelectedRow(row);
-                          setHistoryOpen(true);
-                        }}
-                        sx={{
-                          color: "black",
-                          fontSize: "0.8rem",
-                          height: 20,
-                          cursor: "pointer",
-                          backgroundColor: "transparent",
-                          backgroundImage:
-                            row.status === "APPROVED"
-                              ? "repeating-linear-gradient(45deg, #4caf5070, #4caf5070 2px, #4caf5040 2px, #4caf5040 4px)"
-                              : row.status === "REJECTED"
-                              ? "repeating-linear-gradient(45deg, #f4433670, #f4433670 2px, #f4433640 2px, #f4433640 4px)"
-                              : "repeating-linear-gradient(45deg, #2196f370, #2196f370 2px, #2196f340 2px, #2196f340 4px)",
-                          borderRadius: 1,
-                          minWidth: 90,
-                          textAlign: "center",
-                          justifyContent: "center",
-                          border:
-                            row.status === "APPROVED"
-                              ? "1px solid #4caf50" // green
-                              : row.status === "REJECTED"
-                              ? "1px solid #f44336" // red
-                              : "1px solid #2196f3", // blue (VIEW)
-                        }}
-                      />
+                    <TableCell sx={{ py: 0.5, textAlign: "left" }}>
+                      <Tooltip title={row.status} arrow>
+                        <ButtonBase
+                          onClick={async (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+
+                            const fullHistory = await fetchChatHistory(
+                              row.conversationId
+                            );
+                            setSelectedRow({
+                              ...row,
+                              feedResponses: fullHistory,
+                            });
+                            setHistoryOpen(true);
+                          }}
+                          sx={{
+                            "& img": {
+                              width: 120,
+                              height: 42,
+                              cursor: "pointer",
+                              transition: "transform 0.2s",
+                              "&:hover": { transform: "scale(1.2)" },
+                            },
+                          }}
+                        >
+                          <Box
+                            component="img"
+                            src={
+                              row.status === "Approved"
+                                ? "/images/approved_logo.png"
+                                : row.status === "rejected"
+                                ? "/images/rejected_logo.png"
+                                : "/images/view_logo.png"
+                            }
+                            alt={row.status}
+                          />
+                        </ButtonBase>
+                      </Tooltip>
                     </TableCell>
 
                     <TableCell sx={{ py: 0.5 }}>
@@ -845,7 +989,13 @@ export default function FeedbackTable() {
                               <IconButton
                                 color="success"
                                 size="small"
-                                sx={{ p: 0.3 }}
+                                onClick={() =>
+                                  handleUpdateAction(
+                                    row.conversationId,
+                                    row.responseId,
+                                    "Approved"
+                                  )
+                                }
                               >
                                 <CheckIcon fontSize="small" />
                               </IconButton>
@@ -855,9 +1005,15 @@ export default function FeedbackTable() {
                               <IconButton
                                 color="error"
                                 size="small"
-                                sx={{ p: 0.3 }}
+                                onClick={() =>
+                                  handleUpdateAction(
+                                    row.conversationId,
+                                    row.responseId,
+                                    "rejected"
+                                  )
+                                }
                               >
-                                <ClearIcon fontSize="small" />
+                                <CloseIcon fontSize="small" />
                               </IconButton>
                             </Tooltip>
 
@@ -866,6 +1022,7 @@ export default function FeedbackTable() {
                                 color="error"
                                 size="small"
                                 sx={{ p: 0.3 }}
+                                onClick={() => handleDelete(row.conversationId)}
                               >
                                 <DeleteIcon fontSize="small" />
                               </IconButton>
@@ -877,6 +1034,7 @@ export default function FeedbackTable() {
                               color="error"
                               size="small"
                               sx={{ p: 0.3 }}
+                              onClick={() => handleDelete(row.conversationId)}
                             >
                               <DeleteIcon fontSize="small" />
                             </IconButton>
@@ -888,68 +1046,92 @@ export default function FeedbackTable() {
                 ))}
             </TableBody>
           </Table>
-
-          <ChatHistoryDialog
-            open={historyOpen}
-            onClose={() => setHistoryOpen(false)}
-            row={selectedRow}
-          />
         </TableContainer>
 
         <TablePagination
-          rowsPerPageOptions={[5, 10, 25, 50]}
+          rowsPerPageOptions={[5, 10, 20, 50]}
           component="div"
           count={filteredRows.length}
           rowsPerPage={rowsPerPage}
           page={page}
           onPageChange={handleChangePage}
           onRowsPerPageChange={handleChangeRowsPerPage}
-          labelRowsPerPage="Per page"
-          labelDisplayedRows={({ from, to, count }) =>
-            `Showing ${from}-${to} of ${count}`
-          }
         />
       </Paper>
+
+      <ChatHistoryDialog
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        row={selectedRow}
+        updateAction={updateAction}
+        setSnackbar={setSnackbar}
+        setSnackbarOpen={setSnackbarOpen}
+      />
 
       <Menu
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
         onClose={handleCloseFilter}
         PaperProps={{
-          style: { maxHeight: 300, width: 220 }, // control dropdown size
+          sx: { maxHeight: 250, width: 200, p: 1 }, // maxHeight for scroll
         }}
       >
-        <Box sx={{ p: 1 }}>
-          <TextField
-            size="small"
-            placeholder="Search..."
-            fullWidth
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </Box>
-
-        <Box sx={{ maxHeight: 200, overflowY: "auto" }}>
-          {filterColumn &&
-            getColumnValues(filterColumn)
-              .filter((option) =>
-                option.toLowerCase().includes(searchTerm.toLowerCase())
-              )
-              .map((option) => {
-                const selectedVal =
-                  filters[filterColumn]?.includes(option) || false;
-                return (
+        {filterColumn && (
+          <>
+            <TextField
+              size="small"
+              placeholder="Search..."
+              variant="outlined"
+              fullWidth
+              sx={{ mb: 1 }}
+              value={filters[`${filterColumn}_search`] || ""}
+              onChange={(e) => {
+                const value = e.target.value;
+                setFilters((prev) => ({
+                  ...prev,
+                  [`${filterColumn}_search`]: value,
+                }));
+              }}
+            />
+            <Box sx={{ maxHeight: 180, overflowY: "auto" }}>
+              {getColumnValues(filterColumn)
+                .filter((val) =>
+                  val
+                    .toLowerCase()
+                    .includes(
+                      (filters[`${filterColumn}_search`] || "").toLowerCase()
+                    )
+                )
+                .map((val, i) => (
                   <MenuItem
-                    key={option}
-                    onClick={() => handleToggleFilterValue(option)}
+                    key={i}
+                    onClick={() => handleToggleFilterValue(val)}
                   >
-                    <Checkbox checked={selectedVal} size="small" />
-                    <Typography variant="body2">{option}</Typography>
+                    <Checkbox
+                      checked={filters[filterColumn]?.includes(val) || false}
+                      size="small"
+                    />
+                    {val}
                   </MenuItem>
-                );
-              })}
-        </Box>
+                ))}
+            </Box>
+          </>
+        )}
       </Menu>
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={3000}
+        onClose={() => setSnackbarOpen(false)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setSnackbarOpen(false)}
+          severity={snackbar.severity}
+          sx={{ width: "100%" }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

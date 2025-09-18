@@ -428,6 +428,34 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
             </IconButton>
           </Tooltip> */}
 
+          {/* Kibana Button */}
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() =>
+              window.open(
+                "http://kibana-test.apps.lab.ocp.lan/app/dashboards#/view/10abbbf8-79f0-4a0e-9bbe-42dc66f2f51c?embed",
+                "_blank" // change to "_self" if you want same tab navigation
+              )
+            }
+            sx={{
+              textTransform: "none",
+              fontWeight: 600,
+              borderRadius: 2,
+              height: 32,
+              px: 2,
+              fontSize: "0.85rem",
+              color: "#1976d2",
+              borderColor: "#1976d2",
+              "&:hover": {
+                backgroundColor: "rgba(25, 118, 210, 0.08)",
+                borderColor: "#115293",
+              },
+            }}
+          >
+            Kibana Monitoring
+          </Button>
+
           <Tooltip title="Logout" arrow>
             <IconButton onClick={handleLogout} size="medium">
               <ExitToAppIcon sx={{ fontSize: "1.3rem", color: "#d32f2f" }} />
