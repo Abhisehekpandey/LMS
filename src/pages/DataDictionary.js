@@ -42,8 +42,8 @@ import SimCardDownloadIcon from "@mui/icons-material/SimCardDownload";
 import { getDepartments } from "../api/departmentService";
 
 const columns = [
-  { key: "word", label: "Word", width: "15%" },
-  { key: "description", label: "Description", width: "35%" },
+  { key: "word", label: "Word", width: "20%" },
+  { key: "description", label: "Description", width: "30%" },
   { key: "department", label: "Department", width: "20%" },
   { key: "date", label: "Date", width: "20%" },
   { key: "actions", label: "Action", width: "10%" },
@@ -104,41 +104,18 @@ export default function DataDictionary() {
 
   const handleCloseDialog = () => setOpenDialog(false);
 
-  const handleDeleteWord = async (id) => {
-    try {
-      await axios.delete(
-        `${window.__ENV__.REACT_APP_ROUTE}/tenants/department/deletedataDictionary/${id}`,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
-            username: sessionStorage.getItem("adminEmail"),
-          },
-        }
-      );
-
-      setDictionaryData((prev) => prev.filter((row) => row.id !== id));
-
-      setSnackbar({
-        open: true,
-        message: "Word deleted successfully!",
-        severity: "success",
-      });
-    } catch (err) {
-      console.error("Error deleting word:", err);
-      setSnackbar({
-        open: true,
-        message: "Failed to delete word.",
-        severity: "error",
-      });
-    }
-  };
-
   const updateDictionaryWord = async (payload) => {
     try {
+      // since payload is an array, take the first element
+      const { id, word, description, deptName } = payload[0];
+
       const response = await axios.put(
-        `${window.__ENV__.REACT_APP_ROUTE}/tenants/department/dataDictionary`,
-        payload,
+        `${window.__ENV__.REACT_APP_ROUTE}/tenants/department/editdataDictionary/${id}`,
+        {
+          word,
+          description,
+          deptName: deptName, // backend expects "deptNames"
+        },
         {
           headers: {
             "Content-Type": "application/json",
@@ -147,6 +124,7 @@ export default function DataDictionary() {
           },
         }
       );
+
       return response.data;
     } catch (error) {
       console.error("Failed to update dictionary word:", error);
@@ -573,6 +551,7 @@ export default function DataDictionary() {
                         size="small"
                       />
                     </TableCell>
+
                     {columns.map((col) =>
                       col.key === "actions" ? (
                         <TableCell
@@ -596,9 +575,22 @@ export default function DataDictionary() {
                       ) : (
                         <TableCell
                           key={col.key}
-                          sx={{ py: 0.5, width: col.width }}
+                          sx={{
+                            py: 0.5,
+                            width: col.width,
+                            maxWidth: col.key === "description" ? 200 : "auto", // limit width
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
                         >
-                          {row[col.key]}
+                          {col.key === "description" ? (
+                            <Tooltip title={row.description || ""} arrow>
+                              <span>{row.description}</span>
+                            </Tooltip>
+                          ) : (
+                            row[col.key]
+                          )}
                         </TableCell>
                       )
                     )}

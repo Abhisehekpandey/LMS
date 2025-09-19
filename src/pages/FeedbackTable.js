@@ -55,10 +55,11 @@ const ChatHistoryDialog = ({
   open,
   onClose,
   row,
-  updateAction,
+  handleUpdateAction,
   setSnackbar,
   setSnackbarOpen,
 }) => {
+  console.log("handleUpdateAction", handleUpdateAction);
   const [selectedChats, setSelectedChats] = useState([]);
 
   const hasSelected = selectedChats.length > 0;
@@ -71,7 +72,7 @@ const ChatHistoryDialog = ({
   }, [row]);
 
   useEffect(() => {
-    if (sortedHistory.length > 0) setSelectedChats([sortedHistory.length - 1]);
+    setSelectedChats([]); // start with no selection
   }, [sortedHistory]);
 
   const toggleChatSelection = (index) => {
@@ -81,11 +82,17 @@ const ChatHistoryDialog = ({
   };
 
   const handleBulkAction = async (actionType) => {
+    console.log("action", actionType);
     try {
       for (const idx of selectedChats) {
         const chat = sortedHistory[idx];
-        if (chat.responseId) {
-          await updateAction(row.conversationId, chat.responseId, actionType);
+        console.log("chat", chat);
+        if (chat.responseId || chat.responseId == null) {
+          await handleUpdateAction(
+            row.conversationId,
+            chat.responseId,
+            actionType
+          );
         }
       }
       setSnackbar({
@@ -197,13 +204,23 @@ const ChatHistoryDialog = ({
                 mb={2}
               >
                 <Box display="flex" alignItems="flex-start" gap={1}>
-                  {(chat.status === 1 || chat.status === -1) && (
-                    <Checkbox
-                      checked={selectedChats.includes(index)}
-                      onChange={() => toggleChatSelection(index)}
-                      size="small"
-                    />
-                  )}
+                  {chat.status === 1 || chat.status === -1 ? (
+                    chat.actionType === "Approved" ? (
+                      <Tooltip title="Approved">
+                        <CheckIcon sx={{ color: "green" }} />
+                      </Tooltip>
+                    ) : chat.actionType === "rejected" ? (
+                      <Tooltip title="Rejected">
+                        <ClearIcon sx={{ color: "red" }} />
+                      </Tooltip>
+                    ) : (
+                      <Checkbox
+                        checked={selectedChats.includes(index)}
+                        onChange={() => toggleChatSelection(index)}
+                        size="small"
+                      />
+                    )
+                  ) : null}
 
                   <Box
                     display="flex"
@@ -493,6 +510,9 @@ export default function FeedbackTable() {
   };
 
   const updateAction = async (conversationId, responseId, actionType) => {
+    console.log("conversationId", conversationId);
+    console.log("responseId", responseId);
+    console.log("actionType", actionType);
     try {
       const res = await fetch(
         `${window.__ENV__.REACT_APP_ROUTE}/mainGpt/updateAction?conversationId=${conversationId}&responseId=${responseId}&actionType=${actionType}`,
@@ -515,10 +535,10 @@ export default function FeedbackTable() {
   };
 
   const handleUpdateAction = async (conversationId, responseId, actionType) => {
+    console.log("conversationId", conversationId);
     try {
       await updateAction(conversationId, responseId, actionType);
 
-      // Update local feedbackRows
       setFeedbackRows((prevRows) =>
         prevRows.map((row) => {
           if (
@@ -580,13 +600,11 @@ export default function FeedbackTable() {
     });
   };
 
-  // MODIFIED: Add tab-based filtering to filteredRows
   const filteredRows = useMemo(() => {
     return feedbackRows.filter((row) => {
       if (activeTab === 1 && row.status !== "Approved") return false;
       if (activeTab === 2 && row.status !== "rejected") return false;
       if (activeTab === 3 && row.status !== "VIEW") return false;
-      // activeTab === 0 means ALL, so no additional filtering needed
 
       const passesFilters = Object.entries(filters).every(([key, values]) => {
         if (values.length === 0) return true;
@@ -611,7 +629,7 @@ export default function FeedbackTable() {
 
       return passesFilters && passesSearch;
     });
-  }, [filters, searchTerm, feedbackRows, activeTab]); // Add activeTab to dependencies
+  }, [filters, searchTerm, feedbackRows, activeTab]);
 
   const getColumnValues = (colKey) => {
     if (colKey === "latestChat")
@@ -676,30 +694,12 @@ export default function FeedbackTable() {
         alignItems="center"
         mb={2}
       >
-        {/* MODIFIED: Header with title and tabs */}
         <Box display="flex" alignItems="center" gap={2}>
           <Typography variant="h5" fontWeight={700}>
             <FeedbackIcon sx={{ mr: 1, color: "orange" }} />
             Feedback Table
           </Typography>
 
-          {/* <Tabs
-            value={activeTab}
-            onChange={handleTabChange}
-            sx={{
-              "& .MuiTab-root": {
-                minWidth: "auto",
-                fontSize: "0.9rem",
-                textTransform: "none",
-                fontWeight: 500,
-              },
-            }}
-          >
-            <Tab label="ALL" />
-            <Tab label="APPROVED" />
-            <Tab label="REJECTED" />
-            <Tab label="VIEW" />
-          </Tabs> */}
           <Tabs
             value={activeTab}
             onChange={handleTabChange}
@@ -1063,7 +1063,7 @@ export default function FeedbackTable() {
         open={historyOpen}
         onClose={() => setHistoryOpen(false)}
         row={selectedRow}
-        updateAction={updateAction}
+        handleUpdateAction={handleUpdateAction}
         setSnackbar={setSnackbar}
         setSnackbarOpen={setSnackbarOpen}
       />
