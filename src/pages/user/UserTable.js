@@ -58,6 +58,7 @@ import {
   Filter,
   FilterList,
 } from "@mui/icons-material";
+import DeleteIcon from "@mui/icons-material/Delete";
 import SearchIcon from "@mui/icons-material/Search";
 import { PolymorphicTable } from "polymorphic-table";
 import styles from "./user.module.css";
@@ -730,7 +731,9 @@ export default function UserTable() {
   };
 
   const label = { inputProps: { "aria-label": "Switch demo" } };
-
+const handledummy =()=>{
+  toast.info("This feature is coming soon!"); 
+}
   const handleDelete = (e, row) => {
     if (row) {
       setDeleteUser(true);
@@ -1283,7 +1286,7 @@ export default function UserTable() {
         elevation={24}
         sx={{
           overflow: "hidden",
-         padding: "10px", 
+          padding: "10px",
           borderRadius: "20px",
           animation: "slideInFromLeft 0.3s ease-in-out forwards",
           opacity: 0, // Start with opacity 0
@@ -1316,6 +1319,16 @@ export default function UserTable() {
             onRowsPerPageChange={handleChangeRowsPerPage}
             selectedRowKeys={selected}
             onRowSelect={(ids) => setSelected(ids)}
+            renderToolbarIcons={(selected) =>
+              selected.length > 0 && (
+                <Tooltip title="Delete Selected">
+                  <IconButton onClick={handleDelete}>
+                    <DeleteIcon />
+                  </IconButton>
+                </Tooltip>
+              )
+            }
+            showDefaultToolbarIcons={false} // hide defaults if you only want custom
             renderTableFooterRight={() => (
               <Tooltip title="Add New User">
                 <IconButton
@@ -1378,7 +1391,7 @@ export default function UserTable() {
         }}
       >
         <CreateUser
-          open={createUser} // 👈 Add this line
+          open={createUser} //  Add this line
           handleClose={() => setCreateUser(false)}
           onUserCreated={(page, newUserEmails) => {
             refetchUsers(page, newUserEmails);
@@ -1740,7 +1753,7 @@ export default function UserTable() {
         </DialogActions>
       </Dialog>
 
-{/* select all logic here  */}
+      {/* select all logic here  */}
 
       {/* snack bar here  */}
       <Snackbar
