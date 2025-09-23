@@ -209,11 +209,11 @@ const menuItems = React.useMemo(
       icon: <DictionaryIcon />,
       text: "Data Dictionary",
     },
-    {
-      path: "/feed-context",
-      icon: <FeedContextIcon />,
-      text: "Feedback Dashboard",
-    },
+    // {
+    //   path: "/feed-context",
+    //   icon: <FeedContextIcon />,
+    //   text: "Feedback Dashboard",
+    // },
     {
       path: "/feedback-table",
       icon: <TableChartIcon />,

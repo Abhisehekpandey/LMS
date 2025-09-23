@@ -1212,14 +1212,14 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           const worksheet = workbook.Sheets[workbook.SheetNames[0]];
           const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-          // Required columns
+          // ✅ Required columns
           const requiredColumns = {
             Department: false,
             "Display Name": false,
             "Department Moderator": false,
             "Storage Allocated": false,
-            "Storage Consumed": false,
             Role: false,
+            Permission: false,
           };
 
           if (jsonData.length > 0) {
@@ -1246,10 +1246,20 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             return;
           }
 
-          // Validate each row
+          // ✅ Existing departments from table
+          const existingDeptNames = new Set(
+            departments.map((d) => d.name.toLowerCase())
+          );
+          const existingDisplayNames = new Set(
+            departments.map((d) => d.displayName.toLowerCase())
+          );
+
           const invalidRows = [];
+          const seenDeptNames = new Set();
+          const seenDisplayNames = new Set();
+
           jsonData.forEach((row, index) => {
-            const rowNumber = index + 2;
+            const rowNumber = index + 2; // Excel rows start at 2 (row 1 = header)
             const errors = [];
 
             if (!row.Department) errors.push("Department");
@@ -1257,14 +1267,43 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             if (!row["Department Moderator"])
               errors.push("Department Moderator");
             if (!row["Storage Allocated"]) errors.push("Storage Allocated");
-            if (row["Storage Consumed"] === undefined) {
-              row["Storage Consumed"] = 0;
-            }
             if (!row.Role) errors.push("Role");
+            if (!row.Permission) errors.push("Permission");
+
+            // ✅ Duplicate check within the file
+            if (row.Department) {
+              if (seenDeptNames.has(row.Department.toLowerCase())) {
+                errors.push("Duplicate Department in file");
+              } else {
+                seenDeptNames.add(row.Department.toLowerCase());
+              }
+            }
+
+            if (row["Display Name"]) {
+              if (seenDisplayNames.has(row["Display Name"].toLowerCase())) {
+                errors.push("Duplicate Display Name in file");
+              } else {
+                seenDisplayNames.add(row["Display Name"].toLowerCase());
+              }
+            }
+
+            // ✅ Duplicate check against existing table
+            if (
+              row.Department &&
+              existingDeptNames.has(row.Department.toLowerCase())
+            ) {
+              errors.push("Department already exists");
+            }
+            if (
+              row["Display Name"] &&
+              existingDisplayNames.has(row["Display Name"].toLowerCase())
+            ) {
+              errors.push("Display Name already exists");
+            }
 
             if (errors.length > 0) {
               invalidRows.push(
-                `Row ${rowNumber} missing: ${errors.join(", ")}`
+                `Row ${rowNumber} issue(s): ${errors.join(", ")}`
               );
             }
           });
@@ -1278,13 +1317,14 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             return;
           }
 
-          // ✅ Transform rows to API payload
+          // ✅ Build API payload
           const apiPayload = jsonData.map((row) => ({
             deptName: row["Department"],
             deptDisplayName: row["Display Name"],
             deptModerator: row["Department Moderator"],
-            role: row["Role"],
             storage: row["Storage Allocated"],
+            role: row["Role"],
+            permission: row["Permission"] || "ADMIN",
           }));
 
           // ✅ Send API request
@@ -1303,7 +1343,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               }
             );
 
-            // ✅ SUCCESS: Show snackbar + refresh data + close dialog
             setSnackbar({
               open: true,
               message: "Bulk department upload successful",
@@ -1311,9 +1350,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             });
             setShowAddDepartment(false);
 
-            fetchDepartments(); // ✅ Refresh the department list
-            setBulkUploadDialogOpen(false); // ✅ Close the upload dialog
-            // setBulkDepartments([]); // Optional: reset state if using
+            fetchDepartments(); // refresh data
+            setBulkUploadDialogOpen(false);
           } catch (apiError) {
             console.error("API error:", apiError);
             setSnackbar({
@@ -1654,22 +1692,22 @@ function Department({ departments, setDepartments, onThemeToggle }) {
   };
   const handleTemplateDownload = () => {
     const headers = [
-      "Department", // e.g., "IT"
-      "Display Name", // e.g., "Information Technology"
-      "Department Moderator", // e.g., "john.doe@example.com"
-      "Storage Allocated", // e.g., "50 GB"
-      "Storage Consumed", // e.g., "10 GB"
-      "Role", // e.g., "Admin"
+      "Department", // deptName
+      "Display Name", // deptDisplayName
+      "Department Moderator", // deptModerator
+      "Storage Allocated", // storage
+      "Role", // role
+      "Permission", // permission
     ];
 
     const dummyData = [
       [
-        "IT",
-        "Information Technology",
-        "john.doe@example.com",
-        "50 GB",
-        "10 GB",
-        "Admin",
+        "IT", // Department
+        "Information Technology", // Display Name
+        "john.doe@example.com", // Department Moderator
+        "50 GB", // Storage Allocated
+        "Admin", // Role
+        "ADMIN", // Permission
       ],
     ];
 
@@ -1696,6 +1734,11 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       console.log(">>ssss", selectedDepartments);
 
       const exportData = selectedDepartments.flatMap((dept) => {
+        // ✅ Collect all users across roles
+        const users = dept.roles?.flatMap((role) => role.user || []) || [];
+        const userNames = users.map((u) => u.name).join(", ");
+        const userCount = users.length;
+
         if (!dept.roles || dept.roles.length === 0) {
           return [
             {
@@ -1705,6 +1748,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               "Storage Allocated": dept.allowedStorage || "N/A",
               "Storage Consumed": dept.storage || "N/A",
               Role: "",
+              "No of Users":
+                userCount > 0 ? `${userCount} (${userNames})` : "0",
             },
           ];
         }
@@ -1716,6 +1761,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           "Storage Allocated": dept.allowedStorage || "N/A",
           "Storage Consumed": dept.storage || "N/A",
           Role: role.roleName,
+          "No of Users": userCount > 0 ? `${userCount} (${userNames})` : "0",
         }));
       });
 
@@ -1728,6 +1774,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         { wch: 20 }, // Storage Allocated
         { wch: 20 }, // Storage Consumed
         { wch: 30 }, // Role
+        { wch: 40 }, // No of Users
       ];
       ws["!cols"] = wscols;
 
@@ -1750,6 +1797,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       });
     }
   };
+
   const cleanDisplay = (val) => {
     if (!val) return "";
     const [num, unit] = val.trim().split(/\s+/); // splits "25.00 GB" → ["25.00", "GB"]
@@ -2264,7 +2312,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     )}
                   </StyledTableRow>
 
-                  {/* Expandable row for roles */}
                   <StyledTableRow>
                     <TableCell
                       style={{
@@ -3243,7 +3290,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                               </MenuItem>
                             ))}
 
-                          {/* ✅ Show message when no match */}
                           {filteredUsers.filter((user) =>
                             user.name
                               .toLowerCase()
@@ -3335,7 +3381,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           </IconButton>
         </DialogTitle>
 
-        {/* Content */}
         <DialogContent sx={{ py: 3, px: 2, mt: 2 }}>
           <Typography variant="body1" sx={{ color: "#334155" }}>
             Are you sure you want to delete{" "}
@@ -3349,7 +3394,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           </Typography>
         </DialogContent>
 
-        {/* Actions */}
         <DialogActions
           sx={{
             px: 2,
@@ -3609,7 +3653,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           {addUserAssignments.map((assignment, index) => (
             <Box key={index} sx={{ mb: 1, mt: 2 }}>
               <Grid container spacing={2} alignItems="center">
-                {/* Select User */}
                 <Grid item xs={3}>
                   <Autocomplete
                     size="small"
@@ -3729,7 +3772,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             </Box>
           ))}
 
-          {/* Add another user button */}
           <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
             <Tooltip title="Add More Users">
               <Fab
