@@ -2093,7 +2093,7 @@ export default function UserTable() {
                 />
               </Grid>
 
-              <Grid item xs={6}>
+              {/* <Grid item xs={6}>
                 <TextField
                   size="small"
                   label="Phone Number"
@@ -2118,6 +2118,43 @@ export default function UserTable() {
                   )}
                   helperText={
                     editData.phoneNumber && editData.phoneNumber.length !== 10
+                      ? "Phone number must be exactly 10 digits"
+                      : ""
+                  }
+                />
+              </Grid> */}
+
+              <Grid item xs={6}>
+                <TextField
+                  size="small"
+                  fullWidth
+                  label={
+                    <>
+                      Phone Number <span style={{ color: "red" }}>*</span>
+                    </>
+                  }
+                  value={editData.phoneNumber || ""}
+                  onChange={(e) => {
+                    const input = e.target.value;
+
+                    // Allow only digits
+                    if (!/^\d*$/.test(input)) return;
+
+                    // Restrict to max 10 digits
+                    if (input.length > 10) return;
+
+                    setEditData((prev) => ({
+                      ...prev,
+                      phoneNumber: input,
+                    }));
+                  }}
+                  error={
+                    !editData.phoneNumber || editData.phoneNumber.length !== 10
+                  }
+                  helperText={
+                    !editData.phoneNumber
+                      ? "Required"
+                      : editData.phoneNumber.length !== 10
                       ? "Phone number must be exactly 10 digits"
                       : ""
                   }

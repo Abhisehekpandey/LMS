@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import {
   Box,
   Card,
@@ -11,41 +12,6 @@ import {
 import { Tooltip } from "@mui/material";
 import { LineChart, PieChart } from "@mui/x-charts";
 import CountUp from "react-countup";
-
-const statsData = [
-  {
-    key: "feedback",
-    label: "Total Feedback",
-    value: 1746,
-    changePct: 7,
-    icon: "/icons/feedback.png",
-    accentBg: "rgba(37, 211, 102, 0.12)", // subtle pastel circle
-  },
-  {
-    key: "likes",
-    label: "Total Likes",
-    value: 474,
-    changePct: -18,
-    icon: "/icons/likes.png",
-    accentBg: "rgba(105, 92, 255, 0.08)",
-  },
-  {
-    key: "dislikes",
-    label: "Total Dislikes",
-    value: 802,
-    changePct: 2,
-    icon: "/icons/dislikes.png",
-    accentBg: "rgba(255, 99, 132, 0.08)",
-  },
-  {
-    key: "pending",
-    label: "Pending Actions",
-    value: 635,
-    changePct: -5,
-    icon: "/icons/pending.png",
-    accentBg: "rgba(18, 140, 126, 0.08)",
-  },
-];
 
 const trendData = [
   { month: "Sun", likes: 420, dislikes: 260 },
@@ -74,29 +40,75 @@ const cardShadow = "0 8px 24px rgba(44, 60, 80, 0.06)";
 
 export default function FeedBackDashboard() {
   const [range, setRange] = React.useState("weekly");
+  const [statsData, setStatsData] = useState([]);
 
   const handleRange = (e, val) => {
     if (val) setRange(val);
   };
 
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await axios.get(
+          `${window.__ENV__.REACT_APP_ROUTE}/mainGpt/getDashboardData`,
+          {
+            headers: {
+              Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+              username: `${sessionStorage.getItem("adminEmail")}`,
+            },
+          }
+        );
+
+        const data = res.data;
+
+        const mappedStats = [
+          {
+            key: "feedback",
+            label: "Total Feedback",
+            value: data.totalFeedback,
+            changePct: data.feedbackChangePercent,
+            icon: "/icons/feedback.png",
+            accentBg: "rgba(37, 211, 102, 0.12)",
+          },
+          {
+            key: "likes",
+            label: "Total Likes",
+            value: data.totalLikes,
+            changePct: data.likesChangePercent,
+            icon: "/icons/likes.png",
+            accentBg: "rgba(105, 92, 255, 0.08)",
+          },
+          {
+            key: "dislikes",
+            label: "Total Dislikes",
+            value: data.totalDislikes,
+            changePct: data.dislikesChangePercent,
+            icon: "/icons/dislikes.png",
+            accentBg: "rgba(255, 99, 132, 0.08)",
+          },
+          {
+            key: "pending",
+            label: "Pending Actions",
+            value: 0, // backend didn’t provide pending count
+            changePct: 0,
+            icon: "/icons/pending.png",
+            accentBg: "rgba(18, 140, 126, 0.08)",
+          },
+        ];
+
+        setStatsData(mappedStats);
+      } catch (error) {
+        console.error("Error fetching feedback stats:", error);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
   const dataset = trendData.map((d) => ({
     ...d,
     total: (d.likes + d.dislikes) * 0.7,
   }));
-
-  const pieSeries = [
-    {
-      data: contributionSeries.map((s) => ({
-        label: s.label,
-        value: s.value,
-        color: s.color,
-      })),
-      innerRadius: 45,
-      outerRadius: 85,
-      labelPosition: "outside",
-      paddingAngle: 3,
-    },
-  ];
 
   return (
     <Box

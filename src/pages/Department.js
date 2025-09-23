@@ -2198,50 +2198,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                       </TableCell>
                     )}
 
-                    {/* {visibleColumns.actions && (
-                      <TableCell sx={{ textAlign: "center" }}>
-                        <Box
-                          sx={{
-                            display: "flex",
-                            justifyContent: "center",
-                            gap: 0.5,
-                          }}
-                        >
-                          <IconButton
-                            size="small"
-                            onClick={() => handleEditDepartment(dept)}
-                            sx={{
-                              color: "#1976d2",
-                              "&:hover": {
-                                backgroundColor: "#e3f2fd",
-                                color: "#1565c0",
-                              },
-                            }}
-                            title="Edit Department"
-                          >
-                            <EditIcon fontSize="small" />
-                          </IconButton>
-                          <IconButton
-                            size="small"
-                            onClick={() => {
-                              setDepartmentToDelete(dept);
-                              setDeleteDialogOpen(true);
-                            }}
-                            sx={{
-                              color: "#d32f2f",
-                              "&:hover": {
-                                backgroundColor: "#ffebee",
-                                color: "#c62828",
-                              },
-                            }}
-                            title="Delete Department"
-                          >
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
-                        </Box>
-                      </TableCell>
-                    )} */}
-
                     {visibleColumns.actions && (
                       <TableCell sx={{ textAlign: "center" }}>
                         <Box
@@ -2481,30 +2437,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             accept=".xlsx,.xls"
             style={{ display: "none" }}
           />
-          {/* <Tooltip title="Add Department" placement="left">
-            <SpeedDial
-              ariaLabel="Department actions"
-              icon={<Add />}
-              onClick={() => setShowAddDepartment(true)}
-              direction="left"
-              FabProps={{
-                sx: {
-                  bgcolor: "orange",
-
-                  "&:hover": {
-                    backgroundColor: "orange", // Keep the background color on hover
-                    animation: "glowBorder 1.5s ease-in-out infinite", // Apply glowing animation on hover
-                  },
-                  width: 37,
-                  height: 30,
-                  "& .MuiSpeedDialIcon-root": {
-                    fontSize: "1.2rem",
-                    color: "white",
-                  },
-                },
-              }}
-            />
-          </Tooltip> */}
 
           {deptAdmin && !superAdmin ? (
             <Tooltip
@@ -2706,12 +2638,15 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                           <TextField
                             fullWidth
                             size="small"
-                            label="Department Name"
+                            label={
+                              <>
+                                Department Name{" "}
+                                <span style={{ color: "red" }}>*</span>
+                              </>
+                            }
                             value={dept.name}
                             onChange={(e) => {
                               const value = e.target.value;
-
-                              // Regex: allow only letters, numbers, dash, underscore
                               const hasInvalidChar = /[^A-Za-z0-9-_]/.test(
                                 value
                               );
@@ -2722,7 +2657,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                 checkDuplicateDepartment(value);
                               }
 
-                              // Track invalid char status
                               updateDepartmentField(
                                 index,
                                 "hasInvalidChar",
@@ -2749,19 +2683,21 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                           />
                         </Grid>
 
+                        {/* Department Short Name */}
                         <Grid item xs={6}>
                           <TextField
                             fullWidth
                             size="small"
-                            label="Department Short Name"
+                            label={
+                              <>
+                                Department Short Name{" "}
+                                <span style={{ color: "red" }}>*</span>
+                              </>
+                            }
                             value={dept.displayName}
                             onChange={(e) => {
                               const value = e.target.value.toUpperCase();
-
-                              // Check if special characters exist
                               const hasSpecialChar = /[^A-Z0-9]/.test(value);
-
-                              // Store clean value (remove special chars for saving)
                               const validValue = value.replace(
                                 /[^A-Z0-9]/g,
                                 ""
@@ -2776,7 +2712,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                 checkDuplicateShortName(validValue);
                               }
 
-                              // Add a flag for validation
                               updateDepartmentField(
                                 index,
                                 "hasSpecialChar",
@@ -2803,17 +2738,18 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                           />
                         </Grid>
 
+                        {/* Storage Allocation */}
                         <Grid item xs={6}>
                           <FormControl
                             fullWidth
                             size="small"
                             error={!dept.storage && dept.submitted}
                           >
-                            <InputLabel id={`storage-label-${index}`}>
-                              Storage Allocation
+                            <InputLabel>
+                              Storage Allocation{" "}
+                              <span style={{ color: "red" }}>*</span>
                             </InputLabel>
                             <Select
-                              labelId={`storage-label-${index}`}
                               value={dept.storage}
                               onChange={(e) =>
                                 updateDepartmentField(
@@ -2840,6 +2776,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                           </FormControl>
                         </Grid>
 
+                        {/* Department Owner */}
                         <Grid item xs={6}>
                           <Autocomplete
                             size="small"
@@ -2858,7 +2795,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                 newValue?.email || ""
                               )
                             }
-                            // 👇 Add scroll listener
                             ListboxProps={{
                               onScroll: (event) => {
                                 const listboxNode = event.currentTarget;
@@ -2867,15 +2803,20 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                     listboxNode.clientHeight >=
                                   listboxNode.scrollHeight - 1
                                 ) {
-                                  loadMoreUsers(); // ✅ Fetch next page when scrolled to bottom
+                                  loadMoreUsers();
                                 }
                               },
-                              style: { maxHeight: 250 }, // optional: limit height with scrollbar
+                              style: { maxHeight: 250 },
                             }}
                             renderInput={(params) => (
                               <TextField
                                 {...params}
-                                label="Department Owner"
+                                label={
+                                  <>
+                                    Department Owner{" "}
+                                    <span style={{ color: "red" }}>*</span>
+                                  </>
+                                }
                                 error={
                                   !dept.departmentModerator && dept.submitted
                                 }
@@ -2888,6 +2829,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                             )}
                           />
                         </Grid>
+
                         <Grid item xs={6}>
                           <TextField
                             label="Role"
@@ -3219,7 +3161,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 <TextField
                   fullWidth
                   size="small"
-                  label="Change Owner"
+                  label="Search New Owner"
                   value={searchModerator}
                   onFocus={() => {
                     setShowUserDropdown(true);

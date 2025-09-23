@@ -120,6 +120,7 @@ const CreateUser = ({
       "ROLE",
       "DEPARTMENT",
       "REPORTINGMANAGER",
+      "REGION",
     ];
 
     const exampleRow = [
@@ -130,6 +131,7 @@ const CreateUser = ({
       "software engineer",
       "frontend",
       "dhruv sethi",
+      "Asia",
     ];
 
     const worksheetData = [headers, exampleRow];
@@ -272,6 +274,7 @@ const CreateUser = ({
             "ROLE",
             "DEPARTMENT",
             "REPORTINGMANAGER",
+            "REGION",
           ];
 
           const hasAllHeaders = requiredHeaders.every((h) =>
@@ -313,6 +316,7 @@ const CreateUser = ({
                 roleName: row["ROLE"]?.trim() || "",
                 deptName: row["DEPARTMENT"]?.trim() || "",
                 reportingManager: row["REPORTINGMANAGER"]?.trim() || "",
+                region: row["REGION"]?.trim() || defaultRegion,
               });
             });
 
