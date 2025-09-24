@@ -254,85 +254,20 @@ const CreateUser = ({
 
   const handleFileChange = (event) => {
     const file = event.target.files[0];
-    if (file) {
-      setBulkFile(file);
-      setFileName(file.name);
+    if (!file) return;
 
+    setBulkFile(file);
+    setFileName(file.name);
+
+    const fileExt = file.name.split(".").pop().toLowerCase();
+
+    if (fileExt === "csv") {
+      // ✅ CSV parsing
       Papa.parse(file, {
         header: true,
         skipEmptyLines: true,
-        transformHeader: (header) => header.trim().toUpperCase(), // force match
-        complete: (results) => {
-          const headers = Object.keys(results.data[0] || {});
-          console.log("📢 Parsed Headers:", headers);
-
-          const requiredHeaders = [
-            "NAME",
-            "EMAIL",
-            "PHONE",
-            "STORAGE",
-            "ROLE",
-            "DEPARTMENT",
-            "REPORTINGMANAGER",
-            "REGION",
-          ];
-
-          const hasAllHeaders = requiredHeaders.every((h) =>
-            headers.includes(h)
-          );
-
-          if (!hasAllHeaders) {
-            showSnackbar(
-              "CSV headers are invalid. Please use the downloaded template.",
-              "error"
-            );
-            return;
-          }
-
-          const cleanedUsers = [];
-          const invalidUsers = [];
-
-          results.data
-            .filter((row) => row["EMAIL"])
-            .forEach((row) => {
-              const phone = row["PHONE"]?.trim() || "";
-              const name = row["NAME"]?.trim() || "Unknown User";
-
-              // ✅ phone validation: numeric only & exactly 10 digits
-              if (!/^[0-9]{10}$/.test(phone)) {
-                invalidUsers.push({
-                  name,
-                  phone,
-                  email: row["EMAIL"],
-                });
-                return; // skip this user
-              }
-
-              cleanedUsers.push({
-                name,
-                email: row["EMAIL"]?.trim().toLowerCase() || "",
-                phoneNumber: phone,
-                storage: row["STORAGE"]?.trim() || null,
-                roleName: row["ROLE"]?.trim() || "",
-                deptName: row["DEPARTMENT"]?.trim() || "",
-                reportingManager: row["REPORTINGMANAGER"]?.trim() || "",
-                region: row["REGION"]?.trim() || defaultRegion,
-              });
-            });
-
-          if (invalidUsers.length > 0) {
-            const phones = invalidUsers
-              .map((u) => `${u.name}: "${u.phone}"`)
-              .join(", ");
-            showSnackbar(
-              `Invalid phone numbers found → ${phones}. Must be numeric & 10 digits.`,
-              "error"
-            );
-          }
-
-          console.log("CLEANED USERS:", cleanedUsers);
-          setCsvUsers(cleanedUsers);
-        },
+        transformHeader: (header) => header.trim().toUpperCase(),
+        complete: (results) => processParsedData(results.data),
         error: (err) => {
           console.error("CSV Parsing Error:", err);
           showSnackbar(
@@ -341,7 +276,91 @@ const CreateUser = ({
           );
         },
       });
+    } else if (fileExt === "xlsx" || fileExt === "xls") {
+      // ✅ Excel parsing
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: "array" });
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json(firstSheet, { defval: "" });
+        processParsedData(jsonData);
+      };
+      reader.onerror = (err) => {
+        console.error("Excel Reading Error:", err);
+        showSnackbar("Failed to read Excel file.", "error");
+      };
+      reader.readAsArrayBuffer(file);
+    } else {
+      showSnackbar(
+        "Invalid file type. Please upload CSV or Excel (.xlsx)",
+        "error"
+      );
     }
+  };
+
+  // ✅ Shared data processing
+  const processParsedData = (data) => {
+    const headers = Object.keys(data[0] || {}).map((h) =>
+      h.trim().toUpperCase()
+    );
+    console.log("📢 Parsed Headers:", headers);
+
+    const requiredHeaders = [
+      "NAME",
+      "EMAIL",
+      "PHONE",
+      "STORAGE",
+      "ROLE",
+      "DEPARTMENT",
+      "REPORTINGMANAGER",
+      "REGION",
+    ];
+
+    const hasAllHeaders = requiredHeaders.every((h) => headers.includes(h));
+    if (!hasAllHeaders) {
+      showSnackbar("Headers are invalid. Please use the template.", "error");
+      return;
+    }
+
+    const cleanedUsers = [];
+    const invalidUsers = [];
+
+    data
+      .filter((row) => row["EMAIL"])
+      .forEach((row) => {
+        const phone = (row["PHONE"] || "").toString().trim();
+        const name = (row["NAME"] || "Unknown User").trim();
+
+        if (!/^[0-9]{10}$/.test(phone)) {
+          invalidUsers.push({ name, phone, email: row["EMAIL"] });
+          return;
+        }
+
+        cleanedUsers.push({
+          name,
+          email: (row["EMAIL"] || "").trim().toLowerCase(),
+          phoneNumber: phone,
+          storage: row["STORAGE"]?.trim() || null,
+          roleName: row["ROLE"]?.trim() || "",
+          deptName: row["DEPARTMENT"]?.trim() || "",
+          reportingManager: row["REPORTINGMANAGER"]?.trim() || "",
+          region: row["REGION"]?.trim() || defaultRegion,
+        });
+      });
+
+    if (invalidUsers.length > 0) {
+      const phones = invalidUsers
+        .map((u) => `${u.name}: "${u.phone}"`)
+        .join(", ");
+      showSnackbar(
+        `Invalid phone numbers → ${phones}. Must be numeric & 10 digits.`,
+        "error"
+      );
+    }
+
+    console.log("CLEANED USERS:", cleanedUsers);
+    setCsvUsers(cleanedUsers);
   };
 
   const addRoleToDepartment = async (dept, { role, isAdmin }) => {

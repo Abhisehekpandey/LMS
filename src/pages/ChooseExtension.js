@@ -22,6 +22,8 @@ import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import SettingsIcon from "@mui/icons-material/Settings";
 import Snackbar from "@mui/material/Snackbar";
 import MuiAlert from "@mui/material/Alert";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import IconButton from "@mui/material/IconButton";
 
 const EXTENSION_GROUPS = [
   {
@@ -156,29 +158,14 @@ const ChooseExtension = () => {
   };
 
   const handleSave = async () => {
-    const payload = {
-      documents: [],
-      archives: [],
-      images: [],
-      audio: [],
-      videos: [],
-    };
-
-    const groupKeyMap = {
-      Documents: "documents",
-      Archives: "archives",
-      Images: "images",
-      Audio: "audio",
-      Video: "videos",
-    };
+    // Prepare payload dynamically based on current extensionGroups
+    const payload = {};
 
     extensionGroups.forEach((group) => {
-      const key = groupKeyMap[group.label];
-      if (key) {
-        payload[key] = group.values.filter((ext) =>
-          selectedExtensions.includes(ext)
-        );
-      }
+      // Each category will be an array of objects { extName: boolean }
+      payload[group.label.toLowerCase()] = group.values.map((ext) => ({
+        [ext]: selectedExtensions.includes(ext), // true if selected, false if not
+      }));
     });
 
     try {
@@ -193,13 +180,15 @@ const ChooseExtension = () => {
           },
         }
       );
+
       console.log("Extensions saved successfully:", response.data);
       setSnackbar({
         open: true,
         message: "Extensions saved successfully!",
         severity: "success",
       });
-      return true; // ✅ indicate success
+
+      return true; // ✅ success
     } catch (error) {
       console.error("Error saving extensions:", error);
       setSnackbar({
@@ -211,62 +200,54 @@ const ChooseExtension = () => {
     }
   };
 
-const fetchAllowedExtensions = async () => {
-  try {
-    const response = await axios.get(
-      `${window.__ENV__.REACT_APP_ROUTE}/tenants/getExtensionsAllowed`,
-      {
-        headers: {
-          Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
-          username: `${sessionStorage.getItem("adminEmail")}`,
-        },
-      }
-    );
-
-    const data = response.data;
-    console.log("Extension response", data);
-
-    const allPreChecked = Object.values(data).flat();
-    setSelectedExtensions(allPreChecked);
-    setPreCheckedExtensions(allPreChecked);
-
-    const groupMap = {
-      documents: "Documents",
-      archives: "Archives",
-      images: "Images",
-      audio: "Audio",
-      videos: "Video",
-    };
-
-    // 🔁 Start from a clone of default categories
-    const updatedGroups = EXTENSION_GROUPS.map((group) => ({
-      label: group.label,
-      values: [...group.values],
-    }));
-
-    // 🧠 Append backend extensions into correct group
-    Object.entries(data).forEach(([categoryKey, extArray]) => {
-      const groupLabel = groupMap[categoryKey.toLowerCase()];
-      if (!groupLabel) return;
-
-      const group = updatedGroups.find((g) => g.label === groupLabel);
-      if (!group) return;
-
-      extArray.forEach((ext) => {
-        const extLower = ext.toLowerCase();
-        if (!group.values.includes(extLower)) {
-          group.values.push(extLower); // ✅ Add new ones
+  const fetchAllowedExtensions = async () => {
+    try {
+      const response = await axios.get(
+        `${window.__ENV__.REACT_APP_ROUTE}/tenants/getExtensionsAllowed`,
+        {
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+            username: `${sessionStorage.getItem("adminEmail")}`,
+          },
         }
+      );
+
+      const data = response.data;
+      console.log("Extension response", data);
+
+      // Map backend keys to user-friendly labels
+      const groupMap = {
+        documents: "Documents",
+        archives: "Archives",
+        images: "Images",
+        audio: "Audio",
+        videos: "Video",
+      };
+
+      // Build dynamic extensionGroups
+      const updatedGroups = Object.entries(groupMap).map(([key, label]) => {
+        const categoryArray = data[key] || [];
+        const values = categoryArray.map((obj) => Object.keys(obj)[0]); // just extension names
+        return { label, values };
       });
-    });
 
-    setExtensionGroups(updatedGroups); // ✅ this now includes all new + old
-  } catch (error) {
-    console.error("Failed to fetch allowed extensions:", error);
-  }
-};
+      setExtensionGroups(updatedGroups);
 
-  
+      // Set selected extensions based on backend `true/false`
+      const selected = [];
+      Object.entries(groupMap).forEach(([key, label]) => {
+        (data[key] || []).forEach((extObj) => {
+          const [ext, isChecked] = Object.entries(extObj)[0];
+          if (isChecked) selected.push(ext.toLowerCase());
+        });
+      });
+
+      setSelectedExtensions(selected);
+      setPreCheckedExtensions(selected);
+    } catch (error) {
+      console.error("Failed to fetch allowed extensions:", error);
+    }
+  };
 
   const handleAddClick = (groupLabel) => {
     setActiveGroup(groupLabel);
@@ -274,39 +255,85 @@ const fetchAllowedExtensions = async () => {
     setOpenDialog(true);
   };
 
- const handleAddExtension = async () => {
-   if (!newExtension || !activeGroup) return;
+  const handleAddExtension = async () => {
+    if (!newExtension || !activeGroup) return;
 
-   const extLower = newExtension.trim().replace(/^\./, "").toLowerCase();
+    const extLower = newExtension.trim().replace(/^\./, "").toLowerCase();
 
-  setExtensionGroups((prevGroups) =>
-    prevGroups.map((group) =>
-      group.label === activeGroup && !group.values.includes(extLower)
-        ? { ...group, values: [...group.values, extLower] }
-        : group
-    )
-  );
+    setExtensionGroups((prevGroups) =>
+      prevGroups.map((group) =>
+        group.label === activeGroup && !group.values.includes(extLower)
+          ? { ...group, values: [...group.values, extLower] }
+          : group
+      )
+    );
 
-   // ✅ Select the new extension so it's checked by default
-   setSelectedExtensions((prev) =>
-     prev.includes(extLower) ? prev : [...prev, extLower]
-   );
+    // ✅ Select the new extension so it's checked by default
+    setSelectedExtensions((prev) =>
+      prev.includes(extLower) ? prev : [...prev, extLower]
+    );
 
-   setOpenDialog(false);
+    setOpenDialog(false);
 
-   // Show success for creation, not saving
-   setSnackbar({
-     open: true,
-     message: `New extension '${extLower}' created!`,
-     severity: "success",
-   });
- };
+    // Show success for creation, not saving
+    setSnackbar({
+      open: true,
+      message: `New extension '${extLower}' created!`,
+      severity: "success",
+    });
+  };
 
+  // Delete Extension API
+  const handleDeleteExtension = async (groupLabel, ext) => {
+    try {
+      const token = sessionStorage.getItem("authToken");
+      const username = sessionStorage.getItem("adminEmail");
 
- useEffect(() => {
-   fetchAllowedExtensions();
- }, []);
+      const payload = {
+        [groupLabel.toLowerCase()]: [ext], // match backend expected key (like "documents")
+      };
 
+      const res = await axios.delete(
+        `${window.__ENV__.REACT_APP_ROUTE}/tenants/deleteExtensions`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            username,
+            "Content-Type": "application/json",
+          },
+          data: payload, // ✅ axios delete requires "data" for body
+        }
+      );
+
+      if (res.status === 200) {
+        // remove from state
+        setExtensionGroups((prev) =>
+          prev.map((group) =>
+            group.label === groupLabel
+              ? { ...group, values: group.values.filter((v) => v !== ext) }
+              : group
+          )
+        );
+
+        setSnackbar({
+          open: true,
+          message: `${ext} deleted successfully`,
+          severity: "success",
+        });
+      }
+    } catch (err) {
+      console.error("Error deleting extension:", err);
+      setSnackbar({
+        open: true,
+        message: "Failed to delete extension",
+        severity: "error",
+      });
+    }
+  };
+
+  useEffect(() => {
+    fetchAllowedExtensions();
+  }, []);
 
   return (
     <Box
@@ -411,25 +438,55 @@ const fetchAllowedExtensions = async () => {
 
               <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
                 {group.values.map((ext) => (
-                  <Tooltip
-                    title={
-                      preCheckedExtensions.includes(ext) ? "Already added" : ""
-                    }
-                    arrow
+                  <Box
+                    key={ext}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      border: "1px solid",
+                      borderColor: "divider",
+                      borderRadius: 1.5,
+                      px: 1,
+                      py: 0.3,
+                      backgroundColor: (theme) =>
+                        theme.palette.mode === "dark" ? "#1e1e1e" : "#fafafa",
+                    }}
                   >
-                    <FormControlLabel
-                      key={ext}
-                      control={
-                        <Checkbox
-                          checked={selectedExtensions.includes(ext)}
-                          onChange={() => handleToggle(ext)}
-                          disabled={false} // optionally disable editing of pre-checked
-                        />
+                    <Tooltip
+                      title={
+                        preCheckedExtensions.includes(ext)
+                          ? "Already added"
+                          : ""
                       }
-                      label={ext}
-                    />
-                  </Tooltip>
+                      arrow
+                    >
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={selectedExtensions.includes(ext)}
+                            onChange={() => handleToggle(ext)}
+                            size="small"
+                            disabled={false} // can make true for pre-checked if needed
+                          />
+                        }
+                        label={ext}
+                      />
+                    </Tooltip>
+
+                    {/* Small Delete Icon */}
+                    <Tooltip title="Delete" arrow>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleDeleteExtension(group.label, ext)}
+                        sx={{ color: "text.secondary", ml: -1 }}
+                      >
+                        <DeleteOutlineIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
                 ))}
+
+                {/* Add Extension */}
                 <Tooltip title="Add Extension" arrow>
                   <AddCircleOutlineIcon
                     sx={{ cursor: "pointer", mt: 1 }}
@@ -459,12 +516,12 @@ const fetchAllowedExtensions = async () => {
           <Button
             variant="contained"
             onClick={handleSave}
-            disabled={selectedExtensions.length === 0}
+            // disabled={selectedExtensions.length === 0}
           >
             Save
           </Button>
           <Typography variant="caption" sx={{ ml: 2 }} color="text.secondary">
-            {selectedExtensions.length-4} extension(s) selected
+            {selectedExtensions.length - 4} extension(s) selected
           </Typography>
         </Box>
       </Paper>

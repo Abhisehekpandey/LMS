@@ -60,7 +60,7 @@ const DepartmentTypeSetting = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [documentType, setDocumentType] = useState("");
   const [attributes, setAttributes] = useState([attributeTemplate]);
-  const [typeScope, setTypeScope] = useState("global");
+  const [typeScope, setTypeScope] = useState("user");
   const [users, setUsers] = useState([]);
   const [userPage, setUserPage] = useState(0);
   const [hasMoreUsers, setHasMoreUsers] = useState(true);

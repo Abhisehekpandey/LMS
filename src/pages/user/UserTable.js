@@ -683,7 +683,7 @@ export default function UserTable() {
       "User Email": row.email || "N/A",
       Region: row.region || "N/A", // ✅ NEW COLUMN
       "Phone Number": row.phoneNumber || "N/A",
-      "Reporting Manager": row.reportingManager?.name || "N/A",
+      "Reporting Manager": row.reportingManager || "N/A",
       "Storage Used": row.permissions?.displayStorage || "N/A",
       "Manage Storage": row.permissions?.allowedStorageInBytesDisplay || "N/A",
       "Active License": formatStatus(row),
