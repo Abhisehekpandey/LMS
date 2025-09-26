@@ -221,7 +221,7 @@ const ChooseExtension = () => {
         archives: "Archives",
         images: "Images",
         audio: "Audio",
-        videos: "Video",
+        video: "Video",
       };
 
       // Build dynamic extensionGroups

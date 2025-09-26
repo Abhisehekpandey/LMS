@@ -206,7 +206,8 @@ const allColumns = [
   { id: "storage", label: "Storage" },
   // { id: "storage", label: "Manage Storage" },
   { id: "manageStorage", label: "Manage Storage" }, // ✅ unique id
-  { id: "users", label: "No of Users" },
+  { id: "users", label: "Users" },
+  { id: "roles", label: "Roles" },
   { id: "actions", label: "Actions" },
 ];
 
@@ -319,12 +320,11 @@ function Department({ departments, setDepartments, onThemeToggle }) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [departmentToDelete, setDepartmentToDelete] = useState(null);
   const [editedDepartment, setEditedDepartment] = useState(null);
-  // First, add a new state for managing row expansion
+
   const [expandedRows, setExpandedRows] = useState({});
   const [migrationDialogOpen, setMigrationDialogOpen] = useState(false);
   const [departmentToMigrate, setDepartmentToMigrate] = useState(null);
 
-  // Add these new state variables after other state declarations
   const [editRoleDialog, setEditRoleDialog] = useState(false);
   const [editingRole, setEditingRole] = useState({
     departmentIndex: null,
@@ -348,7 +348,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       "200 GB",
     ];
 
-    // Include dept value if not already in the list
     if (deptAllowedValue && !baseOptions.includes(deptAllowedValue)) {
       return [...baseOptions, deptAllowedValue];
     }
@@ -404,7 +403,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     setMigrationDialogOpen(true);
     setDeleteDialogOpen(false);
 
-    // 🔥 Reset and load first page
     setAllDepartments([]);
     setMigrationPage(0);
     setHasMoreDepartments(true);
@@ -414,7 +412,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
   const fetchDepartments = async () => {
     try {
       setLoading(true);
-      // const apiDepartments = await getDepartments();
+
       console.log("ppppp", page);
       const departmentData = await getDepartments(page, rowsPerPage);
       const apiDepartments = departmentData.content || [];
@@ -422,7 +420,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
       setTotalDepartments(departmentData.totalElements || 0);
 
-      // Map backend data to expected frontend format
       const mapped = apiDepartments.map((dept) => ({
         id: dept.id, // 👈 add this
         name: dept.deptName,
@@ -435,7 +432,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             ? "0 GB"
             : dept.permissions?.allowedStorageInBytesDisplay || "0 GB",
 
-        // roles: dept.roles?.map((r) => r.roleName) || [],
         roles: dept.roles || [],
 
         userCount: dept.numberOfUsers || 0,
@@ -507,7 +503,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           ? prev.filter((u) => u.id !== user.id)
           : [...prev, user]
       );
-      // if deselected, remove role
+
       if (selectedUsers.some((u) => u.id === user.id)) {
         setSelectedRoles((prev) => {
           const copy = { ...prev };
@@ -566,7 +562,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           </IconButton>
         </Tooltip>
 
-        {/* Dropdown table */}
         <Popper
           open={open}
           anchorEl={anchorRef.current}
@@ -634,7 +629,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                     severity: "success",
                                   });
 
-                                  // ✅ refresh department list after deletion
                                   if (fetchDepartments)
                                     await fetchDepartments();
                                 }
@@ -663,7 +657,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           </ClickAwayListener>
         </Popper>
 
-        {/* Add New User Dialog */}
         <Dialog
           open={addDialogOpen}
           onClose={handleCloseAddDialog}
@@ -794,6 +787,188 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       </div>
     );
   };
+
+  const DeptRolesDropdown = ({ roles, selectedDepartment, handleAddRole }) => {
+    const [open, setOpen] = useState(false);
+    const [showAddRoleDialog, setShowAddRoleDialog] = useState(false);
+    const [newRole, setNewRole] = useState("");
+    const anchorRef = useRef(null);
+
+    return (
+      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+        <IconButton ref={anchorRef} size="small" onClick={() => setOpen(!open)}>
+          {roles.length} <ArrowDropDownIcon />
+        </IconButton>
+
+        <Tooltip title="Add Role">
+          <IconButton
+            onClick={() => setShowAddRoleDialog(true)}
+            sx={{
+              border: "1px solid",
+              borderColor: "primary.main",
+              borderRadius: "50%",
+              color: "primary.main",
+              width: 28,
+              height: 28,
+              p: 0,
+              ml: 1,
+              "&:hover": { backgroundColor: "primary.light" },
+            }}
+          >
+            <AddIcon fontSize="inherit" />
+          </IconButton>
+        </Tooltip>
+
+        <Popper
+          open={open}
+          anchorEl={anchorRef.current}
+          placement="bottom-start"
+          disablePortal
+          style={{ zIndex: 1300 }}
+        >
+          <ClickAwayListener onClickAway={() => setOpen(false)}>
+            <Paper style={{ maxHeight: 300, overflowY: "auto", minWidth: 200 }}>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Role Name</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {roles.length === 0 ? (
+                    <TableRow>
+                      <TableCell align="center">No Roles</TableCell>
+                    </TableRow>
+                  ) : (
+                    roles.map((role) => (
+                      <TableRow key={role.id}>
+                        <TableCell>
+                          {role.roleDisplayName || role.roleName}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </Paper>
+          </ClickAwayListener>
+        </Popper>
+
+        <Drawer
+          anchor="left"
+          open={showAddRoleDialog}
+          onClose={() => {
+            setShowAddRoleDialog(false);
+            setNewRole("");
+          }}
+          PaperProps={{
+            sx: {
+              borderRadius: "8px",
+              boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+              position: "absolute",
+              top: "30%",
+              left: "40%",
+              m: 0,
+              height: "auto",
+              maxHeight: "95vh",
+              overflow: "hidden",
+              width: "350px",
+              animation: "slideInFromLeft 0.2s ease-in-out forwards",
+              opacity: 0,
+              transform: "translateX(-50px)",
+              "@keyframes slideInFromLeft": {
+                "0%": {
+                  opacity: 0,
+                  transform: "translateX(-50px)",
+                },
+                "100%": {
+                  opacity: 1,
+                  transform: "translateX(0)",
+                },
+              },
+            },
+          }}
+        >
+          <Box
+            sx={{
+              p: 2,
+              borderBottom: "1px solid #eee",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              backgroundColor: "primary.main",
+            }}
+          >
+            <Typography variant="h6" sx={{ color: "#ffff" }}>
+              Add Role to {selectedDepartment?.name}
+            </Typography>
+            <IconButton
+              size="small"
+              onClick={() => {
+                setShowAddRoleDialog(false);
+                setNewRole("");
+              }}
+              sx={{
+                color: "#ffff",
+                border: "1px solid",
+                borderColor: "#ffff",
+                bgcolor: "error.lighter",
+                "&:hover": { transform: "rotate(180deg)" },
+                transition: "all 0.3s ease",
+                borderRadius: "50%",
+              }}
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </Box>
+
+          <Box sx={{ p: 2, flexGrow: 1 }}>
+            <Card elevation={1} sx={{ borderRadius: 2 }}>
+              <CardContent>
+                <TextField
+                  autoFocus
+                  fullWidth
+                  size="small"
+                  label="New Role"
+                  value={newRole}
+                  onChange={(e) => setNewRole(e.target.value)}
+                  sx={{ mb: 2 }}
+                />
+              </CardContent>
+            </Card>
+          </Box>
+
+          <Box
+            sx={{
+              p: 2,
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: 1,
+              borderTop: "1px solid #eee",
+            }}
+          >
+            <Button
+              onClick={() => {
+                setShowAddRoleDialog(false);
+                setNewRole("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => handleAddRole(newRole, selectedDepartment)}
+              variant="contained"
+              color="primary"
+              sx={{ background: "rgb(251, 68, 36)" }}
+            >
+              Add
+            </Button>
+          </Box>
+        </Drawer>
+      </div>
+    );
+  };
+
   const handleUpdateDepartment = async () => {
     if (
       !editedDepartment?.name ||
@@ -808,7 +983,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       return;
     }
 
-    // ✅ Only validate Change Owner if user typed something
     if (
       searchModerator &&
       searchModerator !== editedDepartment.departmentModerator
@@ -886,7 +1060,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
       if (users.length < 10) setHasMoreFilteredUsers(false);
 
-      // ✅ store only name and id (or just name if id not needed)
       const simplifiedUsers = users.map((u) => ({
         name: u.email,
         id: u.id, // optional, if you need it later
@@ -1246,7 +1419,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             return;
           }
 
-          // ✅ Existing departments from table
           const existingDeptNames = new Set(
             departments.map((d) => d.name.toLowerCase())
           );
@@ -1287,7 +1459,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               }
             }
 
-            // ✅ Duplicate check against existing table
             if (
               row.Department &&
               existingDeptNames.has(row.Department.toLowerCase())
@@ -1395,7 +1566,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     }));
   };
 
-  // Add sorting handler
   const handleRequestSort = (property) => {
     const isAsc = orderBy === property && order === "asc";
     setOrder(isAsc ? "desc" : "asc");
@@ -1744,11 +1914,11 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             {
               Department: dept.name,
               "Display Name": dept.displayName,
-              "Department Moderator": dept.departmentModerator,
+              "Department Owner": dept.departmentModerator,
               "Storage Allocated": dept.allowedStorage || "N/A",
               "Storage Consumed": dept.storage || "N/A",
               Role: "",
-              "No of Users":
+              "Users":
                 userCount > 0 ? `${userCount} (${userNames})` : "0",
             },
           ];
@@ -1757,11 +1927,11 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         return dept.roles.map((role) => ({
           Department: dept.name,
           "Display Name": dept.displayName,
-          "Department Moderator": dept.departmentModerator,
+          "Department Owner": dept.departmentModerator,
           "Storage Allocated": dept.allowedStorage || "N/A",
           "Storage Consumed": dept.storage || "N/A",
           Role: role.roleName,
-          "No of Users": userCount > 0 ? `${userCount} (${userNames})` : "0",
+          "Users": userCount > 0 ? `${userCount} (${userNames})` : "0",
         }));
       });
 
@@ -1875,7 +2045,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             borderBottom: "1px solid #e2e8f0",
           },
           "& .MuiTable-root": {
-            // borderCollapse: "separate",
             borderSpacing: 0,
             border: "1px solid #e2e8f0",
           },
@@ -2017,7 +2186,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         >
           <TableHead className={styles.tableHeader}>
             <TableRow>
-              {/* Checkbox column */}
               <TableCell
                 padding="checkbox"
                 sx={{ width: "48px", textAlign: "center" }}
@@ -2103,7 +2271,19 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     direction={orderBy === "noOfUsers" ? order : "asc"}
                     onClick={() => handleRequestSort("noOfUsers")}
                   >
-                    No of Users
+                    Users
+                  </TableSortLabel>
+                </TableCell>
+              )}
+
+              {visibleColumns.users && (
+                <TableCell sx={{ width: "150px" }}>
+                  <TableSortLabel
+                    active={orderBy === "noOfRoles"}
+                    direction={orderBy === "noOfRoles" ? order : "asc"}
+                    onClick={() => handleRequestSort("noOfRoles")}
+                  >
+                    Roles
                   </TableSortLabel>
                 </TableCell>
               )}
@@ -2195,7 +2375,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                             deptId,
                             selectedUsers
                           ) => {
-                            // selectedUsers = [{ id, role: { id, name } }]
                             console.log("selected", selectedUsers);
 
                             try {
@@ -2235,6 +2414,64 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                 });
                               }
                             } catch (error) {
+                              setSnackbar({
+                                open: true,
+                                message: `Error: ${error.message}`,
+                                severity: "error",
+                              });
+                            }
+                          }}
+                        />
+                      </TableCell>
+                    )}
+
+                    {visibleColumns.roles && (
+                      <TableCell align="center">
+                        <DeptRolesDropdown
+                          roles={dept.roles || []}
+                          selectedDepartment={dept}
+                          handleAddRole={async (newRole, department) => {
+                            console.log(
+                              "Adding role:",
+                              newRole,
+                              "to department:",
+                              department.id
+                            );
+                            console.log("department", department);
+
+                            try {
+                              const response = await axios.post(
+                                `${window.__ENV__.REACT_APP_ROUTE}/tenants/departments/${department.name}/roles`,
+                                { roleName: newRole },
+                                {
+                                  headers: {
+                                    "Content-Type": "application/json",
+                                    Authorization: `Bearer ${sessionStorage.getItem(
+                                      "authToken"
+                                    )}`,
+                                    username:
+                                      sessionStorage.getItem("adminEmail"),
+                                  },
+                                }
+                              );
+
+                              if (response.status === 200) {
+                                setSnackbar({
+                                  open: true,
+                                  message: `Role "${newRole}" added successfully!`,
+                                  severity: "success",
+                                });
+
+                                if (fetchDepartments) await fetchDepartments();
+                              } else {
+                                setSnackbar({
+                                  open: true,
+                                  message: `Failed to add role: ${response.statusText}`,
+                                  severity: "error",
+                                });
+                              }
+                            } catch (error) {
+                              console.error("Failed to add role:", error);
                               setSnackbar({
                                 open: true,
                                 message: `Error: ${error.message}`,
@@ -2451,7 +2688,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           position: "sticky",
           bottom: 0,
           backgroundColor: "#ffffff",
-          // borderTop: '1px solid #e2e8f0',
+
           zIndex: 2,
           display: "flex",
           justifyContent: "space-between",
@@ -2629,12 +2866,10 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             </IconButton>
           </Box>
 
-          {/* Form list */}
           <Box sx={{ p: 2, flex: 1, overflowY: "auto" }}>
             {newDepartments.map((dept, index) => (
               <Card key={index} sx={{ mb: 2 }}>
                 <CardContent sx={{ p: 0 }}>
-                  {/* Header Row */}
                   <Box
                     sx={{
                       display: "flex",
@@ -2673,7 +2908,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     </Box>
                   </Box>
 
-                  {/* Collapse Content */}
                   <Collapse
                     in={expandedIndices.includes(index)}
                     timeout="auto"
@@ -2730,7 +2964,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                           />
                         </Grid>
 
-                        {/* Department Short Name */}
                         <Grid item xs={6}>
                           <TextField
                             fullWidth
@@ -2785,7 +3018,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                           />
                         </Grid>
 
-                        {/* Storage Allocation */}
                         <Grid item xs={6}>
                           <FormControl
                             fullWidth
@@ -2823,7 +3055,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                           </FormControl>
                         </Grid>
 
-                        {/* Department Owner */}
                         <Grid item xs={6}>
                           <Autocomplete
                             size="small"
@@ -2893,7 +3124,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                           />
                         </Grid>
 
-                        {/* Permission Dropdown */}
                         <Grid item xs={6}>
                           <FormControl fullWidth size="small">
                             <InputLabel>Permission</InputLabel>
@@ -2935,7 +3165,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             </Button>
           </Box>
 
-          {/* Footer */}
           <Box
             sx={{
               display: "flex",
@@ -3029,7 +3258,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               borderColor: "#ffff",
               bgcolor: "error.lighter",
               "&:hover": {
-                // bgcolor: "error.light",
                 transform: "rotate(180deg)",
               },
               transition: "all 0.3s ease",
@@ -3087,11 +3315,18 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       <Drawer
         anchor="left"
         open={editDialogOpen}
-        onClose={() => setEditDialogOpen(false)}
+        onClose={() => {
+          setEditDialogOpen(false);
+          setSearchModerator(""); // reset search input
+          setFilteredUsers([]); // clear old results
+          setShowUserDropdown(false); // close dropdown
+          setFilteredPage(0); // reset pagination
+          setHasMoreFilteredUsers(true); // reset scroll
+        }}
         PaperProps={{
           sx: {
             borderRadius: "8px",
-            // boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+
             position: "absolute",
             top: "20%",
             left: "35%",
@@ -3140,7 +3375,15 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           </Typography>
 
           <IconButton
-            onClick={() => setEditDialogOpen(false)}
+            // onClick={() => setEditDialogOpen(false)}
+            onClick={() => {
+              setEditDialogOpen(false);
+              setSearchModerator("");
+              setFilteredUsers([]);
+              setShowUserDropdown(false);
+              setFilteredPage(0);
+              setHasMoreFilteredUsers(true);
+            }}
             size="small"
             sx={{
               color: "#fff",

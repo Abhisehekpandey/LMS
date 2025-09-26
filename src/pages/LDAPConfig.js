@@ -105,7 +105,7 @@ const LDAPConfig = () => {
   const [emailSslCertificate, setEmailSslCertificate] = useState(null);
   const [smsSslCertificate, setSmsSslCertificate] = useState(null);
   const [whatsappSslCertificate, setWhatsappSslCertificate] = useState(null);
-  // const [selectedObjectClass, setSelectedObjectClass] = useState("");
+
   const [selectedObjectClass, setSelectedObjectClass] = useState("group");
   const [availableGroups, setAvailableGroups] = useState([]);
   const [selectedGroup, setSelectedGroup] = useState(""); // or [] for multi-select
@@ -414,7 +414,6 @@ const LDAPConfig = () => {
     if (activeSection === "LDAP CONFIGURATION") {
       if (tabIndex === 0) {
         return (
-          // <Slide direction="left" in timeout={300}>
           <Fade in timeout={300}>
             <Box component="form" noValidate autoComplete="off">
               <Grid container spacing={2}>
@@ -561,51 +560,7 @@ const LDAPConfig = () => {
                   item
                   xs={5}
                   sx={{ display: "flex", alignItems: "center" }}
-                >
-                  {/* <Button
-                    fullWidth
-                    variant="contained"
-                    onClick={async () => {
-                      const { host, port, username, password } = config;
-
-                      if (!host || !port || !username || !password) {
-                        setStatus({
-                          type: "warning",
-                          message:
-                            "All fields (Host, Port, User DN, Password) are required.",
-                        });
-                        return;
-                      }
-
-                      try {
-                        setStatus({
-                          type: "info",
-                          message: "Saving credentials...",
-                        });
-                        const result = await saveLdapCredentials({
-                          host,
-                          port,
-                          username,
-                          password,
-                        });
-                        console.log("result", result);
-                        setStatus({
-                          type: "success",
-                          message: result || "Credentials saved successfully.",
-                        });
-                      } catch (error) {
-                        setStatus({
-                          type: "error",
-                          message:
-                            error?.response?.data?.message ||
-                            "Failed to save credentials.",
-                        });
-                      }
-                    }}
-                  >
-                    Save
-                  </Button> */}
-                </Grid>
+                ></Grid>
                 <Grid item xs={12}>
                   <TextField
                     fullWidth
@@ -865,14 +820,10 @@ const LDAPConfig = () => {
                             message: "Fetching groups...",
                           });
 
-                          // const groupsResponse = await fetchGroupsByObjectClass(
-                          //   configId
-                          // );
                           const groupsResponse = await fetchGroupsByObjectClass(
                             configId,
                             selectedObjectClass
                           );
-
 
                           const groupsArray = Array.isArray(
                             groupsResponse.groupsExtracted
@@ -917,7 +868,6 @@ const LDAPConfig = () => {
 
                   <Box
                     sx={{
-                     
                       border: "1px solid #ccc",
                       borderRadius: 1,
                       px: 2,
@@ -1054,72 +1004,6 @@ const LDAPConfig = () => {
                     {selectedObjectClass || "Not Selected"}))
                   </Typography>
                 </Grid>
-
-                {/* Verify Users Button */}
-                {/* <Grid item xs={12}>
-                  <Divider sx={{ my: 2 }} />
-                  <Box display="flex" alignItems="center" gap={2}>
-                    <Button
-                      variant="outlined"
-                      onClick={async () => {
-                        const ldapId = sessionStorage.getItem("ldapConfigId");
-
-                        if (!ldapId) {
-                          setStatus({
-                            type: "warning",
-                            message:
-                              "Configuration ID not found. Please save configuration first.",
-                          });
-                          return;
-                        }
-
-                        if (groupListBox.length === 0) {
-                          setStatus({
-                            type: "warning",
-                            message:
-                              "Please select at least one group to verify.",
-                          });
-                          return;
-                        }
-
-                        try {
-                          setStatus({
-                            type: "info",
-                            message: "Verifying users...",
-                          });
-
-                          const result = await verifyAndCountUsers({
-                            ldapId,
-                            groupDn: groupListBox,
-                          });
-
-                          const savedUsers = result?.savedUsers || [];
-                          setUserCount(savedUsers.length);
-
-                          setStatus({
-                            type: "success",
-                            message: `${savedUsers.length} users found.`,
-                          });
-                        } catch (error) {
-                          setStatus({
-                            type: "error",
-                            message:
-                              error?.response?.data?.message ||
-                              "Failed to verify users.",
-                          });
-                        }
-                      }}
-                    >
-                      Verify settings and count users
-                    </Button>
-
-                    {userCount !== null && (
-                      <Typography variant="body2">
-                        <strong>{userCount}</strong> user(s) found
-                      </Typography>
-                    )}
-                  </Box>
-                </Grid> */}
               </Grid>
             </Box>
           </Fade>
@@ -1326,7 +1210,93 @@ const LDAPConfig = () => {
     }
 
     const sectionContent = {
+      // "EMAIL CONFIGURATION": [
+      //   <Box>
+      //     <TextField
+      //       fullWidth
+      //       label="SMTP Server"
+      //       name="smtp"
+      //       value={config.smtp}
+      //       onChange={handleChange}
+      //     />
+
+      //     <Box sx={{ mt: 2 }}>
+      //       <FormControlLabel
+      //         control={
+      //           <Checkbox
+      //             checked={useEmailSsl}
+      //             onChange={(e) => setUseEmailSsl(e.target.checked)}
+      //           />
+      //         }
+      //         label="Use SSL Certificate"
+      //       />
+      //     </Box>
+
+      //     {useEmailSsl && (
+      //       <Box sx={{ mt: 2 }}>
+      //         <Button variant="outlined" component="label" fullWidth>
+      //           Upload SSL Certificate
+      //           <input
+      //             type="file"
+      //             hidden
+      //             accept=".crt,.pem,.cer,.der"
+      //             onChange={(e) => {
+      //               const file = e.target.files?.[0];
+      //               if (file) {
+      //                 setEmailSslCertificate(file);
+      //                 setStatus({
+      //                   type: "success",
+      //                   message: `SSL Certificate "${file.name}" selected for SMTP.`,
+      //                 });
+      //               }
+      //             }}
+      //           />
+      //         </Button>
+      //         {emailSslCertificate && (
+      //           <Typography variant="caption" sx={{ mt: 1, display: "block" }}>
+      //             Selected: {emailSslCertificate.name}
+      //           </Typography>
+      //         )}
+      //       </Box>
+      //     )}
+
+      //     <TextField
+      //       fullWidth
+      //       label="Port"
+      //       name="port"
+      //       value={config.port}
+      //       onChange={handleChange}
+      //       sx={{ mt: 2 }}
+      //     />
+      //     <TextField
+      //       fullWidth
+      //       label="Username"
+      //       name="username"
+      //       value={config.username}
+      //       onChange={handleChange}
+      //       sx={{ mt: 2 }}
+      //     />
+      //     <TextField
+      //       fullWidth
+      //       label="Password"
+      //       name="password"
+      //       type="password"
+      //       value={config.password}
+      //       onChange={handleChange}
+      //       sx={{ mt: 2 }}
+      //     />
+      //   </Box>,
+      //   <Box>
+      //     <TextField fullWidth label="Recipient Email" />
+      //     <TextField fullWidth label="Subject" sx={{ mt: 2 }} />
+      //     <TextField fullWidth label="Body" multiline rows={4} sx={{ mt: 2 }} />
+      //     <Button variant="contained" sx={{ mt: 2 }}>
+      //       Send Test Email
+      //     </Button>
+      //   </Box>,
+      // ],
       "EMAIL CONFIGURATION": [
+        // --- Tab 1: SMTP Server ---
         <Box>
           <TextField
             fullWidth
@@ -1402,15 +1372,117 @@ const LDAPConfig = () => {
             sx={{ mt: 2 }}
           />
         </Box>,
+
+        // --- Tab 2: Send Test Email ---
         <Box>
-          <TextField fullWidth label="Recipient Email" />
-          <TextField fullWidth label="Subject" sx={{ mt: 2 }} />
-          <TextField fullWidth label="Body" multiline rows={4} sx={{ mt: 2 }} />
-          <Button variant="contained" sx={{ mt: 2 }}>
+          <TextField
+            fullWidth
+            label="Recipient Email"
+            value={config.recipientEmail || ""}
+            onChange={(e) =>
+              handleChange({
+                target: { name: "recipientEmail", value: e.target.value },
+              })
+            }
+          />
+          <TextField
+            fullWidth
+            label="Subject"
+            sx={{ mt: 2 }}
+            value={config.subject || ""}
+            onChange={(e) =>
+              handleChange({
+                target: { name: "subject", value: e.target.value },
+              })
+            }
+          />
+          <TextField
+            fullWidth
+            label="Message"
+            multiline
+            rows={4}
+            sx={{ mt: 2 }}
+            value={config.message || ""}
+            onChange={(e) =>
+              handleChange({
+                target: { name: "message", value: e.target.value },
+              })
+            }
+          />
+
+          <Button
+            variant="contained"
+            sx={{ mt: 2 }}
+            onClick={async () => {
+              try {
+                setStatus({ type: "info", message: "Sending test email..." });
+
+                const payload = {
+                  host: config.smtp, // from tab 1
+                  port: Number(config.port),
+                  username: config.username,
+                  password: config.password,
+                  recipientEmail: config.recipientEmail,
+                  subject: config.subject,
+                  message: config.message,
+                };
+
+                const response = await axios.post(
+                  `${window.__ENV__.REACT_APP_ROUTE}/tenants/emailService`,
+                  payload,
+                  {
+                    headers: {
+                      "Content-Type": "application/json",
+                      Authorization: `Bearer ${sessionStorage.getItem(
+                        "authToken"
+                      )}`,
+                      username: sessionStorage.getItem("adminEmail"),
+                    },
+                  }
+                );
+
+                // ✅ Clear Email fields after success
+                setServerState((prev) => ({
+                  ...prev,
+                  [activeSection]: {
+                    ...prev[activeSection],
+                    configs: {
+                      ...prev[activeSection].configs,
+                      [selectedServer]: {
+                        smtp: "",
+                        port: "",
+                        username: "",
+                        password: "",
+                        recipientEmail: "",
+                        subject: "",
+                        message: "",
+                      },
+                    },
+                  },
+                }));
+
+                setTabIndex(0);
+
+                setStatus({
+                  type: "success",
+                  message:
+                    response?.data?.message || "Test email sent successfully!",
+                });
+              } catch (error) {
+                setStatus({
+                  type: "error",
+                  message:
+                    error?.response?.data?.message ||
+                    "Failed to send test email.",
+                });
+              }
+            }}
+          >
             Send Test Email
           </Button>
         </Box>,
       ],
+
       "SMS CONFIGURATION": [
         <Box>
           <TextField
@@ -1818,9 +1890,6 @@ const LDAPConfig = () => {
               scrollButtons="auto"
               sx={{ mb: 2 }}
             >
-              {/* {getTabsForSection().map((label) => (
-                <Tab key={label} label={label} />
-              ))} */}
               {getTabsForSection().map((label) => {
                 let disabled = false;
                 if (label === "Users" && !isServerDone) disabled = true;

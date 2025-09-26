@@ -33,7 +33,7 @@ import {
   Radio,
   CircularProgress,
 } from "@mui/material";
-import { Add, Delete } from "@mui/icons-material";
+import { Add, Delete, Edit } from "@mui/icons-material";
 import axios from "axios";
 import { Search as SearchIcon, Clear as ClearIcon } from "@mui/icons-material";
 import { InputAdornment } from "@mui/material";
@@ -59,7 +59,15 @@ const DepartmentTypeSetting = () => {
   const [order, setOrder] = useState("asc");
   const [openDialog, setOpenDialog] = useState(false);
   const [documentType, setDocumentType] = useState("");
-  const [attributes, setAttributes] = useState([attributeTemplate]);
+  const createAttributeTemplate = () => ({
+    name: "",
+    type: "STRING",
+    defaultValue: "",
+    mandatory: false,
+    description: "",
+  });
+
+  const [attributes, setAttributes] = useState([createAttributeTemplate()]);
   const [typeScope, setTypeScope] = useState("user");
   const [users, setUsers] = useState([]);
   const [userPage, setUserPage] = useState(0);
@@ -80,6 +88,13 @@ const DepartmentTypeSetting = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchColumn, setSearchColumn] = useState("typeName");
   const [searchText, setSearchText] = useState("");
+
+  const handleEditType = (typeName) => {
+    // Example: open dialog prefilled
+    setDocumentType(typeName);
+    setOpenDialog(true);
+    // You can also fetch attributes/details of this type if needed
+  };
 
   const fetchUsers = async (page = 0) => {
     try {
@@ -283,6 +298,8 @@ const DepartmentTypeSetting = () => {
       global: typeScope === "global",
     };
 
+    console.log("payload", payload);
+
     try {
       const res = await axios.post(
         `${window.__ENV__.REACT_APP_ROUTE}/tenants/createType`,
@@ -334,7 +351,7 @@ const DepartmentTypeSetting = () => {
   };
 
   const handleAddAttribute = () => {
-    setAttributes([...attributes, { ...attributeTemplate }]);
+    setAttributes([...attributes, createAttributeTemplate()]);
   };
   const handleDeleteType = (typeNameToDelete) => {
     const confirm = window.confirm(
@@ -369,50 +386,6 @@ const DepartmentTypeSetting = () => {
           },
         }}
       >
-        {/* <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, p: 2 }}>
-          <TextField
-            select
-            size="small"
-            label="By"
-            value={searchColumn}
-            onChange={(e) => setSearchColumn(e.target.value)}
-            sx={{ minWidth: 130 }}
-          >
-            <MenuItem value="typeName">Type Name</MenuItem>
-            <MenuItem value="createdBy">Created By</MenuItem>
-            <MenuItem value="for">For</MenuItem>
-          </TextField>
-
-          <TextField
-            size="small"
-            label="Search"
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon fontSize="small" />
-                </InputAdornment>
-              ),
-            }}
-            sx={{ minWidth: 200 }}
-          />
-
-          <Tooltip title="Clear All Filters">
-            <Button
-              variant="outlined"
-              size="small"
-              color="error"
-              startIcon={<ClearIcon />}
-              onClick={() => {
-                setSearchText("");
-                setSearchColumn("typeName");
-              }}
-            >
-              Clear
-            </Button>
-          </Tooltip>
-        </Box> */}
         <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, p: 2 }}>
           <TextField
             select
@@ -465,7 +438,6 @@ const DepartmentTypeSetting = () => {
           <Tooltip title="Clear All Filters">
             <span>
               {" "}
-              {/* Wrap in span to avoid Tooltip warning on disabled button */}
               <Button
                 variant="outlined"
                 size="small"
@@ -565,6 +537,12 @@ const DepartmentTypeSetting = () => {
                   <TableCell sx={{ textAlign: "center" }}>—</TableCell>
                   <TableCell sx={{ textAlign: "center" }}>—</TableCell>
                   <TableCell sx={{ textAlign: "center" }}>
+                    <IconButton
+                      color="primary"
+                      onClick={() => handleEditType(typeName)}
+                    >
+                      <Edit fontSize="small" />
+                    </IconButton>
                     <IconButton
                       color="error"
                       onClick={() => handleDeleteType(typeName)}
