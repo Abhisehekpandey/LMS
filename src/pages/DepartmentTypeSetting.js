@@ -64,6 +64,7 @@ const DepartmentTypeSetting = () => {
     type: "STRING",
     defaultValue: "",
     mandatory: false,
+    aiRequired: false,
     description: "",
   });
 
@@ -291,7 +292,8 @@ const DepartmentTypeSetting = () => {
         attributeType: attr.type.toLowerCase(),
         value: attr.defaultValue,
         fileTypeDescription: attr.description,
-        isMandatory: attr.mandatory, // ✅ Add this line
+        isMandatory: attr.mandatory, // existing
+        aiRequired: attr.aiRequired, // ✅ new
       })),
       users: typeScope === "user" ? [selectedEntityId] : [],
       departments: typeScope === "department" ? [selectedEntityId] : [],
@@ -702,7 +704,7 @@ const DepartmentTypeSetting = () => {
 
             {attributes.map((attr, index) => (
               <Grid container spacing={2} key={index} mb={2}>
-                <Grid item xs={12} sm={4}>
+                <Grid item xs={12} sm={3}>
                   <TextField
                     fullWidth
                     label="Attribute Name"
@@ -712,7 +714,7 @@ const DepartmentTypeSetting = () => {
                     }
                   />
                 </Grid>
-                <Grid item xs={12} sm={3}>
+                <Grid item xs={12} sm={2.5}>
                   <TextField
                     select
                     fullWidth
@@ -744,22 +746,40 @@ const DepartmentTypeSetting = () => {
                   />
                 </Grid>
                 <Grid item xs={12} sm={2}>
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={attr.mandatory}
-                        onChange={(e) =>
-                          handleAttributeChange(
-                            index,
-                            "mandatory",
-                            e.target.checked
-                          )
-                        }
-                      />
-                    }
-                    label="Mandatory"
-                  />
+                  <Box display="flex" flexDirection="row" gap={1}>
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={attr.mandatory}
+                          onChange={(e) =>
+                            handleAttributeChange(
+                              index,
+                              "mandatory",
+                              e.target.checked
+                            )
+                          }
+                        />
+                      }
+                      label="Mandatory"
+                    />
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={attr.aiRequired}
+                          onChange={(e) =>
+                            handleAttributeChange(
+                              index,
+                              "aiRequired",
+                              e.target.checked
+                            )
+                          }
+                        />
+                      }
+                      label="AI Required"
+                    />
+                  </Box>
                 </Grid>
+
                 <Grid item xs={12}>
                   <TextField
                     fullWidth

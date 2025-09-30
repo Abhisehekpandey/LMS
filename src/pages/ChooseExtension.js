@@ -159,12 +159,21 @@ const ChooseExtension = () => {
 
   const handleSave = async () => {
     // Prepare payload dynamically based on current extensionGroups
-    const payload = {};
+    const payload = { extensions: {} };
+
+    // Map for backend keys
+    const keyMap = {
+      audio: "audios",
+      video: "videos",
+    };
 
     extensionGroups.forEach((group) => {
-      // Each category will be an array of objects { extName: boolean }
-      payload[group.label.toLowerCase()] = group.values.map((ext) => ({
-        [ext]: selectedExtensions.includes(ext), // true if selected, false if not
+      let key = group.label.toLowerCase();
+      key = keyMap[key] || key; // replace if in map, else keep same
+
+      payload.extensions[key] = group.values.map((ext) => ({
+        extensionName: ext,
+        isAllowed: selectedExtensions.includes(ext),
       }));
     });
 
@@ -215,30 +224,31 @@ const ChooseExtension = () => {
       const data = response.data;
       console.log("Extension response", data);
 
-      // Map backend keys to user-friendly labels
+      // ✅ Updated to match new backend keys
       const groupMap = {
         documents: "Documents",
         archives: "Archives",
         images: "Images",
-        audio: "Audio",
-        video: "Video",
+        audios: "Audio",
+        videos: "Video",
       };
 
       // Build dynamic extensionGroups
       const updatedGroups = Object.entries(groupMap).map(([key, label]) => {
-        const categoryArray = data[key] || [];
-        const values = categoryArray.map((obj) => Object.keys(obj)[0]); // just extension names
+        const categoryArray = data.extensions[key] || [];
+        const values = categoryArray.map((obj) => obj.extensionName); // ✅ use extensionName
         return { label, values };
       });
 
       setExtensionGroups(updatedGroups);
 
-      // Set selected extensions based on backend `true/false`
+      // Set selected extensions based on backend `isAllowed`
       const selected = [];
-      Object.entries(groupMap).forEach(([key, label]) => {
-        (data[key] || []).forEach((extObj) => {
-          const [ext, isChecked] = Object.entries(extObj)[0];
-          if (isChecked) selected.push(ext.toLowerCase());
+      Object.entries(groupMap).forEach(([key]) => {
+        (data.extensions[key] || []).forEach((extObj) => {
+          if (extObj.isAllowed) {
+            selected.push(extObj.extensionName.toLowerCase());
+          }
         });
       });
 
@@ -283,14 +293,22 @@ const ChooseExtension = () => {
     });
   };
 
-  // Delete Extension API
   const handleDeleteExtension = async (groupLabel, ext) => {
     try {
       const token = sessionStorage.getItem("authToken");
       const username = sessionStorage.getItem("adminEmail");
 
+      // Map for backend keys
+      const keyMap = {
+        audio: "audios",
+        video: "videos",
+      };
+
+      let key = groupLabel.toLowerCase();
+      key = keyMap[key] || key; // use mapped key if exists
+
       const payload = {
-        [groupLabel.toLowerCase()]: [ext], // match backend expected key (like "documents")
+        [key]: [ext], // match backend expected key
       };
 
       const res = await axios.delete(
@@ -301,7 +319,7 @@ const ChooseExtension = () => {
             username,
             "Content-Type": "application/json",
           },
-          data: payload, // ✅ axios delete requires "data" for body
+          data: payload, // axios delete requires "data" for body
         }
       );
 

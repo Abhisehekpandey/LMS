@@ -2442,7 +2442,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                             try {
                               const response = await axios.post(
                                 `${window.__ENV__.REACT_APP_ROUTE}/tenants/departments/${department.name}/roles`,
-                                { roleName: newRole },
+                                [{ roleName: newRole }],
                                 {
                                   headers: {
                                     "Content-Type": "application/json",
