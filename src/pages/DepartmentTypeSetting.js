@@ -1,4 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
+import { Collapse } from "@mui/material";
+import {
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Typography,
+} from "@mui/material";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+
 import {
   Paper,
   Table,
@@ -50,6 +59,8 @@ const attributeTemplate = {
 const attributeTypes = ["STRING", "NUMBER", "DATE", "BOOLEAN"];
 
 const DepartmentTypeSetting = () => {
+  const [expandedIndex, setExpandedIndex] = useState(0); // initially first attribute expanded
+
   const [fileTypes, setFileTypes] = useState([]);
   const [selected, setSelected] = useState([]);
   const [page, setPage] = useState(0);
@@ -91,10 +102,8 @@ const DepartmentTypeSetting = () => {
   const [searchText, setSearchText] = useState("");
 
   const handleEditType = (typeName) => {
-    // Example: open dialog prefilled
     setDocumentType(typeName);
     setOpenDialog(true);
-    // You can also fetch attributes/details of this type if needed
   };
 
   const fetchUsers = async (page = 0) => {
@@ -172,10 +181,29 @@ const DepartmentTypeSetting = () => {
   };
 
   const descendingComparator = (a, b, orderBy) => {
+    let aValue = "";
+    let bValue = "";
+
     if (orderBy === "typeName") {
-      if (b.toLowerCase() < a.toLowerCase()) return -1;
-      if (b.toLowerCase() > a.toLowerCase()) return 1;
+      aValue = a.type || "";
+      bValue = b.type || "";
+    } else if (orderBy === "createdBy") {
+      aValue = a.createdBy || "";
+      bValue = b.createdBy || "";
+    } else if (orderBy === "for") {
+      aValue = a.createdFor || "";
+      bValue = b.createdFor || "";
+    } else if (orderBy === "dateCreated") {
+      aValue = a.dateCreated || "";
+      bValue = b.dateCreated || "";
     }
+
+    // Normalize to string for comparison
+    aValue = aValue.toString().toLowerCase();
+    bValue = bValue.toString().toLowerCase();
+
+    if (bValue < aValue) return -1;
+    if (bValue > aValue) return 1;
     return 0;
   };
 
@@ -231,7 +259,9 @@ const DepartmentTypeSetting = () => {
           },
         }
       );
-      setFileTypes(response.data?.data || []);
+
+      // ✅ take fullObject array instead of data
+      setFileTypes(response.data?.fullObject || []);
     } catch (error) {
       console.error("Failed to fetch file types", error);
     }
@@ -241,18 +271,18 @@ const DepartmentTypeSetting = () => {
     fetchFileTypes();
   }, []);
 
-  // const sortedRows = stableSort(fileTypes, getComparator(order, orderBy));
   const filteredRows = fileTypes.filter((row) => {
-    const value =
-      searchColumn === "typeName"
-        ? row
-        : searchColumn === "createdBy"
-        ? row.createdBy || ""
-        : searchColumn === "for"
-        ? row.scope || ""
-        : "";
+    let value = "";
 
-    return value.toLowerCase().includes(searchText.toLowerCase());
+    if (searchColumn === "typeName") {
+      value = row.type || "";
+    } else if (searchColumn === "createdBy") {
+      value = row.createdBy || "";
+    } else if (searchColumn === "for") {
+      value = row.createdFor || "";
+    }
+
+    return value.toString().toLowerCase().includes(searchText.toLowerCase());
   });
 
   const sortedRows = stableSort(filteredRows, getComparator(order, orderBy));
@@ -287,7 +317,7 @@ const DepartmentTypeSetting = () => {
   const handleDialogSubmit = async () => {
     const payload = {
       type: documentType,
-      attributeList: attributes.map((attr) => ({
+      attributes: attributes.map((attr) => ({
         attributeName: attr.name,
         attributeType: attr.type.toLowerCase(),
         value: attr.defaultValue,
@@ -321,14 +351,12 @@ const DepartmentTypeSetting = () => {
         severity: "success",
       });
 
-      // Reset form state
       setOpenDialog(false);
       setDocumentType("");
       setAttributes([{ ...attributeTemplate }]);
       setTypeScope("global");
       setSelectedEntityId("");
 
-      // Refetch data if needed
       fetchFileTypes();
     } catch (error) {
       console.error("Error creating new type:", error);
@@ -354,21 +382,38 @@ const DepartmentTypeSetting = () => {
 
   const handleAddAttribute = () => {
     setAttributes([...attributes, createAttributeTemplate()]);
+    setExpandedIndex(attributes.length); // expand only the newly added row
   };
-  const handleDeleteType = (typeNameToDelete) => {
-    const confirm = window.confirm(
-      `Are you sure you want to delete "${typeNameToDelete}"?`
-    );
-    if (!confirm) return;
 
-    const updatedTypes = typeNames.filter((name) => name !== typeNameToDelete);
-    setTypeNames(updatedTypes);
+  const handleDeleteType = async (id, typeName) => {
+    try {
+      await axios.delete(
+        `${window.__ENV__.REACT_APP_ROUTE}/tenants/deleteType/${id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+            username: sessionStorage.getItem("adminEmail"),
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
-    setSnackbar({
-      open: true,
-      message: `"${typeNameToDelete}" deleted successfully`,
-      severity: "success",
-    });
+      setSnackbar({
+        open: true,
+        message: `"${typeName}" deleted successfully`,
+        severity: "success",
+      });
+
+      // Refresh after delete
+      fetchFileTypes();
+    } catch (error) {
+      console.error("Error deleting file type:", error);
+      setSnackbar({
+        open: true,
+        message: "Failed to delete type",
+        severity: "error",
+      });
+    }
   };
 
   return (
@@ -517,9 +562,9 @@ const DepartmentTypeSetting = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {paginatedRows.map((typeName, index) => (
+              {paginatedRows.map((row, index) => (
                 <TableRow
-                  key={index}
+                  key={row.id}
                   hover
                   selected={isSelected(index)}
                   sx={{ height: 36, "& td": { padding: "6px 8px" } }}
@@ -534,26 +579,34 @@ const DepartmentTypeSetting = () => {
                   <TableCell sx={{ textAlign: "center" }}>
                     {page * rowsPerPage + index + 1}
                   </TableCell>
-                  <TableCell sx={{ textAlign: "center" }}>{typeName}</TableCell>
-                  <TableCell sx={{ textAlign: "center" }}>—</TableCell>
-                  <TableCell sx={{ textAlign: "center" }}>—</TableCell>
-                  <TableCell sx={{ textAlign: "center" }}>—</TableCell>
+                  <TableCell sx={{ textAlign: "center" }}>{row.type}</TableCell>
+                  <TableCell sx={{ textAlign: "center" }}>
+                    {row.createdFor || "—"}
+                  </TableCell>
+                  <TableCell sx={{ textAlign: "center" }}>
+                    {row.createdBy || "—"}
+                  </TableCell>
+                  <TableCell sx={{ textAlign: "center" }}>
+                    {row.dateCreated || "—"}
+                  </TableCell>
                   <TableCell sx={{ textAlign: "center" }}>
                     <IconButton
                       color="primary"
-                      onClick={() => handleEditType(typeName)}
+                      onClick={() => handleEditType(row)}
                     >
                       <Edit fontSize="small" />
                     </IconButton>
+
                     <IconButton
                       color="error"
-                      onClick={() => handleDeleteType(typeName)}
+                      onClick={() => handleDeleteType(row.id, row.type)} // ✅ send both id & type
                     >
                       <Delete fontSize="small" />
                     </IconButton>
                   </TableCell>
                 </TableRow>
               ))}
+
               {paginatedRows.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={7} sx={{ textAlign: "center" }}>
@@ -703,107 +756,129 @@ const DepartmentTypeSetting = () => {
             />
 
             {attributes.map((attr, index) => (
-              <Grid container spacing={2} key={index} mb={2}>
-                <Grid item xs={12} sm={3}>
-                  <TextField
-                    fullWidth
-                    label="Attribute Name"
-                    value={attr.name}
-                    onChange={(e) =>
-                      handleAttributeChange(index, "name", e.target.value)
-                    }
-                  />
-                </Grid>
-                <Grid item xs={12} sm={2.5}>
-                  <TextField
-                    select
-                    fullWidth
-                    label="Type"
-                    value={attr.type}
-                    onChange={(e) =>
-                      handleAttributeChange(index, "type", e.target.value)
-                    }
-                  >
-                    {attributeTypes.map((type) => (
-                      <MenuItem key={type} value={type}>
-                        {type}
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                </Grid>
-                <Grid item xs={12} sm={3}>
-                  <TextField
-                    fullWidth
-                    label="Default Value"
-                    value={attr.defaultValue}
-                    onChange={(e) =>
-                      handleAttributeChange(
-                        index,
-                        "defaultValue",
-                        e.target.value
-                      )
-                    }
-                  />
-                </Grid>
-                <Grid item xs={12} sm={2}>
-                  <Box display="flex" flexDirection="row" gap={1}>
-                    <FormControlLabel
-                      control={
-                        <Checkbox
-                          checked={attr.mandatory}
-                          onChange={(e) =>
-                            handleAttributeChange(
-                              index,
-                              "mandatory",
-                              e.target.checked
-                            )
-                          }
-                        />
-                      }
-                      label="Mandatory"
-                    />
-                    <FormControlLabel
-                      control={
-                        <Checkbox
-                          checked={attr.aiRequired}
-                          onChange={(e) =>
-                            handleAttributeChange(
-                              index,
-                              "aiRequired",
-                              e.target.checked
-                            )
-                          }
-                        />
-                      }
-                      label="AI Required"
-                    />
-                  </Box>
-                </Grid>
+              <Accordion
+                key={index}
+                expanded={expandedIndex === index}
+                onChange={() =>
+                  setExpandedIndex(expandedIndex === index ? -1 : index)
+                }
+              >
+                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                  <Typography sx={{ flexGrow: 1 }}>
+                    {attr.name ? attr.name : ""}
+                    {attr.type ? ` — ${attr.type}` : ""}
+                  </Typography>
+                  {attr.mandatory && (
+                    <Typography color="primary" sx={{ mr: 2 }}>
+                      Mandatory
+                    </Typography>
+                  )}
+                  {attr.aiRequired && (
+                    <Typography color="secondary">AI</Typography>
+                  )}
+                </AccordionSummary>
 
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Description"
-                    value={attr.description}
-                    onChange={(e) =>
-                      handleAttributeChange(
-                        index,
-                        "description",
-                        e.target.value
-                      )
-                    }
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <IconButton
-                    color="error"
-                    onClick={() => handleAttributeRemove(index)}
-                    disabled={attributes.length === 1}
-                  >
-                    <Delete />
-                  </IconButton>
-                </Grid>
-              </Grid>
+                <AccordionDetails>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={2.5}>
+                      <TextField
+                        fullWidth
+                        label="Attribute Name"
+                        value={attr.name}
+                        onChange={(e) =>
+                          handleAttributeChange(index, "name", e.target.value)
+                        }
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={2.5}>
+                      <TextField
+                        select
+                        fullWidth
+                        label="Type"
+                        value={attr.type}
+                        onChange={(e) =>
+                          handleAttributeChange(index, "type", e.target.value)
+                        }
+                      >
+                        {attributeTypes.map((type) => (
+                          <MenuItem key={type} value={type}>
+                            {type}
+                          </MenuItem>
+                        ))}
+                      </TextField>
+                    </Grid>
+                    <Grid item xs={12} sm={2.5}>
+                      <TextField
+                        fullWidth
+                        label="Default Value"
+                        value={attr.defaultValue}
+                        onChange={(e) =>
+                          handleAttributeChange(
+                            index,
+                            "defaultValue",
+                            e.target.value
+                          )
+                        }
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                      <Box display="flex" gap={2}>
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              checked={attr.mandatory}
+                              onChange={(e) =>
+                                handleAttributeChange(
+                                  index,
+                                  "mandatory",
+                                  e.target.checked
+                                )
+                              }
+                            />
+                          }
+                          label="Mandatory"
+                        />
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              checked={attr.aiRequired}
+                              onChange={(e) =>
+                                handleAttributeChange(
+                                  index,
+                                  "aiRequired",
+                                  e.target.checked
+                                )
+                              }
+                            />
+                          }
+                          label="AI Required"
+                        />
+                        <IconButton
+                          color="error"
+                          onClick={() => handleAttributeRemove(index)}
+                          disabled={attributes.length === 1}
+                        >
+                          <Delete />
+                        </IconButton>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={12}>
+                      <TextField
+                        fullWidth
+                        label="Description"
+                        value={attr.description}
+                        onChange={(e) =>
+                          handleAttributeChange(
+                            index,
+                            "description",
+                            e.target.value
+                          )
+                        }
+                      />
+                    </Grid>
+                  </Grid>
+                </AccordionDetails>
+              </Accordion>
             ))}
 
             <Button
