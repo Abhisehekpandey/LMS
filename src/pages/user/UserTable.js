@@ -300,7 +300,9 @@ export default function UserTable() {
 
   const [showRoleChange, setShowRoleChange] = useState(false);
 
-  const [order, setOrder] = useState("asc");
+  // const [order, setOrder] = useState("asc");
+  const [order, setOrder] = useState({ columnId: null, descending: false });
+  const [columnFilters, setColumnFilters] = useState({});
   const [orderBy, setOrderBy] = useState(""); // column field
 
   const [showDeptChange, setShowDeptChange] = useState(false);
@@ -322,6 +324,7 @@ export default function UserTable() {
   const [createUser, setCreateUser] = useState(false);
   const [checked, setChecked] = useState(false);
 
+  // console.log("selected", selected);
   const [rowsData, setRowsData] = useState([]);
 
   const [deleteUser, setDeleteUser] = useState(false);
@@ -629,26 +632,83 @@ export default function UserTable() {
     [regions, editData.region]
   );
 
-  const handleActivateAll = async () => {
-    if (!rowData || rowData.length === 0) {
-      toast.warn("No users selected for activation.");
-      return;
-    }
+  // const handleActivateAll = async () => {
+  //   if (!rowData || rowData.length === 0) {
+  //     toast.warn("No users selected for activation.");
+  //     return;
+  //   }
 
-    // Build full user objects for payload
-    const usersToActivate = rowData.map((user) => ({
-      ...user, // include entire user object
-      active: true, // ensure active is true
-      permissions: {
-        ...user.permissions,
-        allowedStorageInBytesDisplay: "1GB", // ✅ override storage
-      },
-    }));
+  //   // Build full user objects for payload
+  //   const usersToActivate = rowData.map((user) => ({
+  //     ...user, // include entire user object
+  //     active: true, // ensure active is true
+  //     permissions: {
+  //       ...user.permissions,
+  //       allowedStorageInBytesDisplay: "1GB", // ✅ override storage
+  //     },
+  //   }));
 
-    console.log("usersss", usersToActivate);
+  //   console.log("usersss", usersToActivate);
 
+  //   try {
+  //     await toggleUserStatusByUsername(usersToActivate, page); // ✅ send complete users
+
+  //     await refetchUsers();
+
+  //     setSelected([]);
+  //     setRowData([]);
+
+  //     toast.success("Selected users have been activated.");
+  //   } catch (error) {
+  //     console.error("Error activating users:", error);
+  //     toast.error("Failed to activate selected users.");
+  //   }
+  // };
+  const handleActivateAll = async (idsOrEvent, row) => {
     try {
-      await toggleUserStatusByUsername(usersToActivate, page); // ✅ send complete users
+      let usersToActivate = [];
+
+      // Case 1: Single-row activate
+      if (row) {
+        usersToActivate = [
+          {
+            ...row,
+            active: true,
+            permissions: {
+              ...row.permissions,
+              allowedStorageInBytesDisplay: "1GB",
+            },
+          },
+        ];
+        setSelected([row.id]);
+        setRowData([row]);
+      } else {
+        // Case 2: Bulk activate (from toolbar)
+        const ids = Array.isArray(idsOrEvent) ? idsOrEvent : selected;
+
+        if (!ids || ids.length === 0) {
+          toast.warning("No users selected for activation.");
+          return;
+        }
+
+        const selectedFullRows = rowsData.filter((r) => ids.includes(r.id));
+        usersToActivate = selectedFullRows.map((user) => ({
+          ...user,
+          active: true,
+          permissions: {
+            ...user.permissions,
+            allowedStorageInBytesDisplay: "1GB",
+          },
+        }));
+
+        setSelected(ids);
+        setRowData(selectedFullRows);
+      }
+
+      console.log("Activating users:", usersToActivate);
+
+      //  Call your backend
+      await toggleUserStatusByUsername(usersToActivate, page);
 
       await refetchUsers();
 
@@ -665,8 +725,9 @@ export default function UserTable() {
   const options = ["10GB", "20GB"];
 
   const handleBulkDownload = () => {
-    console.log("rowData", rowData);
-    if (!rowData || rowData.length === 0) {
+    console.log("rowsData", rowsData);
+
+    if (!rowsData || rowsData.length === 0) {
       alert("No data to download");
       return;
     }
@@ -678,12 +739,12 @@ export default function UserTable() {
     };
 
     const extractRowData = (row) => ({
-      "User ID": row.id || "N/A", // ✅ New column
+      "User ID": row.id || "N/A",
       Name: row.name || "N/A",
       Department: row.roles?.[0]?.department?.deptName || "N/A",
       Role: row.roles?.[0]?.roleName || "N/A",
       "User Email": row.email || "N/A",
-      Region: row.region || "N/A", // ✅ NEW COLUMN
+      Region: row.region || "N/A",
       "Phone Number": row.phoneNumber || "N/A",
       "Reporting Manager": row.reportingManager?.name || "N/A",
       "Storage Used": row.permissions?.displayStorage || "N/A",
@@ -691,7 +752,7 @@ export default function UserTable() {
       "Active License": formatStatus(row),
     });
 
-    const dataToDownload = rowData.map(extractRowData);
+    const dataToDownload = rowsData.map(extractRowData);
     const headers = Object.keys(dataToDownload[0]);
 
     const worksheet = XLSX.utils.json_to_sheet(dataToDownload, {
@@ -713,42 +774,76 @@ export default function UserTable() {
 
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Selected Users");
-    // XLSX.writeFile(workbook, "selected-users.xlsx");
+
     const fileName =
-      rowData.length === 1
-        ? `${rowData[0].name?.replace(/\s+/g, "_")}-user.xlsx`
+      rowsData.length === 1
+        ? `${rowsData[0].name?.replace(/\s+/g, "_")}-user.xlsx`
         : "selected-users.xlsx";
 
     XLSX.writeFile(workbook, fileName);
 
     setSelected([]);
-    setRowData([]);
+    // setRowsData([]); // if you want to clear it after download
 
-    //  Show success message
     setSnackbarMessage("User data downloaded successfully");
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
   };
 
   const label = { inputProps: { "aria-label": "Switch demo" } };
-const handledummy =()=>{
-  toast.info("This feature is coming soon!"); 
-}
-  const handleDelete = (e, row) => {
+
+  const handleDelete = (rowsOrEvent, row) => {
+    const key = "id";
+    const currentRows = rowsData;
+    let rowsToDelete = [];
+
+    // SINGLE ROW delete
     if (row) {
-      setDeleteUser(true);
-      setRowData([row]);
-      setSelected([row.id]);
-    } else {
-      if (selected.length === 0) {
+      if (row.email === adminEmail) {
+        toast.warning("Admin user cannot be deleted");
+        return;
+      }
+      rowsToDelete = [row];
+    }
+    // BULK delete from toolbar - rowsOrEvent is array of OBJECTS
+    else if (Array.isArray(rowsOrEvent) && rowsOrEvent.length > 0) {
+      // Check if it's an array of objects or IDs
+      const firstItem = rowsOrEvent[0];
+
+      if (typeof firstItem === "object" && firstItem !== null) {
+        // Array of row objects (from PolymorphicTable)
+        rowsToDelete = rowsOrEvent.filter((r) => r.email !== adminEmail);
+        console.log("Bulk delete - row objects:", rowsToDelete);
+      } else {
+        // Array of IDs (fallback)
+        rowsToDelete = currentRows.filter(
+          (r) => rowsOrEvent.includes(r[key]) && r.email !== adminEmail
+        );
+        console.log("Bulk delete - IDs:", rowsToDelete);
+      }
+
+      if (!rowsToDelete.length) {
+        toast.warning("No valid users selected for deletion.");
+        return;
+      }
+    }
+    // fallback to selected state (array of IDs)
+    else {
+      rowsToDelete = currentRows.filter(
+        (r) => selected.includes(r[key]) && r.email !== adminEmail
+      );
+      console.log("Fallback delete from selected state:", rowsToDelete);
+
+      if (!rowsToDelete.length) {
         toast.warning("No users selected for deletion.");
         return;
       }
-
-      const selectedFullRows = rowsData.filter((r) => selected.includes(r.id));
-      setDeleteUser(true);
-      setRowData(selectedFullRows); // send all selected users
     }
+
+    console.log("Final rows to delete:", rowsToDelete);
+    setDeleteUser(true);
+    setRowData(rowsToDelete);
+    setSelected(rowsToDelete.map((r) => r[key]));
   };
 
   const toBytes = (display) => {
@@ -879,31 +974,76 @@ const handledummy =()=>{
 
   const isSelected = (id) => selected.indexOf(id) !== -1;
 
+  // const refetchUsers = async () => {
+  //   setLoading(true);
+  //   try {
+  //     const adminEmail = sessionStorage.getItem("adminEmail");
+
+  //     // ✅ Decide API based on search
+  //     let users;
+  //     if (debouncedSearchQuery.trim()) {
+  //       users = await searchUsers(
+  //         page,
+  //         rowsPerPage,
+  //         searchColumn,
+  //         debouncedSearchQuery.trim()
+  //       );
+  //     } else {
+  //       // users = await fetchUsers(page);
+  //       users = await fetchUsers(page, rowsPerPage);
+  //     }
+  //     // ✅ Normalize storage format like "1.00 GB" → "1GB"
+  //     const normalizedUsers = (users.content || []).map((user) => {
+  //       const display = user.permissions?.allowedStorageInBytesDisplay;
+  //       if (display) {
+  //         const fixedDisplay = display
+  //           .replace(/\.00\s?([A-Z]+)/, "$1") // remove ".00" before GB/MB/etc.
+  //           .replace(/\s+/g, ""); // remove spaces
+  //         return {
+  //           ...user,
+  //           permissions: {
+  //             ...user.permissions,
+  //             allowedStorageInBytesDisplay: fixedDisplay,
+  //           },
+  //         };
+  //       }
+  //       return user;
+  //     });
+
+  //     // ✅ Put admin email first
+  //     const sortedUsers = [...normalizedUsers].sort((a, b) => {
+  //       if (a.email === adminEmail) return -1;
+  //       if (b.email === adminEmail) return 1;
+  //       return 0;
+  //     });
+
+  //     setRowsData(sortedUsers);
+  //     setTotalCount(users.totalElements || 0);
+  //   } catch (error) {
+  //     console.error("Error loading users", error);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  // 1. Fix refetchUsers to accept proper parameters
   const refetchUsers = async () => {
     setLoading(true);
     try {
       const adminEmail = sessionStorage.getItem("adminEmail");
 
-      // ✅ Decide API based on search
-      let users;
-      if (debouncedSearchQuery.trim()) {
-        users = await searchUsers(
-          page,
-          rowsPerPage,
-          searchColumn,
-          debouncedSearchQuery.trim()
-        );
-      } else {
-        // users = await fetchUsers(page);
-        users = await fetchUsers(page, rowsPerPage);
-      }
-      // ✅ Normalize storage format like "1.00 GB" → "1GB"
-      const normalizedUsers = (users.content || []).map((user) => {
+      // Fetch ALL users at once for client-side filtering
+      let allUsers = [];
+      const firstPage = await fetchUsers(0, 100); // Get large page
+      allUsers = firstPage.content || [];
+
+      // Normalize storage
+      const normalizedUsers = allUsers.map((user) => {
         const display = user.permissions?.allowedStorageInBytesDisplay;
         if (display) {
           const fixedDisplay = display
-            .replace(/\.00\s?([A-Z]+)/, "$1") // remove ".00" before GB/MB/etc.
-            .replace(/\s+/g, ""); // remove spaces
+            .replace(/\.00\s?([A-Z]+)/, "$1")
+            .replace(/\s+/g, "");
           return {
             ...user,
             permissions: {
@@ -915,7 +1055,7 @@ const handledummy =()=>{
         return user;
       });
 
-      // ✅ Put admin email first
+      // Sort admin first
       const sortedUsers = [...normalizedUsers].sort((a, b) => {
         if (a.email === adminEmail) return -1;
         if (b.email === adminEmail) return 1;
@@ -923,13 +1063,19 @@ const handledummy =()=>{
       });
 
       setRowsData(sortedUsers);
-      setTotalCount(users.totalElements || 0);
+      setTotalCount(sortedUsers.length);
     } catch (error) {
       console.error("Error loading users", error);
+      toast.error("Failed to load users");
     } finally {
       setLoading(false);
     }
   };
+
+  // Simpler useEffect
+  useEffect(() => {
+    refetchUsers();
+  }, []); // Only fetch once on mount
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 300);
@@ -945,9 +1091,16 @@ const handledummy =()=>{
       clearTimeout(handler); // cleanup if user keeps typing
     };
   }, [searchQuery]);
+  // useEffect(() => {
+  //   refetchUsers();
+  // }, [page, rowsPerPage, searchColumn, debouncedSearchQuery]);
+
+  // useEffect(() => {
+  //   refetchUsers({ page, rowsPerPage, searchColumn, debouncedSearchQuery });
+  // }, [page, rowsPerPage, searchColumn, debouncedSearchQuery]);
   useEffect(() => {
     refetchUsers();
-  }, [page, rowsPerPage, searchColumn, debouncedSearchQuery]);
+  }, [page, rowsPerPage, debouncedSearchQuery]);
 
   console.log(">>>rowssss", rowsData);
 
@@ -1029,20 +1182,23 @@ const handledummy =()=>{
     {
       id: "department",
       header: "Department",
-      accessor: "department",
-      sortable: true,
-      filterable: true,
-      width: "200px",
-      render: (_, row) => {
+      accessor: (row) => {
         const selectedRoleId = userRoleMap[row.id];
         const selectedRole = row.roles?.find(
           (role) => role.id === selectedRoleId
         );
-        const deptName =
+        return (
           selectedRole?.department?.deptName ||
-          row.roles?.[0]?.department?.deptName;
-
-        return deptName || "N/A";
+          row.roles?.[0]?.department?.deptName ||
+          "N/A"
+        );
+      },
+      sortable: true,
+      filterable: true,
+      width: "200px",
+      render: (value, row) => {
+        // You can still customize the display here if needed
+        return value;
       },
     },
 
@@ -1084,17 +1240,16 @@ const handledummy =()=>{
     {
       id: "storageUsed",
       header: "StorageUsed",
-      accessor: "storageUsed",
+      accessor: (row) => row.permissions?.displayStorage || "—",
       sortable: true,
       filterable: true,
       width: "150px",
       align: "center",
-      render: (_, row) => row.permissions?.displayStorage || "—",
     },
     {
       id: "manage storage",
       header: "Manage Storage",
-      accessor: "Manage Storage",
+      accessor: (row) => row.permissions?.allowedStorageInBytesDisplay || "",
       width: "150px",
       align: "center",
       render: (_, row) => (
@@ -1189,7 +1344,11 @@ const handledummy =()=>{
     {
       id: "status",
       header: "Status",
-      accessor: "activeLicense",
+      accessor: (row) => {
+        if (row.active && !row.enabled) return "Pending";
+        if (row.active && row.enabled) return "Active";
+        return "Inactive";
+      },
       sortable: true,
       // filterable: true,
       width: "150px",
@@ -1262,7 +1421,7 @@ const handledummy =()=>{
                 <IconButton
                   size="small"
                   color="error"
-                  onClick={(e) => handleDelete(e, row)}
+                  onClick={() => handleDelete(null, row)}
                   disabled={row.email === adminEmail}
                 >
                   <Delete />
@@ -1299,61 +1458,108 @@ const handledummy =()=>{
       >
         <div style={{ overflowX: "auto" }}>
           <PolymorphicTable
-            data={rowsData} // new state for rows
-            columns={userColumns} //  define your columns config separately
+            data={rowsData}
+            columns={userColumns}
+            serverSide={false}
             rowKey="id"
-            showGlobalSearch
             showColumnToggles
             showFilters
             showPagination
             selectable
             stickyHeader
-            enableExport
             tableHeight="85vh"
             tableWidth="93vw"
-            // extra props you can wire with your new logic:
+            //  Pagination props
             page={page}
             rowsPerPage={rowsPerPage}
             totalCount={totalCount}
-            onPageChange={handleChangePage}
-            onRowsPerPageChange={handleChangeRowsPerPage}
+            // onPageChange={(newPage, newPageSize) => {
+            //   setPage(newPage);
+            //   setRowsPerPage(newPageSize);
+            //   refetchUsers({
+            //     page: newPage,
+            //     limit: newPageSize,
+            //     sort: order,
+            //     filters: columnFilters,
+            //     searchQuery: debouncedSearchQuery,
+            //   });
+            // }}
+            // onSortChange={(columnId, descending) => {
+            //   const newOrder = { columnId, descending };
+            //   setOrder(newOrder);
+            //   setPage(0);
+            //   refetchUsers({
+            //     page: 0,
+            //     limit: rowsPerPage,
+            //     sort: newOrder,
+            //     filters: columnFilters,
+            //     searchQuery: debouncedSearchQuery,
+            //   });
+            // }}
+            // onFilterChange={(columnId, value) => {
+            //   const newFilters = { ...columnFilters, [columnId]: value };
+            //   setColumnFilters(newFilters);
+            //   setPage(0);
+            //   refetchUsers({
+            //     page: 0,
+            //     limit: rowsPerPage,
+            //     filters: newFilters,
+            //     sort: order,
+            //     searchQuery: debouncedSearchQuery,
+            //   });
+            // }}
+            // onGlobalSearchChange={(value) => {
+            //   setSearchQuery(value);
+            //   // DON'T set debouncedSearchQuery here - let useEffect handle it
+            //   setPage(0);
+            // }}
+            // onRowsPerPageChange={(newSize) => {
+            //   setRowsPerPage(newSize);
+            //   setPage(0);
+            //   refetchUsers({
+            //     page: 0,
+            //     limit: newSize,
+            //     sort: order,
+            //     filters: columnFilters,
+            //     searchQuery: debouncedSearchQuery,
+            //   });
+            // }}
+            //  Keep existing selection props
             selectedRowKeys={selected}
-            onRowSelect={(ids) => setSelected(ids)}
+            onRowSelect={(selectedRows) => setSelected(selectedRows)}
+            //  Keep existing toolbar
             renderToolbarIcons={(selected) =>
               selected.length > 0 && (
-                <Tooltip title="Delete Selected">
-                  <IconButton onClick={handleDelete}>
-                    <DeleteIcon />
-                  </IconButton>
-                </Tooltip>
+                <>
+                  <Tooltip title="Delete Selected">
+                    <IconButton onClick={() => handleDelete(selected)}>
+                      <DeleteIcon />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Activate Selected">
+                    <IconButton onClick={() => handleActivateAll(selected)}>
+                      <CheckCircle />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Download Selected">
+                    <IconButton onClick={() => handleBulkDownload()}>
+                      <FileDownload />
+                    </IconButton>
+                  </Tooltip>
+                </>
               )
             }
-            showDefaultToolbarIcons={false} // hide defaults if you only want custom
+            showDefaultToolbarIcons={false}
             renderTableFooterRight={() => (
               <Tooltip title="Add New User">
                 <IconButton
                   sx={{
-                    bgcolor: "orange", // Solid orange background color
+                    bgcolor: "orange",
                     color: "white",
-                    boxShadow:
-                      "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.6)", // Default shadow
+                    boxShadow: "0 4px 8px 0 rgba(0, 0, 0, 0.2)",
                     "&:hover": {
-                      backgroundColor: "orange", // Keep the background color on hover
-                      animation: "glowBorder 1.5s ease-in-out infinite", // Apply glowing animation on hover
-                    },
-                    "@keyframes glowBorder": {
-                      "0%": {
-                        boxShadow: "0 0 0px 2px rgba(251, 68, 36, 0.5)", // Start with soft glow
-                        borderColor: "transparent", // Initial transparent border
-                      },
-                      "50%": {
-                        boxShadow: "0 0 20px 5px rgba(251, 68, 36, 0.8)", // Stronger glow
-                        borderColor: "rgb(251, 68, 36)", // Glowing orange border
-                      },
-                      "100%": {
-                        boxShadow: "0 0 0px 2px rgba(251, 68, 36, 0.5)", // Glow fades out
-                        borderColor: "transparent", // Reset to transparent
-                      },
+                      backgroundColor: "orange",
+                      animation: "glowBorder 1.5s ease-in-out infinite",
                     },
                   }}
                   onClick={handleCreateUser}
