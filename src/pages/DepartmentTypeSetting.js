@@ -60,6 +60,9 @@ const attributeTypes = ["STRING", "NUMBER", "DATE", "BOOLEAN"];
 
 const DepartmentTypeSetting = () => {
   const [expandedIndex, setExpandedIndex] = useState(0); // initially first attribute expanded
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editingTypeId, setEditingTypeId] = useState(null);
 
   const [fileTypes, setFileTypes] = useState([]);
   const [selected, setSelected] = useState([]);
@@ -101,8 +104,34 @@ const DepartmentTypeSetting = () => {
   const [searchColumn, setSearchColumn] = useState("typeName");
   const [searchText, setSearchText] = useState("");
 
-  const handleEditType = (typeName) => {
-    setDocumentType(typeName);
+  const handleEditType = (row) => {
+    setDocumentType(row.type || "");
+    setAttributes(
+      row.attributes?.map((attr) => ({
+        name: attr.attributeName || "",
+        type: attr.attributeType?.toUpperCase() || "STRING",
+        defaultValue: attr.value || "",
+        description: attr.fileTypeDescription || "",
+        mandatory: attr.isMandatory || false,
+        aiRequired: attr.isAiRequired || false,
+      })) || [createAttributeTemplate()]
+    );
+
+    if (row.users?.length) {
+      setTypeScope("user");
+      setSelectedEntityId(row.users[0]);
+    } else if (row.departments?.length) {
+      setTypeScope("department");
+      setSelectedEntityId(row.departments[0]);
+    } else {
+      setTypeScope("global");
+      setSelectedEntityId("");
+    }
+
+    // ✅ Edit mode
+    setIsEditMode(true);
+    setEditingTypeId(row.id);
+
     setOpenDialog(true);
   };
 
@@ -225,27 +254,38 @@ const DepartmentTypeSetting = () => {
 
   const isSelected = (index) => selected.indexOf(index) !== -1;
 
-  const handleClick = (index) => {
-    const selectedIndex = selected.indexOf(index);
-    let newSelected = [];
-    if (selectedIndex === -1) {
-      newSelected = [...selected, index];
-    } else {
-      newSelected = [
-        ...selected.slice(0, selectedIndex),
-        ...selected.slice(selectedIndex + 1),
-      ];
-    }
-    setSelected(newSelected);
+  const handleCheckboxToggle = (id) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
   };
 
-  const handleSelectAllClick = (event) => {
+  const handleSelectAll = (event) => {
     if (event.target.checked) {
-      const newSelected = fileTypes.map((_, index) => index);
-      setSelected(newSelected);
+      const allIds = fileTypes.map((row) => row.id);
+      setSelectedIds(allIds);
     } else {
-      setSelected([]);
+      setSelectedIds([]);
     }
+  };
+
+  const getSelectedIds = () => {
+    if (!selected || selected.length === 0) return [];
+
+    // if selected array already stores string ids
+    if (typeof selected[0] === "string") return selected;
+
+    // try treat selected as indices into sortedRows (best for global selection state)
+    const idsFromSorted = selected
+      .map((i) => sortedRows[i]?.id)
+      .filter(Boolean);
+    if (idsFromSorted.length === selected.length) return idsFromSorted;
+
+    // fallback: treat selected as indices into fileTypes (original)
+    const idsFromFileTypes = selected
+      .map((i) => fileTypes[i]?.id)
+      .filter(Boolean);
+    return idsFromFileTypes;
   };
 
   const fetchFileTypes = async () => {
@@ -322,47 +362,69 @@ const DepartmentTypeSetting = () => {
         attributeType: attr.type.toLowerCase(),
         value: attr.defaultValue,
         fileTypeDescription: attr.description,
-        isMandatory: attr.mandatory, // existing
-        aiRequired: attr.aiRequired, // ✅ new
+        isMandatory: attr.mandatory,
+        aiRequired: attr.aiRequired,
       })),
       users: typeScope === "user" ? [selectedEntityId] : [],
       departments: typeScope === "department" ? [selectedEntityId] : [],
       global: typeScope === "global",
     };
 
-    console.log("payload", payload);
-
     try {
-      const res = await axios.post(
-        `${window.__ENV__.REACT_APP_ROUTE}/tenants/createType`,
-        payload,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
-            username: sessionStorage.getItem("adminEmail"),
-          },
-        }
-      );
+      if (isEditMode && editingTypeId) {
+        // ✅ PUT request to update existing type
+        await axios.put(
+          `${window.__ENV__.REACT_APP_ROUTE}/tenants/editType/${editingTypeId}`,
+          payload,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+              username: sessionStorage.getItem("adminEmail"),
+            },
+          }
+        );
 
-      setSnackbar({
-        open: true,
-        message: "New type created successfully",
-        severity: "success",
-      });
+        setSnackbar({
+          open: true,
+          message: "Type updated successfully",
+          severity: "success",
+        });
+      } else {
+        // ✅ POST request for new type
+        await axios.post(
+          `${window.__ENV__.REACT_APP_ROUTE}/tenants/createType`,
+          payload,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+              username: sessionStorage.getItem("adminEmail"),
+            },
+          }
+        );
+
+        setSnackbar({
+          open: true,
+          message: "New type created successfully",
+          severity: "success",
+        });
+      }
 
       setOpenDialog(false);
       setDocumentType("");
-      setAttributes([{ ...attributeTemplate }]);
+      setAttributes([createAttributeTemplate()]);
       setTypeScope("global");
       setSelectedEntityId("");
+      setIsEditMode(false);
+      setEditingTypeId(null);
 
       fetchFileTypes();
     } catch (error) {
-      console.error("Error creating new type:", error);
+      console.error("Error saving type:", error);
       setSnackbar({
         open: true,
-        message: "Failed to create type",
+        message: "Failed to save type",
         severity: "error",
       });
     }
@@ -385,32 +447,48 @@ const DepartmentTypeSetting = () => {
     setExpandedIndex(attributes.length); // expand only the newly added row
   };
 
-  const handleDeleteType = async (id, typeName) => {
+  const handleDeleteType = async (ids, typeName) => {
+    if (!ids || (Array.isArray(ids) && ids.length === 0)) {
+      setSnackbar({
+        open: true,
+        message: "No items selected",
+        severity: "info",
+      });
+      return;
+    }
+
+    // Ensure ids is always an array
+    const idsArray = Array.isArray(ids) ? ids : [ids];
+
     try {
       await axios.delete(
-        `${window.__ENV__.REACT_APP_ROUTE}/tenants/deleteType/${id}`,
+        `${window.__ENV__.REACT_APP_ROUTE}/tenants/deleteType`,
         {
           headers: {
             Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
             username: sessionStorage.getItem("adminEmail"),
             "Content-Type": "application/json",
           },
+          data: idsArray,
         }
       );
 
       setSnackbar({
         open: true,
-        message: `"${typeName}" deleted successfully`,
+        message:
+          idsArray.length === 1
+            ? `"${typeName}" deleted successfully`
+            : `${idsArray.length} type(s) deleted successfully`,
         severity: "success",
       });
 
-      // Refresh after delete
-      fetchFileTypes();
+      setSelectedIds([]); // clear selection if bulk delete
+      fetchFileTypes(); // refresh list
     } catch (error) {
-      console.error("Error deleting file type:", error);
+      console.error("Delete failed:", error);
       setSnackbar({
         open: true,
-        message: "Failed to delete type",
+        message: "Failed to delete type(s)",
         severity: "error",
       });
     }
@@ -526,17 +604,17 @@ const DepartmentTypeSetting = () => {
                 <TableCell padding="checkbox">
                   <Checkbox
                     indeterminate={
-                      selected.length > 0 &&
-                      selected.length < paginatedRows.length
+                      selectedIds.length > 0 &&
+                      selectedIds.length < fileTypes.length
                     }
                     checked={
-                      paginatedRows.length > 0 &&
-                      selected.length === paginatedRows.length
+                      fileTypes.length > 0 &&
+                      selectedIds.length === fileTypes.length
                     }
-                    onChange={handleSelectAllClick}
-                    sx={{ color: "black" }}
+                    onChange={handleSelectAll}
                   />
                 </TableCell>
+
                 <TableCell>
                   <TableSortLabel
                     active={orderBy === "sno"}
@@ -569,13 +647,13 @@ const DepartmentTypeSetting = () => {
                   selected={isSelected(index)}
                   sx={{ height: 36, "& td": { padding: "6px 8px" } }}
                 >
-                  <TableCell padding="checkbox" sx={{ textAlign: "center" }}>
+                  <TableCell padding="checkbox">
                     <Checkbox
-                      checked={isSelected(index)}
-                      onChange={() => handleClick(index)}
-                      size="small"
+                      checked={selectedIds.includes(row.id)}
+                      onChange={() => handleCheckboxToggle(row.id)}
                     />
                   </TableCell>
+
                   <TableCell sx={{ textAlign: "center" }}>
                     {page * rowsPerPage + index + 1}
                   </TableCell>
@@ -587,7 +665,7 @@ const DepartmentTypeSetting = () => {
                     {row.createdBy || "—"}
                   </TableCell>
                   <TableCell sx={{ textAlign: "center" }}>
-                    {row.dateCreated || "—"}
+                    {row.CreatedOn || "—"}
                   </TableCell>
                   <TableCell sx={{ textAlign: "center" }}>
                     <IconButton
@@ -599,7 +677,7 @@ const DepartmentTypeSetting = () => {
 
                     <IconButton
                       color="error"
-                      onClick={() => handleDeleteType(row.id, row.type)} // ✅ send both id & type
+                      onClick={() => handleDeleteType(row.id, row.type)} // row.id as single item, row.type for message
                     >
                       <Delete fontSize="small" />
                     </IconButton>
@@ -654,24 +732,38 @@ const DepartmentTypeSetting = () => {
               animation: "glowBorder 1.5s ease-in-out infinite",
             },
             "@keyframes glowBorder": {
-              "0%": {
-                boxShadow: "0 0 0px 2px rgba(251, 68, 36, 0.5)",
-                borderColor: "transparent",
-              },
-              "50%": {
-                boxShadow: "0 0 20px 5px rgba(251, 68, 36, 0.8)",
-                borderColor: "rgb(251, 68, 36)",
-              },
-              "100%": {
-                boxShadow: "0 0 0px 2px rgba(251, 68, 36, 0.5)",
-                borderColor: "transparent",
-              },
+              "0%": { boxShadow: "0 0 0px 2px rgba(251, 68, 36, 0.5)" },
+              "50%": { boxShadow: "0 0 20px 5px rgba(251, 68, 36, 0.8)" },
+              "100%": { boxShadow: "0 0 0px 2px rgba(251, 68, 36, 0.5)" },
             },
           }}
         >
           <Add fontSize="medium" />
         </IconButton>
       </Tooltip>
+
+      {selectedIds.length > 0 && (
+        <Tooltip title={`Delete ${selectedIds.length} selected`}>
+          <IconButton
+            onClick={() => handleDeleteType(selectedIds)} // pass array of IDs for bulk delete
+            sx={{
+              position: "fixed",
+              bottom: 20,
+              right: 110, // positioned left to the Add button
+              backgroundColor: "error.main",
+              color: "white",
+              boxShadow: "0 4px 8px rgba(0,0,0,0.2)",
+              "&:hover": {
+                backgroundColor: "error.dark",
+              },
+              transition: "transform 150ms ease, opacity 150ms ease",
+            }}
+          >
+            <Delete fontSize="medium" />
+          </IconButton>
+        </Tooltip>
+      )}
+
       <Dialog
         open={openDialog}
         onClose={() => setOpenDialog(false)}
@@ -679,8 +771,9 @@ const DepartmentTypeSetting = () => {
         maxWidth="md"
       >
         <DialogTitle sx={{ bgcolor: "primary.main", color: "white" }}>
-          Add New Type
+          {isEditMode ? "Edit Type" : "Add New Type"}
         </DialogTitle>
+
         <DialogContent dividers>
           <Box>
             <FormControl component="fieldset" fullWidth sx={{ mb: 2 }}>

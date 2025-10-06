@@ -19,8 +19,6 @@ import { DynamicFeed as FeedContextIcon } from "@mui/icons-material";
 import { Palette as PaletteIcon } from "@mui/icons-material";
 import TableChartIcon from "@mui/icons-material/TableChart";
 
-
-
 import {
   People as UserIcon,
   ChevronLeft as ChevronLeftIcon,
@@ -138,97 +136,45 @@ const Sidebar = () => {
   const deptAdmin = sessionStorage.getItem("deptAdmin") === "true";
   const superAdmin = sessionStorage.getItem("superAdmin") === "true";
 
+  const menuItems = React.useMemo(
+    () => [
+      { path: "/angelbot", icon: <TimelineIcon />, text: "AngelBot" },
+      { path: "/user", icon: <UserIcon />, text: "User" },
+      {
+        path: "/department",
+        icon: <DepartmentRolesIcon />,
+        text: "Department",
+      },
+      { path: "/ldap-config", icon: <LDAPIcon />, text: "LDAP Settings" },
+      {
+        path: "/choose-extension",
+        icon: <DashboardIcon />,
+        text: "Choose Extension",
+      },
+      {
+        path: "/department-type-setting",
+        icon: <SettingsIcon />,
+        text: "Type Creation",
+      },
+      {
+        path: "/data-dictionary",
+        icon: <DictionaryIcon />,
+        text: "Data Dictionary",
+      },
 
-  
-//  const menuItems = React.useMemo(
-//    () => [
-//      { path: "/angelbot", icon: <TimelineIcon />, text: "AngelBot" },
-//      { path: "/user", icon: <UserIcon />, text: "User" },
-//      {
-//        path: "/department",
-//        icon: <DepartmentRolesIcon />,
-//        text: "Department",
-//      },
-//      { path: "/ldap-config", icon: <LDAPIcon />, text: "LDAP Settings" },
-//      {
-//        path: "/choose-extension",
-//        icon: <DashboardIcon />,
-//        text: "Choose Extension",
-//      },
-//      {
-//        path: "/department-type-setting",
-//        icon: <SettingsIcon />,
-//        text: "Type Creation",
-//      },
-//      {
-//        path: "/data-dictionary",
-//        icon: <DictionaryIcon />,
-//        text: "Data Dictionary",
-//      },
-//      {
-//        path: "/feed-context",
-//        icon: <FeedContextIcon />,
-//        text: "Feedback Dashboard",
-//      },
-//      {
-//        path: "/feedback-table",
-//        icon: <TableChartIcon />,
-//        text: "Feedback Table",
-//      },
-//      {
-//        path: "/theme-setting",
-//        icon: <PaletteIcon />,
-//        text: "Theme and Slogan Setting",
-//      },
-//    ],
-//    []
-//  );
-
-const menuItems = React.useMemo(
-  () => [
-    { path: "/angelbot", icon: <TimelineIcon />, text: "AngelBot" },
-    { path: "/user", icon: <UserIcon />, text: "User" },
-    {
-      path: "/department",
-      icon: <DepartmentRolesIcon />,
-      text: "Department",
-    },
-    { path: "/ldap-config", icon: <LDAPIcon />, text: "LDAP Settings" },
-    {
-      path: "/choose-extension",
-      icon: <DashboardIcon />,
-      text: "Choose Extension",
-    },
-    {
-      path: "/department-type-setting",
-      icon: <SettingsIcon />,
-      text: "Type Creation",
-    },
-    {
-      path: "/data-dictionary",
-      icon: <DictionaryIcon />,
-      text: "Data Dictionary",
-    },
-    // {
-    //   path: "/feed-context",
-    //   icon: <FeedContextIcon />,
-    //   text: "Feedback Dashboard",
-    // },
-    {
-      path: "/feedback-table",
-      icon: <TableChartIcon />,
-      text: "Feedback Table",
-    },
-    {
-      path: "/theme-setting",
-      icon: <PaletteIcon />,
-      text: "Theme and Slogan Setting",
-    },
-  ],
-  []
-);
-
-
+      {
+        path: "/feedback-table",
+        icon: <TableChartIcon />,
+        text: "Feedback Table",
+      },
+      {
+        path: "/theme-setting",
+        icon: <PaletteIcon />,
+        text: "Theme and Slogan Setting",
+      },
+    ],
+    []
+  );
 
   const handleMouseEnter = () => {
     clearTimeout(timeoutRef.current);
@@ -344,48 +290,6 @@ const menuItems = React.useMemo(
           // alignItems: "center",
         }}
       >
-        {/* {menuItems.map((item) => {
-          const isActive = location.pathname === item.path;
-          return (
-            <Link
-              key={item.path}
-              to={item.path}
-              style={{ textDecoration: "none", color: "inherit" }}
-            >
-              <StyledListItem
-                button
-                active={isActive}
-                sx={{
-                  height: 44, // Fixed height instead of minHeight
-                  padding: "5px !important",
-                  overflow: "hidden", // Prevent content overflow
-                }}
-              >
-                <StyledListItemIcon active={isActive}>
-                  {item.icon}
-                </StyledListItemIcon>
-                {open && (
-                  <ListItemText
-                    primary={item.text}
-                    sx={{
-                      opacity: open ? 1 : 0,
-                      transition: "opacity 0.3s ease, margin 0.3s ease",
-                      marginRight: "4px",
-                      "& .MuiListItemText-primary": {
-                        fontSize: "0.875rem",
-                        fontWeight: isActive ? 600 : 500,
-                        color: isActive ? "white" : "inherit",
-                        transition: "font-weight 0.2s ease, color 0.2s ease",
-                        whiteSpace: "nowrap",
-                      },
-                    }}
-                  />
-                )}
-              </StyledListItem>
-            </Link>
-          );
-        })} */}
-
         {menuItems.map((item) => {
           const isActive = location.pathname === item.path;
 
