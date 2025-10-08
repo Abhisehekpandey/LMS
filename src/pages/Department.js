@@ -10,6 +10,7 @@ import InputAdornment from "@mui/material/InputAdornment";
 import { Menu } from "@mui/material";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import AddIcon from "@mui/icons-material/Add";
+import { PolymorphicTable } from "polymorphic-table";
 
 import {
   Box,
@@ -1737,24 +1738,162 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     loadMoreUsers();
   }, []);
 
+  const tableColumns = useMemo(() => [
+    {
+      id: "id",
+      header: "Department Id",
+      accessor: "id",
+      sortable: true,
+      filterable: true,
+      width: 120,
+    },
+
+    {
+      id: "name",
+      header: "Department",
+      accessor: "name",
+      sortable: true,
+      filterable: true,
+      width: 120,
+    },
+
+    {
+      id: "displayName",
+      header: "Display Name",
+      accessor: "displayName",
+      sortable: true,
+      filterable: true,
+      width: 150,
+    },
+
+    {
+      id: "departmentModerator",
+      header: "Owner",
+      accessor: "departmentModerator",
+      sortable: true,
+      filterable: true,
+      width: 200,
+    },
+
+    {
+      id: "storage",
+      header: "Storage",
+      accessor: "storage",
+      sortable: false,
+      filterable: false,
+      width: 150,
+    },
+
+    {
+      id: "allowedStorage",
+      header: "Manage Storage",
+      accessor: "allowedStorage",
+      sortable: false,
+      filterable: false,
+      width: 150,
+      render: (value, row) => (
+        <Select
+          value={row.allowedStorage}
+          onChange={(e) => handleStorageChange(row.name, e.target.value)}
+          sx={{
+            width: "100px",
+            height: "30px",
+            borderRadius: "28px",
+          }}
+        >
+          {getStorageOptions(row.allowedStorage).map((option) => (
+            <MenuItem key={option} value={option}>
+              {option}
+            </MenuItem>
+          ))}
+        </Select>
+      ),
+    },
+
+    {
+      id: "userCount",
+      header: "No of Users",
+      accessor: (row) => row.roles.flatMap((role) => role.user).length,
+      sortable: true,
+      filterable: false,
+      width: 150,
+      render: (value, row) => (
+        <DeptUsersDropdown
+          users={row.roles.flatMap((role) => role.user)}
+          departmentId={row.id}
+          departmentRoles={row.roles.map((role) => ({
+            id: role.id,
+            name: role.roleName,
+          }))}
+          onEditUser={(user) => console.log("Edit user:", user)}
+          onDeleteUser={(user) => console.log("Delete user:", user)}
+          addUsersToDepartment={async (deptId, selectedUsers) => {
+            // Your existing addUsersToDepartment logic
+          }}
+        />
+      ),
+    },
+
+    {
+      id: "actions",
+      header: "Actions",
+      width: 150,
+      align: "center",
+      isActionColumn: true,
+      sortable: false,
+      filterable: false,
+      actions: (row) => (
+        <Box sx={{ display: "flex", justifyContent: "center", gap: 0.5 }}>
+          <IconButton
+            size="small"
+            onClick={() => handleEditDepartment(row)}
+            sx={{
+              color: "#1976d2",
+              "&:hover": {
+                backgroundColor: "#e3f2fd",
+                color: "#1565c0",
+              },
+            }}
+            title="Edit Department"
+          >
+            <EditIcon fontSize="small" />
+          </IconButton>
+          <IconButton
+            size="small"
+            onClick={() => {
+              setDepartmentToDelete(row);
+              setDeleteDialogOpen(true);
+            }}
+            sx={{
+              color: "#d32f2f",
+              "&:hover": {
+                backgroundColor: "#ffebee",
+                color: "#c62828",
+              },
+            }}
+            title="Delete Department"
+          >
+            <DeleteIcon fontSize="small" />
+          </IconButton>
+        </Box>
+      ),
+    },
+  ]);
+
   return (
     <Box
       sx={{
-        display: "flex",
-        flexDirection: "column",
-        position: "relative",
-        height: "100% ",
+        // display: "flex",
+        // flexDirection: "column",
+        // position: "relative",
         marginLeft: "80px",
         marginTop: "12px",
         marginRight: "18px",
         overflow: "hidden",
-
-        bgcolor: "#f5f5f5", // Whitesmoke background for the main container
-        borderRadius: "20px",
-        boxShadow: "2px 1px 11px 5px rgba(0, 0, 0, 0.2)!important",
+        // boxShadow: "2px 1px 11px 5px rgba(0, 0, 0, 0.2)!important",
         animation: "slideInFromLeft 0.3s ease-in-out forwards",
-        opacity: 0, // Start with opacity 0
-        transform: "translateX(-50px)", // Start from left
+        opacity: 0,
+        transform: "translateX(-50px)",
         "@keyframes slideInFromLeft": {
           "0%": {
             opacity: 0,
@@ -1767,625 +1906,49 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         },
       }}
     >
-      <TableContainer
-        component={Paper}
-        sx={{
-          maxHeight: "calc(100vh - 120px)",
-          height: "calc(100vh - 120px)",
-          backgroundColor: "#ffffff",
-          "& .MuiTableHead-root": {
-            position: "sticky",
-            top: 0,
-            zIndex: 1,
-            backgroundColor: "#ffff",
-            boxShadow: "0 1px 2px 0 rgba(59, 52, 52, 0.05)",
-          },
-          "& .MuiTableHead-root .MuiTableCell-root": {
-            backgroundColor: "#ffff",
-
-            borderBottom: "2px solid #94a3b8",
-            fontSize: "0.875rem",
-            fontWeight: "700 !important",
-            color: "#475569",
-            height: "30px",
-            padding: "2px 16px",
-          },
-          "& .MuiTableCell-root": {
-            padding: "8px 16px",
-            fontSize: "0.8125rem",
-            color: "#334155",
-            borderBottom: "1px solid #e2e8f0",
-          },
-          "& .MuiTable-root": {
-            // borderCollapse: "separate",
-            borderSpacing: 0,
-            border: "1px solid #e2e8f0",
-          },
-          boxShadow: "0 1px 3px 0 rgb(0 0 0 / 0.1)",
-          borderRadius: "8px",
-          position: "relative",
+      <PolymorphicTable
+        columns={tableColumns}
+        data={filteredDepartments1}
+        rowKey="id"
+        selectable={true}
+        showPagination={true}
+        showGlobalSearch={true}
+        showColumnToggles={true}
+        stickyHeader={true}
+        compact={false}
+        tableWidth="93vw"
+        tableHeight="85vh"
+        initialPageSize={rowsPerPage}
+        pageSizeOptions={[10, 20, 30, 50, 100]}
+        page={page}
+        rowsPerPage={rowsPerPage}
+        totalCount={totalDepartments}
+        showDefaultToolbarIcons={false}
+        // onPageChange={(newPage, pageSize) => {
+        //   setPage(newPage);
+        //   if (onPageChange) onPageChange(newPage, pageSize);
+        // }}
+        onRowsPerPageChange={(newRowsPerPage) => {
+          setRowsPerPage(newRowsPerPage);
+          setPage(0);
         }}
-      >
-        <Box
-          display="flex"
-          justifyContent="space-between"
-          alignItems="center"
-          flexWrap="wrap"
-          sx={{
-            mb: 2,
-            px: 2,
-            mt: 1,
-            backgroundColor: "#fff", // match table's background
-            borderRadius: 2,
-            py: 1.5,
-          }}
-        >
-          <Box display="flex" gap={2} alignItems="center" flexWrap="wrap">
-            <FormControl
-              size="small"
-              sx={{
-                minWidth: 180,
-                height: 30,
-                "& .MuiInputBase-root": {
-                  height: 30,
-                  fontSize: "0.8rem",
-                },
-              }}
-            >
-              <InputLabel>Filter By</InputLabel>
-              <Select
-                value={searchColumn}
-                onChange={(e) => setSearchColumn(e.target.value)}
-                label="Filter By"
-              >
-                <MenuItem value="name">Department</MenuItem>
-                <MenuItem value="departmentModerator">Owner</MenuItem>
-                <MenuItem value="displayName">Short Name</MenuItem>
-                <MenuItem value="id">Department Id</MenuItem>
-              </Select>
-            </FormControl>
-
-            <TextField
-              size="small"
-              placeholder="Search"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              sx={{
-                width: 250,
-                height: 30,
-                "& .MuiInputBase-root": {
-                  height: 30,
-                  fontSize: "0.8rem",
-                },
-              }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon color="action" fontSize="small" />
-                  </InputAdornment>
-                ),
-              }}
-            />
-
-            <Tooltip title="Show/Hide Columns">
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={(e) => setAnchorEl(e.currentTarget)}
-                sx={{ textTransform: "none", fontWeight: 500 }}
-              >
-                Columns
-              </Button>
-            </Tooltip>
-
-            <Menu
-              anchorEl={anchorEl}
-              open={Boolean(anchorEl)}
-              onClose={() => setAnchorEl(null)}
-              PaperProps={{
-                style: {
-                  maxHeight: 320,
-                  width: "200px",
-                },
-              }}
-            >
-              {allColumns.map((col) => (
-                <MenuItem key={col.id}>
-                  <Checkbox
-                    checked={visibleColumns[col.id]}
-                    onChange={() =>
-                      setVisibleColumns((prev) => ({
-                        ...prev,
-                        [col.id]: !prev[col.id],
-                      }))
-                    }
-                  />
-                  {col.label}
-                </MenuItem>
-              ))}
-            </Menu>
-
-            <Button
-              variant="outlined"
-              color="error"
-              onClick={() => setSearchQuery("")}
-              disabled={!searchQuery.trim()}
-              sx={{
-                whiteSpace: "nowrap",
-                height: 30,
-                fontSize: "0.75rem",
-                padding: "0 12px",
-              }}
-            >
-              ✖ CLEAR
-            </Button>
-          </Box>
-        </Box>
-
-        <Table
-          sx={{
-            border: "0px solid #e2e8f0 !important",
-            "& .MuiTableCell-root": {
-              padding: "8px 12px", // ✅ consistent default padding
-              height: "40px",
-              fontSize: "14px",
-            },
-            "& .MuiTableCell-head": {
-              fontWeight: "bold",
-              color: "#444",
-              backgroundColor: "#f8fafc",
-            },
-          }}
-        >
-          <TableHead className={styles.tableHeader}>
-            <TableRow>
-              {/* Checkbox column */}
-              <TableCell
-                padding="checkbox"
-                sx={{ width: "48px", textAlign: "center" }}
-              >
-                <Checkbox
-                  color="primary"
-                  indeterminate={
-                    selected.length > 0 &&
-                    selected.length < sortedDepartments.length
-                  }
-                  checked={
-                    sortedDepartments.length > 0 &&
-                    selected.length === sortedDepartments.length
-                  }
-                  onChange={() => setSelectAllData(true)}
-                  inputProps={{ "aria-label": "select all departments" }}
+        onRowClick={(row) => console.log("Row clicked:", row)}
+        emptyMessage="No departments found"
+        renderToolbarIcons={(selectedRows) => (
+          <>
+            {selectedRows.length > 0 && (
+              <Tooltip title="Bulk Download" placement="left">
+                <IconButton
                   size="small"
-                />
-              </TableCell>
-
-              {visibleColumns.id && (
-                <TableCell sx={{ width: "120px" }}>
-                  <TableSortLabel
-                    active={orderBy === "id"}
-                    direction={orderBy === "id" ? order : "asc"}
-                    onClick={() => handleRequestSort("id")}
-                  >
-                    Department Id
-                  </TableSortLabel>
-                </TableCell>
-              )}
-
-              {visibleColumns.name && (
-                <TableCell sx={{ width: "120px" }}>
-                  <TableSortLabel
-                    active={orderBy === "name"}
-                    direction={orderBy === "name" ? order : "asc"}
-                    onClick={() => handleRequestSort("name")}
-                  >
-                    Department
-                  </TableSortLabel>
-                </TableCell>
-              )}
-
-              {visibleColumns.displayName && (
-                <TableCell sx={{ width: "150px" }}>
-                  <TableSortLabel
-                    active={orderBy === "displayName"}
-                    direction={orderBy === "displayName" ? order : "asc"}
-                    onClick={() => handleRequestSort("displayName")}
-                  >
-                    Display Name
-                  </TableSortLabel>
-                </TableCell>
-              )}
-
-              {visibleColumns.owner && (
-                <TableCell sx={{ width: "200px" }}>
-                  <TableSortLabel
-                    active={orderBy === "departmentModerator"}
-                    direction={
-                      orderBy === "departmentModerator" ? order : "asc"
-                    }
-                    onClick={() => handleRequestSort("departmentModerator")}
-                  >
-                    Owner
-                  </TableSortLabel>
-                </TableCell>
-              )}
-
-              {visibleColumns.storage && (
-                <TableCell sx={{ width: "150px" }}>Storage</TableCell>
-              )}
-
-              {visibleColumns.manageStorage && (
-                <TableCell sx={{ width: "150px" }}>Manage Storage</TableCell>
-              )}
-
-              {visibleColumns.users && (
-                <TableCell sx={{ width: "150px" }}>
-                  <TableSortLabel
-                    active={orderBy === "noOfUsers"}
-                    direction={orderBy === "noOfUsers" ? order : "asc"}
-                    onClick={() => handleRequestSort("noOfUsers")}
-                  >
-                    No of Users
-                  </TableSortLabel>
-                </TableCell>
-              )}
-
-              {visibleColumns.actions && (
-                <TableCell sx={{ width: "150px", textAlign: "center" }}>
-                  Actions
-                </TableCell>
-              )}
-            </TableRow>
-          </TableHead>
-
-          <TableBody>
-            {filteredDepartments1?.map((dept, index) => {
-              const isItemSelected = isSelected(dept.name);
-              return (
-                <React.Fragment key={index}>
-                  <StyledTableRow
-                    hover
-                    role="checkbox"
-                    aria-checked={isItemSelected}
-                    tabIndex={-1}
-                    selected={isItemSelected}
-                    sx={{ cursor: "default" }}
-                  >
-                    <TableCell padding="checkbox" sx={{ textAlign: "center" }}>
-                      <Checkbox
-                        color="primary"
-                        checked={isItemSelected}
-                        size="small"
-                        onChange={(event) => handleClick(event, dept.name)}
-                      />
-                    </TableCell>
-
-                    {visibleColumns.id && <TableCell>{dept.id}</TableCell>}
-
-                    {visibleColumns.name && <TableCell>{dept.name}</TableCell>}
-
-                    {visibleColumns.displayName && (
-                      <TableCell>{dept.displayName}</TableCell>
-                    )}
-
-                    {visibleColumns.owner && (
-                      <TableCell>{dept.departmentModerator}</TableCell>
-                    )}
-
-                    {visibleColumns.storage && (
-                      <TableCell>{dept.storage}</TableCell>
-                    )}
-
-                    {visibleColumns.manageStorage && (
-                      <TableCell>
-                        <Select
-                          value={dept.allowedStorage}
-                          onChange={(e) =>
-                            handleStorageChange(dept.name, e.target.value)
-                          }
-                          sx={{
-                            width: "100px",
-                            height: "30px",
-                            borderRadius: "28px",
-                          }}
-                        >
-                          {getStorageOptions(dept.allowedStorage).map(
-                            (option) => (
-                              <MenuItem key={option} value={option}>
-                                {option}
-                              </MenuItem>
-                            )
-                          )}
-                        </Select>
-                      </TableCell>
-                    )}
-
-                    {visibleColumns.users && (
-                      <TableCell align="center">
-                        <DeptUsersDropdown
-                          users={dept.roles.flatMap((role) => role.user)}
-                          departmentId={dept.id}
-                          departmentRoles={dept.roles.map((role) => ({
-                            id: role.id,
-                            name: role.roleName,
-                          }))}
-                          onEditUser={(user) => console.log("Edit user:", user)}
-                          onDeleteUser={(user) =>
-                            console.log("Delete user:", user)
-                          }
-                          addUsersToDepartment={async (
-                            deptId,
-                            selectedUsers
-                          ) => {
-                            // selectedUsers = [{ id, role: { id, name } }]
-                            console.log("selected", selectedUsers);
-
-                            try {
-                              const payload = selectedUsers.map((u) => [
-                                u.id,
-                                u.role.id,
-                              ]); // ✅ backend expects [userId, roleId]
-
-                              const response = await axios.post(
-                                `${window.__ENV__.REACT_APP_ROUTE}/tenants/department/addInExisting/${deptId}`,
-                                payload,
-                                {
-                                  headers: {
-                                    "Content-Type": "application/json",
-                                    Authorization: `Bearer ${sessionStorage.getItem(
-                                      "authToken"
-                                    )}`,
-                                    username:
-                                      sessionStorage.getItem("adminEmail"),
-                                  },
-                                }
-                              );
-
-                              if (response.status === 200) {
-                                setSnackbar({
-                                  open: true,
-                                  message: "Users added successfully!",
-                                  severity: "success",
-                                });
-
-                                if (fetchDepartments) await fetchDepartments();
-                              } else {
-                                setSnackbar({
-                                  open: true,
-                                  message: `Failed to add users: ${response.statusText}`,
-                                  severity: "error",
-                                });
-                              }
-                            } catch (error) {
-                              setSnackbar({
-                                open: true,
-                                message: `Error: ${error.message}`,
-                                severity: "error",
-                              });
-                            }
-                          }}
-                        />
-                      </TableCell>
-                    )}
-
-                    {visibleColumns.actions && (
-                      <TableCell sx={{ textAlign: "center" }}>
-                        <Box
-                          sx={{
-                            display: "flex",
-                            justifyContent: "center",
-                            gap: 0.5,
-                          }}
-                        >
-                          <IconButton
-                            size="small"
-                            onClick={() => handleEditDepartment(dept)}
-                            sx={{
-                              color: "#1976d2",
-                              "&:hover": {
-                                backgroundColor: "#e3f2fd",
-                                color: "#1565c0",
-                              },
-                            }}
-                            title="Edit Department"
-                          >
-                            <EditIcon fontSize="small" />
-                          </IconButton>
-                          <IconButton
-                            size="small"
-                            onClick={() => {
-                              setDepartmentToDelete(dept);
-                              setDeleteDialogOpen(true);
-                            }}
-                            sx={{
-                              color: "#d32f2f",
-                              "&:hover": {
-                                backgroundColor: "#ffebee",
-                                color: "#c62828",
-                              },
-                            }}
-                            title="Delete Department"
-                          >
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
-                        </Box>
-                      </TableCell>
-                    )}
-                  </StyledTableRow>
-
-                  {/* Expandable row for roles */}
-                  <StyledTableRow>
-                    <TableCell
-                      style={{
-                        paddingBottom: 0,
-                        paddingTop: 0,
-                        borderBottom: "none",
-                        height: "auto",
-                      }}
-                      colSpan={7}
-                    >
-                      <ClickAwayListener
-                        onClickAway={() =>
-                          setOpenRows((prev) => ({ ...prev, [index]: false }))
-                        }
-                      >
-                        <Collapse
-                          in={openRows[index]}
-                          timeout="auto"
-                          unmountOnExit
-                        >
-                          <Box
-                            sx={{
-                              position: "absolute",
-                              left: "75%",
-                              transform: "translateX(-50%)",
-                              width: "250px",
-                              backgroundColor: "#fff",
-                              borderRadius: "8px",
-                              border: "1px solid #e2e8f0",
-                              boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-                              zIndex: 3,
-                              marginTop: "4px",
-                              maxHeight: "240px",
-                              overflowY: "auto",
-                              "&::-webkit-scrollbar": { width: "6px" },
-                              "&::-webkit-scrollbar-thumb": {
-                                backgroundColor: "#cbd5e1",
-                                borderRadius: "4px",
-                              },
-                            }}
-                          >
-                            <Table size="small" aria-label="roles">
-                              <TableHead>
-                                <TableRow>
-                                  <TableCell
-                                    sx={{
-                                      backgroundColor: "#f1f5f9",
-                                      fontWeight: 600,
-                                      color: "#475569",
-                                      fontSize: "0.75rem",
-                                      borderBottom: "1px solid #e2e8f0",
-                                    }}
-                                  >
-                                    Role Name
-                                  </TableCell>
-                                  <TableCell
-                                    align="right"
-                                    sx={{
-                                      backgroundColor: "#f1f5f9",
-                                      fontWeight: 600,
-                                      color: "#475569",
-                                      fontSize: "0.75rem",
-                                      borderBottom: "1px solid #e2e8f0",
-                                      width: "60px",
-                                    }}
-                                  >
-                                    Actions
-                                  </TableCell>
-                                </TableRow>
-                              </TableHead>
-                              <TableBody>
-                                {dept.roles.map((role, roleIndex) => (
-                                  <TableRow
-                                    key={roleIndex}
-                                    sx={{
-                                      "&:hover": {
-                                        backgroundColor: "rgba(0,0,0,0.02)",
-                                      },
-                                      "& td": {
-                                        borderBottom:
-                                          roleIndex === dept.roles.length - 1
-                                            ? "none"
-                                            : "1px solid #e2e8f0",
-                                      },
-                                    }}
-                                  >
-                                    <TableCell
-                                      sx={{
-                                        padding: "6px 12px",
-                                        fontSize: "0.75rem",
-                                        color: "#334155",
-                                      }}
-                                    >
-                                      {role.roleName}
-                                    </TableCell>
-                                    <TableCell
-                                      align="right"
-                                      sx={{ padding: "4px 8px" }}
-                                    >
-                                      <IconButton
-                                        size="small"
-                                        onClick={() =>
-                                          handleDeleteRole(dept.name, roleIndex)
-                                        }
-                                        sx={{
-                                          padding: "2px",
-                                          color: "error.main",
-                                          "&:hover": {
-                                            backgroundColor: "error.lighter",
-                                          },
-                                        }}
-                                        title="Delete Role"
-                                      >
-                                        <DeleteIcon
-                                          sx={{ fontSize: "0.875rem" }}
-                                        />
-                                      </IconButton>
-                                    </TableCell>
-                                  </TableRow>
-                                ))}
-                              </TableBody>
-                            </Table>
-                          </Box>
-                        </Collapse>
-                      </ClickAwayListener>
-                    </TableCell>
-                  </StyledTableRow>
-                </React.Fragment>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </TableContainer>
-
-      <Box
-        sx={{
-          position: "sticky",
-          bottom: 0,
-          backgroundColor: "#ffffff",
-          // borderTop: '1px solid #e2e8f0',
-          zIndex: 2,
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          width: "100%",
-        }}
-      >
-        <TablePagination
-          rowsPerPageOptions={[10, 20, 30, 50, 100]}
-          component="div"
-          count={totalDepartments}
-          rowsPerPage={rowsPerPage}
-          page={page}
-          onPageChange={handleChangePage}
-          onRowsPerPageChange={handleChangeRowsPerPage}
-        />
-
-        <Box
-          sx={{
-            display: "flex",
-            gap: 1,
-            flexDirection: "row-reverse",
-            pr: 2,
-          }}
-        >
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleBulkUpload}
-            accept=".xlsx,.xls"
-            style={{ display: "none" }}
-          />
+                  onClick={() => handleBulkDownload()}
+                >
+                  <FileDownloadIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            )}
+          </>
+        )}
+        renderTableFooterRight={() => (
           <Tooltip title="Add Department" placement="left">
             <SpeedDial
               ariaLabel="Department actions"
@@ -2410,31 +1973,10 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               }}
             />
           </Tooltip>
+        )}
+      />
 
-          {selected.length > 0 && (
-            <Tooltip title="Bulk Download" placement="left">
-              <SpeedDial
-                ariaLabel="Bulk Download"
-                icon={<FileDownloadIcon />}
-                direction="left"
-                color="primary"
-                FabProps={{
-                  sx: {
-                    width: 37,
-                    height: 30,
-                    "& .MuiSpeedDialIcon-root": {
-                      fontSize: "1.2rem",
-                      color: "white",
-                    },
-                  },
-                }}
-                onClick={() => handleBulkDownloadSelected(selected)}
-              />
-            </Tooltip>
-          )}
-        </Box>
-      </Box>
-
+      {/* all drawer here  */}
       <Drawer
         anchor="left"
         open={showAddDepartment}
@@ -2947,6 +2489,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         </Box>
       </Drawer>
 
+      {/* for editing */}
       <Drawer
         anchor="left"
         open={editDialogOpen}
@@ -3191,6 +2734,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         </Box>
       </Drawer>
 
+      {/* for deleting department */}
       <Dialog
         open={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}
@@ -3286,106 +2830,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           </Button>
         </DialogActions>
       </Dialog>
-
-      <Dialog
-        open={migrationDialogOpen}
-        onClose={() => setMigrationDialogOpen(false)}
-        maxWidth="xs"
-        fullWidth
-      >
-        <DialogTitle
-          sx={{
-            backgroundColor: "#1976d2",
-            color: "white",
-            fontWeight: "bold",
-            fontSize: "1.1rem",
-          }}
-        >
-          Migrate Users
-        </DialogTitle>
-
-        <DialogContent dividers>
-          <Typography variant="body2" sx={{ mb: 1 }}>
-            Migrate users from <b>{departmentToMigrate?.name}</b> to:
-          </Typography>
-
-          <Box
-            sx={{
-              maxHeight: 250,
-              overflowY: "auto",
-              border: "1px solid #ccc",
-              borderRadius: 1,
-              mt: 1,
-              p: 1,
-              bgcolor: "#f9f9f9",
-            }}
-            onScroll={(e) => {
-              const { scrollTop, clientHeight, scrollHeight } = e.currentTarget;
-              if (scrollTop + clientHeight >= scrollHeight - 50) {
-                loadMoreDepartments(); // fetch more
-              }
-            }}
-          >
-            {allDepartments
-              .filter((d) => d.deptName !== departmentToMigrate?.name)
-              .map((dept) => (
-                <MenuItem
-                  key={dept.deptName}
-                  selected={targetDepartment === dept.deptName}
-                  onClick={() => setTargetDepartment(dept.deptName)}
-                  sx={{
-                    borderRadius: 1,
-                    mb: 0.5,
-                    backgroundColor:
-                      targetDepartment === dept.deptName
-                        ? "#e3f2fd"
-                        : "transparent",
-                    "&:hover": {
-                      backgroundColor: "#e3f2fd",
-                    },
-                  }}
-                >
-                  <Box>
-                    <Typography variant="subtitle2">
-                      {dept.displayName}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {dept.deptName}
-                    </Typography>
-                  </Box>
-                </MenuItem>
-              ))}
-          </Box>
-        </DialogContent>
-
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setMigrationDialogOpen(false)}>Cancel</Button>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={() => {
-              if (!targetDepartment) {
-                setSnackbar({
-                  open: true,
-                  message: "Please select a target department.",
-                  severity: "error",
-                });
-                return;
-              }
-
-              setSnackbar({
-                open: true,
-                message: `Users migrated to ${targetDepartment}`,
-                severity: "success",
-              });
-              setMigrationDialogOpen(false);
-            }}
-          >
-            Migrate
-          </Button>
-        </DialogActions>
-      </Dialog>
-
       <Dialog
         open={editRoleDialog}
         onClose={() => setEditRoleDialog(false)}
@@ -3671,6 +3115,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         </DialogActions>
       </Dialog>
 
+      {/* snackbars */}
       <Portal>
         <Snackbar
           open={snackbar.open}

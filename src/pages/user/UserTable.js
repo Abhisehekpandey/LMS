@@ -122,93 +122,6 @@ const CustomSpinner = styled(CircularProgress)(({ theme }) => ({
   thickness: 2,
 }));
 
-// const rows = [
-//   {
-//     id: "1",
-//     name: "kunal kamboj",
-//     department: "Frontend",
-//     role: "Software Engineer",
-//     email: "kunal@appolo.com",
-//     storageUsed: "200 MB",
-//     manageStorage: "1 GB",
-//     status: false,
-
-//     phone: "1234567890",
-//   },
-//   {
-//     id: "2",
-//     name: "Pratibha thakur",
-//     department: "Frontend",
-//     role: "Frontend Developer",
-//     email: "pratibha@appolo.com",
-//     storageUsed: "200 MB",
-//     manageStorage: "1 GB",
-//     status: false,
-
-//     phone: "9876543201",
-//   },
-//   {
-//     id: "3",
-//     name: "Abhishek Panday",
-//     department: "Frontend",
-//     role: "Software Developer",
-//     email: "abhishek@appolo.com",
-//     storageUsed: "800 MB",
-//     manageStorage: "1 GB",
-//     status: true,
-
-//     phone: "1234567890",
-//   },
-//   {
-//     id: "4",
-//     name: "Dhruv Sethi",
-//     department: "Backend",
-//     role: "Manager",
-//     email: "dhruv@appolo.com",
-//     storageUsed: "800 MB",
-//     manageStorage: "1 GB",
-//     status: true,
-
-//     phone: "1234567890",
-//   },
-//   {
-//     id: "5",
-//     name: "Manish Yadav",
-//     department: "Backend",
-//     role: "Software engineer",
-//     email: "manish@appolo.com",
-//     storageUsed: "800 MB",
-//     manageStorage: "1 GB",
-//     status: true,
-
-//     phone: "1234567890",
-//   },
-//   {
-//     id: "6",
-//     name: "Prince Tiwari",
-//     department: "Backend",
-//     role: "Backend developer",
-//     email: "prince@appolo.com",
-//     storageUsed: "800 MB",
-//     manageStorage: "1 GB",
-//     status: true,
-
-//     phone: "1234567890",
-//   },
-//   {
-//     id: "7",
-//     name: "Dheeraj",
-//     department: "Frontend",
-//     role: "Senior Frontend Developer",
-//     email: "dheeraj@appolo.com",
-//     storageUsed: "800 MB",
-//     manageStorage: "1 GB",
-//     status: true,
-
-//     phone: "1234567890",
-//   },
-// ];
-
 const IOSSwitch = styled((props) => (
   <Switch focusVisibleClassName=".Mui-focusVisible" disableRipple {...props} />
 ))(({ theme }) => ({
@@ -412,40 +325,6 @@ export default function UserTable() {
     setSelectedDepartment(null);
   };
 
-  const handleRequestSort = (property) => {
-    const isAsc = orderBy === property && order === "asc";
-    setOrder(isAsc ? "desc" : "asc");
-    setOrderBy(property);
-  };
-
-  const getComparator = (order, orderBy) => {
-    return (a, b) => {
-      if (a.email === adminEmail) return -1;
-      if (b.email === adminEmail) return 1;
-
-      const valA = extractValue(a, orderBy);
-      const valB = extractValue(b, orderBy);
-
-      if (order === "desc") {
-        if (valB < valA) return -1;
-        if (valB > valA) return 1;
-      } else {
-        if (valA < valB) return -1;
-        if (valA > valB) return 1;
-      }
-      return 0;
-    };
-  };
-
-  const descendingComparator = (a, b, orderBy) => {
-    const valA = extractValue(a, orderBy);
-    const valB = extractValue(b, orderBy);
-
-    if (valB < valA) return -1;
-    if (valB > valA) return 1;
-    return 0;
-  };
-
   const extractValue = (row, orderBy) => {
     switch (orderBy) {
       case "id":
@@ -574,6 +453,7 @@ export default function UserTable() {
     setStorage(event.target.value);
   };
 
+  // handle edit
   const handleEdit = async (e, row) => {
     console.log("Editing user:", row);
 
@@ -632,86 +512,34 @@ export default function UserTable() {
     [regions, editData.region]
   );
 
-  // const handleActivateAll = async () => {
-  //   if (!rowData || rowData.length === 0) {
-  //     toast.warn("No users selected for activation.");
-  //     return;
-  //   }
+  // handle bulk activate
+  const handleActivateAll = async () => {
+    // 1 Check if anything is selected
+    if (!rowsData || rowsData.length === 0) {
+      toast.warn("No users selected for activation.");
+      return;
+    }
 
-  //   // Build full user objects for payload
-  //   const usersToActivate = rowData.map((user) => ({
-  //     ...user, // include entire user object
-  //     active: true, // ensure active is true
-  //     permissions: {
-  //       ...user.permissions,
-  //       allowedStorageInBytesDisplay: "1GB", // ✅ override storage
-  //     },
-  //   }));
+    // 2 Build full user objects for backend
+    const usersToActivate = rowData
+      .filter((user) => selected.includes(user.id)) // only selected users
+      .map((user) => ({
+        ...user,
+        active: true,
+        permissions: {
+          ...user.permissions,
+          allowedStorageInBytesDisplay: "1GB",
+        },
+      }));
 
-  //   console.log("usersss", usersToActivate);
+    console.log("Activating users:", usersToActivate);
 
-  //   try {
-  //     await toggleUserStatusByUsername(usersToActivate, page); // ✅ send complete users
-
-  //     await refetchUsers();
-
-  //     setSelected([]);
-  //     setRowData([]);
-
-  //     toast.success("Selected users have been activated.");
-  //   } catch (error) {
-  //     console.error("Error activating users:", error);
-  //     toast.error("Failed to activate selected users.");
-  //   }
-  // };
-  const handleActivateAll = async (idsOrEvent, row) => {
     try {
-      let usersToActivate = [];
-
-      // Case 1: Single-row activate
-      if (row) {
-        usersToActivate = [
-          {
-            ...row,
-            active: true,
-            permissions: {
-              ...row.permissions,
-              allowedStorageInBytesDisplay: "1GB",
-            },
-          },
-        ];
-        setSelected([row.id]);
-        setRowData([row]);
-      } else {
-        // Case 2: Bulk activate (from toolbar)
-        const ids = Array.isArray(idsOrEvent) ? idsOrEvent : selected;
-
-        if (!ids || ids.length === 0) {
-          toast.warning("No users selected for activation.");
-          return;
-        }
-
-        const selectedFullRows = rowsData.filter((r) => ids.includes(r.id));
-        usersToActivate = selectedFullRows.map((user) => ({
-          ...user,
-          active: true,
-          permissions: {
-            ...user.permissions,
-            allowedStorageInBytesDisplay: "1GB",
-          },
-        }));
-
-        setSelected(ids);
-        setRowData(selectedFullRows);
-      }
-
-      console.log("Activating users:", usersToActivate);
-
-      //  Call your backend
+      // 3 Call backend
       await toggleUserStatusByUsername(usersToActivate, page);
 
+      // 4️⃣ Refresh data + cleanup
       await refetchUsers();
-
       setSelected([]);
       setRowData([]);
 
@@ -723,7 +551,7 @@ export default function UserTable() {
   };
 
   const options = ["10GB", "20GB"];
-
+  //handle bulk download
   const handleBulkDownload = () => {
     console.log("rowsData", rowsData);
 
@@ -792,10 +620,12 @@ export default function UserTable() {
 
   const label = { inputProps: { "aria-label": "Switch demo" } };
 
+  //handle delete
   const handleDelete = (rowsOrEvent, row) => {
     const key = "id";
     const currentRows = rowsData;
     let rowsToDelete = [];
+    console.log("rowsOrEvent:", rowsData);
 
     // SINGLE ROW delete
     if (row) {
@@ -812,7 +642,7 @@ export default function UserTable() {
 
       if (typeof firstItem === "object" && firstItem !== null) {
         // Array of row objects (from PolymorphicTable)
-        rowsToDelete = rowsOrEvent.filter((r) => r.email !== adminEmail);
+        rowsToDelete = rowsData.filter((r) => r.email !== adminEmail);
         console.log("Bulk delete - row objects:", rowsToDelete);
       } else {
         // Array of IDs (fallback)
@@ -866,7 +696,7 @@ export default function UserTable() {
 
     return num * unitMap[unit];
   };
-
+  // handle status toggle
   const handleStatusToggle = async (username) => {
     const user = rowsData.find((u) => u.name === username);
     if (!user) return;
@@ -910,121 +740,10 @@ export default function UserTable() {
       toast.error("Failed to update users.");
     }
   };
-
+  //handle create user
   const handleCreateUser = () => {
     setCreateUser(true);
   };
-
-  const handleChange = (event) => {
-    setChecked(event.target.checked);
-  };
-
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
-  };
-
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(+event.target.value);
-    setPage(0);
-  };
-
-  const handleSelectAllClick = (event) => {
-    if (event.target.checked) {
-      const allIds = rowsData
-        .filter((row) => row.email !== adminEmail) // exclude current admin
-        .map((row) => row.id);
-
-      setSelected(allIds);
-
-      const selectedFullRows = rowsData.filter((r) => allIds.includes(r.id));
-      setRowData(selectedFullRows);
-
-      setSelectAllData(true);
-    } else {
-      setSelected([]);
-      const selectedFullRows = rowsData.filter((r) => selected.includes(r.id));
-      setRowData(selectedFullRows);
-
-      setSelectAllData(false);
-    }
-  };
-
-  const handleClick = (row) => {
-    const selectedIndex = selected.indexOf(row.id);
-    let newSelected = [];
-
-    if (selectedIndex === -1) {
-      newSelected = [...selected, row.id];
-    } else if (selectedIndex === 0) {
-      newSelected = selected.slice(1);
-    } else if (selectedIndex === selected.length - 1) {
-      newSelected = selected.slice(0, -1);
-    } else if (selectedIndex > 0) {
-      newSelected = [
-        ...selected.slice(0, selectedIndex),
-        ...selected.slice(selectedIndex + 1),
-      ];
-    }
-
-    setSelected(newSelected);
-
-    const selectedFullRows = rowsData.filter((r) => newSelected.includes(r.id));
-    setRowData(selectedFullRows);
-  };
-
-  const isSelected = (id) => selected.indexOf(id) !== -1;
-
-  // const refetchUsers = async () => {
-  //   setLoading(true);
-  //   try {
-  //     const adminEmail = sessionStorage.getItem("adminEmail");
-
-  //     // ✅ Decide API based on search
-  //     let users;
-  //     if (debouncedSearchQuery.trim()) {
-  //       users = await searchUsers(
-  //         page,
-  //         rowsPerPage,
-  //         searchColumn,
-  //         debouncedSearchQuery.trim()
-  //       );
-  //     } else {
-  //       // users = await fetchUsers(page);
-  //       users = await fetchUsers(page, rowsPerPage);
-  //     }
-  //     // ✅ Normalize storage format like "1.00 GB" → "1GB"
-  //     const normalizedUsers = (users.content || []).map((user) => {
-  //       const display = user.permissions?.allowedStorageInBytesDisplay;
-  //       if (display) {
-  //         const fixedDisplay = display
-  //           .replace(/\.00\s?([A-Z]+)/, "$1") // remove ".00" before GB/MB/etc.
-  //           .replace(/\s+/g, ""); // remove spaces
-  //         return {
-  //           ...user,
-  //           permissions: {
-  //             ...user.permissions,
-  //             allowedStorageInBytesDisplay: fixedDisplay,
-  //           },
-  //         };
-  //       }
-  //       return user;
-  //     });
-
-  //     // ✅ Put admin email first
-  //     const sortedUsers = [...normalizedUsers].sort((a, b) => {
-  //       if (a.email === adminEmail) return -1;
-  //       if (b.email === adminEmail) return 1;
-  //       return 0;
-  //     });
-
-  //     setRowsData(sortedUsers);
-  //     setTotalCount(users.totalElements || 0);
-  //   } catch (error) {
-  //     console.error("Error loading users", error);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
 
   // 1. Fix refetchUsers to accept proper parameters
   const refetchUsers = async () => {
@@ -1091,13 +810,7 @@ export default function UserTable() {
       clearTimeout(handler); // cleanup if user keeps typing
     };
   }, [searchQuery]);
-  // useEffect(() => {
-  //   refetchUsers();
-  // }, [page, rowsPerPage, searchColumn, debouncedSearchQuery]);
 
-  // useEffect(() => {
-  //   refetchUsers({ page, rowsPerPage, searchColumn, debouncedSearchQuery });
-  // }, [page, rowsPerPage, searchColumn, debouncedSearchQuery]);
   useEffect(() => {
     refetchUsers();
   }, [page, rowsPerPage, debouncedSearchQuery]);
@@ -1108,59 +821,6 @@ export default function UserTable() {
     setMigrationDialog(false);
   };
 
-  const filteredRows = rowsData.filter((row) => {
-    const query = searchQuery.toLowerCase();
-
-    // ✅ Status filter
-    if (statusFilter) {
-      let status = "Inactive";
-      if (row.active && !row.enabled) status = "Pending";
-      else if (row.active && row.enabled) status = "Active";
-
-      if (status !== statusFilter) return false;
-    }
-
-    if (searchColumn === "id") {
-      return row.id?.toString().toLowerCase().includes(query);
-    }
-
-    if (searchColumn === "name") {
-      return row.name?.toLowerCase().includes(query);
-    }
-
-    if (searchColumn === "email") {
-      return row.email?.toLowerCase().includes(query);
-    }
-
-    if (searchColumn === "department") {
-      const selectedRoleId = userRoleMap[row.id];
-      const selectedRole = row.roles?.find(
-        (role) => role.id === selectedRoleId
-      );
-      const department =
-        selectedRole?.department?.deptName ||
-        row.roles?.[0]?.department?.deptName ||
-        "";
-      return department?.toLowerCase().includes(query);
-    }
-
-    if (searchColumn === "role") {
-      const selectedRoleId = userRoleMap[row.id];
-      const selectedRole = row.roles?.find(
-        (role) => role.id === selectedRoleId
-      );
-      const deptId = selectedRole?.department?.id;
-      const rolesInSameDept = row.roles.filter(
-        (role) => role.department?.id === deptId
-      );
-      const roleNames = rolesInSameDept.map((role) => role.roleName).join(", ");
-      return roleNames.toLowerCase().includes(query);
-    }
-
-    return true;
-  });
-
-  const sortedRows = [...filteredRows].sort(getComparator(order, orderBy));
   const userColumns = [
     {
       id: "user id",
@@ -1473,58 +1133,6 @@ export default function UserTable() {
             page={page}
             rowsPerPage={rowsPerPage}
             totalCount={totalCount}
-            // onPageChange={(newPage, newPageSize) => {
-            //   setPage(newPage);
-            //   setRowsPerPage(newPageSize);
-            //   refetchUsers({
-            //     page: newPage,
-            //     limit: newPageSize,
-            //     sort: order,
-            //     filters: columnFilters,
-            //     searchQuery: debouncedSearchQuery,
-            //   });
-            // }}
-            // onSortChange={(columnId, descending) => {
-            //   const newOrder = { columnId, descending };
-            //   setOrder(newOrder);
-            //   setPage(0);
-            //   refetchUsers({
-            //     page: 0,
-            //     limit: rowsPerPage,
-            //     sort: newOrder,
-            //     filters: columnFilters,
-            //     searchQuery: debouncedSearchQuery,
-            //   });
-            // }}
-            // onFilterChange={(columnId, value) => {
-            //   const newFilters = { ...columnFilters, [columnId]: value };
-            //   setColumnFilters(newFilters);
-            //   setPage(0);
-            //   refetchUsers({
-            //     page: 0,
-            //     limit: rowsPerPage,
-            //     filters: newFilters,
-            //     sort: order,
-            //     searchQuery: debouncedSearchQuery,
-            //   });
-            // }}
-            // onGlobalSearchChange={(value) => {
-            //   setSearchQuery(value);
-            //   // DON'T set debouncedSearchQuery here - let useEffect handle it
-            //   setPage(0);
-            // }}
-            // onRowsPerPageChange={(newSize) => {
-            //   setRowsPerPage(newSize);
-            //   setPage(0);
-            //   refetchUsers({
-            //     page: 0,
-            //     limit: newSize,
-            //     sort: order,
-            //     filters: columnFilters,
-            //     searchQuery: debouncedSearchQuery,
-            //   });
-            // }}
-            //  Keep existing selection props
             selectedRowKeys={selected}
             onRowSelect={(selectedRows) => setSelected(selectedRows)}
             //  Keep existing toolbar
@@ -1713,7 +1321,7 @@ export default function UserTable() {
                     allUsers.push(...res.content);
                   });
 
-                  // ✅ Exclude admin user
+                  //  Exclude admin user
                   const nonAdminUsers = allUsers.filter(
                     (u) => u.email !== adminEmail
                   );
@@ -1826,7 +1434,7 @@ export default function UserTable() {
 
               <Autocomplete
                 size="small"
-                options={fullDepartments} // ✅ from state
+                options={fullDepartments} //  from state
                 getOptionLabel={(option) => option.deptName}
                 value={
                   fullDepartments.find(
@@ -1891,10 +1499,10 @@ export default function UserTable() {
                 onChange={(e) => {
                   const input = e.target.value;
 
-                  // ✅ Allow only digits
+                  //  Allow only digits
                   if (!/^\d*$/.test(input)) return;
 
-                  // ✅ Restrict to max 10 digits
+                  //  Restrict to max 10 digits
                   if (input.length > 10) return;
 
                   setEditData((prev) => ({
