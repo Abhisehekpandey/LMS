@@ -10,14 +10,13 @@ import {
   Box,
   styled,
   Typography,
+  Tooltip,
 } from "@mui/material";
 import { Settings as SettingsIcon } from "@mui/icons-material";
 import { MenuBook as DictionaryIcon } from "@mui/icons-material";
 import { DynamicFeed as FeedContextIcon } from "@mui/icons-material";
 import { Palette as PaletteIcon } from "@mui/icons-material";
 import TableChartIcon from "@mui/icons-material/TableChart";
-
-
 
 import {
   People as UserIcon,
@@ -133,52 +132,48 @@ const Sidebar = () => {
   const userRole = user.role || "Role";
   const userInitial = user.initial || "U";
 
-  
- const menuItems = React.useMemo(
-   () => [
-     { path: "/angelbot", icon: <TimelineIcon />, text: "AngelBot" },
-     { path: "/user", icon: <UserIcon />, text: "User" },
-     {
-       path: "/department",
-       icon: <DepartmentRolesIcon />,
-       text: "Department",
-     },
-     { path: "/ldap-config", icon: <LDAPIcon />, text: "LDAP Settings" },
-     {
-       path: "/choose-extension",
-       icon: <DashboardIcon />,
-       text: "Choose Extension",
-     },
-     {
-       path: "/department-type-setting",
-       icon: <SettingsIcon />,
-       text: "Type Creation",
-     },
-     {
-       path: "/data-dictionary",
-       icon: <DictionaryIcon />,
-       text: "Data Dictionary",
-     },
-     {
-       path: "/feed-context",
-       icon: <FeedContextIcon />,
-       text: "Feedback Dashboard",
-     },
-     {
-       path: "/feedback-table",
-       icon: <TableChartIcon />,
-       text: "Feedback Table",
-     },
-     {
-       path: "/theme-setting",
-       icon: <PaletteIcon />,
-       text: "Theme and Slogan Setting",
-     },
-   ],
-   []
- );
+  const deptAdmin = sessionStorage.getItem("deptAdmin") === "true";
+  const superAdmin = sessionStorage.getItem("superAdmin") === "true";
 
+  const menuItems = React.useMemo(
+    () => [
+      { path: "/angelbot", icon: <TimelineIcon />, text: "AngelBot" },
+      { path: "/user", icon: <UserIcon />, text: "User" },
+      {
+        path: "/department",
+        icon: <DepartmentRolesIcon />,
+        text: "Department",
+      },
+      { path: "/ldap-config", icon: <LDAPIcon />, text: "LDAP Settings" },
+      {
+        path: "/choose-extension",
+        icon: <DashboardIcon />,
+        text: "Choose Extension",
+      },
+      {
+        path: "/department-type-setting",
+        icon: <SettingsIcon />,
+        text: "Type Creation",
+      },
+      {
+        path: "/data-dictionary",
+        icon: <DictionaryIcon />,
+        text: "Data Dictionary",
+      },
 
+      {
+        path: "/feedback-table",
+        icon: <TableChartIcon />,
+        text: "Feedback Table",
+      },
+      {
+        path: "/theme-setting",
+        icon: <PaletteIcon />,
+        text: "Theme and Slogan Setting",
+      },
+    ],
+    []
+  );
 
   const handleMouseEnter = () => {
     clearTimeout(timeoutRef.current);
@@ -296,42 +291,66 @@ const Sidebar = () => {
       >
         {menuItems.map((item) => {
           const isActive = location.pathname === item.path;
-          return (
+
+          // ✅ Restrict access if deptAdmin but NOT superAdmin
+          const isRestricted =
+            deptAdmin &&
+            !superAdmin &&
+            ![
+              "/department",
+              "/data-dictionary",
+              "/feedback-table",
+              "/department-type-setting",
+            ].includes(item.path);
+
+          const listItem = (
+            <StyledListItem
+              button
+              active={isActive}
+              sx={{
+                height: 44,
+                padding: "5px !important",
+                overflow: "hidden",
+                opacity: isRestricted ? 0.5 : 1, // dim disabled items
+                pointerEvents: isRestricted ? "none" : "auto", // disable clicks
+              }}
+            >
+              <StyledListItemIcon active={isActive}>
+                {item.icon}
+              </StyledListItemIcon>
+              {open && (
+                <ListItemText
+                  primary={item.text}
+                  sx={{
+                    opacity: open ? 1 : 0,
+                    transition: "opacity 0.3s ease, margin 0.3s ease",
+                    marginRight: "4px",
+                    "& .MuiListItemText-primary": {
+                      fontSize: "0.875rem",
+                      fontWeight: isActive ? 600 : 500,
+                      color: isActive ? "white" : "inherit",
+                      transition: "font-weight 0.2s ease, color 0.2s ease",
+                      whiteSpace: "nowrap",
+                    },
+                  }}
+                />
+              )}
+            </StyledListItem>
+          );
+
+          return isRestricted ? (
+            <Box key={item.path} sx={{ cursor: "not-allowed" }}>
+              <Tooltip title="Only Super Admin can access" placement="right">
+                <span>{listItem}</span>
+              </Tooltip>
+            </Box>
+          ) : (
             <Link
               key={item.path}
               to={item.path}
               style={{ textDecoration: "none", color: "inherit" }}
             >
-              <StyledListItem
-                button
-                active={isActive}
-                sx={{
-                  height: 44, // Fixed height instead of minHeight
-                  padding: "5px !important",
-                  overflow: "hidden", // Prevent content overflow
-                }}
-              >
-                <StyledListItemIcon active={isActive}>
-                  {item.icon}
-                </StyledListItemIcon>
-                {open && (
-                  <ListItemText
-                    primary={item.text}
-                    sx={{
-                      opacity: open ? 1 : 0,
-                      transition: "opacity 0.3s ease, margin 0.3s ease",
-                      marginRight: "4px",
-                      "& .MuiListItemText-primary": {
-                        fontSize: "0.875rem",
-                        fontWeight: isActive ? 600 : 500,
-                        color: isActive ? "white" : "inherit",
-                        transition: "font-weight 0.2s ease, color 0.2s ease",
-                        whiteSpace: "nowrap",
-                      },
-                    }}
-                  />
-                )}
-              </StyledListItem>
+              {listItem}
             </Link>
           );
         })}
