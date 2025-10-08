@@ -297,9 +297,12 @@ const Sidebar = () => {
           const isRestricted =
             deptAdmin &&
             !superAdmin &&
-            !["/department", "/data-dictionary", "/feedback-table"].includes(
-              item.path
-            );
+            ![
+              "/department",
+              "/data-dictionary",
+              "/feedback-table",
+              "/department-type-setting",
+            ].includes(item.path);
 
           const listItem = (
             <StyledListItem

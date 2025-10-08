@@ -7,6 +7,12 @@ import {
   Typography,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import { Autocomplete } from "@mui/material";
+import { Chip, styled } from "@mui/material";
+import VerifiedIcon from "@mui/icons-material/Verified";
+import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
+
+import ForCell from "./ForCell";
 
 import {
   Paper,
@@ -56,6 +62,24 @@ const attributeTemplate = {
   mandatory: false, // ✅ ensure this is present
 };
 
+const GradientChip = styled(Chip)(({ theme, type }) => ({
+  fontWeight: 500,
+  color: "white",
+  cursor: "default",
+  transition: "transform 0.2s, box-shadow 0.2s",
+  marginLeft: theme.spacing(1),
+  "&:hover": {
+    transform: "scale(1.05)",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+  },
+  ...(type === "mandatory" && {
+    background: "linear-gradient(135deg, #6a0dad, #9b59b6)", // violet to purple gradient
+  }),
+  ...(type === "ai" && {
+    background: "linear-gradient(45deg, #36d1dc, #5b86e5)", // keep previous orange gradient
+  }),
+}));
+
 const attributeTypes = ["STRING", "NUMBER", "DATE", "BOOLEAN"];
 
 const DepartmentTypeSetting = () => {
@@ -92,7 +116,8 @@ const DepartmentTypeSetting = () => {
   const [departmentPage, setDepartmentPage] = useState(0);
   const [hasMoreDepartments, setHasMoreDepartments] = useState(true);
   const [loadingDepartments, setLoadingDepartments] = useState(false);
-  const [selectedEntityId, setSelectedEntityId] = useState("");
+  const [selectedEntityId, setSelectedEntityId] = useState([]);
+
   const [typeNames, setTypeNames] = useState([]);
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -105,6 +130,8 @@ const DepartmentTypeSetting = () => {
   const [searchText, setSearchText] = useState("");
 
   const handleEditType = (row) => {
+    console.log("Editing row:", row);
+
     setDocumentType(row.type || "");
     setAttributes(
       row.attributes?.map((attr) => ({
@@ -117,23 +144,57 @@ const DepartmentTypeSetting = () => {
       })) || [createAttributeTemplate()]
     );
 
-    if (row.users?.length) {
-      setTypeScope("user");
-      setSelectedEntityId(row.users[0]);
-    } else if (row.departments?.length) {
-      setTypeScope("department");
-      setSelectedEntityId(row.departments[0]);
-    } else {
-      setTypeScope("global");
-      setSelectedEntityId("");
+    let scope = "global";
+    let entityIds = [];
+
+    if (row.global === true) {
+      scope = "global";
+    } else if (Array.isArray(row.createdFor) && row.createdFor.length > 0) {
+      const matchedUsers = users.filter((u) => row.createdFor.includes(u.name));
+      const matchedDepartments = departments.filter((d) =>
+        row.createdFor.includes(d.deptName)
+      );
+
+      if (matchedUsers.length > 0) {
+        scope = "user";
+        entityIds = matchedUsers.map((u) => u.id);
+      } else if (matchedDepartments.length > 0) {
+        scope = "department";
+        entityIds = matchedDepartments.map((d) => d.id);
+      }
     }
 
-    // ✅ Edit mode
+    // ✅ Deduplicate and update
+    const uniqueIds = Array.from(new Set(entityIds));
+
+    setTypeScope(scope);
+    setSelectedEntityId(uniqueIds);
     setIsEditMode(true);
     setEditingTypeId(row.id);
-
     setOpenDialog(true);
   };
+
+  useEffect(() => {
+    if (typeScope === "user" && selectedEntityId.length && users.length) {
+      // make sure all selected IDs exist in users
+      const validIds = selectedEntityId.filter((id) =>
+        users.some((u) => u.id === id)
+      );
+      setSelectedEntityId(validIds);
+    }
+
+    if (
+      typeScope === "department" &&
+      selectedEntityId.length &&
+      departments.length
+    ) {
+      // make sure all selected IDs exist in departments
+      const validIds = selectedEntityId.filter((id) =>
+        departments.some((d) => d.id === id)
+      );
+      setSelectedEntityId(validIds);
+    }
+  }, [users, departments, typeScope]);
 
   const fetchUsers = async (page = 0) => {
     try {
@@ -227,7 +288,6 @@ const DepartmentTypeSetting = () => {
       bValue = b.dateCreated || "";
     }
 
-    // Normalize to string for comparison
     aValue = aValue.toString().toLowerCase();
     bValue = bValue.toString().toLowerCase();
 
@@ -355,6 +415,24 @@ const DepartmentTypeSetting = () => {
   };
 
   const handleDialogSubmit = async () => {
+    // Validation for User/Department selection
+    if (
+      (typeScope === "user" &&
+        (!selectedEntityId || selectedEntityId.length === 0)) ||
+      (typeScope === "department" &&
+        (!selectedEntityId || selectedEntityId.length === 0))
+    ) {
+      setSnackbar({
+        open: true,
+        message:
+          typeScope === "user"
+            ? "Please select at least one user."
+            : "Please select at least one department.",
+        severity: "error",
+      });
+      return; // stop submission
+    }
+
     const payload = {
       type: documentType,
       attributes: attributes.map((attr) => ({
@@ -365,14 +443,13 @@ const DepartmentTypeSetting = () => {
         isMandatory: attr.mandatory,
         aiRequired: attr.aiRequired,
       })),
-      users: typeScope === "user" ? [selectedEntityId] : [],
-      departments: typeScope === "department" ? [selectedEntityId] : [],
+      users: typeScope === "user" ? selectedEntityId : [],
+      departments: typeScope === "department" ? selectedEntityId : [],
       global: typeScope === "global",
     };
 
     try {
       if (isEditMode && editingTypeId) {
-        // ✅ PUT request to update existing type
         await axios.put(
           `${window.__ENV__.REACT_APP_ROUTE}/tenants/editType/${editingTypeId}`,
           payload,
@@ -384,14 +461,12 @@ const DepartmentTypeSetting = () => {
             },
           }
         );
-
         setSnackbar({
           open: true,
           message: "Type updated successfully",
           severity: "success",
         });
       } else {
-        // ✅ POST request for new type
         await axios.post(
           `${window.__ENV__.REACT_APP_ROUTE}/tenants/createType`,
           payload,
@@ -403,7 +478,6 @@ const DepartmentTypeSetting = () => {
             },
           }
         );
-
         setSnackbar({
           open: true,
           message: "New type created successfully",
@@ -415,7 +489,7 @@ const DepartmentTypeSetting = () => {
       setDocumentType("");
       setAttributes([createAttributeTemplate()]);
       setTypeScope("global");
-      setSelectedEntityId("");
+      setSelectedEntityId([]);
       setIsEditMode(false);
       setEditingTypeId(null);
 
@@ -492,6 +566,13 @@ const DepartmentTypeSetting = () => {
         severity: "error",
       });
     }
+  };
+
+  const getOptionValue = (id) => {
+    if (typeScope === "user") return users.find((u) => u.id === id) || null;
+    if (typeScope === "department")
+      return departments.find((d) => d.id === id) || null;
+    return null;
   };
 
   return (
@@ -658,9 +739,9 @@ const DepartmentTypeSetting = () => {
                     {page * rowsPerPage + index + 1}
                   </TableCell>
                   <TableCell sx={{ textAlign: "center" }}>{row.type}</TableCell>
-                  <TableCell sx={{ textAlign: "center" }}>
-                    {row.createdFor || "—"}
-                  </TableCell>
+
+                  <ForCell items={row.createdFor} />
+
                   <TableCell sx={{ textAlign: "center" }}>
                     {row.createdBy || "—"}
                   </TableCell>
@@ -792,52 +873,100 @@ const DepartmentTypeSetting = () => {
                   control={<Radio />}
                   label="Department"
                 />
-                <FormControlLabel
-                  value="global"
-                  control={<Radio />}
-                  label="Global"
-                />
+
+                <Tooltip
+                  title={
+                    sessionStorage.getItem("deptAdmin") === "true" &&
+                    sessionStorage.getItem("superAdmin") !== "true"
+                      ? "Only applicable for Super Admin"
+                      : ""
+                  }
+                  placement="top"
+                  arrow
+                >
+                  <span>
+                    <FormControlLabel
+                      value="global"
+                      control={<Radio />}
+                      label="Global"
+                      disabled={
+                        sessionStorage.getItem("deptAdmin") === "true" &&
+                        sessionStorage.getItem("superAdmin") !== "true"
+                      }
+                    />
+                  </span>
+                </Tooltip>
               </RadioGroup>
             </FormControl>
 
             {(typeScope === "user" || typeScope === "department") && (
-              <FormControl fullWidth size="small" sx={{ mb: 2 }}>
-                <InputLabel>
-                  Select {typeScope === "user" ? "User" : "Department"}
-                </InputLabel>
-                <Select
-                  value={selectedEntityId}
-                  label={`Select ${
-                    typeScope === "user" ? "User" : "Department"
-                  }`}
-                  onChange={(e) => setSelectedEntityId(e.target.value)}
-                  MenuProps={{
-                    PaperProps: {
-                      style: { maxHeight: 300 },
-                      onScroll:
-                        typeScope === "user"
-                          ? handleUserDropdownScroll
-                          : typeScope === "department"
-                          ? handleDepartmentDropdownScroll
-                          : undefined,
-                    },
+              <>
+                <Autocomplete
+                  multiple
+                  disableCloseOnSelect
+                  options={typeScope === "user" ? users : departments}
+                  getOptionLabel={(option) =>
+                    typeScope === "user" ? option.name : option.deptName
+                  }
+                  value={selectedEntityId.map(getOptionValue).filter(Boolean)} // map IDs to objects
+                  onChange={(event, newValue) => {
+                    const uniqueIds = Array.from(
+                      new Set(newValue.map((item) => item.id))
+                    );
+                    setSelectedEntityId(uniqueIds);
                   }}
-                >
-                  {(typeScope === "user" ? users : departments).map(
-                    (entity) => (
-                      <MenuItem key={entity.id} value={entity.id}>
-                        {entity.name || entity.deptName}
-                      </MenuItem>
-                    )
+                  isOptionEqualToValue={(option, value) =>
+                    option.id === value.id
+                  }
+                  renderOption={(props, option, { selected }) => (
+                    <li {...props}>
+                      <Checkbox style={{ marginRight: 8 }} checked={selected} />
+                      {typeScope === "user" ? option.name : option.deptName}
+                    </li>
                   )}
-                  {(typeScope === "user" && loadingUsers) ||
-                  (typeScope === "department" && loadingDepartments) ? (
-                    <MenuItem disabled>
-                      <CircularProgress size={20} />
-                    </MenuItem>
-                  ) : null}
-                </Select>
-              </FormControl>
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label={`Select ${
+                        typeScope === "user" ? "Users" : "Departments"
+                      }`}
+                      size="small"
+                      InputProps={{
+                        ...params.InputProps,
+                        endAdornment: (
+                          <>
+                            {(typeScope === "user" && loadingUsers) ||
+                            (typeScope === "department" &&
+                              loadingDepartments) ? (
+                              <CircularProgress color="inherit" size={20} />
+                            ) : null}
+                            {params.InputProps.endAdornment}
+                          </>
+                        ),
+                      }}
+                    />
+                  )}
+                  ListboxProps={{
+                    onScroll:
+                      typeScope === "user"
+                        ? handleUserDropdownScroll
+                        : typeScope === "department"
+                        ? handleDepartmentDropdownScroll
+                        : undefined,
+                    style: { maxHeight: 300 },
+                  }}
+                  sx={{ mb: 0.5 }}
+                />
+
+                {/* Inline error message */}
+                {selectedEntityId.length === 0 && (
+                  <Typography color="error" variant="caption" sx={{ ml: 1 }}>
+                    {typeScope === "user"
+                      ? "At least one user must be selected."
+                      : "At least one department must be selected."}
+                  </Typography>
+                )}
+              </>
             )}
 
             <TextField
@@ -861,13 +990,22 @@ const DepartmentTypeSetting = () => {
                     {attr.name ? attr.name : ""}
                     {attr.type ? ` — ${attr.type}` : ""}
                   </Typography>
+
                   {attr.mandatory && (
-                    <Typography color="primary" sx={{ mr: 2 }}>
-                      Mandatory
-                    </Typography>
+                    <GradientChip
+                      type="mandatory"
+                      label="Mandatory"
+                      icon={<VerifiedIcon />}
+                      size="small"
+                    />
                   )}
                   {attr.aiRequired && (
-                    <Typography color="secondary">AI</Typography>
+                    <GradientChip
+                      type="ai"
+                      label="AI Required"
+                      icon={<AutoAwesomeIcon />}
+                      size="small"
+                    />
                   )}
                 </AccordionSummary>
 
@@ -985,10 +1123,10 @@ const DepartmentTypeSetting = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
+
           <Button
             variant="contained"
-            onClick={handleDialogSubmit}
-            disabled={!documentType.trim()}
+            onClick={handleDialogSubmit} // validation happens inside
           >
             Save
           </Button>
