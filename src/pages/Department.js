@@ -1809,17 +1809,16 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         </Select>
       ),
     },
-
     {
       id: "userCount",
-      header: "No of Users",
-      accessor: (row) => row.roles.flatMap((role) => role.user).length,
+      header: "Users",
+      accessor: (row) => row.roles.flatMap((role) => role.user || []).length,
       sortable: true,
       filterable: false,
       width: 150,
       render: (value, row) => (
         <DeptUsersDropdown
-          users={row.roles.flatMap((role) => role.user)}
+          users={row.roles.flatMap((role) => role.user || [])}
           departmentId={row.id}
           departmentRoles={row.roles.map((role) => ({
             id: role.id,
@@ -1828,12 +1827,106 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           onEditUser={(user) => console.log("Edit user:", user)}
           onDeleteUser={(user) => console.log("Delete user:", user)}
           addUsersToDepartment={async (deptId, selectedUsers) => {
-            // Your existing addUsersToDepartment logic
+            console.log("selected", selectedUsers);
+            try {
+              // ✅ backend expects array of [userId, roleId]
+              const payload = selectedUsers.map((u) => [u.id, u.role.id]);
+
+              const response = await axios.post(
+                `${window.__ENV__.REACT_APP_ROUTE}/tenants/department/addInExisting/${deptId}`,
+                payload,
+                {
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${sessionStorage.getItem(
+                      "authToken"
+                    )}`,
+                    username: sessionStorage.getItem("adminEmail"),
+                  },
+                }
+              );
+
+              if (response.status === 200) {
+                setSnackbar({
+                  open: true,
+                  message: "Users added successfully!",
+                  severity: "success",
+                });
+
+                if (fetchDepartments) await fetchDepartments();
+              } else {
+                setSnackbar({
+                  open: true,
+                  message: `Failed to add users: ${response.statusText}`,
+                  severity: "error",
+                });
+              }
+            } catch (error) {
+              setSnackbar({
+                open: true,
+                message: `Error: ${error.message}`,
+                severity: "error",
+              });
+            }
           }}
         />
       ),
     },
 
+    {
+      id: "roles",
+      header: "Roles",
+      accessor: (row) => row.roles?.length || 0,
+      sortable: true,
+      filterable: false,
+      width: 150,
+      filterAccessor: (row) =>
+        row.roles?.map((r) => r.roleName).join(", ") || "",
+      render: (value, row) => (
+        <DeptRolesDropdown
+          roles={row.roles || []}
+          selectedDepartment={row}
+          handleAddRole={async (newRole, department) => {
+            try {
+              const response = await axios.post(
+                `${window.__ENV__.REACT_APP_ROUTE}/tenants/departments/${department.name}/roles`,
+                { roleName: newRole },
+                {
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${sessionStorage.getItem(
+                      "authToken"
+                    )}`,
+                    username: sessionStorage.getItem("adminEmail"),
+                  },
+                }
+              );
+
+              if (response.status === 200) {
+                setSnackbar({
+                  open: true,
+                  message: `Role "${newRole}" added successfully!`,
+                  severity: "success",
+                });
+                if (fetchDepartments) await fetchDepartments();
+              } else {
+                setSnackbar({
+                  open: true,
+                  message: `Failed to add role: ${response.statusText}`,
+                  severity: "error",
+                });
+              }
+            } catch (error) {
+              setSnackbar({
+                open: true,
+                message: `Error: ${error.message}`,
+                severity: "error",
+              });
+            }
+          }}
+        />
+      ),
+    },
     {
       id: "actions",
       header: "Actions",
@@ -1879,6 +1972,187 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       ),
     },
   ]);
+
+  const DeptRolesDropdown = ({ roles, selectedDepartment, handleAddRole }) => {
+    const [open, setOpen] = useState(false);
+    const [showAddRoleDialog, setShowAddRoleDialog] = useState(false);
+    const [newRole, setNewRole] = useState("");
+    const anchorRef = useRef(null);
+
+    return (
+      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+        <IconButton ref={anchorRef} size="small" onClick={() => setOpen(!open)}>
+          {roles.length} <ArrowDropDownIcon />
+        </IconButton>
+
+        <Tooltip title="Add Role">
+          <IconButton
+            onClick={() => setShowAddRoleDialog(true)}
+            sx={{
+              border: "1px solid",
+              borderColor: "primary.main",
+              borderRadius: "50%",
+              color: "primary.main",
+              width: 28,
+              height: 28,
+              p: 0,
+              ml: 1,
+              "&:hover": { backgroundColor: "primary.light" },
+            }}
+          >
+            <AddIcon fontSize="inherit" />
+          </IconButton>
+        </Tooltip>
+
+        <Popper
+          open={open}
+          anchorEl={anchorRef.current}
+          placement="bottom-start"
+          disablePortal
+          style={{ zIndex: 1300 }}
+        >
+          <ClickAwayListener onClickAway={() => setOpen(false)}>
+            <Paper style={{ maxHeight: 300, overflowY: "auto", minWidth: 200 }}>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Role Name</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {roles.length === 0 ? (
+                    <TableRow>
+                      <TableCell align="center">No Roles</TableCell>
+                    </TableRow>
+                  ) : (
+                    roles.map((role) => (
+                      <TableRow key={role.id}>
+                        <TableCell>
+                          {role.roleDisplayName || role.roleName}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </Paper>
+          </ClickAwayListener>
+        </Popper>
+
+        <Drawer
+          anchor="left"
+          open={showAddRoleDialog}
+          onClose={() => {
+            setShowAddRoleDialog(false);
+            setNewRole("");
+          }}
+          PaperProps={{
+            sx: {
+              borderRadius: "8px",
+              boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+              position: "absolute",
+              top: "30%",
+              left: "40%",
+              m: 0,
+              height: "auto",
+              maxHeight: "95vh",
+              overflow: "hidden",
+              width: "350px",
+              animation: "slideInFromLeft 0.2s ease-in-out forwards",
+              opacity: 0,
+              transform: "translateX(-50px)",
+              "@keyframes slideInFromLeft": {
+                "0%": {
+                  opacity: 0,
+                  transform: "translateX(-50px)",
+                },
+                "100%": {
+                  opacity: 1,
+                  transform: "translateX(0)",
+                },
+              },
+            },
+          }}
+        >
+          <Box
+            sx={{
+              p: 2,
+              borderBottom: "1px solid #eee",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              backgroundColor: "primary.main",
+            }}
+          >
+            <Typography variant="h6" sx={{ color: "#ffff" }}>
+              Add Role to {selectedDepartment?.name}
+            </Typography>
+            <IconButton
+              size="small"
+              onClick={() => {
+                setShowAddRoleDialog(false);
+                setNewRole("");
+              }}
+              sx={{
+                color: "#ffff",
+                border: "1px solid",
+                borderColor: "#ffff",
+                bgcolor: "error.lighter",
+                "&:hover": { transform: "rotate(180deg)" },
+                transition: "all 0.3s ease",
+                borderRadius: "50%",
+              }}
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </Box>
+
+          <Box sx={{ p: 2, flexGrow: 1 }}>
+            <Card elevation={1} sx={{ borderRadius: 2 }}>
+              <CardContent>
+                <TextField
+                  autoFocus
+                  fullWidth
+                  size="small"
+                  label="New Role"
+                  value={newRole}
+                  onChange={(e) => setNewRole(e.target.value)}
+                  sx={{ mb: 2 }}
+                />
+              </CardContent>
+            </Card>
+          </Box>
+
+          <Box
+            sx={{
+              p: 2,
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: 1,
+              borderTop: "1px solid #eee",
+            }}
+          >
+            <Button
+              onClick={() => {
+                setShowAddRoleDialog(false);
+                setNewRole("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => handleAddRole(newRole, selectedDepartment)}
+              variant="contained"
+              color="primary"
+              sx={{ background: "rgb(251, 68, 36)" }}
+            >
+              Add
+            </Button>
+          </Box>
+        </Drawer>
+      </div>
+    );
+  };
 
   return (
     <Box
@@ -1938,10 +2212,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           <>
             {selectedRows.length > 0 && (
               <Tooltip title="Bulk Download" placement="left">
-                <IconButton
-                  size="small"
-                  onClick={() => handleBulkDownload()}
-                >
+                <IconButton size="small" onClick={() => handleBulkDownload()}>
                   <FileDownloadIcon fontSize="small" />
                 </IconButton>
               </Tooltip>
@@ -3122,7 +3393,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           autoHideDuration={3000}
           onClose={handleSnackbarClose}
           anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-          sx={{ zIndex: 5000 }} // ✅ Makes Snackbar appear on top of all dialogs/drawers
+          sx={{ zIndex: 5000 }} //  Makes Snackbar appear on top of all dialogs/drawers
         >
           <Alert
             onClose={handleSnackbarClose}

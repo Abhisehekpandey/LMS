@@ -48,7 +48,7 @@ import {
   Radio,
   CircularProgress,
 } from "@mui/material";
-import { Add, Delete } from "@mui/icons-material";
+import { Add, Delete, Edit } from "@mui/icons-material";
 import axios from "axios";
 import { Search as SearchIcon, Clear as ClearIcon } from "@mui/icons-material";
 import { InputAdornment } from "@mui/material";
@@ -97,8 +97,17 @@ const DepartmentTypeSetting = () => {
   const [order, setOrder] = useState("asc");
   const [openDialog, setOpenDialog] = useState(false);
   const [documentType, setDocumentType] = useState("");
-  const [attributes, setAttributes] = useState([attributeTemplate]);
-  const [typeScope, setTypeScope] = useState("global");
+  const createAttributeTemplate = () => ({
+    name: "",
+    type: "STRING",
+    defaultValue: "",
+    mandatory: false,
+    aiRequired: false,
+    description: "",
+  });
+
+  const [attributes, setAttributes] = useState([createAttributeTemplate()]);
+  const [typeScope, setTypeScope] = useState("user");
   const [users, setUsers] = useState([]);
   const [userPage, setUserPage] = useState(0);
   const [hasMoreUsers, setHasMoreUsers] = useState(true);
@@ -262,6 +271,9 @@ const DepartmentTypeSetting = () => {
   };
 
   const descendingComparator = (a, b, orderBy) => {
+    let aValue = "";
+    let bValue = "";
+
     if (orderBy === "typeName") {
       aValue = a.type || "";
       bValue = b.type || "";
@@ -347,7 +359,9 @@ const DepartmentTypeSetting = () => {
           },
         }
       );
-      setFileTypes(response.data?.data || []);
+
+      // ✅ take fullObject array instead of data
+      setFileTypes(response.data?.fullObject || []);
     } catch (error) {
       console.error("Failed to fetch file types", error);
     }
@@ -357,18 +371,18 @@ const DepartmentTypeSetting = () => {
     fetchFileTypes();
   }, []);
 
-  // const sortedRows = stableSort(fileTypes, getComparator(order, orderBy));
   const filteredRows = fileTypes.filter((row) => {
-    const value =
-      searchColumn === "typeName"
-        ? row
-        : searchColumn === "createdBy"
-        ? row.createdBy || ""
-        : searchColumn === "for"
-        ? row.scope || ""
-        : "";
+    let value = "";
 
-    return value.toLowerCase().includes(searchText.toLowerCase());
+    if (searchColumn === "typeName") {
+      value = row.type || "";
+    } else if (searchColumn === "createdBy") {
+      value = row.createdBy || "";
+    } else if (searchColumn === "for") {
+      value = row.createdFor || "";
+    }
+
+    return value.toString().toLowerCase().includes(searchText.toLowerCase());
   });
 
   const sortedRows = stableSort(filteredRows, getComparator(order, orderBy));
@@ -421,7 +435,7 @@ const DepartmentTypeSetting = () => {
 
     const payload = {
       type: documentType,
-      attributeList: attributes.map((attr) => ({
+      attributes: attributes.map((attr) => ({
         attributeName: attr.name,
         attributeType: attr.type.toLowerCase(),
         value: attr.defaultValue,
@@ -471,7 +485,6 @@ const DepartmentTypeSetting = () => {
         });
       }
 
-      // Reset form state
       setOpenDialog(false);
       setDocumentType("");
       setAttributes([createAttributeTemplate()]);
@@ -480,7 +493,6 @@ const DepartmentTypeSetting = () => {
       setIsEditMode(false);
       setEditingTypeId(null);
 
-      // Refetch data if needed
       fetchFileTypes();
     } catch (error) {
       console.error("Error saving type:", error);
@@ -505,7 +517,8 @@ const DepartmentTypeSetting = () => {
   };
 
   const handleAddAttribute = () => {
-    setAttributes([...attributes, { ...attributeTemplate }]);
+    setAttributes([...attributes, createAttributeTemplate()]);
+    setExpandedIndex(attributes.length); // expand only the newly added row
   };
 
   const handleDeleteType = async (ids, typeName) => {
@@ -579,50 +592,6 @@ const DepartmentTypeSetting = () => {
           },
         }}
       >
-        {/* <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, p: 2 }}>
-          <TextField
-            select
-            size="small"
-            label="By"
-            value={searchColumn}
-            onChange={(e) => setSearchColumn(e.target.value)}
-            sx={{ minWidth: 130 }}
-          >
-            <MenuItem value="typeName">Type Name</MenuItem>
-            <MenuItem value="createdBy">Created By</MenuItem>
-            <MenuItem value="for">For</MenuItem>
-          </TextField>
-
-          <TextField
-            size="small"
-            label="Search"
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon fontSize="small" />
-                </InputAdornment>
-              ),
-            }}
-            sx={{ minWidth: 200 }}
-          />
-
-          <Tooltip title="Clear All Filters">
-            <Button
-              variant="outlined"
-              size="small"
-              color="error"
-              startIcon={<ClearIcon />}
-              onClick={() => {
-                setSearchText("");
-                setSearchColumn("typeName");
-              }}
-            >
-              Clear
-            </Button>
-          </Tooltip>
-        </Box> */}
         <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, p: 2 }}>
           <TextField
             select
@@ -675,7 +644,6 @@ const DepartmentTypeSetting = () => {
           <Tooltip title="Clear All Filters">
             <span>
               {" "}
-              {/* Wrap in span to avoid Tooltip warning on disabled button */}
               <Button
                 variant="outlined"
                 size="small"
@@ -753,9 +721,9 @@ const DepartmentTypeSetting = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {paginatedRows.map((typeName, index) => (
+              {paginatedRows.map((row, index) => (
                 <TableRow
-                  key={index}
+                  key={row.id}
                   hover
                   selected={isSelected(index)}
                   sx={{ height: 36, "& td": { padding: "6px 8px" } }}
@@ -782,6 +750,13 @@ const DepartmentTypeSetting = () => {
                   </TableCell>
                   <TableCell sx={{ textAlign: "center" }}>
                     <IconButton
+                      color="primary"
+                      onClick={() => handleEditType(row)}
+                    >
+                      <Edit fontSize="small" />
+                    </IconButton>
+
+                    <IconButton
                       color="error"
                       onClick={() => handleDeleteType(row.id, row.type)} // row.id as single item, row.type for message
                     >
@@ -790,6 +765,7 @@ const DepartmentTypeSetting = () => {
                   </TableCell>
                 </TableRow>
               ))}
+
               {paginatedRows.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={7} sx={{ textAlign: "center" }}>
