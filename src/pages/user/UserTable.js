@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import * as XLSX from "xlsx"; // Add this at the top of the file
+import * as XLSX from "xlsx";
 import axios from "axios";
 
 import {
@@ -72,7 +72,7 @@ import { activateAll, fetchUsers } from "../../api/userService";
 import { toggleUserStatusByUsername } from "../../api/userService";
 import { getDepartments } from "../../api/departmentService";
 import { updateUser } from "../../api/userService";
-// import { activateAll } from "../../api/userService";
+
 import { TableSortLabel } from "@mui/material";
 import { searchUsers } from "../../api/userService";
 import _, { debounce } from "lodash";
@@ -203,6 +203,8 @@ export default function UserTable() {
   const [statusFilter, setStatusFilter] = useState("");
   const [filterAnchor, setFilterAnchor] = useState(null);
   const [searchColumn, setSearchColumn] = useState("name");
+  const [showSelectDialog, setShowSelectDialog] = useState(false);
+  const prevSelectedRef = useRef([]);
   const [visibleColumns, setVisibleColumns] = useState(
     allColumns.reduce((acc, col) => ({ ...acc, [col.id]: true }), {})
   );
@@ -513,36 +515,28 @@ export default function UserTable() {
   );
 
   // handle bulk activate
-  const handleActivateAll = async () => {
-    // 1 Check if anything is selected
-    if (!rowsData || rowsData.length === 0) {
+  const handleActivateAll = async (selectedRows) => {
+    if (!selectedRows || selectedRows.length === 0) {
       toast.warn("No users selected for activation.");
       return;
     }
 
-    // 2 Build full user objects for backend
-    const usersToActivate = rowData
-      .filter((user) => selected.includes(user.id)) // only selected users
-      .map((user) => ({
-        ...user,
-        active: true,
-        permissions: {
-          ...user.permissions,
-          allowedStorageInBytesDisplay: "1GB",
-        },
-      }));
+    const usersToActivate = selectedRows.map((user) => ({
+      ...user,
+      active: true,
+      permissions: {
+        ...user.permissions,
+        allowedStorageInBytesDisplay: "1GB",
+      },
+    }));
 
-    console.log("Activating users:", usersToActivate);
+    console.log("usersss", usersToActivate);
 
     try {
-      // 3 Call backend
       await toggleUserStatusByUsername(usersToActivate, page);
-
-      // 4️⃣ Refresh data + cleanup
       await refetchUsers();
       setSelected([]);
       setRowData([]);
-
       toast.success("Selected users have been activated.");
     } catch (error) {
       console.error("Error activating users:", error);
@@ -552,11 +546,11 @@ export default function UserTable() {
 
   const options = ["10GB", "20GB"];
   //handle bulk download
-  const handleBulkDownload = () => {
-    console.log("rowsData", rowsData);
+  const handleBulkDownload = (selectedRows) => {
+    const sourceData = rowData.length > 0 ? rowData : selectedRows;
 
-    if (!rowsData || rowsData.length === 0) {
-      alert("No data to download");
+    if (!sourceData || sourceData.length === 0) {
+      toast.warning("No users selected for download.");
       return;
     }
 
@@ -580,7 +574,7 @@ export default function UserTable() {
       "Active License": formatStatus(row),
     });
 
-    const dataToDownload = rowsData.map(extractRowData);
+    const dataToDownload = sourceData.map(extractRowData);
     const headers = Object.keys(dataToDownload[0]);
 
     const worksheet = XLSX.utils.json_to_sheet(dataToDownload, {
@@ -604,15 +598,13 @@ export default function UserTable() {
     XLSX.utils.book_append_sheet(workbook, worksheet, "Selected Users");
 
     const fileName =
-      rowsData.length === 1
-        ? `${rowsData[0].name?.replace(/\s+/g, "_")}-user.xlsx`
+      sourceData.length === 1
+        ? `${sourceData[0].name?.replace(/\s+/g, "_")}-user.xlsx`
         : "selected-users.xlsx";
 
     XLSX.writeFile(workbook, fileName);
 
     setSelected([]);
-    // setRowsData([]); // if you want to clear it after download
-
     setSnackbarMessage("User data downloaded successfully");
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
@@ -621,59 +613,46 @@ export default function UserTable() {
   const label = { inputProps: { "aria-label": "Switch demo" } };
 
   //handle delete
-  const handleDelete = (rowsOrEvent, row) => {
-    const key = "id";
-    const currentRows = rowsData;
+  const handleDelete = (selectedRows, singleRow) => {
     let rowsToDelete = [];
-    console.log("rowsOrEvent:", rowsData);
 
-    // SINGLE ROW delete
-    if (row) {
-      if (row.email === adminEmail) {
+    if (singleRow) {
+      if (singleRow.email === adminEmail) {
         toast.warning("Admin user cannot be deleted");
         return;
       }
-      rowsToDelete = [row];
-    }
-    // BULK delete from toolbar - rowsOrEvent is array of OBJECTS
-    else if (Array.isArray(rowsOrEvent) && rowsOrEvent.length > 0) {
-      // Check if it's an array of objects or IDs
-      const firstItem = rowsOrEvent[0];
+      rowsToDelete = [singleRow];
+    } else {
+      const sourceData = rowData.length > 0 ? rowData : selectedRows;
 
-      if (typeof firstItem === "object" && firstItem !== null) {
-        // Array of row objects (from PolymorphicTable)
-        rowsToDelete = rowsData.filter((r) => r.email !== adminEmail);
-        console.log("Bulk delete - row objects:", rowsToDelete);
-      } else {
-        // Array of IDs (fallback)
-        rowsToDelete = currentRows.filter(
-          (r) => rowsOrEvent.includes(r[key]) && r.email !== adminEmail
-        );
-        console.log("Bulk delete - IDs:", rowsToDelete);
+      if (!sourceData || sourceData.length === 0) {
+        toast.warning("No users selected for deletion.");
+        return;
       }
 
-      if (!rowsToDelete.length) {
+      //  ADD THIS DEBUG LOG
+      console.log("Admin email:", adminEmail);
+      console.log("Source data count:", sourceData.length);
+      console.log(
+        "Emails in source:",
+        sourceData.map((u) => u.email)
+      );
+
+      rowsToDelete = sourceData.filter((r) => r.email !== adminEmail);
+
+      //  ADD THIS DEBUG LOG
+      console.log("After admin filter:", rowsToDelete.length);
+      console.log("Filtered out:", sourceData.length - rowsToDelete.length);
+
+      if (rowsToDelete.length === 0) {
         toast.warning("No valid users selected for deletion.");
         return;
       }
     }
-    // fallback to selected state (array of IDs)
-    else {
-      rowsToDelete = currentRows.filter(
-        (r) => selected.includes(r[key]) && r.email !== adminEmail
-      );
-      console.log("Fallback delete from selected state:", rowsToDelete);
 
-      if (!rowsToDelete.length) {
-        toast.warning("No users selected for deletion.");
-        return;
-      }
-    }
-
-    console.log("Final rows to delete:", rowsToDelete);
     setDeleteUser(true);
     setRowData(rowsToDelete);
-    setSelected(rowsToDelete.map((r) => r[key]));
+    setSelected(rowsToDelete.map((r) => r.id));
   };
 
   const toBytes = (display) => {
@@ -1129,18 +1108,133 @@ export default function UserTable() {
             stickyHeader
             tableHeight="85vh"
             tableWidth="93vw"
+            customSelectAllDialog={({
+              open,
+              onClose,
+              onSelectPage,
+              onSelectAll,
+            }) => (
+              <Dialog open={open} onClose={onClose} fullWidth>
+                <DialogTitle sx={{ fontWeight: "13px", padding: "3px 7px" }}>
+                  Select Users
+                </DialogTitle>
+
+                <DialogContent dividers>
+                  <Typography>
+                    Do you want to select all users or just the current page?
+                  </Typography>
+                </DialogContent>
+
+                <DialogActions
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <Button
+                    sx={{
+                      backgroundColor: "#9e9e9e",
+                      color: "white",
+                      "&:hover": { backgroundColor: "#7a7a7a" },
+                    }}
+                    onClick={onClose}
+                  >
+                    Cancel
+                  </Button>
+
+                  <div style={{ gap: "4px" }}>
+                    <Button
+                      sx={{
+                        backgroundColor: "#1976d2",
+                        color: "white",
+                        marginRight: "4px",
+                        "&:hover": { backgroundColor: "#115293" },
+                      }}
+                      onClick={() => {
+                        onSelectPage(); //  triggers the internal logic in PolymorphicTable
+                        toast.success(
+                          `Selected ${
+                            rowsData.filter((n) => n.email !== adminEmail)
+                              .length
+                          } users from current page`
+                        );
+                      }}
+                    >
+                      Select Current Page (
+                      {rowsData.filter((n) => n.email !== adminEmail).length}{" "}
+                      rows)
+                    </Button>
+
+                    <Button
+                      sx={{
+                        backgroundColor: "#d32f2f",
+                        color: "white",
+                        "&:hover": { backgroundColor: "#9a0007" },
+                      }}
+                      onClick={async () => {
+                        try {
+                          await onSelectAll(); //  triggers the built-in table “select all” logic
+                          // toast.success("All users selected successfully!");
+                        } catch (error) {
+                          console.error(error);
+                          toast.error("Failed to select all users.");
+                        }
+                      }}
+                    >
+                      Select All Users
+                    </Button>
+                  </div>
+                </DialogActions>
+              </Dialog>
+            )}
             //  Pagination props
             page={page}
             rowsPerPage={rowsPerPage}
             totalCount={totalCount}
-            selectedRowKeys={selected}
-            onRowSelect={(selectedRows) => setSelected(selectedRows)}
+            // rowKey={selected.map((u) => u.id)}
+            // onRowSelect={(selectedIds) => {
+            //   // selectedIds might be strings/numbers depending on table implementation
+            //   console.log("selectedIds from table:", selectedIds);
+
+            //   const selectedUsers = rowsData.filter((user) =>
+            //     selectedIds.includes(user.id)
+            //   );
+            //   console.log("selectedUsers mapped from IDs:", selectedUsers);
+
+            //   setSelected(selectedUsers);
+            // }}
+            onRowSelect={(selectedIds) => {
+              console.log("onRowSelect triggered:", selectedIds.length);
+
+              //  Detect when "select all checkbox" is clicked
+              const currentPageIds = rowsData.map((row) => row.id);
+              const allCurrentPageSelected = currentPageIds.every((id) =>
+                selectedIds.includes(id)
+              );
+
+              // If all visible rows just got selected (and it's more than 1), show YOUR dialog
+              if (
+                allCurrentPageSelected &&
+                selectedIds.length > 0 &&
+                selectedIds.length >= currentPageIds.length &&
+                prevSelectedRef.current.length < selectedIds.length
+              ) {
+                console.log(" Opening custom select dialog");
+                setShowSelectDialog(true);
+                // Don't update selected yet - let dialog handle it
+                return;
+              }
+
+              prevSelectedRef.current = selectedIds;
+              setSelected(selectedIds);
+            }}
             //  Keep existing toolbar
             renderToolbarIcons={(selected) =>
               selected.length > 0 && (
                 <>
                   <Tooltip title="Delete Selected">
-                    <IconButton onClick={() => handleDelete(selected)}>
+                    <IconButton onClick={() => handleDelete(selected, null)}>
                       <DeleteIcon />
                     </IconButton>
                   </Tooltip>
@@ -1150,7 +1244,7 @@ export default function UserTable() {
                     </IconButton>
                   </Tooltip>
                   <Tooltip title="Download Selected">
-                    <IconButton onClick={() => handleBulkDownload()}>
+                    <IconButton onClick={() => handleBulkDownload(selected)}>
                       <FileDownload />
                     </IconButton>
                   </Tooltip>
@@ -1230,7 +1324,128 @@ export default function UserTable() {
           rowId={selected}
         />
       </Dialog>
+      {/*  Your custom Select All dialog */}
       <Dialog
+        open={showSelectDialog}
+        onClose={() => setShowSelectDialog(false)}
+        fullWidth
+      >
+        <DialogTitle sx={{ fontWeight: "13px", padding: "3px 7px" }}>
+          Select Users
+        </DialogTitle>
+
+        <DialogContent dividers>
+          <Typography>
+            Do you want to select all users or just the current page?
+          </Typography>
+        </DialogContent>
+
+        <DialogActions
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <Button
+            style={{
+              backgroundColor: "#9e9e9e",
+              color: "white",
+              border: "none",
+              cursor: "pointer",
+              borderRadius: "4px",
+            }}
+            onClick={() => {
+              setSelected([]);
+              setRowData([]);
+              setShowSelectDialog(false);
+            }}
+          >
+            Cancel
+          </Button>
+
+          <div style={{ gap: "4px" }}>
+            <Button
+              style={{
+                backgroundColor: "#1976d2",
+                color: "white",
+                marginRight: "4px",
+                border: "none",
+                cursor: "pointer",
+                borderRadius: "4px",
+              }}
+              onClick={() => {
+                const filteredPageRows = rowsData.filter(
+                  (n) => n.email !== adminEmail
+                );
+                const currentPageIds = filteredPageRows.map((n) => n.id);
+
+                setSelected(currentPageIds);
+                setRowData(filteredPageRows);
+                setShowSelectDialog(false);
+              }}
+            >
+              Select Current Page (
+              {rowsData.filter((n) => n.email !== adminEmail).length} rows)
+            </Button>
+
+            <Button
+              style={{
+                backgroundColor: "#d32f2f",
+                color: "white",
+                border: "none",
+                cursor: "pointer",
+                borderRadius: "4px",
+              }}
+              onClick={async () => {
+                try {
+                  setShowSelectDialog(false);
+
+                  //  Add extensive logging
+                  console.log(" Current rowsData length:", rowsData.length);
+                  console.log(" Current totalCount:", totalCount);
+
+                  const response = await fetchUsers(0, 1000);
+                  console.log(" API Response:", response);
+                  console.log(
+                    " Response.content length:",
+                    response.content?.length
+                  );
+                  console.log(
+                    " Response.totalElements:",
+                    response.totalElements
+                  );
+                  console.log(" Response.totalPages:", response.totalPages);
+
+                  const allUsers = response.content || [];
+                  console.log(" All users fetched:", allUsers.length);
+                  console.log(
+                    " All user emails:",
+                    allUsers.map((u) => u.email)
+                  );
+
+                  const nonAdminUsers = allUsers.filter(
+                    (u) => u.email !== adminEmail
+                  );
+
+                  console.log(" Non-admin users:", nonAdminUsers.length);
+
+                  setSelected(nonAdminUsers.map((u) => u.id));
+                  setRowData(nonAdminUsers);
+
+                  toast.success(`Selected ${nonAdminUsers.length} users`);
+                } catch (error) {
+                  console.error("Failed to fetch all users:", error);
+                  toast.error("Failed to select all users.");
+                }
+              }}
+            >
+              Select All Users
+            </Button>
+          </div>
+        </DialogActions>
+      </Dialog>
+      {/* <Dialog
         open={selectAllData}
         onClose={() => setSelectAllData(false)}
         fullWidth
@@ -1339,7 +1554,8 @@ export default function UserTable() {
             </Button>
           </div>
         </DialogActions>
-      </Dialog>
+      </Dialog> */}
+
       <Dialog open={migrationDialog} onClose={handleClose} fullWidth>
         <Migration
           handleClos={handleClose}
@@ -1493,16 +1709,20 @@ export default function UserTable() {
             <Grid item xs={6}>
               <TextField
                 size="small"
-                label="Phone Number"
                 fullWidth
+                label={
+                  <>
+                    Phone Number <span style={{ color: "red" }}>*</span>
+                  </>
+                }
                 value={editData.phoneNumber || ""}
                 onChange={(e) => {
                   const input = e.target.value;
 
-                  //  Allow only digits
+                  // Allow only digits
                   if (!/^\d*$/.test(input)) return;
 
-                  //  Restrict to max 10 digits
+                  // Restrict to max 10 digits
                   if (input.length > 10) return;
 
                   setEditData((prev) => ({
@@ -1510,11 +1730,13 @@ export default function UserTable() {
                     phoneNumber: input,
                   }));
                 }}
-                error={Boolean(
-                  editData.phoneNumber && editData.phoneNumber.length !== 10
-                )}
+                error={
+                  !editData.phoneNumber || editData.phoneNumber.length !== 10
+                }
                 helperText={
-                  editData.phoneNumber && editData.phoneNumber.length !== 10
+                  !editData.phoneNumber
+                    ? "Required"
+                    : editData.phoneNumber.length !== 10
                     ? "Phone number must be exactly 10 digits"
                     : ""
                 }
@@ -1567,9 +1789,6 @@ export default function UserTable() {
         </DialogActions>
       </Dialog>
 
-      {/* select all logic here  */}
-
-      {/* snack bar here  */}
       <Snackbar
         open={snackbarOpen}
         autoHideDuration={3000}
