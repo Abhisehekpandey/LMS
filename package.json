@@ -31,6 +31,7 @@
     "js-cookie": "^3.0.5",
     "lodash": "^4.17.21",
     "papaparse": "^5.5.3",
+    "polymorphic-table": "^1.2.23",
     "react": "^18.2.0",
     "react-chartjs-2": "^5.2.0",
     "react-countup": "^6.5.3",

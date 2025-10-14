@@ -120,93 +120,6 @@ const CustomSpinner = styled(CircularProgress)(({ theme }) => ({
   thickness: 2,
 }));
 
-const rows = [
-  {
-    id: "1",
-    name: "kunal kamboj",
-    department: "Frontend",
-    role: "Software Engineer",
-    email: "kunal@appolo.com",
-    storageUsed: "200 MB",
-    manageStorage: "1 GB",
-    status: false,
-
-    phone: "1234567890",
-  },
-  {
-    id: "2",
-    name: "Pratibha thakur",
-    department: "Frontend",
-    role: "Frontend Developer",
-    email: "pratibha@appolo.com",
-    storageUsed: "200 MB",
-    manageStorage: "1 GB",
-    status: false,
-
-    phone: "9876543201",
-  },
-  {
-    id: "3",
-    name: "Abhishek Panday",
-    department: "Frontend",
-    role: "Software Developer",
-    email: "abhishek@appolo.com",
-    storageUsed: "800 MB",
-    manageStorage: "1 GB",
-    status: true,
-
-    phone: "1234567890",
-  },
-  {
-    id: "4",
-    name: "Dhruv Sethi",
-    department: "Backend",
-    role: "Manager",
-    email: "dhruv@appolo.com",
-    storageUsed: "800 MB",
-    manageStorage: "1 GB",
-    status: true,
-
-    phone: "1234567890",
-  },
-  {
-    id: "5",
-    name: "Manish Yadav",
-    department: "Backend",
-    role: "Software engineer",
-    email: "manish@appolo.com",
-    storageUsed: "800 MB",
-    manageStorage: "1 GB",
-    status: true,
-
-    phone: "1234567890",
-  },
-  {
-    id: "6",
-    name: "Prince Tiwari",
-    department: "Backend",
-    role: "Backend developer",
-    email: "prince@appolo.com",
-    storageUsed: "800 MB",
-    manageStorage: "1 GB",
-    status: true,
-
-    phone: "1234567890",
-  },
-  {
-    id: "7",
-    name: "Dheeraj",
-    department: "Frontend",
-    role: "Senior Frontend Developer",
-    email: "dheeraj@appolo.com",
-    storageUsed: "800 MB",
-    manageStorage: "1 GB",
-    status: true,
-
-    phone: "1234567890",
-  },
-];
-
 const IOSSwitch = styled((props) => (
   <Switch focusVisibleClassName=".Mui-focusVisible" disableRipple {...props} />
 ))(({ theme }) => ({
@@ -2092,37 +2005,6 @@ export default function UserTable() {
                   )}
                 />
               </Grid>
-
-              {/* <Grid item xs={6}>
-                <TextField
-                  size="small"
-                  label="Phone Number"
-                  fullWidth
-                  value={editData.phoneNumber || ""}
-                  onChange={(e) => {
-                    const input = e.target.value;
-
-                    // ✅ Allow only digits
-                    if (!/^\d*$/.test(input)) return;
-
-                    // ✅ Restrict to max 10 digits
-                    if (input.length > 10) return;
-
-                    setEditData((prev) => ({
-                      ...prev,
-                      phoneNumber: input,
-                    }));
-                  }}
-                  error={Boolean(
-                    editData.phoneNumber && editData.phoneNumber.length !== 10
-                  )}
-                  helperText={
-                    editData.phoneNumber && editData.phoneNumber.length !== 10
-                      ? "Phone number must be exactly 10 digits"
-                      : ""
-                  }
-                />
-              </Grid> */}
 
               <Grid item xs={6}>
                 <TextField

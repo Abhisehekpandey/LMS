@@ -1029,6 +1029,42 @@ const LDAPConfig = () => {
                         const value = e.target.value;
                         setSelectedGroupObjectClass(value);
 
+                        // if (value === "group") {
+                        //   const configId =
+                        //     sessionStorage.getItem("ldapConfigId");
+
+                        //   if (!configId) {
+                        //     setStatus({
+                        //       type: "warning",
+                        //       message:
+                        //         "Configuration ID not found. Please save configuration first.",
+                        //     });
+                        //     return;
+                        //   }
+
+                        //   try {
+                        //     setStatus({
+                        //       type: "info",
+                        //       message: "Fetching groups...",
+                        //     });
+                        //     const groups = await fetchGroupsByObjectClass(
+                        //       configId
+                        //     );
+                        //     console.log("groupssss",groups)
+                        //     setAvailableGroupGroups(groups);
+                        //     setStatus({
+                        //       type: "success",
+                        //       message: "Groups fetched successfully.",
+                        //     });
+                        //   } catch (error) {
+                        //     setStatus({
+                        //       type: "error",
+                        //       message:
+                        //         error?.response?.data?.message ||
+                        //         "Failed to fetch groups.",
+                        //     });
+                        //   }
+                        // }
                         if (value === "group") {
                           const configId =
                             sessionStorage.getItem("ldapConfigId");
@@ -1047,13 +1083,23 @@ const LDAPConfig = () => {
                               type: "info",
                               message: "Fetching groups...",
                             });
-                            const groups = await fetchGroupsByObjectClass(
+
+                            const response = await fetchGroupsByObjectClass(
                               configId
                             );
-                            setAvailableGroupGroups(groups);
+
+                            // ✅ Always extract array safely
+                            const groupsArray = Array.isArray(
+                              response.groupsExtracted
+                            )
+                              ? response.groupsExtracted
+                              : [];
+
+                            setAvailableGroupGroups(groupsArray);
+
                             setStatus({
                               type: "success",
-                              message: "Groups fetched successfully.",
+                              message: `Fetched ${groupsArray.length} group(s) successfully.`,
                             });
                           } catch (error) {
                             setStatus({
@@ -1210,91 +1256,6 @@ const LDAPConfig = () => {
     }
 
     const sectionContent = {
-      // "EMAIL CONFIGURATION": [
-      //   <Box>
-      //     <TextField
-      //       fullWidth
-      //       label="SMTP Server"
-      //       name="smtp"
-      //       value={config.smtp}
-      //       onChange={handleChange}
-      //     />
-
-      //     <Box sx={{ mt: 2 }}>
-      //       <FormControlLabel
-      //         control={
-      //           <Checkbox
-      //             checked={useEmailSsl}
-      //             onChange={(e) => setUseEmailSsl(e.target.checked)}
-      //           />
-      //         }
-      //         label="Use SSL Certificate"
-      //       />
-      //     </Box>
-
-      //     {useEmailSsl && (
-      //       <Box sx={{ mt: 2 }}>
-      //         <Button variant="outlined" component="label" fullWidth>
-      //           Upload SSL Certificate
-      //           <input
-      //             type="file"
-      //             hidden
-      //             accept=".crt,.pem,.cer,.der"
-      //             onChange={(e) => {
-      //               const file = e.target.files?.[0];
-      //               if (file) {
-      //                 setEmailSslCertificate(file);
-      //                 setStatus({
-      //                   type: "success",
-      //                   message: `SSL Certificate "${file.name}" selected for SMTP.`,
-      //                 });
-      //               }
-      //             }}
-      //           />
-      //         </Button>
-      //         {emailSslCertificate && (
-      //           <Typography variant="caption" sx={{ mt: 1, display: "block" }}>
-      //             Selected: {emailSslCertificate.name}
-      //           </Typography>
-      //         )}
-      //       </Box>
-      //     )}
-
-      //     <TextField
-      //       fullWidth
-      //       label="Port"
-      //       name="port"
-      //       value={config.port}
-      //       onChange={handleChange}
-      //       sx={{ mt: 2 }}
-      //     />
-      //     <TextField
-      //       fullWidth
-      //       label="Username"
-      //       name="username"
-      //       value={config.username}
-      //       onChange={handleChange}
-      //       sx={{ mt: 2 }}
-      //     />
-      //     <TextField
-      //       fullWidth
-      //       label="Password"
-      //       name="password"
-      //       type="password"
-      //       value={config.password}
-      //       onChange={handleChange}
-      //       sx={{ mt: 2 }}
-      //     />
-      //   </Box>,
-      //   <Box>
-      //     <TextField fullWidth label="Recipient Email" />
-      //     <TextField fullWidth label="Subject" sx={{ mt: 2 }} />
-      //     <TextField fullWidth label="Body" multiline rows={4} sx={{ mt: 2 }} />
-      //     <Button variant="contained" sx={{ mt: 2 }}>
-      //       Send Test Email
-      //     </Button>
-      //   </Box>,
-      // ],
       "EMAIL CONFIGURATION": [
         // --- Tab 1: SMTP Server ---
         <Box>

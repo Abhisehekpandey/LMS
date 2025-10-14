@@ -10,8 +10,22 @@ import {
   Snackbar,
   Alert,
   Grid,
+  Card,
+  Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  ToggleButton,
+  ToggleButtonGroup,
 } from "@mui/material";
-import { Upload, Delete } from "@mui/icons-material";
+import {
+  Upload,
+  Delete,
+  Visibility,
+  DesktopWindows,
+  Smartphone,
+} from "@mui/icons-material";
 
 const ThemeSetting = () => {
   const fileInputRefs = {
@@ -35,6 +49,9 @@ const ThemeSetting = () => {
     message: "",
     severity: "success",
   });
+
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [deviceView, setDeviceView] = useState("desktop");
 
   const handleChange = (field) => (event) => {
     setForm({ ...form, [field]: event.target.value });
@@ -124,18 +141,61 @@ const ThemeSetting = () => {
   };
 
   const renderImageUploader = (field, labelText) => (
-    <Grid item xs={12} sm={4}>
-      <Typography variant="subtitle2" mb={1}>
+    <Card
+      elevation={2}
+      sx={{
+        p: 2,
+        borderRadius: 3,
+        textAlign: "center",
+        transition: "0.3s",
+        "&:hover": { boxShadow: 5 },
+      }}
+    >
+      <Typography variant="subtitle1" fontWeight="600" gutterBottom>
         {labelText}
       </Typography>
-      <Box display="flex" alignItems="center" gap={1} mb={1}>
+      {form[field] ? (
+        <>
+          <Box
+            component="img"
+            src={form[field]}
+            alt={field}
+            sx={{
+              maxWidth: "100%",
+              height: 100,
+              objectFit: "contain",
+              mb: 2,
+              borderRadius: 1,
+              border: "1px solid rgba(0,0,0,0.1)",
+            }}
+          />
+          <Button
+            variant="outlined"
+            color="error"
+            startIcon={<Delete />}
+            fullWidth
+            onClick={() => {
+              handleFileRemove(field);
+              if (fileInputRefs[field]?.current)
+                fileInputRefs[field].current.value = null;
+            }}
+          >
+            Remove
+          </Button>
+        </>
+      ) : (
         <Button
-          variant="outlined"
+          variant="contained"
           component="label"
           startIcon={<Upload />}
-          sx={{ textTransform: "none", borderRadius: 2 }}
+          fullWidth
+          sx={{
+            borderRadius: 2,
+            py: 1,
+            textTransform: "none",
+          }}
         >
-          Upload
+          Upload Image
           <input
             type="file"
             accept="image/*"
@@ -144,60 +204,224 @@ const ThemeSetting = () => {
             onChange={handleFileUpload(field)}
           />
         </Button>
-        {form[field] && (
-          <Button
-            color="error"
-            onClick={() => {
-              handleFileRemove(field);
-              if (fileInputRefs[field]?.current) {
-                fileInputRefs[field].current.value = null;
-              }
-            }}
-            startIcon={<Delete />}
-          >
-            Remove
-          </Button>
-        )}
-      </Box>
-      {form[field] && (
-        <Box
-          component="img"
-          src={form[field]}
-          alt={field}
-          sx={{
-            maxWidth: 200,
-            maxHeight: 100,
-            border: "1px solid #ddd",
-            borderRadius: 1,
-          }}
-        />
       )}
-    </Grid>
+    </Card>
+  );
+
+  const renderPreviewModal = () => (
+    <Dialog
+      open={previewOpen}
+      onClose={() => setPreviewOpen(false)}
+      maxWidth="md"
+      fullWidth
+    >
+      <DialogTitle
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <Typography fontWeight="bold">Theme Preview</Typography>
+        <ToggleButtonGroup
+          value={deviceView}
+          exclusive
+          onChange={(e, v) => v && setDeviceView(v)}
+          size="small"
+        >
+          <ToggleButton value="desktop">
+            <DesktopWindows fontSize="small" sx={{ mr: 0.5 }} />
+            Desktop
+          </ToggleButton>
+          <ToggleButton value="mobile">
+            <Smartphone fontSize="small" sx={{ mr: 0.5 }} />
+            Mobile
+          </ToggleButton>
+        </ToggleButtonGroup>
+      </DialogTitle>
+
+      <DialogContent dividers>
+        <Box
+          sx={{
+            border: "1px solid rgba(0,0,0,0.1)",
+            borderRadius: 3,
+            overflow: "hidden",
+            position: "relative",
+            height: deviceView === "mobile" ? 500 : 400,
+            width: deviceView === "mobile" ? 280 : "100%",
+            mx: "auto",
+            backgroundColor: "#f5f5f5",
+            backgroundImage: form.loginBackground
+              ? `url(${form.loginBackground})`
+              : "linear-gradient(135deg, #ece9e6, #ffffff)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexDirection: "column",
+          }}
+        >
+          {form.feviconLogo && (
+            <Box
+              component="img"
+              src={form.feviconLogo}
+              alt="Favicon"
+              sx={{
+                width: 40,
+                height: 40,
+                borderRadius: "8px",
+                position: "absolute",
+                top: 16,
+                left: 16,
+                border: "1px solid rgba(0,0,0,0.1)",
+                background: "white",
+              }}
+            />
+          )}
+
+          {form.loginLogo && (
+            <Box
+              component="img"
+              src={form.loginLogo}
+              alt="Login Logo"
+              sx={{
+                maxWidth: deviceView === "mobile" ? 100 : 150,
+                maxHeight: 80,
+                mb: 2,
+                background: "rgba(255,255,255,0.6)",
+                borderRadius: 2,
+                p: 1,
+              }}
+            />
+          )}
+
+          {form.applicationName && (
+            <Typography
+              variant={deviceView === "mobile" ? "h6" : "h5"}
+              fontWeight="bold"
+              sx={{
+                color: "#333",
+                textShadow: "0 1px 2px rgba(0,0,0,0.3)",
+              }}
+            >
+              {form.applicationName}
+            </Typography>
+          )}
+
+          {form.loginSlogan && (
+            <Typography
+              variant="subtitle1"
+              sx={{
+                mt: 1,
+                color: "#555",
+                fontStyle: "italic",
+                textAlign: "center",
+                px: 2,
+                textShadow: "0 1px 2px rgba(0,0,0,0.2)",
+              }}
+            >
+              {form.loginSlogan}
+            </Typography>
+          )}
+        </Box>
+
+        <Typography
+          variant="h6"
+          mt={3}
+          mb={2}
+          fontWeight="bold"
+          color="primary"
+        >
+          Uploaded Assets
+        </Typography>
+        <Grid container spacing={3}>
+          {[
+            { key: "loginLogo", label: "Login Logo" },
+            { key: "loginBackground", label: "Login Background" },
+            { key: "feviconLogo", label: "Favicon Logo" },
+            { key: "mainAppHeaderLogo", label: "Header Logo" },
+          ].map(({ key, label }) =>
+            form[key] ? (
+              <Grid item xs={12} sm={6} key={key}>
+                <Paper
+                  elevation={2}
+                  sx={{
+                    p: 2,
+                    borderRadius: 2,
+                    textAlign: "center",
+                    bgcolor: (theme) =>
+                      theme.palette.mode === "dark"
+                        ? "rgba(255,255,255,0.05)"
+                        : "#fafafa",
+                  }}
+                >
+                  <Typography variant="subtitle1" fontWeight={600} mb={1}>
+                    {label}
+                  </Typography>
+                  <Box
+                    component="img"
+                    src={form[key]}
+                    alt={label}
+                    sx={{
+                      maxWidth: "100%",
+                      height: 120,
+                      objectFit: "contain",
+                      borderRadius: 1,
+                      border: "1px solid rgba(0,0,0,0.1)",
+                    }}
+                  />
+                </Paper>
+              </Grid>
+            ) : null
+          )}
+        </Grid>
+
+        {!Object.values(form).some((v) => v) && (
+          <Typography
+            mt={3}
+            textAlign="center"
+            color="text.secondary"
+            fontStyle="italic"
+          >
+            No images uploaded yet.
+          </Typography>
+        )}
+      </DialogContent>
+
+      <DialogActions>
+        <Button onClick={() => setPreviewOpen(false)} color="primary">
+          Close
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 
   return (
-    <Box sx={{ ml: { xs: "10px", sm: "80px" }, p: 4 }}>
-      <Typography
-        variant="h5"
-        fontWeight="bold"
-        gutterBottom
-        sx={{ color: "black" }}
+    <Box sx={{ ml: { xs: 2, sm: 8 }, p: 4 }}>
+      <Paper
+        elevation={3}
+        sx={{
+          p: 3,
+          borderRadius: 3,
+          mb: 4,
+          background: (theme) =>
+            theme.palette.mode === "dark" ? "#1e1e1e" : "#fafafa",
+        }}
       >
-        Theming
-      </Typography>
-
-      <Paper elevation={3} sx={{ p: 3, borderRadius: 3, mb: 4 }}>
-        <Typography variant="h6" fontWeight="bold" gutterBottom>
-          Login Settings
+        <Typography variant="h6" fontWeight="bold" gutterBottom color="primary">
+          Login Page Settings
         </Typography>
+        <Divider sx={{ mb: 2 }} />
 
-        <Grid container spacing={2}>
+        <Grid container spacing={3}>
           <Grid item xs={12} sm={6}>
             <TextField
               fullWidth
               label="Application Name"
               value={form.applicationName}
               onChange={handleChange("applicationName")}
+              variant="outlined"
             />
           </Grid>
           <Grid item xs={12} sm={6}>
@@ -206,48 +430,86 @@ const ThemeSetting = () => {
               label="Login Slogan"
               value={form.loginSlogan}
               onChange={handleChange("loginSlogan")}
+              variant="outlined"
             />
           </Grid>
 
-         
-          <Grid item xs={12}>
-            <Box display="flex" gap={2} flexWrap="wrap" alignItems="center">
-              <Box flex={1} minWidth={200}>
-                {renderImageUploader("loginLogo", "Login Logo")}
-              </Box>
-              <Box flex={1} minWidth={200}>
-                {renderImageUploader(
-                  "loginBackground",
-                  "Login Background Image"
-                )}
-              </Box>
-              <Box flex={1} minWidth={200}>
-                {renderImageUploader("feviconLogo", "Favicon Logo")}
-              </Box>
-            </Box>
+          <Grid item xs={12} md={4}>
+            {renderImageUploader("loginLogo", "Login Logo")}
+          </Grid>
+          <Grid item xs={12} md={4}>
+            {renderImageUploader("loginBackground", "Background Image")}
+          </Grid>
+          <Grid item xs={12} md={4}>
+            {renderImageUploader("feviconLogo", "Favicon")}
           </Grid>
         </Grid>
       </Paper>
 
-      <Paper elevation={3} sx={{ p: 3, borderRadius: 3 }}>
-        <Typography variant="h6" fontWeight="bold" gutterBottom>
-          Main App Header Logo
+      <Paper
+        elevation={3}
+        sx={{
+          p: 3,
+          borderRadius: 3,
+          background: (theme) =>
+            theme.palette.mode === "dark" ? "#1e1e1e" : "#fafafa",
+        }}
+      >
+        <Typography variant="h6" fontWeight="bold" gutterBottom color="primary">
+          Main App Header
         </Typography>
-        <Grid container spacing={2}>
-          {renderImageUploader("mainAppHeaderLogo", "Header Logo")}
+        <Divider sx={{ mb: 2 }} />
+
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={6}>
+            {renderImageUploader("mainAppHeaderLogo", "Header Logo")}
+          </Grid>
         </Grid>
       </Paper>
 
-      <Box display="flex" justifyContent="flex-end" mt={4}>
+      <Box
+        display="flex"
+        justifyContent="flex-end"
+        alignItems="center"
+        gap={2}
+        mt={4}
+      >
+        <Button
+          variant="outlined"
+          color="secondary"
+          startIcon={<Visibility />}
+          onClick={() => setPreviewOpen(true)}
+          sx={{
+            px: 4,
+            py: 1.5,
+            borderRadius: 3,
+            textTransform: "none",
+            fontWeight: 600,
+          }}
+        >
+          Preview All
+        </Button>
+
         <Button
           variant="contained"
           color="primary"
           onClick={handleSaveSettings}
-          sx={{ px: 4, py: 1.5 }}
+          sx={{
+            px: 5,
+            py: 1.5,
+            borderRadius: 3,
+            textTransform: "none",
+            fontSize: "1rem",
+            fontWeight: 600,
+            boxShadow: 3,
+            "&:hover": { boxShadow: 6 },
+          }}
         >
           Save Settings
         </Button>
       </Box>
+
+      {renderPreviewModal()}
 
       <Snackbar
         open={snackbar.open}
@@ -269,4 +531,3 @@ const ThemeSetting = () => {
 };
 
 export default ThemeSetting;
-
