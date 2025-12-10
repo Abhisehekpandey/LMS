@@ -144,11 +144,11 @@ const Login = () => {
     setLoading(true);
     try {
       const normalizedEmail = formData.email.trim().toLowerCase();
-      console.log("normall",normalizedEmail)
+      console.log("normall", normalizedEmail);
       const encryptedPassword = encryptFun(formData.password, normalizedEmail);
-      console.log("encrypt",encryptedPassword)
+      console.log("encrypt", encryptedPassword);
       const data = await loginUser(normalizedEmail, encryptedPassword);
-      console.log("dataaa",data);
+      console.log("dataaa", data);
 
       const { access_token, refresh_token, expires_in, refresh_expires_in } =
         data;
@@ -227,8 +227,11 @@ const Login = () => {
           overflow: "hidden",
           width: "100%",
           maxWidth: 1000,
-          backgroundColor: "rgba(255, 255, 255, 0.6)",
-          boxShadow: "none",
+          backgroundColor: "rgba(25, 118, 210, 0.15)",
+          backdropFilter: "blur(12px)",
+          WebkitBackdropFilter: "blur(12px)",
+          border: "1px solid rgba(255, 255, 255, 0.2)",
+          boxShadow: "0 8px 32px rgba(25, 118, 210, 0.2)",
         }}
       >
         {/* Left Branding */}
@@ -245,29 +248,18 @@ const Login = () => {
           }}
         >
           <Box maxWidth={400}>
-            <Typography variant="h3" fontWeight={900} fontSize="2.75rem">
-              <Box component="span" sx={{ color: "#1e3a8a" }}>
-                Angel
-              </Box>
-              <Box component="span" sx={{ color: "#ef4444" }}>
-                Bot
-              </Box>
-            </Typography>
-            <Typography variant="h6" sx={{ mt: 1, fontWeight: 600 }}>
-              Access Arc
-              <Box
-                component="span"
-                sx={{
-                  display: "block",
-                  height: "2px",
-                  width: "100%",
-                  backgroundColor: "#d1d5db",
-                  position: "absolute",
-                  bottom: 0,
-                  left: 0,
+            <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
+              <img
+                src="/ts_login_logo.png"
+                alt="AngelBot Access Arc Logo"
+                style={{
+                  maxWidth: "100%",
+                  height: "auto",
+                  maxHeight: "120px",
+                  objectFit: "contain",
                 }}
               />
-            </Typography>
+            </Box>
             <Typography variant="body1" sx={{ mt: 3, color: "#4b5563" }}>
               AccessArc is a robust license management system designed to
               streamline and curate your company software privileges...
@@ -280,7 +272,7 @@ const Login = () => {
           sx={{
             flex: 1,
             p: 4,
-            backgroundColor: "rgba(255, 255, 255, 0.2)",
+            backgroundColor: "rgba(255, 255, 255, 0.9)",
             backdropFilter: "blur(10px)",
             border: "1px solid rgba(255, 255, 255, 0.3)",
             display: "flex",

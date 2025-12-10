@@ -98,15 +98,12 @@ const Signup = () => {
         "Organization name can only contain letters, numbers, @, ., _, -";
     }
 
-   
-
     if (!formData.adminName.trim()) {
       newErrors.adminName = "Admin name is required";
     } else if (!/^[a-zA-Z0-9@._-\s]+$/.test(formData.adminName)) {
       newErrors.adminName =
         "Admin name can only contain letters, numbers, spaces, @, ., _, -";
     }
-
 
     if (!formData.domain.trim()) {
       newErrors.domain = "Domain is required";
@@ -262,8 +259,11 @@ const Signup = () => {
           overflow: "hidden",
           width: "100%",
           maxWidth: 1000,
-          backgroundColor: "rgba(255, 255, 255, 0.6)",
-          boxShadow: "none",
+          backgroundColor: "rgba(25, 118, 210, 0.15)",
+          backdropFilter: "blur(12px)",
+          WebkitBackdropFilter: "blur(12px)",
+          border: "1px solid rgba(255, 255, 255, 0.2)",
+          boxShadow: "0 8px 32px rgba(25, 118, 210, 0.2)",
         }}
       >
         <Box
@@ -280,56 +280,18 @@ const Signup = () => {
           }}
         >
           <Box maxWidth={400} textAlign="left">
-            <Typography
-              variant="h3"
-              sx={{
-                fontSize: "2.75rem",
-                fontWeight: 900,
-                letterSpacing: "-1px",
-                lineHeight: 1.2,
-              }}
-            >
-              <Box component="span" sx={{ color: "#1e293b" }}>
-                Team
-              </Box>
-              <Box component="span" sx={{ color: "#ff4b5c", fontWeight: 900 }}>
-                Sync
-              </Box>
-              <Box
-                component="span"
-                sx={{ color: "#9333ea", fontWeight: 900, pl: 1 }}
-              >
-                ×
-              </Box>
-            </Typography>
-
-            <Typography
-              variant="h6"
-              sx={{
-                mt: 1,
-                fontWeight: 600,
-                color: "#374151",
-                fontSize: "1.25rem",
-                position: "relative",
-                display: "inline-block",
-                pb: 0.5,
-              }}
-            >
-              Access Arc
-              <Box
-                component="span"
-                sx={{
-                  display: "block",
-                  height: "2px",
-                  width: "100%",
-                  backgroundColor: "#d1d5db",
-                  position: "absolute",
-                  bottom: 0,
-                  left: 0,
+            <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
+              <img
+                src="/ts_login_logo.png"
+                alt="AngelBot Access Arc Logo"
+                style={{
+                  maxWidth: "100%",
+                  height: "auto",
+                  maxHeight: "120px",
+                  objectFit: "contain",
                 }}
               />
-            </Typography>
-
+            </Box>
             <Typography
               variant="body1"
               sx={{
@@ -355,7 +317,7 @@ const Signup = () => {
           sx={{
             flex: 1,
             p: 4,
-            backgroundColor: "rgba(255, 255, 255, 0.2)",
+            backgroundColor: "rgba(255, 255, 255, 0.9)",
             backdropFilter: "blur(10px)",
             WebkitBackdropFilter: "blur(10px)",
             border: "1px solid rgba(255, 255, 255, 0.3)",

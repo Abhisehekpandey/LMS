@@ -44,10 +44,12 @@ const Transition = React.forwardRef(function Transition(props, ref) {
 });
 
 const StyledAppBar = styled(AppBar)(({ theme }) => ({
-  backgroundColor:
-    theme.palette.mode === "dark" ? theme.palette.background.paper : "white",
-  color: theme.palette.text.primary,
-  boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
+  background:
+    theme.palette.mode === "dark"
+      ? theme.palette.background.paper
+      : "linear-gradient(90deg, #1976d2 0%, #1565c0 100%)",
+  color: theme.palette.mode === "dark" ? theme.palette.text.primary : "#ffffff",
+  boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
   height: "56px",
   zIndex: 1100,
   fontFamily: '"Poppins", sans-serif',
@@ -218,7 +220,6 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
     setSearchAnchorEl(null);
   };
 
-  
   const handleLogout = async () => {
     try {
       const formData = new FormData();
@@ -241,7 +242,6 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
         console.warn("⚠️ Logout API call failed:", await response.text());
       }
 
-      // Always clear session (even if API fails)
       sessionStorage.clear();
       localStorage.clear();
       navigate("/login");
@@ -253,7 +253,6 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
     }
   };
 
-
   return (
     <StyledAppBar position="static">
       <StyledToolbar>
@@ -262,40 +261,24 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
             sx={{
               ml: { xs: 8, sm: 6, md: 7, lg: 8 },
               transition: "margin 0.3s",
+              display: "flex",
+              alignItems: "center",
             }}
           >
-            <Typography
-              variant="h5"
-              sx={{
-                fontSize: "1.6rem",
-                color: "#00318e",
-                fontWeight: "bold",
-                lineHeight: 1,
+            <img
+              src="/HeaderLogo.png"
+              alt="AngelBot Access Arc Logo"
+              style={{
+                height: "44px",
+                width: "auto",
+                objectFit: "contain",
               }}
-            >
-              Angel<span style={{ color: "#ff0000" }}>Bot</span>
-            </Typography>
-            <Typography
-              variant="subtitle2"
-              sx={{
-                fontSize: "0.85rem",
-                color: "#707070",
-                fontFamily: "fangsong",
-              }}
-            >
-              Access Arc
-            </Typography>
+            />
           </Box>
         </Box>
 
         {/* Search Center */}
-        {[
-          // "/user",
-          // "/department",
-          // "/data-dictionary",
-          // "/feed-context",
-          // "/department-type-setting",
-        ].includes(location.pathname) && (
+        {[].includes(location.pathname) && (
           <SearchWrapper>
             <SearchIconWrapper>
               <SearchIcon sx={{ fontSize: "1.2rem", color: "inherit" }} />
@@ -401,34 +384,6 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
 
         {/* Actions Right */}
         <Box sx={{ display: "flex", gap: 1.5, alignItems: "center", ml: 2 }}>
-          {/* <Button
-            variant="outlined"
-            size="small"
-            onClick={() => setApmDialogOpen(true)}
-            sx={{
-              textTransform: "none",
-              fontWeight: 500,
-              borderRadius: 2,
-              height: 32,
-              fontSize: "0.8rem",
-              color: "#1976d2",
-              borderColor: "#1976d2",
-              "&:hover": {
-                backgroundColor: "rgba(25, 118, 210, 0.08)",
-                borderColor: "#115293",
-              },
-            }}
-          >
-            APM Settings
-          </Button> */}
-
-          {/* <Tooltip title="Toggle Theme" arrow>
-            <IconButton onClick={onThemeToggle} size="medium">
-              <DarkModeIcon sx={{ fontSize: "1.3rem", color: "#555" }} />
-            </IconButton>
-          </Tooltip> */}
-
-          {/* Kibana Button */}
           <Button
             variant="outlined"
             size="small"
@@ -445,11 +400,11 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
               height: 32,
               px: 2,
               fontSize: "0.85rem",
-              color: "#1976d2",
-              borderColor: "#1976d2",
+              color: "#ffffff",
+              borderColor: "#ffffff",
               "&:hover": {
-                backgroundColor: "rgba(25, 118, 210, 0.08)",
-                borderColor: "#115293",
+                backgroundColor: "rgba(255, 255, 255, 0.15)",
+                borderColor: "#ffffff",
               },
             }}
           >
@@ -458,7 +413,7 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
 
           <Tooltip title="Logout" arrow>
             <IconButton onClick={handleLogout} size="medium">
-              <ExitToAppIcon sx={{ fontSize: "1.3rem", color: "#d32f2f" }} />
+              <ExitToAppIcon sx={{ fontSize: "1.3rem", color: "#ffffff" }} />
             </IconButton>
           </Tooltip>
         </Box>
