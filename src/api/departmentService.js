@@ -50,11 +50,16 @@ export const getDepartments = async (page = 0, pageSize = 10, search = "") => {
 
 export const createRole = async (payload) => {
   try {
-    const { department, role, isAdmin } = payload;
+    console.log("=== createRole received payload ===", payload);
+    console.log("payload.appRole:", payload.appRole);
+    const { department, role, isAdmin, appRole } = payload;
 
-    const rolesArray = [{ roleName: role, isAdmin }];
+    console.log("Destructured appRole:", appRole);
 
-    console.log(">>roesArray", rolesArray);
+    const rolesArray = [{ roleName: role, isAdmin, appRole }];
+
+    console.log("=== rolesArray being sent to API ===", rolesArray);
+    console.log("JSON.stringify(rolesArray):", JSON.stringify(rolesArray));
 
     const response = await axios.post(
       `${window.__ENV__.REACT_APP_ROUTE}/tenants/departments/${department}/roles`,

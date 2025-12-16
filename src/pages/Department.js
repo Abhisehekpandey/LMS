@@ -792,6 +792,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     const [open, setOpen] = useState(false);
     const [showAddRoleDialog, setShowAddRoleDialog] = useState(false);
     const [newRole, setNewRole] = useState("");
+    const [appRole, setAppRole] = useState("");
     const anchorRef = useRef(null);
 
     return (
@@ -860,6 +861,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           onClose={() => {
             setShowAddRoleDialog(false);
             setNewRole("");
+            setAppRole("");
           }}
           PaperProps={{
             sx: {
@@ -907,6 +909,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               onClick={() => {
                 setShowAddRoleDialog(false);
                 setNewRole("");
+                setAppRole("");
               }}
               sx={{
                 color: "#ffff",
@@ -929,11 +932,27 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                   autoFocus
                   fullWidth
                   size="small"
-                  label="New Role"
+                  label="Role Name"
                   value={newRole}
                   onChange={(e) => setNewRole(e.target.value)}
                   sx={{ mb: 2 }}
                 />
+                <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+                  <InputLabel id="role-select-label">App Role</InputLabel>
+                  <Select
+                    labelId="role-select-label"
+                    value={appRole}
+                    label="App Role"
+                    onChange={(e) => setAppRole(e.target.value)}
+                  >
+                    <MenuItem value="ADMIN">ADMIN</MenuItem>
+                    <MenuItem value="VIEWER">VIEWER</MenuItem>
+                    <MenuItem value="EDITOR">EDITOR</MenuItem>
+                    <MenuItem value="COMMENTOR">COMMENTOR</MenuItem>
+                    <MenuItem value="CONTRIBUTOR">CONTRIBUTOR</MenuItem>
+                    <MenuItem value="NO_ROLE">NO_ROLE</MenuItem>
+                  </Select>
+                </FormControl>
               </CardContent>
             </Card>
           </Box>
@@ -951,12 +970,13 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               onClick={() => {
                 setShowAddRoleDialog(false);
                 setNewRole("");
+                setAppRole("");
               }}
             >
               Cancel
             </Button>
             <Button
-              onClick={() => handleAddRole(newRole, selectedDepartment)}
+              onClick={() => handleAddRole(newRole, appRole, selectedDepartment)}
               variant="contained"
               color="primary"
               sx={{ background: "rgb(251, 68, 36)" }}
@@ -1918,8 +1938,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               "Storage Allocated": dept.allowedStorage || "N/A",
               "Storage Consumed": dept.storage || "N/A",
               Role: "",
-              "Users":
-                userCount > 0 ? `${userCount} (${userNames})` : "0",
+              Users: userCount > 0 ? `${userCount} (${userNames})` : "0",
             },
           ];
         }
@@ -1931,7 +1950,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           "Storage Allocated": dept.allowedStorage || "N/A",
           "Storage Consumed": dept.storage || "N/A",
           Role: role.roleName,
-          "Users": userCount > 0 ? `${userCount} (${userNames})` : "0",
+          Users: userCount > 0 ? `${userCount} (${userNames})` : "0",
         }));
       });
 
@@ -2430,10 +2449,12 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                         <DeptRolesDropdown
                           roles={dept.roles || []}
                           selectedDepartment={dept}
-                          handleAddRole={async (newRole, department) => {
+                          handleAddRole={async (newRole, appRole, department) => {
                             console.log(
                               "Adding role:",
                               newRole,
+                              "App Role:",
+                              appRole,
                               "to department:",
                               department.id
                             );
@@ -2442,7 +2463,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                             try {
                               const response = await axios.post(
                                 `${window.__ENV__.REACT_APP_ROUTE}/tenants/departments/${department.name}/roles`,
-                                [{ roleName: newRole }],
+                                [{ roleName: newRole, appRole: appRole }],
                                 {
                                   headers: {
                                     "Content-Type": "application/json",

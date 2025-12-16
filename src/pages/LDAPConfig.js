@@ -916,27 +916,25 @@ const LDAPConfig = () => {
                     <Button
                       variant="contained"
                       onClick={async () => {
-                        if (groupListBox.length === 0) {
-                          setStatus({
-                            type: "warning",
-                            message: "Please select at least one group to add.",
-                          });
-                          return;
-                        }
-
-                        const selectedGroupsObjects = groupListBox
-                          .map((name) => {
-                            const groupObj = availableGroups.find(
-                              (g) => g.name === name
-                            );
-                            return groupObj
-                              ? {
-                                  name: groupObj.name,
-                                  groupDn: groupObj.groupDn,
-                                }
-                              : null;
-                          })
-                          .filter(Boolean);
+                        // If groups are selected, send those with query; otherwise send array with null values
+                        const selectedGroupsObjects = groupListBox.length > 0
+                          ? groupListBox.map((name) => {
+                              const groupObj = availableGroups.find(
+                                (g) => g.name === name
+                              );
+                              return groupObj
+                                ? {
+                                    name: groupObj.name || "",
+                                    groupDn: groupObj.groupDn,
+                                    query: selectedObjectClass || "",
+                                  }
+                                : null;
+                            }).filter(Boolean)
+                          : [{
+                              name: null,
+                              groupDn: null,
+                              query: selectedObjectClass || "",
+                            }];
 
                         console.log(
                           "Selected Groups Array:",
@@ -959,6 +957,8 @@ const LDAPConfig = () => {
                             });
                             return;
                           }
+
+                          console.log("Request Payload:", selectedGroupsObjects);
 
                           const response = await axios.post(
                             `${window.__ENV__.REACT_APP_ROUTE}/api/ldap/addUsersToMongoDB/GroupDn/${ldapId}`,

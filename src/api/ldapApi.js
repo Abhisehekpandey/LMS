@@ -132,8 +132,6 @@ export const fetchGroupsByObjectClass = async (configId, userDn) => {
   return response.data;
 };
 
-
-
 // export const verifyAndCountUsers = async ({ ldapId, groupDn }) => {
 //   const response = await axios.post(
 //     `${window.__ENV__.REACT_APP_ROUTE}/api/ldap/users-from-group`,
@@ -145,7 +143,6 @@ export const fetchGroupsByObjectClass = async (configId, userDn) => {
 //   console.log("responseFinal",response)
 //   return response.data;
 // };
-
 
 export const verifyAndCountUsers = async ({ ldapId, groupDn }) => {
   const response = await axios.post(
@@ -162,5 +159,3 @@ export const verifyAndCountUsers = async ({ ldapId, groupDn }) => {
   console.log("responseFinal", response);
   return response.data;
 };
-
-
