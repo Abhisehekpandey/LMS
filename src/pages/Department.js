@@ -793,7 +793,23 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     const [showAddRoleDialog, setShowAddRoleDialog] = useState(false);
     const [newRole, setNewRole] = useState("");
     const [appRole, setAppRole] = useState("");
+    const [isEditMode, setIsEditMode] = useState(false);
     const anchorRef = useRef(null);
+
+    const handleEditClick = (role) => {
+      setNewRole(role.roleName);
+      setAppRole(role.appRole || ""); // Assuming appRole is available in role object
+      setIsEditMode(true);
+      setShowAddRoleDialog(true);
+      setOpen(false); // Close the dropdown when opening dialog
+    };
+
+    const handleAddClick = () => {
+      setNewRole("");
+      setAppRole("");
+      setIsEditMode(false);
+      setShowAddRoleDialog(true);
+    };
 
     return (
       <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
@@ -803,7 +819,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
         <Tooltip title="Add Role">
           <IconButton
-            onClick={() => setShowAddRoleDialog(true)}
+            onClick={handleAddClick}
             sx={{
               border: "1px solid",
               borderColor: "primary.main",
@@ -833,18 +849,28 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 <TableHead>
                   <TableRow>
                     <TableCell>Role Name</TableCell>
+                    <TableCell>Action</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {roles.length === 0 ? (
                     <TableRow>
-                      <TableCell align="center">No Roles</TableCell>
+                      <TableCell align="center" colSpan={2}>
+                        No Roles
+                      </TableCell>
                     </TableRow>
                   ) : (
                     roles.map((role) => (
                       <TableRow key={role.id}>
+                        <TableCell>{role.roleName}</TableCell>
                         <TableCell>
-                          {role.roleDisplayName || role.roleName}
+                          <IconButton
+                            size="small"
+                            onClick={() => handleEditClick(role)}
+                            sx={{ color: "primary.main" }}
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
                         </TableCell>
                       </TableRow>
                     ))
@@ -862,6 +888,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             setShowAddRoleDialog(false);
             setNewRole("");
             setAppRole("");
+            setIsEditMode(false);
           }}
           PaperProps={{
             sx: {
@@ -902,7 +929,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             }}
           >
             <Typography variant="h6" sx={{ color: "#ffff" }}>
-              Add Role to {selectedDepartment?.name}
+              {isEditMode ? "Edit Role" : "Add Role"} to{" "}
+              {selectedDepartment?.name}
             </Typography>
             <IconButton
               size="small"
@@ -910,6 +938,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 setShowAddRoleDialog(false);
                 setNewRole("");
                 setAppRole("");
+                setIsEditMode(false);
               }}
               sx={{
                 color: "#ffff",
@@ -971,17 +1000,20 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 setShowAddRoleDialog(false);
                 setNewRole("");
                 setAppRole("");
+                setIsEditMode(false);
               }}
             >
               Cancel
             </Button>
             <Button
-              onClick={() => handleAddRole(newRole, appRole, selectedDepartment)}
+              onClick={() =>
+                handleAddRole(newRole, appRole, selectedDepartment)
+              }
               variant="contained"
               color="primary"
               sx={{ background: "rgb(251, 68, 36)" }}
             >
-              Add
+              {isEditMode ? "Update" : "Add"}
             </Button>
           </Box>
         </Drawer>
@@ -2200,6 +2232,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               fontWeight: "bold",
               color: "#444",
               backgroundColor: "#f8fafc",
+              whiteSpace: "nowrap", // ✅ prevent header text wrapping
             },
           }}
         >
@@ -2449,7 +2482,11 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                         <DeptRolesDropdown
                           roles={dept.roles || []}
                           selectedDepartment={dept}
-                          handleAddRole={async (newRole, appRole, department) => {
+                          handleAddRole={async (
+                            newRole,
+                            appRole,
+                            department
+                          ) => {
                             console.log(
                               "Adding role:",
                               newRole,
