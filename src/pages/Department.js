@@ -10,6 +10,7 @@ import InputAdornment from "@mui/material/InputAdornment";
 import { Menu } from "@mui/material";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import AddIcon from "@mui/icons-material/Add";
+import PersonRemoveIcon from "@mui/icons-material/PersonRemove";
 
 import {
   Box,
@@ -199,7 +200,6 @@ const CustomSpinner = styled(CircularProgress)(({ theme }) => ({
 }));
 
 const allColumns = [
-  { id: "id", label: "Department Id" },
   { id: "name", label: "Department" },
   { id: "displayName", label: "Display Name" },
   { id: "owner", label: "Owner" },
@@ -571,88 +571,223 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         >
           <ClickAwayListener onClickAway={handleClose}>
             <Paper
-              style={{
-                maxHeight: 300,
-                overflowY: "auto",
-                minWidth: 250,
-                padding: 8,
+              elevation={3}
+              sx={{
+                maxHeight: 400,
+                display: "flex",
+                flexDirection: "column",
+                width: 450,
+                borderRadius: 2,
+                overflow: "hidden",
+                border: "1px solid #e0e0e0",
+                animation: "fadeIn 0.2s ease-in-out",
+                "@keyframes fadeIn": {
+                  "0%": { opacity: 0, transform: "scale(0.95)" },
+                  "100%": { opacity: 1, transform: "scale(1)" },
+                },
               }}
             >
-              <TextField
-                size="small"
-                placeholder="Search users"
-                fullWidth
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                sx={{ mb: 1 }}
-              />
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Name</TableCell>
-                    <TableCell>Action</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {filteredUsers.length === 0 ? (
+              {/* Header */}
+              <Box
+                sx={{
+                  p: 1.5,
+                  borderBottom: "1px solid #eee",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  background: "linear-gradient(to right, #1976d2, #4facfe)",
+                  color: "white",
+                }}
+              >
+                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                  Department Users
+                </Typography>
+                <IconButton
+                  size="small"
+                  onClick={handleClose}
+                  sx={{
+                    color: "white",
+                    "&:hover": { backgroundColor: "rgba(255,255,255,0.2)" },
+                  }}
+                >
+                  <Close fontSize="small" />
+                </IconButton>
+              </Box>
+
+              {/* Search Bar */}
+              <Box sx={{ p: 1.5, pb: 0 }}>
+                <TextField
+                  size="small"
+                  placeholder="Search users..."
+                  fullWidth
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: 2,
+                      "&.Mui-focused fieldset": {
+                        borderWidth: "1px",
+                      },
+                    },
+                  }}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon color="action" fontSize="small" />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Box>
+
+              {/* Table */}
+              <TableContainer sx={{ flexGrow: 1, overflowY: "auto", p: 0 }}>
+                <Table stickyHeader size="small">
+                  <TableHead>
                     <TableRow>
-                      <TableCell colSpan={2} align="center">
-                        No Users
+                      <TableCell
+                        sx={{
+                          fontWeight: "bold",
+                          backgroundColor: "#f8fafc",
+                          color: "#475569",
+                        }}
+                      >
+                        Name
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          fontWeight: "bold",
+                          backgroundColor: "#f8fafc",
+                          color: "#475569",
+                        }}
+                      >
+                        Role
+                      </TableCell>
+                      <TableCell
+                        align="center"
+                        sx={{
+                          fontWeight: "bold",
+                          backgroundColor: "#f8fafc",
+                          color: "#475569",
+                        }}
+                      >
+                        Action
                       </TableCell>
                     </TableRow>
-                  ) : (
-                    filteredUsers.slice(0, 5).map((user) => (
-                      <TableRow key={user.id}>
-                        <TableCell>{user.name}</TableCell>
-                        <TableCell>
-                          <IconButton
-                            size="small"
-                            onClick={async () => {
-                              try {
-                                const response = await axios.delete(
-                                  `${window.__ENV__.REACT_APP_ROUTE}/tenants/department/deleteExistingUser/${departmentId}/${user.id}`,
-                                  {
-                                    headers: {
-                                      Authorization: `Bearer ${sessionStorage.getItem(
-                                        "authToken"
-                                      )}`,
-                                      username:
-                                        sessionStorage.getItem("adminEmail"),
-                                    },
-                                  }
-                                );
-
-                                if (response.status === 200) {
-                                  setSnackbar({
-                                    open: true,
-                                    message: `User "${user.name}" removed from department successfully`,
-                                    severity: "success",
-                                  });
-
-                                  if (fetchDepartments)
-                                    await fetchDepartments();
-                                }
-                              } catch (error) {
-                                console.error("Failed to delete user:", error);
-                                setSnackbar({
-                                  open: true,
-                                  message: `Failed to remove user "${user.name}"`,
-                                  severity: "error",
-                                });
-                              }
-                            }}
+                  </TableHead>
+                  <TableBody>
+                    {filteredUsers.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={3} align="center" sx={{ py: 3 }}>
+                          <Typography
+                            variant="body2"
+                            color="textSecondary"
+                            fontStyle="italic"
                           >
-                            <DeleteIcon
-                              fontSize="small"
-                              sx={{ color: "error.main" }}
-                            />
-                          </IconButton>
+                            No Users Found
+                          </Typography>
                         </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+                    ) : (
+                      filteredUsers.map((user) => (
+                        <TableRow
+                          key={user.id + user.roleName}
+                          sx={{
+                            "&:hover": { backgroundColor: "#f1f5f9" },
+                            transition: "background-color 0.2s",
+                          }}
+                        >
+                          <TableCell
+                            sx={{
+                              padding: "10px 16px",
+                              color: "#334155",
+                              fontWeight: 500,
+                            }}
+                          >
+                            {user.name}
+                          </TableCell>
+                          <TableCell
+                            sx={{
+                              padding: "10px 16px",
+                              color: "#64748b",
+                            }}
+                          >
+                            <Chip
+                              label={user.roleName || "N/A"}
+                              size="small"
+                              variant="outlined"
+                              sx={{
+                                height: 20,
+                                fontSize: "0.7rem",
+                                borderRadius: 1,
+                                borderColor: "#cbd5e1",
+                                color: "#475569",
+                              }}
+                            />
+                          </TableCell>
+                          <TableCell
+                            sx={{ padding: "4px 16px" }}
+                            align="center"
+                          >
+                            <Tooltip title="Unassign User">
+                              <IconButton
+                                size="small"
+                                onClick={async () => {
+                                  try {
+                                    const response = await axios.delete(
+                                      `${window.__ENV__.REACT_APP_ROUTE}/tenants/department/deleteExistingUser/${departmentId}/${user.id}/${user.roleId}`,
+                                      {
+                                        headers: {
+                                          Authorization: `Bearer ${sessionStorage.getItem(
+                                            "authToken"
+                                          )}`,
+                                          username:
+                                            sessionStorage.getItem(
+                                              "adminEmail"
+                                            ),
+                                        },
+                                      }
+                                    );
+
+                                    if (response.status === 200) {
+                                      setSnackbar({
+                                        open: true,
+                                        message: `User "${user.name}" unassigned from department successfully`,
+                                        severity: "success",
+                                      });
+
+                                      if (fetchDepartments)
+                                        await fetchDepartments();
+                                    }
+                                  } catch (error) {
+                                    console.error(
+                                      "Failed to unassign user:",
+                                      error
+                                    );
+                                    setSnackbar({
+                                      open: true,
+                                      message: `Failed to unassign user "${user.name}"`,
+                                      severity: "error",
+                                    });
+                                  }
+                                }}
+                                sx={{
+                                  color: "#ef4444",
+                                  "&:hover": {
+                                    backgroundColor: "#fee2e2",
+                                  },
+                                }}
+                              >
+                                <PersonRemoveIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
             </Paper>
           </ClickAwayListener>
         </Popper>
@@ -844,39 +979,144 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           style={{ zIndex: 1300 }}
         >
           <ClickAwayListener onClickAway={() => setOpen(false)}>
-            <Paper style={{ maxHeight: 300, overflowY: "auto", minWidth: 200 }}>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Role Name</TableCell>
-                    <TableCell>Action</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {roles.length === 0 ? (
+            <Paper
+              elevation={3}
+              sx={{
+                maxHeight: 400,
+                display: "flex",
+                flexDirection: "column",
+                width: 450,
+                borderRadius: 2,
+                overflow: "hidden",
+                border: "1px solid #e0e0e0",
+                animation: "fadeIn 0.2s ease-in-out",
+                "@keyframes fadeIn": {
+                  "0%": { opacity: 0, transform: "scale(0.95)" },
+                  "100%": { opacity: 1, transform: "scale(1)" },
+                },
+              }}
+            >
+              {/* Header */}
+              <Box
+                sx={{
+                  p: 1.5,
+                  borderBottom: "1px solid #eee",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  background: "linear-gradient(to right, #1976d2, #4facfe)",
+                  color: "white",
+                }}
+              >
+                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                  Department Roles
+                </Typography>
+                <IconButton
+                  size="small"
+                  onClick={() => setOpen(false)}
+                  sx={{
+                    color: "white",
+                    "&:hover": { backgroundColor: "rgba(255,255,255,0.2)" },
+                  }}
+                >
+                  <CloseIcon fontSize="small" />
+                </IconButton>
+              </Box>
+
+              {/* Table */}
+              <TableContainer sx={{ flexGrow: 1, overflowY: "auto", p: 0 }}>
+                <Table stickyHeader size="small">
+                  <TableHead>
                     <TableRow>
-                      <TableCell align="center" colSpan={2}>
-                        No Roles
+                      <TableCell
+                        sx={{
+                          fontWeight: "bold",
+                          backgroundColor: "#f8fafc",
+                          color: "#475569",
+                        }}
+                      >
+                        Role Name
+                      </TableCell>
+                      <TableCell
+                        align="center"
+                        sx={{
+                          fontWeight: "bold",
+                          backgroundColor: "#f8fafc",
+                          color: "#475569",
+                        }}
+                      >
+                        Action
                       </TableCell>
                     </TableRow>
-                  ) : (
-                    roles.map((role) => (
-                      <TableRow key={role.id}>
-                        <TableCell>{role.roleName}</TableCell>
-                        <TableCell>
-                          <IconButton
-                            size="small"
-                            onClick={() => handleEditClick(role)}
-                            sx={{ color: "primary.main" }}
+                  </TableHead>
+                  <TableBody>
+                    {roles.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={2} align="center" sx={{ py: 3 }}>
+                          <Typography
+                            variant="body2"
+                            color="textSecondary"
+                            fontStyle="italic"
                           >
-                            <EditIcon fontSize="small" />
-                          </IconButton>
+                            No Roles Found
+                          </Typography>
                         </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+                    ) : (
+                      roles.map((role) => (
+                        <TableRow
+                          key={role.id}
+                          sx={{
+                            "&:hover": { backgroundColor: "#f1f5f9" },
+                            transition: "background-color 0.2s",
+                          }}
+                        >
+                          <TableCell
+                            sx={{
+                              padding: "10px 16px",
+                              color: "#334155",
+                              fontWeight: 500,
+                            }}
+                          >
+                            <Chip
+                              label={role.roleName}
+                              size="small"
+                              variant="outlined"
+                              sx={{
+                                height: 24,
+                                fontSize: "0.75rem",
+                                borderRadius: 1,
+                                borderColor: "#cbd5e1",
+                                color: "#475569",
+                                fontWeight: 500,
+                              }}
+                            />
+                          </TableCell>
+                          <TableCell
+                            sx={{ padding: "4px 16px" }}
+                            align="center"
+                          >
+                            <Tooltip title="Edit Role">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleEditClick(role)}
+                                sx={{
+                                  color: "#1976d2",
+                                  "&:hover": {
+                                    backgroundColor: "#e3f2fd",
+                                  },
+                                }}
+                              >
+                                <EditIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
             </Paper>
           </ClickAwayListener>
         </Popper>
@@ -2139,7 +2379,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 <MenuItem value="name">Department</MenuItem>
                 <MenuItem value="departmentModerator">Owner</MenuItem>
                 <MenuItem value="displayName">Short Name</MenuItem>
-                <MenuItem value="id">Department Id</MenuItem>
               </Select>
             </FormControl>
 
@@ -2258,18 +2497,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 />
               </TableCell>
 
-              {visibleColumns.id && (
-                <TableCell sx={{ width: "120px" }}>
-                  <TableSortLabel
-                    active={orderBy === "id"}
-                    direction={orderBy === "id" ? order : "asc"}
-                    onClick={() => handleRequestSort("id")}
-                  >
-                    Department Id
-                  </TableSortLabel>
-                </TableCell>
-              )}
-
               {visibleColumns.name && (
                 <TableCell sx={{ width: "120px" }}>
                   <TableSortLabel
@@ -2370,8 +2597,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                       />
                     </TableCell>
 
-                    {visibleColumns.id && <TableCell>{dept.id}</TableCell>}
-
                     {visibleColumns.name && <TableCell>{dept.name}</TableCell>}
 
                     {visibleColumns.displayName && (
@@ -2413,7 +2638,13 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     {visibleColumns.users && (
                       <TableCell align="center">
                         <DeptUsersDropdown
-                          users={dept.roles.flatMap((role) => role.user)}
+                          users={dept.roles.flatMap((role) =>
+                            (role.user || []).map((u) => ({
+                              ...u,
+                              roleName: role.roleName,
+                              roleId: role.id,
+                            }))
+                          )}
                           departmentId={dept.id}
                           departmentRoles={dept.roles.map((role) => ({
                             id: role.id,
