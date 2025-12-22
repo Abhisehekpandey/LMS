@@ -185,7 +185,6 @@ const Transition = React.forwardRef(function Transition(props, ref) {
 });
 
 const allColumns = [
-  { id: "id", label: "User ID" },
   { id: "name", label: "Name" },
   { id: "department", label: "Department" },
   { id: "role", label: "Role" },
@@ -356,8 +355,6 @@ export default function UserTable() {
 
   const extractValue = (row, orderBy) => {
     switch (orderBy) {
-      case "id":
-        return row.id || "";
       case "name":
       case "email":
         return row[orderBy]?.toLowerCase() || "";
@@ -589,7 +586,6 @@ export default function UserTable() {
     };
 
     const extractRowData = (row) => ({
-      "User ID": row.id || "N/A", // ✅ New column
       Name: row.name || "N/A",
       Department: row.roles?.[0]?.department?.deptName || "N/A",
       Role: row.roles?.[0]?.roleName || "N/A",
@@ -877,10 +873,6 @@ export default function UserTable() {
       if (status !== statusFilter) return false;
     }
 
-    if (searchColumn === "id") {
-      return row.id?.toString().toLowerCase().includes(query);
-    }
-
     if (searchColumn === "name") {
       return row.name?.toLowerCase().includes(query);
     }
@@ -978,7 +970,6 @@ export default function UserTable() {
                 <MenuItem value="name">Name</MenuItem>
                 <MenuItem value="email">Email</MenuItem>
                 <MenuItem value="department">Department</MenuItem>
-                {/* <MenuItem value="id">User ID</MenuItem> */}
                 <MenuItem value="role">Role</MenuItem> {/* ✅ Added */}
               </Select>
             </FormControl>
@@ -1131,21 +1122,6 @@ export default function UserTable() {
                   />
                 </TableCell>
 
-                {visibleColumns.id && (
-                  <TableCell
-                    align="left"
-                    sortDirection={orderBy === "id" ? order : false}
-                  >
-                    <TableSortLabel
-                      active={orderBy === "id"}
-                      direction={orderBy === "id" ? order : "asc"}
-                      onClick={() => handleRequestSort("id")}
-                    >
-                      User ID
-                    </TableSortLabel>
-                  </TableCell>
-                )}
-
                 {visibleColumns.name && (
                   <TableCell
                     align="left"
@@ -1270,10 +1246,6 @@ export default function UserTable() {
                       />
                     </TableCell>
 
-                    {visibleColumns.id && (
-                      <TableCell align="left">{row.id}</TableCell>
-                    )}
-
                     {visibleColumns.name && (
                       <TableCell align="left">
                         {row.name}
@@ -1284,14 +1256,77 @@ export default function UserTable() {
                     {visibleColumns.department && (
                       <TableCell align="left">
                         {(() => {
-                          const selectedRoleId = userRoleMap[row.id];
-                          const selectedRole = row.roles?.find(
-                            (role) => role.id === selectedRoleId
-                          );
-                          const deptName =
-                            selectedRole?.department?.deptName ||
-                            row.roles?.[0]?.department?.deptName;
-                          return deptName || "N/A";
+                          const allDepts = [
+                            ...new Set(
+                              row.roles
+                                ?.map((r) => r.department?.deptName)
+                                .filter(Boolean)
+                            ),
+                          ];
+
+                          if (allDepts.length > 1) {
+                            return (
+                              <FormControl size="small" fullWidth>
+                                <Select
+                                  value={allDepts[0]}
+                                  sx={{
+                                    height: 32,
+                                    fontSize: "0.875rem",
+                                    "& .MuiOutlinedInput-notchedOutline": {
+                                      border: "1px solid #e0e0e0",
+                                      borderRadius: "6px",
+                                    },
+                                    "&:hover .MuiOutlinedInput-notchedOutline":
+                                      {
+                                        border: "1px solid #1976d2",
+                                      },
+                                    "&.Mui-focused .MuiOutlinedInput-notchedOutline":
+                                      {
+                                        border: "2px solid #1976d2",
+                                      },
+                                    "& .MuiSelect-select": {
+                                      paddingLeft: "8px",
+                                      paddingRight: "32px",
+                                    },
+                                    "& .MuiSelect-icon": {
+                                      color: "#1976d2",
+                                    },
+                                  }}
+                                  MenuProps={{
+                                    PaperProps: {
+                                      sx: {
+                                        maxHeight: 300,
+                                        borderRadius: "8px",
+                                        boxShadow:
+                                          "0 4px 20px rgba(0,0,0,0.15)",
+                                        "& .MuiMenuItem-root": {
+                                          fontSize: "0.875rem",
+                                          padding: "10px 16px",
+                                          "&:hover": {
+                                            backgroundColor: "#e3f2fd",
+                                          },
+                                          "&.Mui-selected": {
+                                            backgroundColor: "#bbdefb",
+                                            "&:hover": {
+                                              backgroundColor: "#90caf9",
+                                            },
+                                          },
+                                        },
+                                      },
+                                    },
+                                  }}
+                                >
+                                  {allDepts.map((dept) => (
+                                    <MenuItem key={dept} value={dept}>
+                                      {dept}
+                                    </MenuItem>
+                                  ))}
+                                </Select>
+                              </FormControl>
+                            );
+                          }
+
+                          return allDepts[0] || "N/A";
                         })()}
                       </TableCell>
                     )}
@@ -1299,26 +1334,93 @@ export default function UserTable() {
                     {visibleColumns.role && (
                       <TableCell align="left">
                         {(() => {
-                          const selectedRoleId = userRoleMap[row.id];
-                          const selectedRole = row.roles?.find(
-                            (role) => role.id === selectedRoleId
-                          );
-                          const deptId = selectedRole?.department?.id;
+                          const allRoles = row.roles
+                            ?.map((r) => ({
+                              name: r.roleName,
+                              dept: r.department?.deptName,
+                            }))
+                            .filter((r) => r.name);
 
-                          if (!deptId) return row.roles?.[0]?.roleName || "N/A";
-
-                          const rolesInSameDept = row.roles.filter(
-                            (role) => role.department?.id === deptId
-                          );
-                          const uniqueRoleNames = [
-                            ...new Set(
-                              rolesInSameDept.map((role) => role.roleName)
-                            ),
+                          // Unique roles representation string
+                          const uniqueRoles = [
+                            ...new Map(
+                              allRoles.map((item) => [
+                                item.name + item.dept,
+                                item,
+                              ])
+                            ).values(),
                           ];
 
-                          return uniqueRoleNames.length > 0
-                            ? uniqueRoleNames.join(", ")
-                            : "N/A";
+                          if (uniqueRoles.length > 1) {
+                            return (
+                              <FormControl size="small" fullWidth>
+                                <Select
+                                  value={uniqueRoles[0].name}
+                                  sx={{
+                                    height: 32,
+                                    fontSize: "0.875rem",
+                                    "& .MuiOutlinedInput-notchedOutline": {
+                                      border: "1px solid #e0e0e0",
+                                      borderRadius: "6px",
+                                    },
+                                    "&:hover .MuiOutlinedInput-notchedOutline":
+                                      {
+                                        border: "1px solid #1976d2",
+                                      },
+                                    "&.Mui-focused .MuiOutlinedInput-notchedOutline":
+                                      {
+                                        border: "2px solid #1976d2",
+                                      },
+                                    "& .MuiSelect-select": {
+                                      paddingLeft: "8px",
+                                      paddingRight: "32px",
+                                    },
+                                    "& .MuiSelect-icon": {
+                                      color: "#1976d2",
+                                    },
+                                  }}
+                                  MenuProps={{
+                                    PaperProps: {
+                                      sx: {
+                                        maxHeight: 300,
+                                        borderRadius: "8px",
+                                        boxShadow:
+                                          "0 4px 20px rgba(0,0,0,0.15)",
+                                        "& .MuiMenuItem-root": {
+                                          fontSize: "0.875rem",
+                                          padding: "10px 16px",
+                                          "&:hover": {
+                                            backgroundColor: "#e3f2fd",
+                                          },
+                                          "&.Mui-selected": {
+                                            backgroundColor: "#bbdefb",
+                                            "&:hover": {
+                                              backgroundColor: "#90caf9",
+                                            },
+                                          },
+                                        },
+                                      },
+                                    },
+                                  }}
+                                >
+                                  {uniqueRoles.map((roleObj, idx) => (
+                                    <MenuItem key={idx} value={roleObj.name}>
+                                      {roleObj.name}
+                                      <Typography
+                                        variant="caption"
+                                        color="textSecondary"
+                                        sx={{ ml: 1 }}
+                                      >
+                                        ({roleObj.dept})
+                                      </Typography>
+                                    </MenuItem>
+                                  ))}
+                                </Select>
+                              </FormControl>
+                            );
+                          }
+
+                          return uniqueRoles[0] ? uniqueRoles[0].name : "N/A";
                         })()}
                       </TableCell>
                     )}
