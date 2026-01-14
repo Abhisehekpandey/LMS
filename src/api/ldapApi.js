@@ -104,6 +104,10 @@ export const saveLdapConfig = async (config) => {
 
 
 export const fetchGroupsByObjectClass = async (configId, userDn) => {
+  // console.log("configId", configId);
+  // console.log("userDn", userDn);
+  // console.log("token", sessionStorage.getItem("authToken"));
+
   const response = await axios.get(
     `${window.__ENV__.REACT_APP_ROUTE}/api/ldap/getAllgroups`,
     {
