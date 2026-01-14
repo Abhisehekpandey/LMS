@@ -101,20 +101,7 @@ export const saveLdapConfig = async (config) => {
   return response.data;
 };
 
-// export const fetchGroupsByObjectClass = async (configId) => {
-//   const response = await axios.get(
-//     `${window.__ENV__.REACT_APP_ROUTE}/api/ldap/getAllgroups`,
-//     {
-//       headers: {
-//         "Content-Type": "application/json",
-//         username: `${sessionStorage.getItem("adminEmail")}`,
-//         ldapId: configId, // ✅ send as custom header
-//       },
-//     }
-//   );
-//   console.log("response",response)
-//   return response.data;
-// };
+
 
 export const fetchGroupsByObjectClass = async (configId, userDn) => {
   const response = await axios.get(
@@ -123,6 +110,7 @@ export const fetchGroupsByObjectClass = async (configId, userDn) => {
       headers: {
         "Content-Type": "application/json",
         username: sessionStorage.getItem("adminEmail"),
+        Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
         ldapId: configId, // ✅ existing
         objectClass: userDn, // ✅ new header
       },
@@ -132,17 +120,10 @@ export const fetchGroupsByObjectClass = async (configId, userDn) => {
   return response.data;
 };
 
-// export const verifyAndCountUsers = async ({ ldapId, groupDn }) => {
-//   const response = await axios.post(
-//     `${window.__ENV__.REACT_APP_ROUTE}/api/ldap/users-from-group`,
-//     {
-//       ldapId,
-//       groupDn,
-//     }
-//   );
-//   console.log("responseFinal",response)
-//   return response.data;
-// };
+
+
+
+
 
 export const verifyAndCountUsers = async ({ ldapId, groupDn }) => {
   const response = await axios.post(
@@ -159,3 +140,5 @@ export const verifyAndCountUsers = async ({ ldapId, groupDn }) => {
   console.log("responseFinal", response);
   return response.data;
 };
+
+
