@@ -156,6 +156,20 @@ const LDAPConfig = () => {
     publicKey: "oL2IlUt62rbTK2_vD",
   };
 
+  // SMS Gateway Configuration (Twilio)
+  // Get these from: https://www.twilio.com/console
+  const smsBridgeConfig = {
+    accountSid: "AC825b3d5e701c7d533ccc76e9ecb8cce4",
+    authToken: "a6344e41cec0bf43a36c8b373cc53544",
+    fromPhone: "+12513603111",
+  };
+
+  // WhatsApp Gateway Configuration (Ultramsg)
+  const ultramsgConfig = {
+    instanceId: "instance159079", // e.g., instance12345
+    token: "xpe83f5vav2ksban", // e.g., xyz123
+  };
+
   const current = serverState[activeSection];
   const selectedServer = current.selectedServer;
   const servers = current.servers;
@@ -251,9 +265,9 @@ const LDAPConfig = () => {
       case "EMAIL CONFIGURATION":
         return ["Send Test Email"];
       case "SMS CONFIGURATION":
-        return ["Gateway Settings", "Send Test SMS"];
+        return ["Send Test SMS"];
       case "WHATSAPP CONFIGURATION":
-        return ["API Settings", "Send Test Message"];
+        return ["Send Test WhatsApp"];
       case "LDAP CONFIGURATION":
       default:
         return ["Server", "Users", "Groups"];
@@ -1377,179 +1391,197 @@ const LDAPConfig = () => {
 
       "SMS CONFIGURATION": [
         <Box>
-          <TextField
-            fullWidth
-            label="Gateway URL"
-            name="gatewayUrl"
-            value={config.gatewayUrl}
-            onChange={handleChange}
-          />
-
-          <Box sx={{ mt: 2 }}>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={useSmsSsl}
-                  onChange={(e) => setUseSmsSsl(e.target.checked)}
-                />
-              }
-              label="Use SSL Certificate"
-            />
-          </Box>
-
-          {useSmsSsl && (
-            <Box sx={{ mt: 2 }}>
-              <Button variant="outlined" component="label" fullWidth>
-                Upload SSL Certificate
-                <input
-                  type="file"
-                  hidden
-                  accept=".crt,.pem,.cer,.der"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      setSmsSslCertificate(file);
-                      setStatus({
-                        type: "success",
-                        message: `SSL Certificate "${file.name}" selected for Gateway.`,
-                      });
-                    }
-                  }}
-                />
-              </Button>
-              {smsSslCertificate && (
-                <Typography variant="caption" sx={{ mt: 1, display: "block" }}>
-                  Selected: {smsSslCertificate.name}
-                </Typography>
-              )}
-            </Box>
-          )}
+          <Typography variant="h6" gutterBottom color="primary">
+            Send Test SMS
+          </Typography>
+          <Typography variant="body2" sx={{ mb: 3, opacity: 0.7 }}>
+            Test your SMS gateway integration by sending a test message.
+          </Typography>
 
           <TextField
             fullWidth
-            label="API Key"
-            name="apiKey"
-            value={config.apiKey}
+            label="Phone Number"
+            name="recipientPhone"
+            value={config.recipientPhone || ""}
             onChange={handleChange}
-            sx={{ mt: 2 }}
           />
-          <TextField
-            fullWidth
-            label="username"
-            name="username"
-            value={config.username}
-            onChange={handleChange}
-            sx={{ mt: 2 }}
-          />
-          <TextField
-            fullWidth
-            label="password"
-            name="password"
-            value={config.password}
-            onChange={handleChange}
-            sx={{ mt: 2 }}
-          />
-        </Box>,
-        <Box>
-          <TextField fullWidth label="Phone Number" />
           <TextField
             fullWidth
             label="Message"
             multiline
             rows={2}
+            name="smsMessage"
+            value={config.smsMessage || ""}
+            onChange={handleChange}
             sx={{ mt: 2 }}
           />
-          <Button variant="contained" sx={{ mt: 2 }}>
+          <Button
+            variant="contained"
+            sx={{ mt: 3, px: 4, py: 1.5 }}
+            onClick={async () => {
+              try {
+                setStatus({ type: "info", message: "Sending test SMS..." });
+
+                // Twilio SMS API Call
+                const keys = smsBridgeConfig;
+                // Standard Twilio API Endpoint
+                const url = `https://api.twilio.com/2010-04-01/Accounts/${keys.accountSid}/Messages.json`;
+
+                // Twilio uses "Basic Auth" (AccountSID : AuthToken)
+                const authHeader = "Basic " + btoa(`${keys.accountSid}:${keys.authToken}`);
+
+                // Payload must be URL-Encoded Form Data for Twilio
+                const formData = new URLSearchParams();
+                formData.append("To", config.recipientPhone);
+                formData.append("From", keys.fromPhone);
+                formData.append("Body", config.smsMessage);
+
+                const response = await fetch(url, {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    Authorization: authHeader,
+                  },
+                  body: formData,
+                });
+
+                if (response.ok) {
+                  // ✅ Clear fields after success
+                  setServerState((prev) => ({
+                    ...prev,
+                    [activeSection]: {
+                      ...prev[activeSection],
+                      configs: {
+                        ...prev[activeSection].configs,
+                        [selectedServer]: {
+                          ...prev[activeSection].configs[selectedServer],
+                          recipientPhone: "",
+                          smsMessage: "",
+                        },
+                      },
+                    },
+                  }));
+
+                  setStatus({
+                    type: "success",
+                    message: "Test SMS sent successfully!",
+                  });
+                } else {
+                  // For demo purposes, if the URL is dummy, this will likely fail
+                  // You can uncomment the below line to FORCE SUCCESS for UI testing if needed:
+                  // setStatus({ type: "success", message: "Test SMS sent! (Simulated)" }); return;
+
+                  const errorText = await response.text();
+                  setStatus({
+                    type: "error",
+                    message: `Gateway Error: ${errorText || response.statusText}`,
+                  });
+                }
+              } catch (error) {
+                setStatus({
+                  type: "error",
+                  message: `Network Error: ${error.message}`,
+                });
+              }
+            }}
+          >
             Send Test SMS
           </Button>
         </Box>,
       ],
       "WHATSAPP CONFIGURATION": [
         <Box>
-          <TextField
-            fullWidth
-            label="API Endpoint"
-            name="apiEndpoint"
-            value={config.apiEndpoint}
-            onChange={handleChange}
-          />
-
-          <Box sx={{ mt: 2 }}>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={useWhatsappSsl}
-                  onChange={(e) => setUseWhatsappSsl(e.target.checked)}
-                />
-              }
-              label="Use SSL Certificate"
-            />
-          </Box>
-
-          {useWhatsappSsl && (
-            <Box sx={{ mt: 2 }}>
-              <Button variant="outlined" component="label" fullWidth>
-                Upload SSL Certificate
-                <input
-                  type="file"
-                  hidden
-                  accept=".crt,.pem,.cer,.der"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      setWhatsappSslCertificate(file);
-                      setStatus({
-                        type: "success",
-                        message: `SSL Certificate "${file.name}" selected for WhatsApp.`,
-                      });
-                    }
-                  }}
-                />
-              </Button>
-              {whatsappSslCertificate && (
-                <Typography variant="caption" sx={{ mt: 1, display: "block" }}>
-                  Selected: {whatsappSslCertificate.name}
-                </Typography>
-              )}
-            </Box>
-          )}
+          <Typography variant="h6" gutterBottom color="primary">
+            Send Test WhatsApp
+          </Typography>
+          <Typography variant="body2" sx={{ mb: 3, opacity: 0.7 }}>
+            Test your Ultramsg WhatsApp integration.
+          </Typography>
 
           <TextField
             fullWidth
-            label="Auth Token"
-            name="authToken"
-            value={config.authToken}
+            label="WhatsApp Number"
+            name="recipientWhatsapp"
+            value={config.recipientWhatsapp || ""}
             onChange={handleChange}
-            sx={{ mt: 2 }}
+            placeholder="e.g. 14155552671"
           />
-          <TextField
-            fullWidth
-            label="username"
-            name="username"
-            value={config.username}
-            onChange={handleChange}
-            sx={{ mt: 2 }}
-          />
-          <TextField
-            fullWidth
-            label="password"
-            name="password"
-            value={config.password}
-            onChange={handleChange}
-            sx={{ mt: 2 }}
-          />
-        </Box>,
-        <Box>
-          <TextField fullWidth label="WhatsApp Number" />
           <TextField
             fullWidth
             label="Message"
             multiline
             rows={2}
+            name="whatsappMessage"
+            value={config.whatsappMessage || ""}
+            onChange={handleChange}
             sx={{ mt: 2 }}
           />
-          <Button variant="contained" sx={{ mt: 2 }}>
-            Send Test Message
+          <Button
+            variant="contained"
+            sx={{ mt: 3, px: 4, py: 1.5 }}
+            onClick={async () => {
+              try {
+                setStatus({
+                  type: "info",
+                  message: "Sending test WhatsApp...",
+                });
+
+                // Ultramsg API Call
+                const instanceId = ultramsgConfig.instanceId;
+                const token = ultramsgConfig.token;
+                const url = `https://api.ultramsg.com/${instanceId}/messages/chat`;
+
+                const payload = {
+                  token: token,
+                  to: config.recipientWhatsapp,
+                  body: config.whatsappMessage,
+                };
+
+                const response = await fetch(url, {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify(payload),
+                });
+
+                if (response.ok) {
+                  // ✅ Clear fields after success
+                  setServerState((prev) => ({
+                    ...prev,
+                    [activeSection]: {
+                      ...prev[activeSection],
+                      configs: {
+                        ...prev[activeSection].configs,
+                        [selectedServer]: {
+                          ...prev[activeSection].configs[selectedServer],
+                          recipientWhatsapp: "",
+                          whatsappMessage: "",
+                        },
+                      },
+                    },
+                  }));
+
+                  setStatus({
+                    type: "success",
+                    message: "Test WhatsApp sent successfully!",
+                  });
+                } else {
+                  const errorText = await response.text();
+                  setStatus({
+                    type: "error",
+                    message: `Gateway Error: ${errorText || response.statusText}`,
+                  });
+                }
+              } catch (error) {
+                setStatus({
+                  type: "error",
+                  message: `Network Error: ${error.message}`,
+                });
+              }
+            }}
+          >
+            Send Test WhatsApp
           </Button>
         </Box>,
       ],
@@ -1568,50 +1600,89 @@ const LDAPConfig = () => {
       sx={{
         display: "flex",
         flexDirection: "row",
-        height: "100%",
-        gap: 1,
-        px: 2,
-        py: 3,
-        width: "80%",
+        minHeight: "100vh",
+        gap: 3,
+        px: 3,
+        py: 4,
+        width: "85%",
         margin: "auto",
-        backgroundColor: isDark ? theme.palette.background.paper : "#ffffff",
-
-        boxShadow: isDark
-          ? "0 0 10px rgba(255,255,255,0.05)"
-          : "0 1px 4px rgba(0,0,0,0.1)",
+        background: isDark
+          ? "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)"
+          : "linear-gradient(135deg, #f5f7fa 0%, #e8eef5 100%)",
       }}
     >
-      <Box sx={{ width: 230 }}>
-        <Accordion expanded>
-          <AccordionSummary>
-            <Box sx={{ display: "flex", alignItems: "center", width: "100%" }}>
+      <Box sx={{ width: 260 }}>
+        <Accordion
+          expanded
+          sx={{
+            background: isDark
+              ? "rgba(255, 255, 255, 0.05)"
+              : "rgba(255, 255, 255, 0.9)",
+            backdropFilter: "blur(20px)",
+            borderRadius: "16px !important",
+            border: isDark
+              ? "1px solid rgba(255, 255, 255, 0.1)"
+              : "1px solid rgba(0, 0, 0, 0.05)",
+            boxShadow: isDark
+              ? "0 8px 32px rgba(0, 0, 0, 0.3)"
+              : "0 8px 32px rgba(0, 0, 0, 0.1)",
+            "&:before": { display: "none" },
+          }}
+        >
+          <AccordionSummary
+            sx={{
+              "& .MuiAccordionSummary-content": { margin: 0 },
+              padding: 0,
+            }}
+          >
+            <Box sx={{ display: "flex", alignItems: "center", width: "100%", p: 2 }}>
               <Box
                 sx={{
-                  backgroundColor: "#1976d2",
-                  color: "white",
-                  px: 2,
-                  py: 1,
-                  borderRadius: 1,
+                  background: isDark
+                    ? "rgba(255, 255, 255, 0.08)"
+                    : "#ffffff",
+                  color: isDark ? "#fff" : "#1976d2",
+                  px: 2.5,
+                  py: 1.5,
+                  borderRadius: 2,
                   flexGrow: 1,
                   display: "flex",
                   alignItems: "center",
-                  gap: 1,
+                  gap: 1.5,
+                  border: isDark
+                    ? "1px solid rgba(255, 255, 255, 0.1)"
+                    : "1px solid rgba(25, 118, 210, 0.2)",
+                  transition: "all 0.3s ease",
+                  "&:hover": {
+                    transform: "translateY(-1px)",
+                    boxShadow: isDark
+                      ? "0 4px 12px rgba(0, 0, 0, 0.3)"
+                      : "0 4px 12px rgba(25, 118, 210, 0.15)",
+                  },
                 }}
               >
-                <SettingsIcon sx={{ fontSize: 20 }} />
-                <Typography variant="h6">SETTINGS</Typography>
+                <SettingsIcon sx={{ fontSize: 22 }} />
+                <Typography variant="h6" sx={{ fontWeight: 600, letterSpacing: 0.5 }}>SETTINGS</Typography>
               </Box>
 
               <Tooltip title="Add Configuration">
                 <IconButton
-                  color="primary"
                   onClick={() => setDialogOpen(true)}
                   sx={{
-                    border: "1px solid #ccc",
-                    ml: 2,
-                    backgroundColor: "#fff",
+                    ml: 1.5,
+                    background: isDark
+                      ? "rgba(255, 255, 255, 0.1)"
+                      : "rgba(25, 118, 210, 0.1)",
+                    border: isDark
+                      ? "1px solid rgba(255, 255, 255, 0.2)"
+                      : "1px solid rgba(25, 118, 210, 0.2)",
+                    color: isDark ? "#fff" : "#1976d2",
+                    transition: "all 0.3s ease",
                     "&:hover": {
-                      backgroundColor: "#f5f5f5",
+                      background: isDark
+                        ? "rgba(255, 255, 255, 0.15)"
+                        : "rgba(25, 118, 210, 0.2)",
+                      transform: "scale(1.05)",
                     },
                   }}
                 >
@@ -1621,8 +1692,8 @@ const LDAPConfig = () => {
             </Box>
           </AccordionSummary>
 
-          <AccordionDetails>
-            <List>
+          <AccordionDetails sx={{ p: 1.5 }}>
+            <List sx={{ py: 0 }}>
               {sections.map((section) => {
                 const isCustom = !defaultSections.includes(section);
                 return (
@@ -1639,9 +1710,34 @@ const LDAPConfig = () => {
                         setActiveSection(section);
                         setTabIndex(0);
                       }}
-                      sx={{ flexGrow: 1 }}
+                      sx={{
+                        flexGrow: 1,
+                        borderRadius: 2,
+                        mb: 0.5,
+                        transition: "all 0.3s ease",
+                        "&.Mui-selected": {
+                          background: "linear-gradient(135deg, #1976d2 0%, #1565c0 100%)",
+                          color: "white",
+                          boxShadow: "0 4px 12px rgba(25, 118, 210, 0.3)",
+                          "&:hover": {
+                            background: "linear-gradient(135deg, #1976d2 0%, #1565c0 100%)",
+                          },
+                        },
+                        "&:hover": {
+                          background: isDark
+                            ? "rgba(255, 255, 255, 0.05)"
+                            : "rgba(25, 118, 210, 0.08)",
+                          transform: "translateX(4px)",
+                        },
+                      }}
                     >
-                      <ListItemText primary={section} />
+                      <ListItemText
+                        primary={section}
+                        primaryTypographyProps={{
+                          fontSize: "0.9rem",
+                          fontWeight: activeSection === section ? 600 : 500,
+                        }}
+                      />
                     </ListItemButton>
                     {isCustom && (
                       <Tooltip title="Delete Configuration">
@@ -1679,34 +1775,84 @@ const LDAPConfig = () => {
         </Accordion>
       </Box>
       <Box sx={{ flex: 1, minWidth: 0 }}>
-        <Paper elevation={3} sx={{ p: 3, borderRadius: 3 }}>
-          <Typography
-            variant="h5"
-            gutterBottom
+        <Paper
+          elevation={0}
+          sx={{
+            p: 4,
+            borderRadius: 4,
+            background: isDark
+              ? "rgba(255, 255, 255, 0.05)"
+              : "rgba(255, 255, 255, 0.95)",
+            backdropFilter: "blur(20px)",
+            border: isDark
+              ? "1px solid rgba(255, 255, 255, 0.1)"
+              : "1px solid rgba(0, 0, 0, 0.05)",
+            boxShadow: isDark
+              ? "0 8px 32px rgba(0, 0, 0, 0.3)"
+              : "0 8px 32px rgba(0, 0, 0, 0.08)",
+          }}
+        >
+          <Box
             sx={{
-              backgroundColor: "#1976d2",
-              color: "white",
-              px: 2,
-              py: 1,
-              borderRadius: 1,
+              background: isDark
+                ? "rgba(255, 255, 255, 0.08)"
+                : "#ffffff",
+              color: isDark ? "#fff" : "#1976d2",
+              px: 3,
+              py: 2,
+              borderRadius: 2.5,
+              mb: 3,
+              border: isDark
+                ? "1px solid rgba(255, 255, 255, 0.1)"
+                : "1px solid rgba(25, 118, 210, 0.2)",
+              boxShadow: isDark
+                ? "0 2px 8px rgba(0, 0, 0, 0.2)"
+                : "0 2px 8px rgba(25, 118, 210, 0.1)",
             }}
           >
-            {activeSection}
-          </Typography>
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 600,
+                letterSpacing: 0.5,
+                display: "flex",
+                alignItems: "center",
+                gap: 1.5,
+              }}
+            >
+              {activeSection === "LDAP CONFIGURATION" && <DnsIcon />}
+              {activeSection === "EMAIL CONFIGURATION" && <EmailIcon />}
+              {activeSection === "SMS CONFIGURATION" && <SmsIcon />}
+              {activeSection === "WHATSAPP CONFIGURATION" && <WhatsAppIcon />}
+              {activeSection}
+            </Typography>
+          </Box>
 
           {defaultSections.includes(activeSection) && (
-            <Box sx={{ display: "flex", alignItems: "center", mb: 2, gap: 1 }}>
-              <FormControl size="small">
+            <Box sx={{ display: "flex", alignItems: "center", mb: 3, gap: 1.5 }}>
+              <FormControl size="small" sx={{ minWidth: 180 }}>
                 <Select
                   value={selectedServer}
                   onChange={handleServerChange}
                   onOpen={() => setIsServerDropdownOpen(true)}
                   onClose={() => setIsServerDropdownOpen(false)}
-                  startAdornment={<StorageIcon sx={{ mr: 1 }} />}
+                  startAdornment={<StorageIcon sx={{ mr: 1, color: "#1976d2" }} />}
+                  sx={{
+                    borderRadius: 2,
+                    "& .MuiOutlinedInput-notchedOutline": {
+                      borderColor: isDark
+                        ? "rgba(255, 255, 255, 0.2)"
+                        : "rgba(25, 118, 210, 0.3)",
+                    },
+                    "&:hover .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "#1976d2",
+                    },
+                  }}
                   MenuProps={{
                     PaperProps: {
                       style: {
                         maxHeight: 250,
+                        borderRadius: 12,
                       },
                     },
                   }}
@@ -1719,6 +1865,9 @@ const LDAPConfig = () => {
                         display: "flex",
                         justifyContent: "space-between",
                         alignItems: "center",
+                        borderRadius: 1,
+                        mx: 1,
+                        my: 0.5,
                       }}
                     >
                       <Typography>Server {s}</Typography>
@@ -1728,7 +1877,7 @@ const LDAPConfig = () => {
                           <IconButton
                             size="small"
                             onClick={(e) => {
-                              e.stopPropagation(); // prevent dropdown from closing
+                              e.stopPropagation();
                               setRenameDialog({
                                 open: true,
                                 oldName: s,
@@ -1747,13 +1896,15 @@ const LDAPConfig = () => {
 
               <Tooltip title="Add Server">
                 <IconButton
-                  color="primary"
                   onClick={handleAddServer}
                   sx={{
-                    border: "1px solid #ccc",
-                    backgroundColor: "#fff",
-                    "&:hover": { backgroundColor: "#f5f5f5" },
-                    ml: 1,
+                    background: "linear-gradient(135deg, #1976d2 0%, #1565c0 100%)",
+                    color: "white",
+                    transition: "all 0.3s ease",
+                    "&:hover": {
+                      transform: "scale(1.05)",
+                      boxShadow: "0 4px 12px rgba(25, 118, 210, 0.4)",
+                    },
                   }}
                 >
                   <AddIcon />
@@ -1762,13 +1913,18 @@ const LDAPConfig = () => {
 
               <Tooltip title="Delete Server">
                 <IconButton
-                  color="error"
                   onClick={handleDeleteServer}
                   sx={{
-                    border: "1px solid #ccc",
-                    backgroundColor: "#fff",
-                    "&:hover": { backgroundColor: "#f5f5f5" },
-                    ml: 1,
+                    background: isDark
+                      ? "rgba(244, 67, 54, 0.2)"
+                      : "rgba(244, 67, 54, 0.1)",
+                    color: "#f44336",
+                    border: "1px solid rgba(244, 67, 54, 0.3)",
+                    transition: "all 0.3s ease",
+                    "&:hover": {
+                      background: "rgba(244, 67, 54, 0.2)",
+                      transform: "scale(1.05)",
+                    },
                   }}
                 >
                   <DeleteIcon />
@@ -1783,7 +1939,31 @@ const LDAPConfig = () => {
               onChange={(e, newValue) => setTabIndex(newValue)}
               variant="scrollable"
               scrollButtons="auto"
-              sx={{ mb: 2 }}
+              sx={{
+                mb: 3,
+                "& .MuiTabs-indicator": {
+                  height: 3,
+                  borderRadius: 3,
+                  background: "linear-gradient(135deg, #1976d2 0%, #1565c0 100%)",
+                },
+                "& .MuiTab-root": {
+                  textTransform: "none",
+                  fontWeight: 500,
+                  fontSize: "0.95rem",
+                  minHeight: 48,
+                  transition: "all 0.3s ease",
+                  "&.Mui-selected": {
+                    color: "#1976d2",
+                    fontWeight: 600,
+                  },
+                  "&:hover": {
+                    color: "#1976d2",
+                    background: isDark
+                      ? "rgba(25, 118, 210, 0.1)"
+                      : "rgba(25, 118, 210, 0.05)",
+                  },
+                },
+              }}
             >
               {getTabsForSection().map((label) => {
                 let disabled = false;
