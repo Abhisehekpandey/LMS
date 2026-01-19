@@ -159,15 +159,15 @@ const LDAPConfig = () => {
   // SMS Gateway Configuration (Twilio)
   // Get these from: https://www.twilio.com/console
   const smsBridgeConfig = {
-    accountSid: "AC825b3d5e701c7d533ccc76e9ecb8cce4",
-    authToken: "a6344e41cec0bf43a36c8b373cc53544",
-    fromPhone: "+12513603111",
+    accountSid: process.env.REACT_APP_TWILIO_ACCOUNT_SID || "AC_PLACEHOLDER",
+    authToken: process.env.REACT_APP_TWILIO_AUTH_TOKEN || "PLACEHOLDER_TOKEN",
+    fromPhone: process.env.REACT_APP_TWILIO_FROM_PHONE || "+1234567890",
   };
 
   // WhatsApp Gateway Configuration (Ultramsg)
   const ultramsgConfig = {
-    instanceId: "instance159079", // e.g., instance12345
-    token: "xpe83f5vav2ksban", // e.g., xyz123
+    instanceId: process.env.REACT_APP_ULTRAMSG_INSTANCE_ID || "instance_placeholder",
+    token: process.env.REACT_APP_ULTRAMSG_TOKEN || "token_placeholder",
   };
 
   const current = serverState[activeSection];
