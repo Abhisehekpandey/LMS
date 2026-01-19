@@ -151,7 +151,8 @@ const LDAPConfig = () => {
 
   // EmailJS Configuration (Hardcoded as requested)
   const emailJsConfig = {
-    serviceId: "service_3k3a7ep",
+    // serviceId: "service_3k3a7ep",
+    serviceId: "service_ndez4md",
     templateId: "template_f6fghf6",
     publicKey: "oL2IlUt62rbTK2_vD",
   };
@@ -159,15 +160,15 @@ const LDAPConfig = () => {
   // SMS Gateway Configuration (Twilio)
   // Get these from: https://www.twilio.com/console
   const smsBridgeConfig = {
-    accountSid: process.env.REACT_APP_TWILIO_ACCOUNT_SID || "AC_PLACEHOLDER",
-    authToken: process.env.REACT_APP_TWILIO_AUTH_TOKEN || "PLACEHOLDER_TOKEN",
-    fromPhone: process.env.REACT_APP_TWILIO_FROM_PHONE || "+1234567890",
+    accountSid: window.__ENV__.REACT_APP_TWILIO_ACCOUNT_SID || "AC_PLACEHOLDER",
+    authToken: window.__ENV__.REACT_APP_TWILIO_AUTH_TOKEN || "PLACEHOLDER_TOKEN",
+    fromPhone: window.__ENV__.REACT_APP_TWILIO_FROM_PHONE || "+1234567890",
   };
 
   // WhatsApp Gateway Configuration (Ultramsg)
   const ultramsgConfig = {
-    instanceId: process.env.REACT_APP_ULTRAMSG_INSTANCE_ID || "instance_placeholder",
-    token: process.env.REACT_APP_ULTRAMSG_TOKEN || "token_placeholder",
+    instanceId: window.__ENV__.REACT_APP_ULTRAMSG_INSTANCE_ID || "instance_placeholder",
+    token: window.__ENV__.REACT_APP_ULTRAMSG_TOKEN || "token_placeholder",
   };
 
   const current = serverState[activeSection];
