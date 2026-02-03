@@ -266,7 +266,7 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
             }}
           >
             <img
-              src="/HeaderLogo.png"
+              src="/sync_logo.png"
               alt="AngelBot Access Arc Logo"
               style={{
                 height: "44px",
@@ -284,9 +284,8 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
               <SearchIcon sx={{ fontSize: "1.2rem", color: "inherit" }} />
             </SearchIconWrapper>
             <StyledInputBase
-              placeholder={`Search ${
-                location.pathname === "/user" ? "users" : "departments"
-              }...`}
+              placeholder={`Search ${location.pathname === "/user" ? "users" : "departments"
+                }...`}
               value={searchTerm}
               onChange={handleSearchChange}
               inputProps={{ "aria-label": "search" }}
@@ -318,8 +317,8 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
                                   location.pathname === "/user"
                                     ? result.name
                                     : location.pathname === "/department"
-                                    ? result.deptName
-                                    : result.key
+                                      ? result.deptName
+                                      : result.key
                                 }
                                 secondary={
                                   location.pathname === "/user" ? (

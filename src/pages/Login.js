@@ -250,7 +250,7 @@ const Login = () => {
           <Box maxWidth={400}>
             <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
               <img
-                src="/ts_login_logo.png"
+                src="/sync_logo.png"
                 alt="AngelBot Access Arc Logo"
                 style={{
                   maxWidth: "100%",

@@ -282,7 +282,7 @@ const Signup = () => {
           <Box maxWidth={400} textAlign="left">
             <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
               <img
-                src="/ts_login_logo.png"
+                src="/sync_logo.png"
                 alt="AngelBot Access Arc Logo"
                 style={{
                   maxWidth: "100%",
@@ -381,10 +381,10 @@ const Signup = () => {
                   color: checkingDomain
                     ? "text.secondary"
                     : domainAvailable === "domain already registered"
-                    ? "error.main"
-                    : domainAvailable === "available"
-                    ? "success.main"
-                    : "text.secondary",
+                      ? "error.main"
+                      : domainAvailable === "available"
+                        ? "success.main"
+                        : "text.secondary",
                   ml: 0,
                   mt: -1,
                 }}
@@ -392,10 +392,10 @@ const Signup = () => {
                 {checkingDomain
                   ? "Checking domain..."
                   : domainAvailable === "domain already registered"
-                  ? "Domain already registered"
-                  : domainAvailable === "available"
-                  ? "Domain available"
-                  : ""}
+                    ? "Domain already registered"
+                    : domainAvailable === "available"
+                      ? "Domain available"
+                      : ""}
               </FormHelperText>
             )}
 
