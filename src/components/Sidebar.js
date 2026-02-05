@@ -138,7 +138,7 @@ const Sidebar = () => {
 
   const menuItems = React.useMemo(
     () => [
-      { path: "/angelbot", icon: <TimelineIcon />, text: "AngelBot" },
+      { path: "/angelbot", icon: <TimelineIcon />, text: "TeamSync" },
       { path: "/user", icon: <UserIcon />, text: "User" },
       {
         path: "/department",
@@ -332,6 +332,7 @@ const Sidebar = () => {
                       color: isActive ? "white" : "inherit",
                       transition: "font-weight 0.2s ease, color 0.2s ease",
                       whiteSpace: "nowrap",
+                      letterSpacing: item.text === "TeamSync" ? "-0.02em" : "normal",
                     },
                   }}
                 />
