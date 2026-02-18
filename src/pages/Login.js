@@ -68,7 +68,7 @@ const refreshAccessToken = async () => {
         "refreshExpiry",
         Date.now() + data.refresh_expires_in * 1000
       );
-      console.log("🔁 Token refreshed!");
+
       return true;
     } else {
       console.warn("❌ Refresh failed:", data.message);

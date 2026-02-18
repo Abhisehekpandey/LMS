@@ -94,7 +94,7 @@ const ChooseExtension = () => {
         }
       );
 
-      console.log("Global File Size Limit Saved:", response.data);
+
       setSnackbar({
         open: true,
         message: "Global file size limit saved successfully!",
@@ -124,7 +124,7 @@ const ChooseExtension = () => {
         }
       );
 
-      console.log("File Batch Size Saved:", response.data);
+
       setSnackbar({
         open: true,
         message: "File batch size saved successfully!",
@@ -190,7 +190,7 @@ const ChooseExtension = () => {
         }
       );
 
-      console.log("Extensions saved successfully:", response.data);
+
       setSnackbar({
         open: true,
         message: "Extensions saved successfully!",
@@ -222,7 +222,7 @@ const ChooseExtension = () => {
       );
 
       const data = response.data;
-      console.log("Extension response", data);
+
 
       // ✅ Updated to match new backend keys
       const groupMap = {
@@ -523,9 +523,8 @@ const ChooseExtension = () => {
               theme.palette.mode === "dark"
                 ? theme.palette.background.default
                 : "#fff",
-            borderTop: `1px solid ${
-              theme.palette.mode === "dark" ? "#333" : "#ddd"
-            }`,
+            borderTop: `1px solid ${theme.palette.mode === "dark" ? "#333" : "#ddd"
+              }`,
             px: 2,
             py: 2,
             boxShadow: "0px -2px 4px rgba(0,0,0,0.05)",
@@ -534,7 +533,7 @@ const ChooseExtension = () => {
           <Button
             variant="contained"
             onClick={handleSave}
-            // disabled={selectedExtensions.length === 0}
+          // disabled={selectedExtensions.length === 0}
           >
             Save
           </Button>

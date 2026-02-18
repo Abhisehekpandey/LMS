@@ -403,7 +403,7 @@ export default function UserTable() {
   const fetchFullDepartments = async () => {
     try {
       const res = await getDepartments();
-      console.log("rrrrrr", res);
+
       return res.content || [];
     } catch (error) {
       console.error("Failed to fetch full departments:", error);
@@ -412,7 +412,7 @@ export default function UserTable() {
   };
 
   const handleSaveChanges = async () => {
-    console.log("editData:", editData);
+
 
     try {
       const fullDepartments = await fetchFullDepartments();
@@ -506,7 +506,7 @@ export default function UserTable() {
   };
 
   const handleEdit = async (e, row) => {
-    console.log("Editing user:", row);
+
 
     try {
       const fullDepartments = await fetchFullDepartments();
@@ -582,7 +582,7 @@ export default function UserTable() {
       },
     }));
 
-    console.log("usersss", usersToActivate);
+
 
     try {
       await toggleUserStatusByUsername(usersToActivate, page); // ✅ send complete users
@@ -602,7 +602,7 @@ export default function UserTable() {
   const options = ["10GB", "20GB"];
 
   const handleBulkDownload = () => {
-    console.log("rowData", rowData);
+
     if (!rowData || rowData.length === 0) {
       alert("No data to download");
       return;
@@ -885,7 +885,7 @@ export default function UserTable() {
     refetchUsers();
   }, [page, rowsPerPage, searchColumn, debouncedSearchQuery]);
 
-  console.log(">>>rowssss", rowsData);
+
 
   const handleClose = () => {
     setMigrationDialog(false);
@@ -2162,7 +2162,7 @@ export default function UserTable() {
                 </Tooltip>
               </Grid>
               <Grid item xs={6}>
-                {console.log("Selected Department Roles:", selectedDepartment)}
+                { }
 
                 <Autocomplete
                   size="small"
@@ -2187,10 +2187,7 @@ export default function UserTable() {
                 />
               </Grid>
               <Grid item xs={6}>
-                {console.log(
-                  "Roles in selectedDepartment:",
-                  selectedDepartment?.roles
-                )}
+
 
                 <Autocomplete
                   size="small"

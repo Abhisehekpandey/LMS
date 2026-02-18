@@ -357,9 +357,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
   const loadingDepartments = useRef(false);
 
-  console.log("AllDepartment", allDepartments);
-  console.log("departmentMigrat", departmentToMigrate);
-  console.log("targetDepatment", targetDepartment);
+
 
   const handleToggle = (users) => {
     setSelectedDeptUsers(users);
@@ -386,7 +384,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     try {
       const res = await getDepartments(migrationPage, 10); // 10 per page
       const newDepts = res.content || [];
-      console.log(">>newDe", newDepts);
+
 
       setAllDepartments((prev) => [...prev, ...newDepts]);
       setMigrationPage((prev) => prev + 1);
@@ -413,10 +411,10 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     try {
       setLoading(true);
 
-      console.log("ppppp", page);
+
       const departmentData = await getDepartments(page, rowsPerPage);
       const apiDepartments = departmentData.content || [];
-      console.log("apiDepartment", apiDepartments);
+
 
       setTotalDepartments(departmentData.totalElements || 0);
 
@@ -1541,7 +1539,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     if (!department) return;
 
     const roleToDelete = department.roles[roleIndex];
-    console.log("roleToDeelete", roleToDelete);
+
     if (!roleToDelete || !roleToDelete.id) return;
 
     if (department.roles.length <= 1) {
@@ -1885,7 +1883,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         : bVal.localeCompare(aVal);
     });
   }, [departments, filteredDepartments, order, orderBy]);
-  console.log("SSSS", sortedDepartments);
+
 
   const filteredDepartments1 = sortedDepartments?.filter((row) => {
     const value = row[searchColumn]?.toString().toLowerCase();
@@ -2192,7 +2190,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         selectedItems.includes(dept.name)
       );
 
-      console.log(">>ssss", selectedDepartments);
+
 
       const exportData = selectedDepartments.flatMap((dept) => {
         // ✅ Collect all users across roles
@@ -2648,15 +2646,15 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                             id: role.id,
                             name: role.roleName,
                           }))}
-                          onEditUser={(user) => console.log("Edit user:", user)}
-                          onDeleteUser={(user) =>
-                            console.log("Delete user:", user)
-                          }
+                          // onEditUser={(user) =>}
+                          // onDeleteUser={(user) =>
+
+                          // }
                           addUsersToDepartment={async (
                             deptId,
                             selectedUsers
                           ) => {
-                            console.log("selected", selectedUsers);
+
 
                             try {
                               const payload = selectedUsers.map((u) => [
@@ -2716,15 +2714,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                             appRole,
                             department
                           ) => {
-                            console.log(
-                              "Adding role:",
-                              newRole,
-                              "App Role:",
-                              appRole,
-                              "to department:",
-                              department.id
-                            );
-                            console.log("department", department);
+
 
                             try {
                               const response = await axios.post(
@@ -4324,7 +4314,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           <Button
             variant="contained"
             onClick={() => {
-              console.log("Adding users:", addUserAssignments);
+
               setShowAddUserDialog(false);
             }}
           >

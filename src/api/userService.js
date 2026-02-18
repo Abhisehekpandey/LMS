@@ -3,7 +3,7 @@
 import axios from "axios";
 
 export const createUsers = async (users) => {
-  console.log(">>>users", users);
+
   try {
     const response = await axios.post(
       `${window.__ENV__.REACT_APP_ROUTE}/tenants/users`,
@@ -16,7 +16,7 @@ export const createUsers = async (users) => {
         },
       }
     );
-    console.log(">>>>>>rrrr", response);
+
     return response.data;
   } catch (error) {
     console.error("Error creating users:", error);
@@ -37,7 +37,7 @@ export const fetchUsers = async (page = 0, size = 10) => {
         },
       }
     );
-    console.log(">>>>userResponse", response);
+
     return response.data; // Assume it's an array of user objects
   } catch (error) {
     console.error("Failed to fetch users:", error);
@@ -46,8 +46,7 @@ export const fetchUsers = async (page = 0, size = 10) => {
 };
 
 export const toggleUserStatusByUsername = async (users, pageNumber) => {
-  console.log(">>>>>aaa", users);
-  console.log(">>>>bbb", pageNumber);
+
   const token = sessionStorage.getItem("authToken"); // Adjust key if different
   const adminEmail = sessionStorage.getItem("adminEmail");
   try {
@@ -70,7 +69,7 @@ export const toggleUserStatusByUsername = async (users, pageNumber) => {
 };
 
 export const activateAll = async (users) => {
-  console.log("AllUserss", users);
+
   const token = sessionStorage.getItem("authToken"); // Adjust key if different
   try {
     const response = await axios.post(
@@ -194,10 +193,11 @@ export const searchUsers = async (
         },
       }
     );
-    console.log(">>>>searchUserResponse", response);
+
     return response.data;
   } catch (error) {
     console.error("Failed to search users:", error);
     throw error;
   }
 };
+

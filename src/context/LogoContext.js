@@ -25,7 +25,7 @@ export const LogoProvider = ({ children }) => {
                 // Adjust endpoint based on your setup. Assuming relative path works with proxy.
                 // If not, you might need process.env.REACT_APP_API_URL or similar.
                 const url = `${window.__ENV__?.REACT_APP_ROUTE || ''}/tenants/public/getLogoData`;
-                console.log("Fetching logo data from:", url);
+
 
                 const response = await fetch(url, {
                     headers: {
@@ -36,7 +36,7 @@ export const LogoProvider = ({ children }) => {
 
                 if (response.ok) {
                     const data = await response.json();
-                    console.log("Logo data received:", data);
+
                     // Check if data has valid images, otherwise stick to defaults
                     setLogoData({
                         loginImage: data.loginImage || DEFAULT_LOGIN_LOGO,
@@ -68,7 +68,7 @@ export const LogoProvider = ({ children }) => {
     const updateFavicon = (href) => {
         if (!href) return;
 
-        console.log("Updating favicon to:", href.substring(0, 50) + "...");
+
 
         const head = document.getElementsByTagName('head')[0];
 
@@ -90,7 +90,7 @@ export const LogoProvider = ({ children }) => {
         shortcutLink.href = href;
         head.appendChild(shortcutLink);
 
-        console.log("Favicon links updated in HEAD");
+
     };
 
     return (
@@ -99,3 +99,4 @@ export const LogoProvider = ({ children }) => {
         </LogoContext.Provider>
     );
 };
+

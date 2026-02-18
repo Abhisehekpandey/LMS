@@ -14,7 +14,7 @@ export const createDepartment = async (payload) => {
         },
       }
     );
-    console.log("checkDepartment",response)
+
     return response.data;
   } catch (error) {
     console.error("Failed to create department:", error);
@@ -40,7 +40,7 @@ export const getDepartments = async (page = 0, pageSize = 10, search = "") => {
       }
     );
 
-    console.log(">>> Department API response:", response.data);
+
     return response.data;
   } catch (error) {
     console.error("Failed to fetch departments:", error);
@@ -50,16 +50,14 @@ export const getDepartments = async (page = 0, pageSize = 10, search = "") => {
 
 export const createRole = async (payload) => {
   try {
-    console.log("=== createRole received payload ===", payload);
-    console.log("payload.appRole:", payload.appRole);
+
     const { department, role, isAdmin, appRole } = payload;
 
-    console.log("Destructured appRole:", appRole);
+
 
     const rolesArray = [{ roleName: role, isAdmin, appRole }];
 
-    console.log("=== rolesArray being sent to API ===", rolesArray);
-    console.log("JSON.stringify(rolesArray):", JSON.stringify(rolesArray));
+
 
     const response = await axios.post(
       `${window.__ENV__.REACT_APP_ROUTE}/tenants/departments/${department}/roles`,
@@ -73,7 +71,7 @@ export const createRole = async (payload) => {
       }
     );
 
-    console.log("response", response.data.uniqueRoles);
+
     return response.data.uniqueRoles;
   } catch (error) {
     console.error("createRole error:", error);
@@ -151,7 +149,7 @@ export const updateDepartmentStoragePermission = async (
         },
       }
     );
-    console.log(">>>>response",response)
+
     return response.data;
   } catch (error) {
     console.error("Failed to update department storage permission:", error);
@@ -161,7 +159,7 @@ export const updateDepartmentStoragePermission = async (
 
 
 export const deleteRole = async (roleId) => {
-  console.log("Deleting roleId:", roleId);
+
   return await axios.delete(`${window.__ENV__.REACT_APP_ROUTE}/tenants/role`, {
     params: {
       roleId,
@@ -172,6 +170,7 @@ export const deleteRole = async (roleId) => {
     },
   });
 };
+
 
 
 

@@ -122,7 +122,7 @@ const SearchResultWrapper = styled(Paper)(({ theme }) => ({
 
 const Navbar = ({ onThemeToggle, onSearch }) => {
   const { logoData } = useContext(LogoContext);
-  console.log("ontehe", onThemeToggle);
+
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -1252,7 +1252,7 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
                   message: "Commands saved successfully!",
                   severity: "success",
                 });
-                console.log("API Result:", result);
+
                 setOpenRegionDialog(false);
               } catch (error) {
                 setSnackbar({

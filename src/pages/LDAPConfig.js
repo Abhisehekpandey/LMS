@@ -754,7 +754,7 @@ const LDAPConfig = () => {
                         password,
                         baseDn,
                       });
-                      console.log("rrrr", result);
+
 
                       if (result?.id) {
                         setServerState((prev) => ({
@@ -867,7 +867,7 @@ const LDAPConfig = () => {
                             type: "success",
                             message: "Groups fetched successfully.",
                           });
-                          console.log("Fetched groups:", normalizedGroups);
+
                         } catch (error) {
                           setStatus({
                             type: "error",
@@ -960,10 +960,7 @@ const LDAPConfig = () => {
                           })
                           .filter(Boolean);
 
-                        console.log(
-                          "Selected Groups Array:",
-                          selectedGroupsObjects
-                        );
+
 
                         try {
                           setStatus({
@@ -1001,7 +998,7 @@ const LDAPConfig = () => {
                             message: "Groups added successfully!",
                           });
 
-                          console.log("API Response:", response.data);
+
 
                           setGroupListBox([]);
                           setIsUsersDone(true);
@@ -1072,7 +1069,7 @@ const LDAPConfig = () => {
                         //     const groups = await fetchGroupsByObjectClass(
                         //       configId
                         //     );
-                        //     console.log("groupssss",groups)
+
                         //     setAvailableGroupGroups(groups);
                         //     setStatus({
                         //       type: "success",

@@ -34,9 +34,9 @@ const ResetPassword = () => {
   const [passwordStrengthMsg, setPasswordStrengthMsg] = useState("");
 
   const [searchParams] = useSearchParams();
-  console.log("hiiiiii");
+
   const token = searchParams.get("token"); // <-- extract token from URL
-  console.log("tokennnn", token);
+
 
   const getPasswordStrengthMessage = (password) => {
     const strongPattern =
@@ -296,3 +296,4 @@ const ResetPassword = () => {
 };
 
 export default ResetPassword;
+

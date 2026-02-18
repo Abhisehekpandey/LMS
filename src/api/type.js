@@ -6,8 +6,7 @@ export const saveFileType = async ({
   attributes,
   token,
 }) => {
-    console.log(">>>usre",username)
-    console.log(">>>token",token)
+
   const payload = attributes.map((attr) => ({
     attributeName: attr.name,
     attributeType: attr.type,
@@ -19,7 +18,7 @@ export const saveFileType = async ({
   const headers = {
     "Content-Type": "application/json",
     Authorization: `Bearer ${token}`,
-    
+
     fileType: documentType,
     username: username,
     isTypeAutoClassified: false,
@@ -47,4 +46,5 @@ export const saveUserFileType = async (payload) => {
     }
   );
 };
+
 

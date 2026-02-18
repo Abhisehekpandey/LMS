@@ -192,12 +192,12 @@ function FeedContext() {
 
     const isAfterStart = historyStartDate
       ? isAfter(chatDate, parseISO(historyStartDate)) ||
-        chatDate.getTime() === parseISO(historyStartDate).getTime()
+      chatDate.getTime() === parseISO(historyStartDate).getTime()
       : true;
 
     const isBeforeEnd = historyEndDate
       ? isBefore(chatDate, parseISO(historyEndDate)) ||
-        chatDate.getTime() === parseISO(historyEndDate).getTime()
+      chatDate.getTime() === parseISO(historyEndDate).getTime()
       : true;
 
     const matchesType = historyType === "all" || chat.type === historyType;
@@ -229,11 +229,11 @@ function FeedContext() {
     );
     const afterStart = startDate
       ? isAfter(rowDate, parseISO(startDate)) ||
-        rowDate.getTime() === parseISO(startDate).getTime()
+      rowDate.getTime() === parseISO(startDate).getTime()
       : true;
     const beforeEnd = endDate
       ? isBefore(rowDate, parseISO(endDate)) ||
-        rowDate.getTime() === parseISO(endDate).getTime()
+      rowDate.getTime() === parseISO(endDate).getTime()
       : true;
 
     // per-column filters
@@ -263,8 +263,7 @@ function FeedContext() {
     const content = chatHistory
       .map(
         (chat) =>
-          `[${chat.timestamp}] ${chat.avatar === "user" ? "User" : "System"}: ${
-            chat.text
+          `[${chat.timestamp}] ${chat.avatar === "user" ? "User" : "System"}: ${chat.text
           }`
       )
       .join("\n\n");
@@ -436,7 +435,7 @@ function FeedContext() {
             size="small"
             color="primary"
             sx={{ ml: "auto", textTransform: "none", fontWeight: 500 }}
-            onClick={() => console.log("Top Download clicked")}
+          // onClick={ }
           >
             Download
           </Button>
@@ -732,8 +731,8 @@ function FeedContext() {
                           bgcolor: isDark
                             ? theme.palette.primary.main
                             : isUser
-                            ? "grey.200"
-                            : theme.palette.primary.main,
+                              ? "grey.200"
+                              : theme.palette.primary.main,
                           color: isDark || !isUser ? "#fff" : "text.primary",
                           px: 2,
                           py: 1,

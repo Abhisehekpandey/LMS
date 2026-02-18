@@ -12,7 +12,7 @@ export const detectPort = async ({ host, port }) => {
       },
     }
   );
-  console.log("response1", response);
+
   return response.data;
 };
 
@@ -116,7 +116,7 @@ export const fetchGroupsByObjectClass = async (configId, userDn) => {
       },
     }
   );
-  console.log("response", response);
+
   return response.data;
 };
 
@@ -137,8 +137,9 @@ export const verifyAndCountUsers = async ({ ldapId, groupDn }) => {
     }
   );
 
-  console.log("responseFinal", response);
+
   return response.data;
 };
+
 
 

@@ -94,7 +94,7 @@ const CreateUser = ({
 
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
-  console.log(">>>>>ssssss1", snackbarMessage);
+
   const [snackbarSeverity, setSnackbarSeverity] = useState("success"); // 'error' | 'info' | 'warning'
   const [csvUsers, setCsvUsers] = useState([]);
   const [departmentSubmitted, setDepartmentSubmitted] = useState(false);
@@ -310,7 +310,7 @@ const CreateUser = ({
     const headers = Object.keys(data[0] || {}).map((h) =>
       h.trim().toUpperCase()
     );
-    console.log("📢 Parsed Headers:", headers);
+
 
     const requiredHeaders = [
       "NAME",
@@ -350,7 +350,7 @@ const CreateUser = ({
 
 
 
-    console.log("CLEANED USERS:", cleanedUsers);
+
     setCsvUsers(cleanedUsers);
   };
 
@@ -401,7 +401,7 @@ const CreateUser = ({
   }, []);
 
   useEffect(() => {
-    console.log("Updated departments:", departments);
+
   }, [departments]);
 
   useEffect(() => {
@@ -748,7 +748,7 @@ const CreateUser = ({
                 {({ push, remove }) => (
                   <>
                     {formik.values.users.map((user, index) => {
-                      console.log(">>user.department", user.department);
+
 
                       const userErrors = formik.errors.users?.[index] || {};
                       const userTouched = formik.touched.users?.[index] || {};
@@ -761,13 +761,13 @@ const CreateUser = ({
                           ? user.department
                           : user.department?.deptName;
 
-                      console.log(">selectedDepartment", selectedDeptName);
+
 
                       const selectedDept = departments.find(
                         (dept) => dept.deptName === selectedDeptName
                       );
 
-                      console.log(">>ss", selectedDept);
+
 
                       const roleOptions = selectedDept?.roles || [];
 
@@ -1521,10 +1521,10 @@ const CreateUser = ({
                       : newDepartment.role,
                   selectedUsers: newDepartment.selectedUsers || [], // ✅ optional
                 };
-                console.log("pppppp", payload);
+
                 const createdDept = await createDepartment(payload);
 
-                console.log("Department created:", createdDept);
+
                 setDepartments((prev) => [...prev, payload]);
 
                 setSnackbarMessage("Department created successfully!");

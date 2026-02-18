@@ -130,7 +130,7 @@ const DepartmentTypeSetting = () => {
   const [searchText, setSearchText] = useState("");
 
   const handleEditType = (row) => {
-    console.log("Editing row:", row);
+
 
     setDocumentType(row.type || "");
     setAttributes(
@@ -877,7 +877,7 @@ const DepartmentTypeSetting = () => {
                 <Tooltip
                   title={
                     sessionStorage.getItem("deptAdmin") === "true" &&
-                    sessionStorage.getItem("superAdmin") !== "true"
+                      sessionStorage.getItem("superAdmin") !== "true"
                       ? "Only applicable for Super Admin"
                       : ""
                   }
@@ -927,17 +927,16 @@ const DepartmentTypeSetting = () => {
                   renderInput={(params) => (
                     <TextField
                       {...params}
-                      label={`Select ${
-                        typeScope === "user" ? "Users" : "Departments"
-                      }`}
+                      label={`Select ${typeScope === "user" ? "Users" : "Departments"
+                        }`}
                       size="small"
                       InputProps={{
                         ...params.InputProps,
                         endAdornment: (
                           <>
                             {(typeScope === "user" && loadingUsers) ||
-                            (typeScope === "department" &&
-                              loadingDepartments) ? (
+                              (typeScope === "department" &&
+                                loadingDepartments) ? (
                               <CircularProgress color="inherit" size={20} />
                             ) : null}
                             {params.InputProps.endAdornment}
@@ -951,8 +950,8 @@ const DepartmentTypeSetting = () => {
                       typeScope === "user"
                         ? handleUserDropdownScroll
                         : typeScope === "department"
-                        ? handleDepartmentDropdownScroll
-                        : undefined,
+                          ? handleDepartmentDropdownScroll
+                          : undefined,
                     style: { maxHeight: 300 },
                   }}
                   sx={{ mb: 0.5 }}

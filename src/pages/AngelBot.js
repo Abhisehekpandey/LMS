@@ -283,7 +283,7 @@ const AngelBot = () => {
           },
         }
       );
-      console.log("region", response.data)
+
       return response.data;
     } catch (error) {
       console.error("Error fetching regions:", error);
@@ -385,16 +385,16 @@ const AngelBot = () => {
 
     try {
       const firstResponse = await getDepartments(page, pageSize);
-      console.log(">>firsstresponse", firstResponse);
+
       const totalPages = firstResponse?.totalPages || 1;
-      console.log("totalPages", totalPages);
+
       allDepartments = [...(firstResponse?.content || [])];
-      console.log("allll", allDepartments);
+
 
       for (let i = 1; i < totalPages; i++) {
         const response = await getDepartments(i, pageSize);
         allDepartments = [...allDepartments, ...(response?.content || [])];
-        console.log(">>>alDepartmenst", allDepartments);
+
       }
 
       return allDepartments;
@@ -763,14 +763,7 @@ const AngelBot = () => {
 
       const availableStorage = Math.max(totalAllocated - usedStorage, 0);
 
-      console.log(
-        "Used:",
-        usedStorage.toFixed(2),
-        "Allocated:",
-        totalAllocated.toFixed(2),
-        "Available:",
-        availableStorage.toFixed(2)
-      );
+
 
       setStorageStatusData([
         { name: "Used", value: usedStorage, color: "#91CC75" },
@@ -857,7 +850,7 @@ const AngelBot = () => {
           );
           totalUserStorage += allowed;
         });
-        console.log("totalluser", totalUserStorage);
+
 
         const activeUsers = users.filter((user) => user.active && user.enabled);
 
@@ -922,7 +915,7 @@ const AngelBot = () => {
         setSortedStorageUsers(userStorageData);
 
         const departments = await fetchAllDepartments();
-        console.log(">>>>departments", departments);
+
 
         const departmentStorageData = departments.map((dept) => {
           const name = dept.deptName || "Unnamed Dept";
@@ -956,7 +949,7 @@ const AngelBot = () => {
           );
           totalDepartmentStorage += allowed;
         });
-        console.log("totalDepartment", totalDepartmentStorage);
+
 
         setStorageDistributionData([
           { name: "User", value: totalUserStorage, color: "#91CC75" },
@@ -2677,7 +2670,7 @@ const AngelBot = () => {
                   message: "Commands saved successfully!",
                   severity: "success",
                 });
-                console.log("API Result:", result);
+
                 setOpenRegionDialog(false);
               } catch (error) {
                 setSnackbar({

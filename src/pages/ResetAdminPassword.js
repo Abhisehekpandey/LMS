@@ -27,7 +27,7 @@
 // const ResetAdminPassword = () => {
 //   const navigate = useNavigate();
 //   const { token } = useParams();
-//   console.log("Token from URL path:", token);
+
 
 //   const [formData, setFormData] = useState({
 //     newPassword: "",
@@ -349,7 +349,7 @@ const floatAnimation = keyframes`
 const ResetAdminPassword = () => {
   const navigate = useNavigate();
   const { token } = useParams();
-  console.log("Token from URL path:", token);
+
 
   const [formData, setFormData] = useState({
     newPassword: "",

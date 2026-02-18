@@ -1,7 +1,7 @@
 import axios from "axios";
 
 export const signupUser = async (data) => {
-  console.log(process.env.REACT_APP_API_BASE_URL);
+
   try {
     const response = await axios.post(
       `${window.__ENV__.REACT_APP_ROUTE}/tenants/public/register`,
@@ -51,14 +51,14 @@ export const loginUser = async (username, password) => {
     );
     sessionStorage.setItem("deptAdmin", response.data.deptAdmin);
     sessionStorage.setItem("superAdmin", response.data.superAdmin);
-    console.log(">>>>ress", response);
+
     return response.data;
   } catch (error) {
-    console.log(">>eeerror", error);
+
     // Handle error (e.g., invalid credentials)
     throw new Error(
       error?.response?.data?.error ||
-        "Invalid Credentials check Email and Password "
+      "Invalid Credentials check Email and Password "
     );
   }
 };
@@ -81,7 +81,7 @@ export const checkDomainAvailability = async (emailDomain) => {
 };
 
 export const resetPassword = async (newPassword, resetToken) => {
-  console.log("resetToken", resetToken);
+
 
   if (!resetToken) throw new Error("Reset token is required");
 
@@ -114,7 +114,7 @@ export const ForgetAdminPassword = async ({ email }) => {
 };
 
 export const resetAdminPassword = async (newPassword, resetToken) => {
-  console.log("resetToken", resetToken);
+
 
   if (!resetToken) throw new Error("Reset token is required");
 
@@ -132,3 +132,4 @@ export const resetAdminPassword = async (newPassword, resetToken) => {
 
   return response.data;
 };
+

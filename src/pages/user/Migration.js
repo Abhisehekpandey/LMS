@@ -16,8 +16,7 @@ import {
 } from "@mui/material";
 
 const Migration = ({ handleClos, rowData, rows, onMigrationComplete }) => {
-  console.log("rowData", rowData);
-  console.log("rrrr", rows);
+
   const [selectedStorage, setSelectedStorage] = useState({});
   const [selectedUser, setSelectedUser] = useState(null);
 
@@ -59,7 +58,7 @@ const Migration = ({ handleClos, rowData, rows, onMigrationComplete }) => {
     }
     return acc;
   }, 0);
-  console.log("dataaaa", totalDataStorage);
+
 
   const availableStorageMB = selectedUser
     ? getAvailableStorageMB(selectedUser)
@@ -320,3 +319,4 @@ const Migration = ({ handleClos, rowData, rows, onMigrationComplete }) => {
 };
 
 export default Migration;
+

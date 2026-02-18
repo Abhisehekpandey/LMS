@@ -48,7 +48,7 @@ const Signup = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [domainAvailable, setDomainAvailable] = useState("");
-  console.log(">>>>do", domainAvailable);
+
   const [checkingDomain, setCheckingDomain] = useState(false);
 
   const [snackbar, setSnackbar] = useState({
@@ -215,7 +215,7 @@ const Signup = () => {
 
     try {
       const result = await signupUser(finalData);
-      console.log("Signup success:", result);
+
 
       setSnackbar({
         open: true,
@@ -554,3 +554,4 @@ const Signup = () => {
 };
 
 export default Signup;
+
