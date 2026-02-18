@@ -1,4 +1,4 @@
-
+ 
 import React, { useState } from "react";
 import {
   BrowserRouter as Router,
@@ -30,176 +30,181 @@ import FeedContext from "./pages/FeedContext";
 import ThemeSetting from "./pages/ThemeSetting";
 import FeedbackDashboard from "./pages/FeedBackDashboard";
 import FeedbackTable from "./pages/FeedbackTable";
-
+import { LogoProvider } from "./context/LogoContext";
+ 
 function App() {
   const [dictionarySearchResults, setDictionarySearchResults] = useState([]);
   const [darkMode, setDarkMode] = useState(false);
   const [departments, setDepartments] = useState([]);
-
+ 
   const theme = createTheme({
     palette: {
       mode: darkMode ? "dark" : "light",
     },
   });
-
+ 
   const toggleTheme = () => {
     setDarkMode((prevMode) => !prevMode);
   };
-
+ 
   return (
     <ThemeProvider theme={theme}>
-      <Router>
-        <Routes>
-          {/* Public routes */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/set-password" element={<ResetPassword />} />
-          <Route path="/forget-password" element={<ForgetPassword />} />
-          <Route
-            path="/reset-password/:token"
-            element={<ResetAdminPassword />}
-          />
-
-          {/* Protected routes — wrapped in Layout and ProtectedRoute */}
-          <Route
-            path="/user"
-            element={
-              <Layout onThemeToggle={toggleTheme}>
-                <ProtectedRoute>
-                  <Dashboard
-                    onThemeToggle={toggleTheme}
-                    departments={departments}
-                    setDepartments={setDepartments}
-                  />
-                </ProtectedRoute>
-              </Layout>
-            }
-          />
-          <Route
-            path="/department"
-            element={
-              <Layout onThemeToggle={toggleTheme}>
-                <ProtectedRoute>
-                  <Department
-                    onThemeToggle={toggleTheme}
-                    departments={departments}
-                    setDepartments={setDepartments}
-                  />
-                </ProtectedRoute>
-              </Layout>
-            }
-          />
-          <Route
-            path="/angelbot"
-            element={
-              <Layout onThemeToggle={toggleTheme}>
-                <ProtectedRoute>
-                  <AngelBot onThemeToggle={toggleTheme} />
-                </ProtectedRoute>
-              </Layout>
-            }
-          />
-          <Route
-            path="/company-dashboard"
-            element={
-              <Layout>
-                <ProtectedRoute>
-                  <CompanyDashboard onThemeToggle={toggleTheme} />
-                </ProtectedRoute>
-              </Layout>
-            }
-          />
-          <Route
-            path="/ldap-config"
-            element={
-              <Layout onThemeToggle={toggleTheme}>
-                <ProtectedRoute>
-                  <LDAPConfig />
-                </ProtectedRoute>
-              </Layout>
-            }
-          />
-          <Route
-            path="/choose-extension"
-            element={
-              <Layout onThemeToggle={toggleTheme}>
-                <ProtectedRoute>
-                  <ChooseExtension />
-                </ProtectedRoute>
-              </Layout>
-            }
-          />
-          <Route
-            path="/department-type-setting"
-            element={
-              <Layout onThemeToggle={toggleTheme}>
-                <ProtectedRoute>
-                  <DepartmentTypeSetting />
-                </ProtectedRoute>
-              </Layout>
-            }
-          />
-          <Route
-            path="/data-dictionary"
-            element={
-              <Layout
-                onThemeToggle={toggleTheme}
-                onSearch={setDictionarySearchResults}
-              >
-                <ProtectedRoute>
-                  <DataDictionary searchResults={dictionarySearchResults} />
-                </ProtectedRoute>
-              </Layout>
-            }
-          />
-          <Route
-            path="/feed-context"
-            element={
-              <Layout onThemeToggle={toggleTheme}>
-                <ProtectedRoute>
-                  <FeedbackDashboard />
-                </ProtectedRoute>
-              </Layout>
-            }
-          />
-          <Route
-            path="/feedback-table"
-            element={
-              <Layout onThemeToggle={toggleTheme}>
-                <ProtectedRoute>
-                  <FeedbackTable />
-                </ProtectedRoute>
-              </Layout>
-            }
-          />
-          <Route
-            path="/theme-setting"
-            element={
-              <Layout onThemeToggle={toggleTheme}>
-                <ProtectedRoute>
-                  <ThemeSetting />
-                </ProtectedRoute>
-              </Layout>
-            }
-          />
-          <Route
-            path="/activate/:token"
-            element={
-              <Layout>
-                <ProtectedRoute>
-                  <ActivateAccount />
-                </ProtectedRoute>
-              </Layout>
-            }
-          />
-
-          {/* Redirect root to signup */}
-          <Route path="/" element={<Navigate to="/signup" />} />
-        </Routes>
-      </Router>
+      <LogoProvider>
+        <Router>
+          <Routes>
+            {/* Public routes */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/set-password" element={<ResetPassword />} />
+            <Route path="/forget-password" element={<ForgetPassword />} />
+            <Route
+              path="/reset-password/:token"
+              element={<ResetAdminPassword />}
+            />
+ 
+            {/* Protected routes — wrapped in Layout and ProtectedRoute */}
+            <Route
+              path="/user"
+              element={
+                <Layout onThemeToggle={toggleTheme}>
+                  <ProtectedRoute>
+                    <Dashboard
+                      onThemeToggle={toggleTheme}
+                      departments={departments}
+                      setDepartments={setDepartments}
+                    />
+                  </ProtectedRoute>
+                </Layout>
+              }
+            />
+            <Route
+              path="/unit"
+              element={
+                <Layout onThemeToggle={toggleTheme}>
+                  <ProtectedRoute>
+                    <Department
+                      onThemeToggle={toggleTheme}
+                      departments={departments}
+                      setDepartments={setDepartments}
+                    />
+                  </ProtectedRoute>
+                </Layout>
+              }
+            />
+            <Route
+              path="/angelbot"
+              element={
+                <Layout onThemeToggle={toggleTheme}>
+                  <ProtectedRoute>
+                    <AngelBot onThemeToggle={toggleTheme} />
+                  </ProtectedRoute>
+                </Layout>
+              }
+            />
+            <Route
+              path="/company-dashboard"
+              element={
+                <Layout>
+                  <ProtectedRoute>
+                    <CompanyDashboard onThemeToggle={toggleTheme} />
+                  </ProtectedRoute>
+                </Layout>
+              }
+            />
+            <Route
+              path="/ldap-config"
+              element={
+                <Layout onThemeToggle={toggleTheme}>
+                  <ProtectedRoute>
+                    <LDAPConfig />
+                  </ProtectedRoute>
+                </Layout>
+              }
+            />
+            <Route
+              path="/choose-extension"
+              element={
+                <Layout onThemeToggle={toggleTheme}>
+                  <ProtectedRoute>
+                    <ChooseExtension />
+                  </ProtectedRoute>
+                </Layout>
+              }
+            />
+            <Route
+              path="/department-type-setting"
+              element={
+                <Layout onThemeToggle={toggleTheme}>
+                  <ProtectedRoute>
+                    <DepartmentTypeSetting />
+                  </ProtectedRoute>
+                </Layout>
+              }
+            />
+            <Route
+              path="/data-dictionary"
+              element={
+                <Layout
+                  onThemeToggle={toggleTheme}
+                  onSearch={setDictionarySearchResults}
+                >
+                  <ProtectedRoute>
+                    <DataDictionary searchResults={dictionarySearchResults} />
+                  </ProtectedRoute>
+                </Layout>
+              }
+            />
+            <Route
+              path="/feed-context"
+              element={
+                <Layout onThemeToggle={toggleTheme}>
+                  <ProtectedRoute>
+                    <FeedbackDashboard />
+                  </ProtectedRoute>
+                </Layout>
+              }
+            />
+            <Route
+              path="/feedback-table"
+              element={
+                <Layout onThemeToggle={toggleTheme}>
+                  <ProtectedRoute>
+                    <FeedbackTable />
+                  </ProtectedRoute>
+                </Layout>
+              }
+            />
+            <Route
+              path="/theme-setting"
+              element={
+                <Layout onThemeToggle={toggleTheme}>
+                  <ProtectedRoute>
+                    <ThemeSetting />
+                  </ProtectedRoute>
+                </Layout>
+              }
+            />
+            <Route
+              path="/activate/:token"
+              element={
+                <Layout>
+                  <ProtectedRoute>
+                    <ActivateAccount />
+                  </ProtectedRoute>
+                </Layout>
+              }
+            />
+ 
+            {/* Redirect root to signup */}
+            <Route path="/" element={<Navigate to="/signup" />} />
+          </Routes>
+        </Router>
+      </LogoProvider>
     </ThemeProvider>
   );
 }
-
+ 
 export default App;
-
+ 
+ 
+ 

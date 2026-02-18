@@ -186,10 +186,11 @@ const Transition = React.forwardRef(function Transition(props, ref) {
 
 const allColumns = [
   { id: "name", label: "Name" },
-  { id: "department", label: "Department" },
+  { id: "region", label: "Command" },
+  { id: "department", label: "Unit" },
+  { id: "sections", label: "Section" },
   { id: "role", label: "Role" },
   { id: "email", label: "Email" },
-  { id: "region", label: "Region" },
   { id: "storageUsed", label: "Storage" },
   { id: "manageStorage", label: "Manage Storage" },
   { id: "activeLicense", label: "Status" },
@@ -247,6 +248,32 @@ export default function UserTable() {
   const [userRoleMap, setUserRoleMap] = useState({});
   const [fullDepartments, setFullDepartments] = useState([]);
   const [regions, setRegions] = useState([]);
+  const [sections, setSections] = useState([]); // ✅ Added sections state
+
+  // ✅ Fetch sections when dialog opens or component mounts
+  const fetchSections = async () => {
+    try {
+      const response = await axios.get(
+        `${window.__ENV__.REACT_APP_ROUTE}/tenants/section/getAll`,
+        {
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+            "Content-Type": "application/json",
+            username: sessionStorage.getItem("adminEmail"),
+          },
+        }
+      );
+      setSections(response.data.sections || []);
+    } catch (err) {
+      console.error("Failed to fetch sections:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (editDialogOpen) {
+      fetchSections();
+    }
+  }, [editDialogOpen]);
 
   <Autocomplete
     options={departments}
@@ -275,7 +302,7 @@ export default function UserTable() {
       <TextField
         {...params}
         size="small"
-        label="Department"
+        label="Unit"
         fullWidth
         variant="outlined"
       />
@@ -364,6 +391,8 @@ export default function UserTable() {
         return row.roles?.[0]?.roleName?.toLowerCase() || "";
       case "region": // ✅ NEW
         return row.region?.toLowerCase() || "";
+      case "sections": // ✅ Added Section sorting
+        return (row.sections || []).join(", ").toLowerCase();
       case "storageUsed":
         return toBytes(row.permissions?.displayStorage);
       default:
@@ -417,14 +446,11 @@ export default function UserTable() {
       const userPayload = {
         userId: editData.id,
         userName: editData.name.trim(),
-        phoneNumber: editData.phoneNumber?.trim() || "",
-        reportingManager: editData.reportingManager?.trim() || "",
         deptId: deptObj?.id || null,
         roleId: roleObj?.id || null,
-        region: editData.region?.trim() || "", // ✅ Added
+        region: editData.region?.trim() || "",
+        sections: editData.sections || [],
       };
-
-      console.log("Final userPayload:", userPayload);
 
       await updateUser(userPayload);
 
@@ -511,12 +537,15 @@ export default function UserTable() {
         id: row.id,
         name: row.name || "",
         email: row.email || "",
-        phoneNumber: row.phoneNumber || "",
-        reportingManager: row.reportingManager || "", // ✅ add this line
+        name: row.name || "",
+        email: row.email || "",
+        // phoneNumber: row.phoneNumber || "", // ❌ Removed
+        reportingManager: row.reportingManager || "",
         department: deptName,
         role: matchedRole?.roleName || roleName,
         roles: row.roles || [],
         region: prefillRegion,
+        sections: row.sections || [], // ✅ Added sections
       };
 
       setEditData(newEditData);
@@ -587,10 +616,11 @@ export default function UserTable() {
 
     const extractRowData = (row) => ({
       Name: row.name || "N/A",
-      Department: row.roles?.[0]?.department?.deptName || "N/A",
+      Unit: row.roles?.[0]?.department?.deptName || "N/A",
       Role: row.roles?.[0]?.roleName || "N/A",
       "User Email": row.email || "N/A",
-      Region: row.region || "N/A", // ✅ NEW COLUMN
+      Command: row.region || "N/A", // ✅ NEW COLUMN
+      Section: (row.sections || []).join(", ") || "N/A", // ✅ Added Section export
       "Phone Number": row.phoneNumber || "N/A",
       "Reporting Manager": row.reportingManager || "N/A",
       "Storage Used": row.permissions?.displayStorage || "N/A",
@@ -690,15 +720,15 @@ export default function UserTable() {
     const updatedRows = rowsData.map((u) =>
       u.name === username
         ? {
-            ...u,
+          ...u,
+          active: newStatus,
+          permissions: {
+            ...u.permissions,
+            allowedStorageInBytesDisplay: selectedStorage,
+            allowedStorageInBytes: selectedStorageBytes,
             active: newStatus,
-            permissions: {
-              ...u.permissions,
-              allowedStorageInBytesDisplay: selectedStorage,
-              allowedStorageInBytes: selectedStorageBytes,
-              active: newStatus,
-            },
-          }
+          },
+        }
         : u
     );
 
@@ -969,7 +999,7 @@ export default function UserTable() {
               >
                 <MenuItem value="name">Name</MenuItem>
                 <MenuItem value="email">Email</MenuItem>
-                <MenuItem value="department">Department</MenuItem>
+                <MenuItem value="department">Unit</MenuItem>
                 <MenuItem value="role">Role</MenuItem> {/* ✅ Added */}
               </Select>
             </FormControl>
@@ -1137,6 +1167,21 @@ export default function UserTable() {
                   </TableCell>
                 )}
 
+                {visibleColumns.region && (
+                  <TableCell
+                    align="left"
+                    sortDirection={orderBy === "region" ? order : false}
+                  >
+                    <TableSortLabel
+                      active={orderBy === "region"}
+                      direction={orderBy === "region" ? order : "asc"}
+                      onClick={() => handleRequestSort("region")}
+                    >
+                      Command
+                    </TableSortLabel>
+                  </TableCell>
+                )}
+
                 {visibleColumns.department && (
                   <TableCell
                     align="left"
@@ -1147,7 +1192,22 @@ export default function UserTable() {
                       direction={orderBy === "department" ? order : "asc"}
                       onClick={() => handleRequestSort("department")}
                     >
-                      Department
+                      Unit
+                    </TableSortLabel>
+                  </TableCell>
+                )}
+
+                {visibleColumns.sections && (
+                  <TableCell
+                    align="left"
+                    sortDirection={orderBy === "sections" ? order : false}
+                  >
+                    <TableSortLabel
+                      active={orderBy === "sections"}
+                      direction={orderBy === "sections" ? order : "asc"}
+                      onClick={() => handleRequestSort("sections")}
+                    >
+                      Section
                     </TableSortLabel>
                   </TableCell>
                 )}
@@ -1178,20 +1238,6 @@ export default function UserTable() {
                       onClick={() => handleRequestSort("email")}
                     >
                       Email
-                    </TableSortLabel>
-                  </TableCell>
-                )}
-                {visibleColumns.region && (
-                  <TableCell
-                    align="left"
-                    sortDirection={orderBy === "region" ? order : false}
-                  >
-                    <TableSortLabel
-                      active={orderBy === "region"}
-                      direction={orderBy === "region" ? order : "asc"}
-                      onClick={() => handleRequestSort("region")}
-                    >
-                      Region
                     </TableSortLabel>
                   </TableCell>
                 )}
@@ -1253,6 +1299,10 @@ export default function UserTable() {
                       </TableCell>
                     )}
 
+                    {visibleColumns.region && (
+                      <TableCell align="left">{row.region || "N/A"}</TableCell>
+                    )}
+
                     {visibleColumns.department && (
                       <TableCell align="left">
                         {(() => {
@@ -1277,13 +1327,13 @@ export default function UserTable() {
                                       borderRadius: "6px",
                                     },
                                     "&:hover .MuiOutlinedInput-notchedOutline":
-                                      {
-                                        border: "1px solid #1976d2",
-                                      },
+                                    {
+                                      border: "1px solid #1976d2",
+                                    },
                                     "&.Mui-focused .MuiOutlinedInput-notchedOutline":
-                                      {
-                                        border: "2px solid #1976d2",
-                                      },
+                                    {
+                                      border: "2px solid #1976d2",
+                                    },
                                     "& .MuiSelect-select": {
                                       paddingLeft: "8px",
                                       paddingRight: "32px",
@@ -1331,6 +1381,73 @@ export default function UserTable() {
                       </TableCell>
                     )}
 
+                    {visibleColumns.sections && (
+                      <TableCell align="left">
+                        {(() => {
+                          const allSections = row.sections || [];
+                          if (allSections.length > 1) {
+                            return (
+                              <FormControl size="small" fullWidth>
+                                <Select
+                                  value={allSections[0]}
+                                  sx={{
+                                    height: 32,
+                                    fontSize: "0.875rem",
+                                    "& .MuiOutlinedInput-notchedOutline": {
+                                      border: "1px solid #e0e0e0",
+                                      borderRadius: "6px",
+                                    },
+                                    "&:hover .MuiOutlinedInput-notchedOutline": {
+                                      border: "1px solid #1976d2",
+                                    },
+                                    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                                      border: "2px solid #1976d2",
+                                    },
+                                    "& .MuiSelect-select": {
+                                      paddingLeft: "8px",
+                                      paddingRight: "32px",
+                                    },
+                                    "& .MuiSelect-icon": {
+                                      color: "#1976d2",
+                                    },
+                                  }}
+                                  MenuProps={{
+                                    PaperProps: {
+                                      sx: {
+                                        maxHeight: 300,
+                                        borderRadius: "8px",
+                                        boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+                                        "& .MuiMenuItem-root": {
+                                          fontSize: "0.875rem",
+                                          padding: "10px 16px",
+                                          "&:hover": {
+                                            backgroundColor: "#e3f2fd",
+                                          },
+                                          "&.Mui-selected": {
+                                            backgroundColor: "#bbdefb",
+                                            "&:hover": {
+                                              backgroundColor: "#90caf9",
+                                            },
+                                          },
+                                        },
+                                      },
+                                    },
+                                  }}
+                                >
+                                  {allSections.map((sec) => (
+                                    <MenuItem key={sec} value={sec}>
+                                      {sec}
+                                    </MenuItem>
+                                  ))}
+                                </Select>
+                              </FormControl>
+                            );
+                          }
+                          return allSections[0] || "N/A";
+                        })()}
+                      </TableCell>
+                    )}
+
                     {visibleColumns.role && (
                       <TableCell align="left">
                         {(() => {
@@ -1364,13 +1481,13 @@ export default function UserTable() {
                                       borderRadius: "6px",
                                     },
                                     "&:hover .MuiOutlinedInput-notchedOutline":
-                                      {
-                                        border: "1px solid #1976d2",
-                                      },
+                                    {
+                                      border: "1px solid #1976d2",
+                                    },
                                     "&.Mui-focused .MuiOutlinedInput-notchedOutline":
-                                      {
-                                        border: "2px solid #1976d2",
-                                      },
+                                    {
+                                      border: "2px solid #1976d2",
+                                    },
                                     "& .MuiSelect-select": {
                                       paddingLeft: "8px",
                                       paddingRight: "32px",
@@ -1428,9 +1545,6 @@ export default function UserTable() {
                     {visibleColumns.email && (
                       <TableCell align="left">{row.email}</TableCell>
                     )}
-                    {visibleColumns.region && (
-                      <TableCell align="left">{row.region || "N/A"}</TableCell>
-                    )}
 
                     {visibleColumns.storageUsed && (
                       <TableCell align="left">
@@ -1454,14 +1568,14 @@ export default function UserTable() {
                               const updated = rowsData.map((r) =>
                                 r.id === row.id
                                   ? {
-                                      ...r,
-                                      permissions: {
-                                        ...r.permissions,
-                                        allowedStorageInBytesDisplay:
-                                          newDisplayValue,
-                                        allowedStorageInBytes: newByteValue,
-                                      },
-                                    }
+                                    ...r,
+                                    permissions: {
+                                      ...r.permissions,
+                                      allowedStorageInBytesDisplay:
+                                        newDisplayValue,
+                                      allowedStorageInBytes: newByteValue,
+                                    },
+                                  }
                                   : r
                               );
 
@@ -1471,14 +1585,14 @@ export default function UserTable() {
                                 const updatedRows = rowsData.map((u) =>
                                   u.id === row.id
                                     ? {
-                                        ...u,
-                                        permissions: {
-                                          ...u.permissions,
-                                          allowedStorageInBytesDisplay:
-                                            newDisplayValue,
-                                          allowedStorageInBytes: newByteValue,
-                                        },
-                                      }
+                                      ...u,
+                                      permissions: {
+                                        ...u.permissions,
+                                        allowedStorageInBytesDisplay:
+                                          newDisplayValue,
+                                        allowedStorageInBytes: newByteValue,
+                                      },
+                                    }
                                     : u
                                 );
 
@@ -1540,8 +1654,8 @@ export default function UserTable() {
                             row.active && !row.enabled
                               ? "Pending (Email Not Verified)"
                               : !row.active
-                              ? "Inactive (Provide Storage"
-                              : "Active"
+                                ? "Inactive (Provide Storage"
+                                : "Active"
                           }
                         >
                           <span>
@@ -1557,7 +1671,7 @@ export default function UserTable() {
                                         ?.allowedStorageInBytesDisplay ||
                                         row.permissions
                                           ?.allowedStorageInBytesDisplay ===
-                                          "0 KB"))
+                                        "0 KB"))
                                   }
                                 />
                               }
@@ -2068,7 +2182,7 @@ export default function UserTable() {
                     setSelectedDepartment(value || null); // updates role dropdown
                   }}
                   renderInput={(params) => (
-                    <TextField {...params} label="Department" fullWidth />
+                    <TextField {...params} label="Unit" fullWidth />
                   )}
                 />
               </Grid>
@@ -2109,39 +2223,26 @@ export default function UserTable() {
               </Grid>
 
               <Grid item xs={6}>
-                <TextField
+                <Autocomplete
+                  multiple
                   size="small"
-                  fullWidth
-                  label={
-                    <>
-                      Phone Number <span style={{ color: "red" }}>*</span>
-                    </>
-                  }
-                  value={editData.phoneNumber || ""}
-                  onChange={(e) => {
-                    const input = e.target.value;
-
-                    // Allow only digits
-                    if (!/^\d*$/.test(input)) return;
-
-                    // Restrict to max 10 digits
-                    if (input.length > 10) return;
-
+                  options={sections}
+                  freeSolo
+                  value={editData.sections || []}
+                  onChange={(e, newValue) => {
                     setEditData((prev) => ({
                       ...prev,
-                      phoneNumber: input,
+                      sections: newValue,
                     }));
                   }}
-                  error={
-                    !editData.phoneNumber || editData.phoneNumber.length !== 10
-                  }
-                  helperText={
-                    !editData.phoneNumber
-                      ? "Required"
-                      : editData.phoneNumber.length !== 10
-                      ? "Phone number must be exactly 10 digits"
-                      : ""
-                  }
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      variant="outlined"
+                      label="Section"
+                      placeholder="Select Sections"
+                    />
+                  )}
                 />
               </Grid>
 
@@ -2169,7 +2270,7 @@ export default function UserTable() {
                     setEditData((prev) => ({ ...prev, region: value || "" }))
                   }
                   renderInput={(params) => (
-                    <TextField {...params} label="Region" fullWidth />
+                    <TextField {...params} label="Command" fullWidth />
                   )}
                 />
               </Grid>

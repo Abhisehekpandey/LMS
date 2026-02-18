@@ -200,7 +200,7 @@ const CustomSpinner = styled(CircularProgress)(({ theme }) => ({
 }));
 
 const allColumns = [
-  { id: "name", label: "Department" },
+  { id: "name", label: "Unit" },
   { id: "displayName", label: "Display Name" },
   { id: "owner", label: "Owner" },
   { id: "storage", label: "Storage" },
@@ -303,7 +303,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       storage: "1 GB",
       departmentModerator: "",
       role: "",
-      permission: "ADMIN", // default
+      permission: "VIEWER", // default
       submitted: false,
     },
   ]);
@@ -600,7 +600,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 }}
               >
                 <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                  Department Users
+                  Unit Users
                 </Typography>
                 <IconButton
                   size="small"
@@ -1009,7 +1009,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 }}
               >
                 <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                  Department Roles
+                  Unit Roles
                 </Typography>
                 <IconButton
                   size="small"
@@ -1286,7 +1286,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       if (!isValidOwner) {
         setSnackbar({
           open: true,
-          message: "Please select a valid Department Owner from the list",
+          message: "Please select a valid Unit Owner from the list",
           severity: "error",
         });
         return;
@@ -1306,18 +1306,18 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         prev.map((dept) =>
           dept.name === editedDepartment.originalName
             ? {
-                ...dept,
-                name: payload.deptName,
-                displayName: payload.deptDisplayName,
-                departmentModerator: payload.deptModerator,
-              }
+              ...dept,
+              name: payload.deptName,
+              displayName: payload.deptDisplayName,
+              departmentModerator: payload.deptModerator,
+            }
             : dept
         )
       );
 
       setSnackbar({
         open: true,
-        message: "Department updated successfully",
+        message: "Unit updated successfully",
         severity: "success",
       });
 
@@ -1327,7 +1327,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       console.error("Failed to update department:", error);
       setSnackbar({
         open: true,
-        message: "Failed to update department. Please try again.",
+        message: "Failed to update Unit. Please try again.",
         severity: "error",
       });
     }
@@ -1360,7 +1360,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       setFilteredUsers((prev) => [...prev, ...simplifiedUsers]);
       setFilteredPage((prev) => prev + 1);
     } catch (error) {
-      console.error("Failed to load users by department:", error);
+      console.error("Failed to load users by Unit:", error);
     } finally {
       loadingFilteredUsers.current = false;
     }
@@ -1409,7 +1409,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       const allDepts = res.content;
 
       const targetDept = allDepts.find((d) => d.deptName === deptName);
-      if (!targetDept) throw new Error("Target department not found");
+      if (!targetDept) throw new Error("Target Unit not found");
 
       const payload = [
         {
@@ -1548,7 +1548,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       setSnackbar({
         open: true,
         message:
-          "Cannot delete the last role. Department must have at least one role.",
+          "Cannot delete the last role. Unit must have at least one role.",
         severity: "error",
       });
       return;
@@ -1561,9 +1561,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         prevDepartments.map((dept) =>
           dept.name === deptName
             ? {
-                ...dept,
-                roles: dept.roles.filter((_, i) => i !== roleIndex),
-              }
+              ...dept,
+              roles: dept.roles.filter((_, i) => i !== roleIndex),
+            }
             : dept
         )
       );
@@ -1597,11 +1597,11 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       prev.map((dept) =>
         dept.name === editingRole.departmentName
           ? {
-              ...dept,
-              roles: dept.roles.map((role, i) =>
-                i === editingRole.roleIndex ? editingRole.value : role.roleName
-              ),
-            }
+            ...dept,
+            roles: dept.roles.map((role, i) =>
+              i === editingRole.roleIndex ? editingRole.value : role.roleName
+            ),
+          }
           : dept
       )
     );
@@ -1622,7 +1622,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
   const handleBulkDownload = () => {
     try {
       const exportData = departments.map((dept) => ({
-        Department: dept.name,
+        Unit: dept.name,
         "Display Name": dept.displayName,
         "Department Moderator": dept.departmentModerator,
         "Storage Allocated":
@@ -1636,7 +1636,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       const wscols = [
         { wch: 25 }, // Department
         { wch: 15 }, // Display Name
-        { wch: 25 }, // Department Owner
+        { wch: 25 }, // Unit Owner
         { wch: 20 }, // Storage Allocated
         { wch: 50 }, // Combined Roles column
         { wch: 15 }, // Status column
@@ -1650,13 +1650,13 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
       setSnackbar({
         open: true,
-        message: "Departments exported successfully",
+        message: "Units exported successfully",
         severity: "success",
       });
     } catch (error) {
       setSnackbar({
         open: true,
-        message: "Error exporting departments",
+        message: "Error exporting Units",
         severity: "error",
       });
     }
@@ -1808,7 +1808,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
             setSnackbar({
               open: true,
-              message: "Bulk department upload successful",
+              message: "Bulk Unit upload successful",
               severity: "success",
             });
             setShowAddDepartment(false);
@@ -2006,7 +2006,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       fetchDepartments();
       setSnackbar({
         open: true,
-        message: "Departments created successfully",
+        message: "Unit created successfully",
         severity: "success",
       });
       setShowAddDepartment(false);
@@ -2024,7 +2024,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       console.error(error);
       setSnackbar({
         open: true,
-        message: "Failed to create departments",
+        message: "Failed to create Unit",
         severity: "error",
       });
     }
@@ -2054,12 +2054,12 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         prev.map((dept) =>
           dept.name === selectedDepartment.name
             ? {
-                ...dept,
-                roles: [
-                  ...dept.roles,
-                  { roleName: newRole.trim(), isAdmin: isAdminRole },
-                ],
-              }
+              ...dept,
+              roles: [
+                ...dept.roles,
+                { roleName: newRole.trim(), isAdmin: isAdminRole },
+              ],
+            }
             : dept
         )
       );
@@ -2100,9 +2100,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     );
     setSnackbar({
       open: true,
-      message: `Department "${dept.name}" ${
-        !dept.isActive ? "activated" : "deactivated"
-      }`,
+      message: `Unit "${dept.name}" ${!dept.isActive ? "activated" : "deactivated"
+        }`,
       severity: "success",
     });
   };
@@ -2136,7 +2135,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
       setSnackbar({
         open: true,
-        message: `Department "${departmentToDelete.name}" deleted successfully`,
+        message: `Unit "${departmentToDelete.name}" deleted successfully`,
         severity: "success",
       });
       fetchDepartments();
@@ -2144,7 +2143,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       console.error("Error deleting department:", error);
       setSnackbar({
         open: true,
-        message: `Failed to delete department "${departmentToDelete.name}"`,
+        message: `Failed to delete Unit "${departmentToDelete.name}"`,
         severity: "error",
       });
     } finally {
@@ -2204,9 +2203,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         if (!dept.roles || dept.roles.length === 0) {
           return [
             {
-              Department: dept.name,
+              Unit: dept.name,
               "Display Name": dept.displayName,
-              "Department Owner": dept.departmentModerator,
+              "Unit Owner": dept.departmentModerator,
               "Storage Allocated": dept.allowedStorage || "N/A",
               "Storage Consumed": dept.storage || "N/A",
               Role: "",
@@ -2216,9 +2215,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         }
 
         return dept.roles.map((role) => ({
-          Department: dept.name,
+          Unit: dept.name,
           "Display Name": dept.displayName,
-          "Department Owner": dept.departmentModerator,
+          "Unit Owner": dept.departmentModerator,
           "Storage Allocated": dept.allowedStorage || "N/A",
           "Storage Consumed": dept.storage || "N/A",
           Role: role.roleName,
@@ -2263,9 +2262,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     if (!val) return "";
     const [num, unit] = val.trim().split(/\s+/); // splits "25.00 GB" → ["25.00", "GB"]
     const rounded = parseFloat(num);
-    return `${
-      Number.isInteger(rounded) ? rounded : Math.floor(rounded)
-    }${unit}`;
+    return `${Number.isInteger(rounded) ? rounded : Math.floor(rounded)
+      }${unit}`;
   };
 
   useEffect(() => {
@@ -2376,7 +2374,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 onChange={(e) => setSearchColumn(e.target.value)}
                 label="Filter By"
               >
-                <MenuItem value="name">Department</MenuItem>
+                <MenuItem value="name">Unit</MenuItem>
                 <MenuItem value="departmentModerator">Owner</MenuItem>
                 <MenuItem value="displayName">Short Name</MenuItem>
               </Select>
@@ -2504,7 +2502,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     direction={orderBy === "name" ? order : "asc"}
                     onClick={() => handleRequestSort("name")}
                   >
-                    Department
+                    Unit
                   </TableSortLabel>
                 </TableCell>
               )}
@@ -2810,7 +2808,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                     color: "#1565c0",
                                   },
                                 }}
-                                title="Edit Department"
+                                title="Edit Unit"
                               >
                                 <EditIcon fontSize="small" />
                               </IconButton>
@@ -3039,7 +3037,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               </span>
             </Tooltip>
           ) : (
-            <Tooltip title="Add Department" placement="left">
+            <Tooltip title="Add Unit" placement="left">
               <SpeedDial
                 ariaLabel="Department actions"
                 icon={<Add />}
@@ -3125,7 +3123,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 color: "#fff",
               }}
             >
-              Create New Department
+              Create New Unit
             </Typography>
 
             <IconButton
@@ -3172,7 +3170,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     onClick={() => toggleExpand(index)}
                   >
                     <Typography variant="subtitle1" sx={{ fontWeight: "bold" }}>
-                      {dept.name ? dept.name : "Untitled Department"}
+                      {dept.name ? dept.name : "Untitled Unit"}
                       {dept.storage ? ` / ${dept.storage}` : ""}
                     </Typography>
 
@@ -3210,7 +3208,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                             size="small"
                             label={
                               <>
-                                Department Name{" "}
+                                Unit Name{" "}
                                 <span style={{ color: "red" }}>*</span>
                               </>
                             }
@@ -3243,12 +3241,12 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                               !dept.name && dept.submitted
                                 ? "Required"
                                 : dept.hasInvalidChar
-                                ? "Only letters, numbers, - and _ are allowed"
-                                : duplicateDepartmentError
-                                ? "Already exists"
-                                : dept.name.length > 35
-                                ? "Max 35 characters"
-                                : ""
+                                  ? "Only letters, numbers, - and _ are allowed"
+                                  : duplicateDepartmentError
+                                    ? "Already exists"
+                                    : dept.name.length > 35
+                                      ? "Max 35 characters"
+                                      : ""
                             }
                           />
                         </Grid>
@@ -3259,7 +3257,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                             size="small"
                             label={
                               <>
-                                Department Short Name{" "}
+                                Unit Short Name{" "}
                                 <span style={{ color: "red" }}>*</span>
                               </>
                             }
@@ -3297,12 +3295,12 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                               !dept.displayName && dept.submitted
                                 ? "Required"
                                 : duplicateShortNameError
-                                ? "Already exists"
-                                : dept.displayName.length > 8
-                                ? "Max 8 characters"
-                                : dept.hasSpecialChar
-                                ? "Special characters not allowed"
-                                : ""
+                                  ? "Already exists"
+                                  : dept.displayName.length > 8
+                                    ? "Max 8 characters"
+                                    : dept.hasSpecialChar
+                                      ? "Special characters not allowed"
+                                      : ""
                             }
                           />
                         </Grid>
@@ -3367,7 +3365,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                 const listboxNode = event.currentTarget;
                                 if (
                                   listboxNode.scrollTop +
-                                    listboxNode.clientHeight >=
+                                  listboxNode.clientHeight >=
                                   listboxNode.scrollHeight - 1
                                 ) {
                                   loadMoreUsers();
@@ -3380,7 +3378,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                 {...params}
                                 label={
                                   <>
-                                    Department Owner{" "}
+                                    Unit Owner{" "}
                                     <span style={{ color: "red" }}>*</span>
                                   </>
                                 }
@@ -3450,7 +3448,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               onClick={addMoreDepartment}
               sx={{ mt: 1 }}
             >
-              + Add More Department
+              + Add More Unit
             </Button>
           </Box>
 
@@ -3660,7 +3658,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               color: "#fff",
             }}
           >
-            Edit Department
+            Edit Unit
           </Typography>
 
           <IconButton
@@ -3701,11 +3699,11 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         <Card elevation={1} sx={{ borderRadius: 2 }}>
           <CardContent>
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              <Tooltip title="Department Name cannot be edited" arrow>
+              <Tooltip title="Unit Name cannot be edited" arrow>
                 <TextField
                   fullWidth
                   size="small"
-                  label="Department Name"
+                  label="Unit Name"
                   value={editedDepartment?.name || ""}
                   disabled
                   helperText="This field is locked"
@@ -3730,7 +3728,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 <TextField
                   fullWidth
                   size="small"
-                  label="Department Owner"
+                  label="Unit Owner"
                   value={editedDepartment?.departmentModerator || ""}
                   InputProps={{
                     readOnly: true,
@@ -3827,8 +3825,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                               .toLowerCase()
                               .includes(searchModerator.toLowerCase())
                           ).length === 0 && (
-                            <MenuItem disabled>No users found</MenuItem>
-                          )}
+                              <MenuItem disabled>No users found</MenuItem>
+                            )}
                         </Box>
                       </Paper>
                     </Grow>
@@ -4260,16 +4258,16 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     >
                       {`[${(assignment.role === "Admin"
                         ? [
-                            "Read",
-                            "Write",
-                            "Delete",
-                            "Share",
-                            "UserAdmin",
-                            "Comment",
-                            "Upload",
-                          ]
+                          "Read",
+                          "Write",
+                          "Delete",
+                          "Share",
+                          "UserAdmin",
+                          "Comment",
+                          "Upload",
+                        ]
                         : assignment.role === "Editor"
-                        ? [
+                          ? [
                             "Read",
                             "Write",
                             "Delete",
@@ -4277,11 +4275,11 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                             "Comment",
                             "Upload",
                           ]
-                        : assignment.role === "Viewer"
-                        ? ["Read", "Comment"]
-                        : assignment.role === "Collaborator"
-                        ? ["Read", "Share", "Comment", "Upload"]
-                        : []
+                          : assignment.role === "Viewer"
+                            ? ["Read", "Comment"]
+                            : assignment.role === "Collaborator"
+                              ? ["Read", "Share", "Comment", "Upload"]
+                              : []
                       ).join(", ")}]`}
                     </Typography>
                   )}

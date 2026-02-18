@@ -283,7 +283,7 @@ const AngelBot = () => {
           },
         }
       );
-      console.log("region",response.data)
+      console.log("region", response.data)
       return response.data;
     } catch (error) {
       console.error("Error fetching regions:", error);
@@ -294,8 +294,7 @@ const AngelBot = () => {
   const deleteRegion = async (regionName) => {
     try {
       const response = await axios.delete(
-        `${
-          window.__ENV__.REACT_APP_ROUTE
+        `${window.__ENV__.REACT_APP_ROUTE
         }/tenants/deleteIn?value=${encodeURIComponent(regionName)}`,
         {
           headers: {
@@ -681,9 +680,8 @@ const AngelBot = () => {
       trigger: "item",
 
       formatter: function (params) {
-        return `${params.name}: ${formatSizeGB(params.value)} (${
-          params.percent
-        }%)`;
+        return `${params.name}: ${formatSizeGB(params.value)} (${params.percent
+          }%)`;
       },
     },
 
@@ -1027,8 +1025,8 @@ const AngelBot = () => {
               status === "Expired"
                 ? { bg: alpha("#f44336", 0.1), color: "#f44336" }
                 : status === "Expiring Soon"
-                ? { bg: alpha("#ff9800", 0.1), color: "#ff9800" }
-                : { bg: alpha("#4caf50", 0.1), color: "#4caf50" };
+                  ? { bg: alpha("#ff9800", 0.1), color: "#ff9800" }
+                  : { bg: alpha("#4caf50", 0.1), color: "#4caf50" };
 
             return (
               <Box
@@ -1086,8 +1084,8 @@ const AngelBot = () => {
                           status === "Expired"
                             ? "#f44336"
                             : status === "Expiring Soon"
-                            ? "#ff9800"
-                            : "#4caf50",
+                              ? "#ff9800"
+                              : "#4caf50",
                         fontWeight: 700,
                         fontSize: "0.75rem",
                         mt: 0.5,
@@ -1545,7 +1543,7 @@ const AngelBot = () => {
                               </label>
                             </Tooltip>
 
-                            <Tooltip title="Create Region" arrow>
+                            {/* <Tooltip title="Create Command" arrow>
                               <IconButton
                                 color="primary"
                                 size="small"
@@ -1580,7 +1578,7 @@ const AngelBot = () => {
                               >
                                 <Add />
                               </IconButton>
-                            </Tooltip>
+                            </Tooltip> */}
                           </Box>
                         </Box>
                       }
@@ -1757,17 +1755,16 @@ const AngelBot = () => {
                                     }
                                   }}
                                   style={{
-                                    borderBottom: `1px solid ${
-                                      isDark ? "#333" : "#eee"
-                                    }`,
+                                    borderBottom: `1px solid ${isDark ? "#333" : "#eee"
+                                      }`,
                                     cursor: "pointer",
                                     backgroundColor: isSelected
                                       ? isDark
                                         ? "#263238"
                                         : "rgba(25, 118, 210, 0.05)"
                                       : isDark
-                                      ? "#1e1e1e"
-                                      : "#fff",
+                                        ? "#1e1e1e"
+                                        : "#fff",
                                     color: isDark ? "#e0e0e0" : "#000",
                                     transition:
                                       "background-color 0.3s ease-in-out",
@@ -1941,16 +1938,15 @@ const AngelBot = () => {
                                 <tr
                                   key={index}
                                   style={{
-                                    borderBottom: `1px solid ${
-                                      isDark ? "#333" : "#f0f0f0"
-                                    }`,
+                                    borderBottom: `1px solid ${isDark ? "#333" : "#f0f0f0"
+                                      }`,
                                     backgroundColor: isDark
                                       ? index % 2 === 0
                                         ? "#1c1c1c"
                                         : "#222"
                                       : index % 2 === 0
-                                      ? "#fafafa"
-                                      : "#fff",
+                                        ? "#fafafa"
+                                        : "#fff",
                                   }}
                                 >
                                   <td
@@ -2143,7 +2139,7 @@ const AngelBot = () => {
                                     backgroundColor: getProgressBarColor(
                                       (user.storageUsed /
                                         user.storageAllocated) *
-                                        100
+                                      100
                                     ),
                                   },
                                 }}
@@ -2176,9 +2172,9 @@ const AngelBot = () => {
                         sx={{
                           mt: 1,
                           ".MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows":
-                            {
-                              margin: 0,
-                            },
+                          {
+                            margin: 0,
+                          },
                         }}
                       />
                     </Box>
@@ -2196,7 +2192,7 @@ const AngelBot = () => {
                     >
                       <Dashboard color="primary" />
                       <Typography variant="h6" color="primary">
-                        Storage Used (By Departments)
+                        Storage Used (By Units)
                       </Typography>
                       <FormControl
                         size="small"
@@ -2325,7 +2321,7 @@ const AngelBot = () => {
                                     backgroundColor: getProgressBarColor(
                                       (dept.storageUsed /
                                         dept.storageAllocated) *
-                                        100
+                                      100
                                     ),
                                   },
                                 }}
@@ -2358,9 +2354,9 @@ const AngelBot = () => {
                         sx={{
                           mt: 1,
                           ".MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows":
-                            {
-                              margin: 0,
-                            },
+                          {
+                            margin: 0,
+                          },
                         }}
                       />
                     </Box>
@@ -2505,7 +2501,7 @@ const AngelBot = () => {
               color: "#fff",
             }}
           >
-            Create Regions
+            Create Command
           </Typography>
 
           <IconButton
@@ -2537,7 +2533,7 @@ const AngelBot = () => {
         <DialogContent>
           <Box sx={{ display: "flex", gap: 2, alignItems: "center", mt: 2 }}>
             <TextField
-              label="Region Name"
+              label="Command Name"
               value={newRegion}
               onChange={(e) => setNewRegion(e.target.value)}
               error={!!regionError}
@@ -2551,16 +2547,16 @@ const AngelBot = () => {
                 const regex = /^[A-Za-z0-9\-_]{1,12}$/; // ✅ only A-Z, 0-9, -, _ (1–8 chars)
                 if (!regex.test(newRegion)) {
                   setRegionError(
-                    "Region must be 1-12 chars, no spaces, only letters, numbers, - or _"
+                    "Command must be 1-12 chars, no spaces, only letters, numbers, - or _"
                   );
                   return;
                 }
                 if (regions.includes(newRegion)) {
-                  setRegionError("Region already exists.");
+                  setRegionError("Command already exists.");
                   return;
                 }
                 if (regions.length >= 25) {
-                  setRegionError("Maximum 25 regions allowed.");
+                  setRegionError("Maximum 25 commands allowed.");
                   return;
                 }
 
@@ -2592,10 +2588,10 @@ const AngelBot = () => {
               },
             }}
           >
-           
+
             {regions.length === 0 ? (
               <Typography variant="body2" color="text.secondary">
-                No regions added yet.
+                No commands added yet.
               </Typography>
             ) : (
               regions.map((region, idx) => (
@@ -2636,13 +2632,13 @@ const AngelBot = () => {
                           if (defaultRegion === region) setDefaultRegion("");
                           setSnackbar({
                             open: true,
-                            message: `Region "${region}" deleted successfully.`,
+                            message: `Command "${region}" deleted successfully.`,
                             severity: "success",
                           });
                         } catch (error) {
                           setSnackbar({
                             open: true,
-                            message: "Failed to delete region.",
+                            message: "Failed to delete command.",
                             severity: "error",
                           });
                         }
@@ -2666,11 +2662,11 @@ const AngelBot = () => {
             }}
             onClick={async () => {
               if (regions.length === 0) {
-                setRegionError("At least one region is required.");
+                setRegionError("At least one command is required.");
                 return;
               }
               if (!defaultRegion) {
-                setRegionError("Please select a default region.");
+                setRegionError("Please select a default command.");
                 return;
               }
 
@@ -2678,7 +2674,7 @@ const AngelBot = () => {
                 const result = await saveRegions(regions, defaultRegion);
                 setSnackbar({
                   open: true,
-                  message: "Regions saved successfully!",
+                  message: "Commands saved successfully!",
                   severity: "success",
                 });
                 console.log("API Result:", result);
@@ -2686,7 +2682,7 @@ const AngelBot = () => {
               } catch (error) {
                 setSnackbar({
                   open: true,
-                  message: "Failed to save regions.",
+                  message: "Failed to save commands.",
                   severity: "error",
                 });
               }

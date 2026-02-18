@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useContext } from "react";
 import Snackbar from "@mui/material/Snackbar";
 import MuiAlert from "@mui/material/Alert";
 import { FormHelperText } from "@mui/material"; // make sure this is imported
@@ -20,6 +20,7 @@ import { useNavigate } from "react-router-dom";
 import backgroundImage from "../assets/Back.jpg.jpg";
 import { keyframes } from "@emotion/react";
 import { signupUser, checkDomainAvailability } from "../api/authApi.";
+import { LogoContext } from "../context/LogoContext";
 
 const floatAnimation = keyframes`
   0% { background-position-y: 0px; }
@@ -28,6 +29,7 @@ const floatAnimation = keyframes`
 `;
 
 const Signup = () => {
+  const { logoData } = useContext(LogoContext);
   const theme = useTheme();
   const navigate = useNavigate();
   const debounceTimeoutRef = useRef(null);
@@ -282,7 +284,7 @@ const Signup = () => {
           <Box maxWidth={400} textAlign="left">
             <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
               <img
-                src="/sync_logo.png"
+                src={logoData.loginImage}
                 alt="AngelBot Access Arc Logo"
                 style={{
                   maxWidth: "100%",
@@ -297,18 +299,15 @@ const Signup = () => {
               sx={{
                 mt: 3,
                 fontSize: "0.95rem",
-                fontWeight: 400,
-                color: "#4b5563",
+                fontWeight: 600,
+                color: "white",
                 lineHeight: 1.6,
                 maxWidth: "90%",
+                textAlign: "center",
+                mx: "auto"
               }}
             >
-              AccessArc is a robust license management system designed to
-              streamline and curate your company software privileges. It ensures
-              efficient allocation and monitoring of licenses, optimizing usage
-              and compliance. With AccessArc, you gain full control over your
-              software assets, reducing costs and enhancing operational
-              efficiency.
+              {logoData.slogan}
             </Typography>
           </Box>
         </Box>

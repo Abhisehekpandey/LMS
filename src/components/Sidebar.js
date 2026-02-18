@@ -141,9 +141,9 @@ const Sidebar = () => {
       { path: "/angelbot", icon: <TimelineIcon />, text: "TeamSync" },
       { path: "/user", icon: <UserIcon />, text: "User" },
       {
-        path: "/department",
+        path: "/unit",
         icon: <DepartmentRolesIcon />,
-        text: "Department",
+        text: "Unit",
       },
       { path: "/ldap-config", icon: <LDAPIcon />, text: "LDAP Settings" },
       {

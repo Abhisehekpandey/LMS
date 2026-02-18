@@ -1,4 +1,4 @@
-import { Add, Close, Download, Info, UploadFile } from "@mui/icons-material";
+import { Add, Close, Download, Info, UploadFile, CheckBox, CheckBoxOutlineBlank } from "@mui/icons-material";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import axios from "axios";
@@ -9,6 +9,7 @@ import {
   Box,
   Button,
   Card,
+  Checkbox, // Added Checkbox
   Collapse,
   Dialog,
   DialogActions,
@@ -40,14 +41,19 @@ import { createUsers } from "../../api/userService";
 import { fetchUsers } from "../../api/userService";
 import { MenuItem } from "@mui/material";
 
+
+
+const icon = <CheckBoxOutlineBlank fontSize="small" />;
+const checkedIcon = <CheckBox fontSize="small" />;
+
 const emptyUser = {
   name: "",
   email: "",
-  phone: "",
-  storage: "",
+  storage: "0GB",
   role: "",
   department: "",
   reportingManager: "",
+  sections: [], // Added sections
 };
 
 const CreateUser = ({
@@ -65,6 +71,7 @@ const CreateUser = ({
   const [bulkWarningMessage, setBulkWarningMessage] = useState("");
   const [isAdminRole, setIsAdminRole] = useState(false);
   const [regions, setRegions] = useState([]);
+  const [sections, setSections] = useState([]); // Added sections state
   const [defaultRegion, setDefaultRegion] = useState("");
   const [selectedRegion, setSelectedRegion] = useState("");
 
@@ -118,7 +125,7 @@ const CreateUser = ({
       "PHONE",
       "STORAGE",
       "ROLE",
-      "DEPARTMENT",
+      "UNIT",
       "REPORTINGMANAGER",
       "REGION",
     ];
@@ -223,11 +230,11 @@ const CreateUser = ({
       {
         name: "",
         email: "",
-        phone: "",
-        storage: "",
+        storage: "0GB",
         role: "",
         department: "",
         reportingManager: "",
+        sections: [], // Added sections
       },
     ],
   };
@@ -241,13 +248,12 @@ const CreateUser = ({
           .string()
           .email("Enter a valid email")
           .required("Email is required"),
-        phone: yup
-          .string()
-          .required("Phone number is required")
-          .matches(
-            /^[1-9]\d{9}$/,
-            "Phone number must be 10 digits and not start with 0"
-          ),
+
+
+        sections: yup
+          .array()
+          .min(1, "Select at least one section")
+          .required("Section is required"),
       })
     ),
   });
@@ -329,18 +335,11 @@ const CreateUser = ({
     data
       .filter((row) => row["EMAIL"])
       .forEach((row) => {
-        const phone = (row["PHONE"] || "").toString().trim();
         const name = (row["NAME"] || "Unknown User").trim();
-
-        if (!/^[0-9]{10}$/.test(phone)) {
-          invalidUsers.push({ name, phone, email: row["EMAIL"] });
-          return;
-        }
 
         cleanedUsers.push({
           name,
           email: (row["EMAIL"] || "").trim().toLowerCase(),
-          phoneNumber: phone,
           storage: row["STORAGE"]?.trim() || null,
           roleName: row["ROLE"]?.trim() || "",
           deptName: row["DEPARTMENT"]?.trim() || "",
@@ -349,15 +348,7 @@ const CreateUser = ({
         });
       });
 
-    if (invalidUsers.length > 0) {
-      const phones = invalidUsers
-        .map((u) => `${u.name}: "${u.phone}"`)
-        .join(", ");
-      showSnackbar(
-        `Invalid phone numbers → ${phones}. Must be numeric & 10 digits.`,
-        "error"
-      );
-    }
+
 
     console.log("CLEANED USERS:", cleanedUsers);
     setCsvUsers(cleanedUsers);
@@ -445,7 +436,27 @@ const CreateUser = ({
         }
       };
 
+      const fetchSections = async () => {
+        try {
+          const response = await axios.get(
+            `${window.__ENV__.REACT_APP_ROUTE}/tenants/section/getAll`,
+            {
+              headers: {
+                Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+                "Content-Type": "application/json",
+                username: sessionStorage.getItem("adminEmail"),
+              },
+            }
+          );
+          // API returns { sections: [...] }
+          setSections(response.data.sections || []);
+        } catch (err) {
+          console.error("Failed to fetch sections:", err);
+        }
+      };
+
       fetchRegions();
+      fetchSections();
     }
   }, [open]);
 
@@ -667,10 +678,10 @@ const CreateUser = ({
                   typeof user.role === "object"
                     ? user.role.roleName
                     : user.role,
-                phoneNumber: user.phone,
                 storage: user.storage?.trim() ? user.storage : null,
                 reportingManager: user.reportingManager,
                 region: user.region || defaultRegion, // ✅ include region
+                sections: user.sections || [], // ✅ include sections
               }));
 
               const response = await createUsers(transformedUsers);
@@ -774,8 +785,8 @@ const CreateUser = ({
                             bgcolor: isExpanded
                               ? "background.paper"
                               : hasErrors
-                              ? "#fdecea" // light red background if error
-                              : "grey.100",
+                                ? "#fdecea" // light red background if error
+                                : "grey.100",
                             border: hasErrors ? "1px solid #f44336" : "none",
                             borderRadius: "20px",
                             cursor: "pointer",
@@ -799,7 +810,7 @@ const CreateUser = ({
                                   onChange={formik.handleChange}
                                   error={Boolean(
                                     formik.touched.users?.[index]?.name &&
-                                      formik.errors.users?.[index]?.name
+                                    formik.errors.users?.[index]?.name
                                   )}
                                   helperText={
                                     formik.touched.users?.[index]?.name &&
@@ -852,7 +863,7 @@ const CreateUser = ({
                                   }}
                                   error={Boolean(
                                     formik.touched.users?.[index]?.email &&
-                                      formik.errors.users?.[index]?.email
+                                    formik.errors.users?.[index]?.email
                                   )}
                                   helperText={
                                     formik.touched.users?.[index]?.email &&
@@ -869,64 +880,7 @@ const CreateUser = ({
                                   }}
                                 />
                               </Grid>
-                              <Grid item xs={4}>
-                                <TextField
-                                  label={
-                                    <>
-                                      Phone Number
-                                      <span style={{ color: "red" }}> *</span>
-                                    </>
-                                  }
-                                  name={`users[${index}].phone`}
-                                  FormHelperTextProps={{ sx: { ml: 0 } }}
-                                  value={user.phone || ""}
-                                  onChange={(e) => {
-                                    const value = e.target.value.trim();
 
-                                    // Allow only digits
-                                    if (/^\d*$/.test(value)) {
-                                      formik.setFieldValue(
-                                        `users[${index}].phone`,
-                                        value
-                                      );
-
-                                      if (
-                                        value.length > 0 &&
-                                        value[0] === "0"
-                                      ) {
-                                        formik.setFieldError(
-                                          `users[${index}].phone`,
-                                          "Phone number should not start with 0"
-                                        );
-                                      } else if (
-                                        value.length > 0 &&
-                                        value.length !== 10
-                                      ) {
-                                        formik.setFieldError(
-                                          `users[${index}].phone`,
-                                          "Phone number must be exactly 10 digits"
-                                        );
-                                      } else {
-                                        formik.setFieldError(
-                                          `users[${index}].phone`,
-                                          undefined
-                                        );
-                                      }
-                                    }
-                                  }}
-                                  error={Boolean(
-                                    formik.touched.users?.[index]?.phone &&
-                                      formik.errors.users?.[index]?.phone
-                                  )}
-                                  helperText={
-                                    formik.touched.users?.[index]?.phone &&
-                                    formik.errors.users?.[index]?.phone
-                                  }
-                                  fullWidth
-                                  size="small"
-                                  inputProps={{ maxLength: 10 }} // Optional: Prevents more than 10 digits
-                                />
-                              </Grid>
                               <Grid item xs={3}>
                                 <Autocomplete
                                   options={storageOptions}
@@ -954,7 +908,7 @@ const CreateUser = ({
                                   select
                                   label={
                                     <>
-                                      Region{" "}
+                                      Command{" "}
                                       <span style={{ color: "red" }}> *</span>
                                     </>
                                   }
@@ -966,7 +920,7 @@ const CreateUser = ({
                                   FormHelperTextProps={{ sx: { ml: 0 } }}
                                   error={Boolean(
                                     formik.touched.users?.[index]?.region &&
-                                      formik.errors.users?.[index]?.region
+                                    formik.errors.users?.[index]?.region
                                   )}
                                   helperText={
                                     formik.touched.users?.[index]?.region &&
@@ -994,7 +948,7 @@ const CreateUser = ({
                                       const threshold = 50;
                                       if (
                                         listboxNode.scrollTop +
-                                          listboxNode.clientHeight >=
+                                        listboxNode.clientHeight >=
                                         listboxNode.scrollHeight - threshold
                                       ) {
                                         loadMoreDepartments();
@@ -1023,7 +977,7 @@ const CreateUser = ({
                                   renderInput={(params) => (
                                     <TextField
                                       {...params}
-                                      label="Department"
+                                      label="Unit"
                                       fullWidth
                                       size="small"
                                       autoComplete="off"
@@ -1036,7 +990,7 @@ const CreateUser = ({
                                 <Tooltip
                                   title={
                                     !user.department
-                                      ? "Please select a department first"
+                                      ? "Please select a unit first"
                                       : ""
                                   }
                                   placement="top-start"
@@ -1109,6 +1063,57 @@ const CreateUser = ({
                                 </Tooltip>
                               </Grid>
                               <Grid item xs={3}>
+                                <Autocomplete
+                                  multiple
+                                  options={sections}
+                                  disableCloseOnSelect
+                                  getOptionLabel={(option) => option}
+                                  value={user.sections || []}
+                                  onChange={(e, value) =>
+                                    formik.setFieldValue(
+                                      `users[${index}].sections`,
+                                      value
+                                    )
+                                  }
+                                  renderOption={(props, option, { selected }) => (
+                                    <li {...props}>
+                                      <Checkbox
+                                        icon={icon}
+                                        checkedIcon={checkedIcon}
+                                        style={{ marginRight: 8 }}
+                                        checked={selected}
+                                      />
+                                      {option}
+                                    </li>
+                                  )}
+                                  renderInput={(params) => (
+                                    <TextField
+                                      {...params}
+                                      label={
+                                        <>
+                                          Sections
+                                          <span style={{ color: "red" }}> *</span>
+                                        </>
+                                      }
+                                      placeholder="Select Sections"
+                                      fullWidth
+                                      size="small"
+                                      error={Boolean(
+                                        formik.touched.users?.[index]
+                                          ?.sections &&
+                                        formik.errors.users?.[index]?.sections
+                                      )}
+                                      helperText={
+                                        formik.touched.users?.[index]
+                                          ?.sections &&
+                                        formik.errors.users?.[index]?.sections
+                                      }
+                                    />
+                                  )}
+                                />
+                              </Grid>
+
+                              <Grid item xs={3}>
                                 <TextField
                                   label="Reporting Manager"
                                   autoComplete="off"
@@ -1155,12 +1160,12 @@ const CreateUser = ({
                           push({
                             name: "",
                             email: "",
-                            phone: "",
-                            storage: "",
+                            storage: "0GB",
                             role: "",
                             department: "",
                             reportingManager: "",
                             region: defaultRegion,
+                            sections: [],
                           });
                         }}
                       >
@@ -1224,7 +1229,7 @@ const CreateUser = ({
               color: "#ffff",
             }}
           >
-            ADD NEW DEPARTMENT
+            ADD NEW UNIT
           </Typography>
           <IconButton
             onClick={() => setAddDepartment(false)}
@@ -1261,7 +1266,7 @@ const CreateUser = ({
                 size="small"
                 label={
                   <>
-                    Department Name<span style={{ color: "red" }}> *</span>
+                    Unit Name<span style={{ color: "red" }}> *</span>
                   </>
                 }
                 FormHelperTextProps={{ sx: { ml: 0 } }}
@@ -1280,12 +1285,12 @@ const CreateUser = ({
                 }
                 helperText={
                   departmentSubmitted && !newDepartment.deptName
-                    ? "Department Name is required"
+                    ? "Unit Name is required"
                     : /\s/.test(newDepartment.deptName)
-                    ? "Spaces are not allowed in Department Name"
-                    : duplicateDeptError
-                    ? "Department with this name already exists"
-                    : ""
+                      ? "Spaces are not allowed in Unit Name"
+                      : duplicateDeptError
+                        ? "Unit with this name already exists"
+                        : ""
                 }
               />
             </Grid>
@@ -1326,7 +1331,7 @@ const CreateUser = ({
                     {...params}
                     label={
                       <>
-                        Department Moderator
+                        Unit Moderator
                         <span style={{ color: "red" }}> *</span>
                       </>
                     }
@@ -1334,7 +1339,7 @@ const CreateUser = ({
                     error={departmentSubmitted && !newDepartment.deptModerator}
                     helperText={
                       departmentSubmitted && !newDepartment.deptModerator
-                        ? "Department Moderator is required"
+                        ? "Unit Moderator is required"
                         : ""
                     }
                   />
@@ -1352,8 +1357,8 @@ const CreateUser = ({
                 value={
                   Array.isArray(newDepartment.selectedUsers)
                     ? userOptions.filter((user) =>
-                        newDepartment.selectedUsers.includes(user.name)
-                      )
+                      newDepartment.selectedUsers.includes(user.name)
+                    )
                     : []
                 }
                 onChange={(event, selectedValues) =>
@@ -1391,8 +1396,8 @@ const CreateUser = ({
                     }
                     helperText={
                       departmentSubmitted &&
-                      (!newDepartment.selectedUsers ||
-                        newDepartment.selectedUsers.length === 0)
+                        (!newDepartment.selectedUsers ||
+                          newDepartment.selectedUsers.length === 0)
                         ? "At least one user must be selected"
                         : ""
                     }
@@ -1662,9 +1667,9 @@ const CreateUser = ({
                   prevDepartments.map((dept) =>
                     dept.deptName === selectedDepartmentForRole.deptName
                       ? {
-                          ...dept,
-                          roles: [...(dept.roles || []), addedRole[0]],
-                        }
+                        ...dept,
+                        roles: [...(dept.roles || []), addedRole[0]],
+                      }
                       : dept
                   )
                 );

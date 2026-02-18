@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import {
   Box,
   Button,
@@ -18,6 +18,7 @@ import backgroundImage from "../assets/Back.jpg.jpg";
 import { loginUser } from "../api/authApi."; // assumes your login API call
 import { keyframes } from "@emotion/react";
 import CryptoJS from "crypto-js";
+import { LogoContext } from "../context/LogoContext";
 
 // 🔐 Encryption
 function encryptFun(password, username) {
@@ -105,6 +106,7 @@ const floatAnimation = keyframes`
 `;
 
 const Login = () => {
+  const { logoData } = useContext(LogoContext);
   const navigate = useNavigate();
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState({});
@@ -144,11 +146,8 @@ const Login = () => {
     setLoading(true);
     try {
       const normalizedEmail = formData.email.trim().toLowerCase();
-      console.log("normall", normalizedEmail);
       const encryptedPassword = encryptFun(formData.password, normalizedEmail);
-      console.log("encrypt", encryptedPassword);
       const data = await loginUser(normalizedEmail, encryptedPassword);
-      console.log("dataaa", data);
 
       const { access_token, refresh_token, expires_in, refresh_expires_in } =
         data;
@@ -170,7 +169,6 @@ const Login = () => {
         severity: "success",
       });
 
-      // setTimeout(() => navigate("/angelbot"), 1000);
       setTimeout(() => {
         const deptAdmin = sessionStorage.getItem("deptAdmin") === "true";
         const superAdmin = sessionStorage.getItem("superAdmin") === "true";
@@ -250,7 +248,7 @@ const Login = () => {
           <Box maxWidth={400}>
             <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
               <img
-                src="/sync_logo.png"
+                src={logoData.loginImage}
                 alt="AngelBot Access Arc Logo"
                 style={{
                   maxWidth: "100%",
@@ -260,9 +258,8 @@ const Login = () => {
                 }}
               />
             </Box>
-            <Typography variant="body1" sx={{ mt: 3, color: "#4b5563" }}>
-              AccessArc is a robust license management system designed to
-              streamline and curate your company software privileges...
+            <Typography variant="body1" sx={{ mt: 3, color: "white", textAlign: "center", fontWeight: 600 }}>
+              {logoData.slogan}
             </Typography>
           </Box>
         </Box>
@@ -407,3 +404,4 @@ const Login = () => {
 };
 
 export default Login;
+
