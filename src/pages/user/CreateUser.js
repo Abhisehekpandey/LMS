@@ -250,6 +250,15 @@ const CreateUser = ({
           .required("Email is required"),
 
 
+        department: yup
+          .mixed()
+          .required("Unit is required"),
+
+        role: yup
+          .string()
+          .required("Role is required"),
+
+
         sections: yup
           .array()
           .min(1, "Select at least one section")
@@ -977,10 +986,74 @@ const CreateUser = ({
                                   renderInput={(params) => (
                                     <TextField
                                       {...params}
-                                      label="Unit"
+                                      label={
+                                        <>
+                                          Unit
+                                          <span style={{ color: "red" }}> *</span>
+                                        </>
+                                      }
                                       fullWidth
                                       size="small"
                                       autoComplete="off"
+                                      error={Boolean(
+                                        formik.touched.users?.[index]?.department &&
+                                        formik.errors.users?.[index]?.department
+                                      )}
+                                      helperText={
+                                        formik.touched.users?.[index]?.department &&
+                                        formik.errors.users?.[index]?.department
+                                      }
+                                    />
+                                  )}
+                                />
+                              </Grid>
+
+                              <Grid item xs={3}>
+                                <Autocomplete
+                                  multiple
+                                  options={sections}
+                                  disableCloseOnSelect
+                                  getOptionLabel={(option) => option}
+                                  value={user.sections || []}
+                                  onChange={(e, value) =>
+                                    formik.setFieldValue(
+                                      `users[${index}].sections`,
+                                      value
+                                    )
+                                  }
+                                  renderOption={(props, option, { selected }) => (
+                                    <li {...props}>
+                                      <Checkbox
+                                        icon={icon}
+                                        checkedIcon={checkedIcon}
+                                        style={{ marginRight: 8 }}
+                                        checked={selected}
+                                      />
+                                      {option}
+                                    </li>
+                                  )}
+                                  renderInput={(params) => (
+                                    <TextField
+                                      {...params}
+                                      label={
+                                        <>
+                                          Sections
+                                          <span style={{ color: "red" }}> *</span>
+                                        </>
+                                      }
+                                      placeholder="Select Sections"
+                                      fullWidth
+                                      size="small"
+                                      error={Boolean(
+                                        formik.touched.users?.[index]
+                                          ?.sections &&
+                                        formik.errors.users?.[index]?.sections
+                                      )}
+                                      helperText={
+                                        formik.touched.users?.[index]
+                                          ?.sections &&
+                                        formik.errors.users?.[index]?.sections
+                                      }
                                     />
                                   )}
                                 />
@@ -1052,65 +1125,28 @@ const CreateUser = ({
                                       renderInput={(params) => (
                                         <TextField
                                           {...params}
-                                          label="Role"
+                                          label={
+                                            <>
+                                              Role
+                                              <span style={{ color: "red" }}> *</span>
+                                            </>
+                                          }
                                           fullWidth
                                           size="small"
                                           autoComplete="off"
+                                          error={Boolean(
+                                            formik.touched.users?.[index]?.role &&
+                                            formik.errors.users?.[index]?.role
+                                          )}
+                                          helperText={
+                                            formik.touched.users?.[index]?.role &&
+                                            formik.errors.users?.[index]?.role
+                                          }
                                         />
                                       )}
                                     />
                                   </div>
                                 </Tooltip>
-                              </Grid>
-                              <Grid item xs={3}>
-                                <Autocomplete
-                                  multiple
-                                  options={sections}
-                                  disableCloseOnSelect
-                                  getOptionLabel={(option) => option}
-                                  value={user.sections || []}
-                                  onChange={(e, value) =>
-                                    formik.setFieldValue(
-                                      `users[${index}].sections`,
-                                      value
-                                    )
-                                  }
-                                  renderOption={(props, option, { selected }) => (
-                                    <li {...props}>
-                                      <Checkbox
-                                        icon={icon}
-                                        checkedIcon={checkedIcon}
-                                        style={{ marginRight: 8 }}
-                                        checked={selected}
-                                      />
-                                      {option}
-                                    </li>
-                                  )}
-                                  renderInput={(params) => (
-                                    <TextField
-                                      {...params}
-                                      label={
-                                        <>
-                                          Sections
-                                          <span style={{ color: "red" }}> *</span>
-                                        </>
-                                      }
-                                      placeholder="Select Sections"
-                                      fullWidth
-                                      size="small"
-                                      error={Boolean(
-                                        formik.touched.users?.[index]
-                                          ?.sections &&
-                                        formik.errors.users?.[index]?.sections
-                                      )}
-                                      helperText={
-                                        formik.touched.users?.[index]
-                                          ?.sections &&
-                                        formik.errors.users?.[index]?.sections
-                                      }
-                                    />
-                                  )}
-                                />
                               </Grid>
 
                               <Grid item xs={3}>
