@@ -892,7 +892,7 @@ export default function UserTable() {
   };
 
   const filteredRows = rowsData.filter((row) => {
-    const query = searchQuery.toLowerCase();
+    const query = searchQuery.toLowerCase().trim();
 
     // ✅ Status filter
     if (statusFilter) {
@@ -902,6 +902,9 @@ export default function UserTable() {
 
       if (status !== statusFilter) return false;
     }
+
+    // If there's no search query, everything passes the remaining filters
+    if (!query) return true;
 
     if (searchColumn === "name") {
       return row.name?.toLowerCase().includes(query);
@@ -916,11 +919,16 @@ export default function UserTable() {
       const selectedRole = row.roles?.find(
         (role) => role.id === selectedRoleId
       );
-      const department =
-        selectedRole?.department?.deptName ||
-        row.roles?.[0]?.department?.deptName ||
-        "";
-      return department?.toLowerCase().includes(query);
+
+      // If a specific role is selected, check its department
+      if (selectedRole) {
+        return selectedRole.department?.deptName?.toLowerCase().includes(query);
+      }
+
+      // Fallback: check all departments associated with the user
+      return row.roles?.some(role =>
+        role.department?.deptName?.toLowerCase().includes(query)
+      );
     }
 
     if (searchColumn === "role") {
@@ -928,12 +936,21 @@ export default function UserTable() {
       const selectedRole = row.roles?.find(
         (role) => role.id === selectedRoleId
       );
-      const deptId = selectedRole?.department?.id;
-      const rolesInSameDept = row.roles.filter(
-        (role) => role.department?.id === deptId
+
+      if (selectedRole) {
+        // If a specific role is selected, check it and potentially others in the same department
+        const deptId = selectedRole.department?.id;
+        const rolesInSameDept = row.roles.filter(
+          (role) => role.department?.id === deptId
+        );
+        const roleNames = rolesInSameDept.map((role) => role.roleName).join(", ");
+        return roleNames.toLowerCase().includes(query);
+      }
+
+      // Fallback: check all roles associated with the user
+      return row.roles?.some(role =>
+        role.roleName?.toLowerCase().includes(query)
       );
-      const roleNames = rolesInSameDept.map((role) => role.roleName).join(", ");
-      return roleNames.toLowerCase().includes(query);
     }
 
     return true;
