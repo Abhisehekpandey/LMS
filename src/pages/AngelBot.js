@@ -2537,10 +2537,10 @@ const AngelBot = () => {
             <Button
               variant="contained"
               onClick={() => {
-                const regex = /^[A-Za-z0-9\-_]{1,12}$/; // ✅ only A-Z, 0-9, -, _ (1–8 chars)
+                const regex = /^[A-Za-z0-9\-_ ]{1,12}$/; // ✅ only A-Z, 0-9, -, _, and space (1–12 chars)
                 if (!regex.test(newRegion)) {
                   setRegionError(
-                    "Command must be 1-12 chars, no spaces, only letters, numbers, - or _"
+                    "Command must be 1-12 chars, only letters, numbers, spaces, - or _"
                   );
                   return;
                 }

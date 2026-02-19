@@ -1123,10 +1123,10 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
             <Button
               variant="contained"
               onClick={() => {
-                const regex = /^[A-Za-z0-9\-_]{1,12}$/;
+                const regex = /^[A-Za-z0-9\-_ ]{1,12}$/;
                 if (!regex.test(newRegion)) {
                   setRegionError(
-                    "Command must be 1-12 chars, no spaces, only letters, numbers, - or _"
+                    "Command must be 1-12 chars, only letters, numbers, spaces, - or _"
                   );
                   return;
                 }
