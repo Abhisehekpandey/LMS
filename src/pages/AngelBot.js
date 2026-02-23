@@ -46,7 +46,8 @@ import { License } from "@mui/icons-material"; // Optional icon
 import { VerifiedUser } from "@mui/icons-material";
 import { Snackbar, Alert } from "@mui/material"; // already likely imported
 import { fetchUsers } from "../api/userService";
-import { getDepartments } from "../api/departmentService";
+import { getDepartments, getDashboardStats, getUserStorage, getDeptStorage } from "../api/departmentService";
+
 import Loading from "../components/Loading";
 import CreateUser from "./user/CreateUser";
 import Slide from "@mui/material/Slide";
@@ -216,16 +217,18 @@ const AngelBot = () => {
   };
 
   const [storageStatusData, setStorageStatusData] = useState(
-    activeConfig.storageStatusData
+    activeConfig.storageStatusData,
   );
   const [storageDistributionData, setStorageDistributionData] = useState(
-    activeConfig.storageDistributionData
+    activeConfig.storageDistributionData,
   );
 
   const [userRowsPerPage, setUserRowsPerPage] = useState(7);
   const [userPage, setUserPage] = useState(0);
   const [deptPage, setDeptPage] = useState(0);
   const [deptRowsPerPage, setDeptRowsPerPage] = useState(7);
+  const [userStorageTotalElements, setUserStorageTotalElements] = useState(0);
+  const [deptStorageTotalElements, setDeptStorageTotalElements] = useState(0);
 
   const [selectedChart, setSelectedChart] = useState("Active"); // preselect Active
   const [backButton, setBackButton] = useState(false); // hidden initially
@@ -262,7 +265,7 @@ const AngelBot = () => {
             "Content-Type": "application/json",
             username: sessionStorage.getItem("adminEmail"), // same as your other APIs
           },
-        }
+        },
       );
       return response.data;
     } catch (error) {
@@ -281,7 +284,7 @@ const AngelBot = () => {
             "Content-Type": "application/json",
             username: sessionStorage.getItem("adminEmail"), // same as your other APIs
           },
-        }
+        },
       );
 
       return response.data;
@@ -294,7 +297,8 @@ const AngelBot = () => {
   const deleteRegion = async (regionName) => {
     try {
       const response = await axios.delete(
-        `${window.__ENV__.REACT_APP_ROUTE
+        `${
+          window.__ENV__.REACT_APP_ROUTE
         }/tenants/deleteIn?value=${encodeURIComponent(regionName)}`,
         {
           headers: {
@@ -302,7 +306,7 @@ const AngelBot = () => {
             "Content-Type": "application/json",
             username: sessionStorage.getItem("adminEmail"), // same as your other APIs
           },
-        }
+        },
       );
       return response.data;
     } catch (error) {
@@ -390,11 +394,9 @@ const AngelBot = () => {
 
       allDepartments = [...(firstResponse?.content || [])];
 
-
       for (let i = 1; i < totalPages; i++) {
         const response = await getDepartments(i, pageSize);
         allDepartments = [...allDepartments, ...(response?.content || [])];
-
       }
 
       return allDepartments;
@@ -475,62 +477,78 @@ const AngelBot = () => {
     </Dialog>
   );
 
-  const sortUsers = (sortOption) => {
-    let sortedUsers = [...getSortedStorageUsers];
-    switch (sortOption) {
-      case "high":
-        sortedUsers.sort(
-          (a, b) =>
-            b.storageUsed / b.storageAllocated -
-            a.storageUsed / a.storageAllocated
-        );
-        break;
-      case "low":
-        sortedUsers.sort(
-          (a, b) =>
-            a.storageUsed / a.storageAllocated -
-            b.storageUsed / b.storageAllocated
-        );
-        break;
-      case "az":
-        sortedUsers.sort((a, b) => a.name.localeCompare(b.name));
-        break;
-      case "za":
-        sortedUsers.sort((a, b) => b.name.localeCompare(a.name));
-        break;
-      default:
-        break;
+  const mapSortToApi = (option) => {
+    switch (option) {
+      case "high": return "HTL";
+      case "low":  return "LTH";
+      case "az":   return "ASC";
+      case "za":   return "DESC";
+      default:     return "HTL";
     }
-    setSortedStorageUsers(sortedUsers);
+  };
+
+  const loadUserStorageData = async (page, rowsPerPage, sortOption) => {
+    try {
+      const res = await getUserStorage(page + 1, rowsPerPage, mapSortToApi(sortOption));
+      const mapped = (res.content || []).map((u) => ({
+        name: u.name,
+        storageUsed: u.consumedStorage,
+        storageAllocated: u.allocatedStorage,
+      }));
+      setSortedStorageUsers(mapped);
+      setUserStorageTotalElements(res.totalElements || 0);
+    } catch (err) {
+      console.error("Failed to fetch user storage data:", err);
+    }
+  };
+
+  const loadDeptStorageData = async (page, rowsPerPage, sortOption) => {
+    try {
+      const res = await getDeptStorage(page + 1, rowsPerPage, mapSortToApi(sortOption));
+      const mapped = (res.content || []).map((d) => ({
+        name: d.name,
+        storageUsed: d.consumedStorage,
+        storageAllocated: d.allocatedStorage,
+      }));
+      setSortedDepartments(mapped);
+      setDeptStorageTotalElements(res.totalElements || 0);
+    } catch (err) {
+      console.error("Failed to fetch dept storage data:", err);
+    }
+  };
+
+  const sortUsers = (sortOption) => {
+    // OLD: client-side sort (commented out)
+    // let sortedUsers = [...getSortedStorageUsers];
+    // switch (sortOption) {
+    //   case "high": sortedUsers.sort((a, b) => b.storageUsed / b.storageAllocated - a.storageUsed / a.storageAllocated); break;
+    //   case "low":  sortedUsers.sort((a, b) => a.storageUsed / a.storageAllocated - b.storageUsed / b.storageAllocated); break;
+    //   case "az":   sortedUsers.sort((a, b) => a.name.localeCompare(b.name)); break;
+    //   case "za":   sortedUsers.sort((a, b) => b.name.localeCompare(a.name)); break;
+    //   default: break;
+    // }
+    // setSortedStorageUsers(sortedUsers);
+
+    // NEW: server-side sort
+    setUserPage(0);
+    loadUserStorageData(0, userRowsPerPage, sortOption);
   };
 
   const sortDepartments = (sortOption) => {
-    let sortedDepartments = [...getSortedDepartments];
+    // OLD: client-side sort (commented out)
+    // let sortedDepartments = [...getSortedDepartments];
+    // switch (sortOption) {
+    //   case "high": sortedDepartments.sort((a, b) => b.storage / b.storageAllocated - a.storage / a.storageAllocated); break;
+    //   case "low":  sortedDepartments.sort((a, b) => a.storage / a.storageAllocated - b.storage / b.storageAllocated); break;
+    //   case "az":   sortedDepartments.sort((a, b) => a.name.localeCompare(b.name)); break;
+    //   case "za":   sortedDepartments.sort((a, b) => b.name.localeCompare(a.name)); break;
+    //   default: break;
+    // }
+    // setSortedDepartments(sortedDepartments);
 
-    switch (sortOption) {
-      case "high":
-        sortedDepartments.sort(
-          (a, b) =>
-            b.storage / b.storageAllocated - a.storage / a.storageAllocated
-        );
-        break;
-      case "low":
-        sortedDepartments.sort(
-          (a, b) =>
-            a.storage / a.storageAllocated - b.storage / b.storageAllocated
-        );
-        break;
-      case "az":
-        sortedDepartments.sort((a, b) => a.name.localeCompare(b.name));
-        break;
-      case "za":
-        sortedDepartments.sort((a, b) => b.name.localeCompare(a.name));
-        break;
-      default:
-        break;
-    }
-
-    setSortedDepartments(sortedDepartments);
+    // NEW: server-side sort
+    setDeptPage(0);
+    loadDeptStorageData(0, deptRowsPerPage, sortOption);
   };
 
   const [userStatsData, setUserStatsData] = useState([
@@ -614,10 +632,13 @@ const AngelBot = () => {
     ],
   };
 
+  // const formatSizestorage = (val) => {
+  //   return val < 1024
+  //     ? `${val.toFixed(1)} MB`
+  //     : `${(val / 1024).toFixed(1)} GB`;
+  // };
   const formatSizestorage = (val) => {
-    return val < 1024
-      ? `${val.toFixed(1)} MB`
-      : `${(val / 1024).toFixed(1)} GB`;
+    return `${val.toFixed(1)} GB`;
   };
 
   const storageStatus = {
@@ -680,8 +701,9 @@ const AngelBot = () => {
       trigger: "item",
 
       formatter: function (params) {
-        return `${params.name}: ${formatSizeGB(params.value)} (${params.percent
-          }%)`;
+        return `${params.name}: ${formatSizeGB(params.value)} (${
+          params.percent
+        }%)`;
       },
     },
 
@@ -739,37 +761,36 @@ const AngelBot = () => {
     setSelectedChart(name);
     setBackButton(name !== "Active");
 
-    fetchAllUsers().then((allUsers) => {
-      const filtered = allUsers.filter((user) => {
-        if (name === "Active") return user.active && user.enabled;
-        if (name === "Pending") return user.active && !user.enabled;
-        if (name === "Inactive") return !user.active;
-        return false;
-      });
+    // TODO: replace with new storage-by-status API when ready
+    // fetchAllUsers().then((allUsers) => {
+    //   const filtered = allUsers.filter((user) => {
+    //     if (name === "Active") return user.active && user.enabled;
+    //     if (name === "Pending") return user.active && !user.enabled;
+    //     if (name === "Inactive") return !user.active;
+    //     return false;
+    //   });
 
-      setFilteredUsers(filtered);
+    //   setFilteredUsers(filtered);
 
-      let usedStorage = 0;
-      let totalAllocated = 0;
+    //   let usedStorage = 0;
+    //   let totalAllocated = 0;
 
-      filtered.forEach((user) => {
-        const used = convertDisplayToMB(user.permissions?.displayStorage);
-        const allowed = convertDisplayToMB(
-          user.permissions?.allowedStorageInBytesDisplay
-        );
-        usedStorage += used;
-        totalAllocated += allowed;
-      });
+    //   filtered.forEach((user) => {
+    //     const used = convertDisplayToMB(user.permissions?.displayStorage);
+    //     const allowed = convertDisplayToMB(
+    //       user.permissions?.allowedStorageInBytesDisplay,
+    //     );
+    //     usedStorage += used;
+    //     totalAllocated += allowed;
+    //   });
 
-      const availableStorage = Math.max(totalAllocated - usedStorage, 0);
+    //   const availableStorage = Math.max(totalAllocated - usedStorage, 0);
 
-
-
-      setStorageStatusData([
-        { name: "Used", value: usedStorage, color: "#91CC75" },
-        { name: "Available", value: availableStorage, color: "#FAC858" },
-      ]);
-    });
+    //   setStorageStatusData([
+    //     { name: "Used", value: usedStorage, color: "#91CC75" },
+    //     { name: "Available", value: availableStorage, color: "#FAC858" },
+    //   ]);
+    // });
 
     setTimeout(() => {
       userTableRef.current?.scrollIntoView({
@@ -783,183 +804,191 @@ const AngelBot = () => {
     setSelectedChart("Active");
     setBackButton(false);
 
-    fetchAllUsers().then((users) => {
-      const activeUsers = users.filter((user) => user.active && user.enabled);
+    // TODO: replace with new storage-by-status API when ready
+    // fetchAllUsers().then((users) => {
+    //   const activeUsers = users.filter((user) => user.active && user.enabled);
 
-      let usedStorage = 0;
-      let totalAllocated = 0;
+    //   let usedStorage = 0;
+    //   let totalAllocated = 0;
 
-      activeUsers.forEach((user) => {
-        const used = convertDisplayToMB(user.permissions?.displayStorage);
-        const allowed = convertDisplayToMB(
-          user.permissions?.allowedStorageInBytesDisplay
-        );
-        usedStorage += used;
-        totalAllocated += allowed;
-      });
+    //   activeUsers.forEach((user) => {
+    //     const used = convertDisplayToMB(user.permissions?.displayStorage);
+    //     const allowed = convertDisplayToMB(
+    //       user.permissions?.allowedStorageInBytesDisplay,
+    //     );
+    //     usedStorage += used;
+    //     totalAllocated += allowed;
+    //   });
 
-      const availableStorage = Math.max(totalAllocated - usedStorage, 0);
+    //   const availableStorage = Math.max(totalAllocated - usedStorage, 0);
 
-      setStorageStatusData([
-        { name: "Used", value: usedStorage, color: "#91CC75" },
-        { name: "Available", value: availableStorage, color: "#FAC858" },
-      ]);
+    //   setStorageStatusData([
+    //     { name: "Used", value: usedStorage, color: "#91CC75" },
+    //     { name: "Available", value: availableStorage, color: "#FAC858" },
+    //   ]);
 
-      setFilteredUsers(activeUsers);
-    });
+    //   setFilteredUsers(activeUsers);
+    // });
   };
 
   const handleUserRowsPerPageChange = (event) => {
-    setUserRowsPerPage(parseInt(event.target.value, 10));
+    const newSize = parseInt(event.target.value, 10);
+    setUserRowsPerPage(newSize);
     setUserPage(0);
+    loadUserStorageData(0, newSize, userSortOption);
   };
 
   const handleUserPageChange = (event, newPage) => {
     setUserPage(newPage);
+    loadUserStorageData(newPage, userRowsPerPage, userSortOption);
   };
 
   const handleDeptPageChange = (event, newPage) => {
     setDeptPage(newPage);
+    loadDeptStorageData(newPage, deptRowsPerPage, deptSortOption);
   };
 
   const handleDeptRowsPerPageChange = (event) => {
-    setDeptRowsPerPage(parseInt(event.target.value, 10));
+    const newSize = parseInt(event.target.value, 10);
+    setDeptRowsPerPage(newSize);
     setDeptPage(0);
+    loadDeptStorageData(0, newSize, deptSortOption);
   };
 
   useEffect(() => {
     const loadUserStats = async () => {
       try {
         setLoading(true);
-        const users = await fetchAllUsers();
 
-        let totalUserStorage = 0;
-        let totalDepartmentStorage = 0;
+        // ✅ NEW: fetch chart stats from dedicated API
+        const stats = await getDashboardStats();
 
-        let active = 0,
-          pending = 0,
-          inactive = 0;
-
-        users.forEach((user) => {
-          if (user.active && user.enabled) active++;
-          else if (user.active && !user.enabled) pending++;
-          else if (!user.active) inactive++;
-
-          const allowed = convertDisplayToGB(
-            user.permissions?.allowedStorageInBytesDisplay
-          );
-          totalUserStorage += allowed;
-        });
-
-
-        const activeUsers = users.filter((user) => user.active && user.enabled);
-
-        let usedStorage = 0;
-        let totalAllocatedStorage = 0;
-
-        activeUsers.forEach((user) => {
-          const used = convertDisplayToMB(user.permissions?.displayStorage);
-          const allowed = convertDisplayToMB(
-            user.permissions?.allowedStorageInBytesDisplay
-          );
-          usedStorage += used;
-          totalAllocatedStorage += allowed;
-        });
-
-        const availableStorage = Math.max(
-          totalAllocatedStorage - usedStorage,
-          0
-        );
-
-        // ✅ Full user stats pie (for all statuses)
         setUserStatsData([
-          { name: "Active", value: active, color: "#91CC75" },
-          { name: "Inactive", value: inactive, color: "#EE6666" },
-          { name: "Pending", value: pending, color: "#5470C6" },
-        ]);
-
-        // ✅ Initial view should match "Active" click
-        setStorageStatusData([
-          { name: "Used", value: usedStorage, color: "#91CC75" },
-          { name: "Available", value: availableStorage, color: "#FAC858" },
-        ]);
-
-        // Show only active users in table initially
-        setFilteredUsers(activeUsers);
-
-        const userStorageData = users.map((user) => {
-          const name = user.name;
-          const storageUsed = convertDisplayToGB(
-            user.permissions?.displayStorage
-          ); // convert to GB
-          const storageAllocated = convertDisplayToGB(
-            user.permissions?.allowedStorageInBytesDisplay
-          ); // convert to GB
-
-          return {
-            id: user.id,
-            name,
-            storageUsed: Number(storageUsed.toFixed(2)),
-            storageAllocated: Number(storageAllocated.toFixed(2)) || 1, // Avoid divide by 0
-          };
-        });
-
-        // Sort initially by high usage
-        userStorageData.sort(
-          (a, b) =>
-            b.storageUsed / b.storageAllocated -
-            a.storageUsed / a.storageAllocated
-        );
-
-        // Save to state
-        setSortedStorageUsers(userStorageData);
-
-        const departments = await fetchAllDepartments();
-
-
-        const departmentStorageData = departments.map((dept) => {
-          const name = dept.deptName || "Unnamed Dept";
-          const storageUsed = convertDisplayToGB(
-            dept?.permissions?.displayStorage
-          );
-          const storageAllocated = convertDisplayToGB(
-            dept?.permissions?.allowedStorageInBytesDisplay
-          );
-
-          return {
-            id: dept.id,
-            name,
-            storageUsed: storageUsed,
-            storageAllocated: Number(storageAllocated.toFixed(2)) || 1,
-          };
-        });
-
-        // Sort by high usage initially
-        departmentStorageData.sort(
-          (a, b) =>
-            b.storageUsed / b.storageAllocated -
-            a.storageUsed / a.storageAllocated
-        );
-
-        setSortedDepartments(departmentStorageData);
-
-        departments.forEach((dept) => {
-          const allowed = convertDisplayToGB(
-            dept?.permissions?.allowedStorageInBytesDisplay
-          );
-          totalDepartmentStorage += allowed;
-        });
-
-
-        setStorageDistributionData([
-          { name: "User", value: totalUserStorage, color: "#91CC75" },
-          // { name: "Department", value: 2.5, color: "#FAC858" }, // dummy GB value
+          { name: "Active", value: stats.userStats.active, color: "#91CC75" },
           {
-            name: "Department",
-            value: Number(totalDepartmentStorage.toFixed(2)),
+            name: "Inactive",
+            value: stats.userStats.inactive,
+            color: "#EE6666",
+          },
+          { name: "Pending", value: stats.userStats.pending, color: "#5470C6" },
+        ]);
+
+        setStorageStatusData([
+          {
+            name: "Used",
+            value: stats.storageStats.totalUsed,
+            color: "#91CC75",
+          },
+          {
+            name: "Available",
+            value: stats.storageStats.totalAvailable,
             color: "#FAC858",
           },
         ]);
+
+        setStorageDistributionData([
+          {
+            name: "User",
+            value: stats.storageDistributionStats.totalAllocatedToUsers,
+            color: "#91CC75",
+          },
+          {
+            name: "Department",
+            value: stats.storageDistributionStats.totalAllocatedToDepartments,
+            color: "#FAC858",
+          },
+        ]);
+
+        // NEW: load storage tables from dedicated APIs
+        await loadUserStorageData(0, userRowsPerPage, userSortOption);
+        await loadDeptStorageData(0, deptRowsPerPage, deptSortOption);
+
+        // ⬇️ OLD users/departments table logic (commented out, kept for reference)
+
+        // const users = await fetchAllUsers();
+        // const activeUsers = users.filter((user) => user.active && user.enabled);
+        // setFilteredUsers(activeUsers);
+
+        // const userStorageData = users.map((user) => {
+        //   const name = user.name;
+        //   const storageUsed = convertDisplayToGB(user.permissions?.displayStorage);
+        //   const storageAllocated = convertDisplayToGB(user.permissions?.allowedStorageInBytesDisplay);
+        //   return {
+        //     id: user.id,
+        //     name,
+        //     storageUsed: Number(storageUsed.toFixed(2)),
+        //     storageAllocated: Number(storageAllocated.toFixed(2)) || 1,
+        //   };
+        // });
+        // userStorageData.sort((a, b) => b.storageUsed / b.storageAllocated - a.storageUsed / a.storageAllocated);
+        // setSortedStorageUsers(userStorageData);
+
+        // const departments = await fetchAllDepartments();
+        // const departmentStorageData = departments.map((dept) => {
+        //   const name = dept.deptName || "Unnamed Dept";
+        //   const storageUsed = convertDisplayToGB(dept?.permissions?.displayStorage);
+        //   const storageAllocated = convertDisplayToGB(dept?.permissions?.allowedStorageInBytesDisplay);
+        //   return {
+        //     id: dept.id,
+        //     name,
+        //     storageUsed: storageUsed,
+        //     storageAllocated: Number(storageAllocated.toFixed(2)) || 1,
+        //   };
+        // });
+        // departmentStorageData.sort((a, b) => b.storageUsed / b.storageAllocated - a.storageUsed / a.storageAllocated);
+        // setSortedDepartments(departmentStorageData);
+
+        // let totalUserStorage = 0;
+        // let totalDepartmentStorage = 0;
+        // let active = 0, pending = 0, inactive = 0;
+        // users.forEach((user) => {
+        //   if (user.active && user.enabled) active++;
+        //   else if (user.active && !user.enabled) pending++;
+        //   else if (!user.active) inactive++;
+        //   const allowed = convertDisplayToGB(user.permissions?.allowedStorageInBytesDisplay);
+        //   totalUserStorage += allowed;
+        // });
+        // let usedStorage = 0; let totalAllocatedStorage = 0;
+        // activeUsers.forEach((user) => {
+        //   const used = convertDisplayToMB(user.permissions?.displayStorage);
+        //   const allowed = convertDisplayToMB(user.permissions?.allowedStorageInBytesDisplay);
+        //   usedStorage += used;
+        //   totalAllocatedStorage += allowed;
+        // });
+        // const availableStorage = Math.max(totalAllocatedStorage - usedStorage, 0);
+        // setUserStatsData([
+        //   { name: "Active", value: active, color: "#91CC75" },
+        //   { name: "Inactive", value: inactive, color: "#EE6666" },
+        //   { name: "Pending", value: pending, color: "#5470C6" },
+        // ]);
+        // setStorageStatusData([
+        //   { name: "Used", value: usedStorage, color: "#91CC75" },
+        //   { name: "Available", value: availableStorage, color: "#FAC858" },
+        // ]);
+        // departments.forEach((dept) => {
+        //   const allowed = convertDisplayToGB(dept?.permissions?.allowedStorageInBytesDisplay);
+        //   totalDepartmentStorage += allowed;
+        // });
+        // setStorageDistributionData([
+        //   { name: "User", value: totalUserStorage, color: "#91CC75" },
+        //   { name: "Department", value: Number(totalDepartmentStorage.toFixed(2)), color: "#FAC858" },
+        // ]);
+
+        // departments.forEach((dept) => {
+        //   const allowed = convertDisplayToGB(
+        //     dept?.permissions?.allowedStorageInBytesDisplay,
+        //   );
+        //   totalDepartmentStorage += allowed;
+        // });
+
+        // setStorageDistributionData([
+        //   { name: "User", value: totalUserStorage, color: "#91CC75" },
+        //   {
+        //     name: "Department",
+        //     value: Number(totalDepartmentStorage.toFixed(2)),
+        //     color: "#FAC858",
+        //   },
+        // ]);
       } catch (error) {
         console.error("Error fetching user stats:", error);
       } finally {
@@ -1127,22 +1156,23 @@ const AngelBot = () => {
     );
   });
 
-  const loadUserPage = async (page) => {
-    try {
-      setUserTableLoading(true);
-      const response = await fetchUsers(page);
-      setUserPageData(response?.content || []);
-      setTotalPages(response?.totalPages || 1);
-    } catch (err) {
-      console.error("Failed to fetch paginated users:", err);
-    } finally {
-      setUserTableLoading(false);
-    }
-  };
+  // TODO: replace with new storageUsers API when ready
+  // const loadUserPage = async (page) => {
+  //   try {
+  //     setUserTableLoading(true);
+  //     const response = await fetchUsers(page);
+  //     setUserPageData(response?.content || []);
+  //     setTotalPages(response?.totalPages || 1);
+  //   } catch (err) {
+  //     console.error("Failed to fetch paginated users:", err);
+  //   } finally {
+  //     setUserTableLoading(false);
+  //   }
+  // };
 
-  useEffect(() => {
-    loadUserPage(0);
-  }, []);
+  // useEffect(() => {
+  //   loadUserPage(0);
+  // }, []);
 
   return (
     <>
@@ -1352,7 +1382,7 @@ const AngelBot = () => {
                       <IconButton
                         onClick={() =>
                           setStorageTab((prev) =>
-                            prev === "status" ? "distribution" : "status"
+                            prev === "status" ? "distribution" : "status",
                           )
                         }
                         sx={{
@@ -1469,7 +1499,7 @@ const AngelBot = () => {
                                 reader.onload = (event) => {
                                   try {
                                     const data = JSON.parse(
-                                      event.target.result
+                                      event.target.result,
                                     );
 
                                     if (!data.name || !data.expiryDate) {
@@ -1726,7 +1756,7 @@ const AngelBot = () => {
                           <tbody>
                             {filteredLicenses.map((license, index) => {
                               const { status, daysLeft } = getLicenseStatus(
-                                license.expiryDate
+                                license.expiryDate,
                               );
                               const colorMap = {
                                 Active: "#4caf50",
@@ -1741,15 +1771,16 @@ const AngelBot = () => {
                                   key={index}
                                   onClick={() => {
                                     const originalIndex = licenses.findIndex(
-                                      (l) => l.id === license.id
+                                      (l) => l.id === license.id,
                                     );
                                     if (originalIndex !== -1) {
                                       setCurrentLicenseIndex(originalIndex);
                                     }
                                   }}
                                   style={{
-                                    borderBottom: `1px solid ${isDark ? "#333" : "#eee"
-                                      }`,
+                                    borderBottom: `1px solid ${
+                                      isDark ? "#333" : "#eee"
+                                    }`,
                                     cursor: "pointer",
                                     backgroundColor: isSelected
                                       ? isDark
@@ -1931,8 +1962,9 @@ const AngelBot = () => {
                                 <tr
                                   key={index}
                                   style={{
-                                    borderBottom: `1px solid ${isDark ? "#333" : "#f0f0f0"
-                                      }`,
+                                    borderBottom: `1px solid ${
+                                      isDark ? "#333" : "#f0f0f0"
+                                    }`,
                                     backgroundColor: isDark
                                       ? index % 2 === 0
                                         ? "#1c1c1c"
@@ -2063,10 +2095,6 @@ const AngelBot = () => {
 
                     <Box>
                       {getSortedStorageUsers
-                        .slice(
-                          userPage * userRowsPerPage,
-                          userPage * userRowsPerPage + userRowsPerPage
-                        )
                         .map((user, index) => (
                           <Box
                             key={index}
@@ -2083,7 +2111,7 @@ const AngelBot = () => {
                               "&:hover": {
                                 backgroundColor: alpha(
                                   chartColors.primary,
-                                  0.1
+                                  0.1,
                                 ),
                                 transform: "translateY(-1px)",
                                 transition: "all 0.2s ease-in-out",
@@ -2124,7 +2152,7 @@ const AngelBot = () => {
                                   [`&.MuiLinearProgress-root`]: {
                                     backgroundColor: alpha(
                                       chartColors.primary,
-                                      0.12
+                                      0.12,
                                     ),
                                   },
                                   [`& .MuiLinearProgress-bar`]: {
@@ -2132,7 +2160,7 @@ const AngelBot = () => {
                                     backgroundColor: getProgressBarColor(
                                       (user.storageUsed /
                                         user.storageAllocated) *
-                                      100
+                                        100,
                                     ),
                                   },
                                 }}
@@ -2149,14 +2177,15 @@ const AngelBot = () => {
                               }}
                             >
                               {`${Math.round(
-                                (user.storageUsed / user.storageAllocated) * 100
+                                (user.storageUsed / user.storageAllocated) *
+                                  100,
                               )}%`}
                             </Typography>
                           </Box>
                         ))}
                       <TablePagination
                         component="div"
-                        count={getSortedStorageUsers.length}
+                        count={userStorageTotalElements}
                         page={userPage}
                         onPageChange={handleUserPageChange}
                         rowsPerPage={userRowsPerPage}
@@ -2165,9 +2194,9 @@ const AngelBot = () => {
                         sx={{
                           mt: 1,
                           ".MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows":
-                          {
-                            margin: 0,
-                          },
+                            {
+                              margin: 0,
+                            },
                         }}
                       />
                     </Box>
@@ -2245,10 +2274,6 @@ const AngelBot = () => {
                     </Box>
                     <Box>
                       {getSortedDepartments
-                        .slice(
-                          deptPage * deptRowsPerPage,
-                          deptPage * deptRowsPerPage + deptRowsPerPage
-                        )
                         .map((dept, index) => (
                           <Box
                             key={index}
@@ -2265,7 +2290,7 @@ const AngelBot = () => {
                               "&:hover": {
                                 backgroundColor: alpha(
                                   chartColors.primary,
-                                  0.1
+                                  0.1,
                                 ),
                                 transform: "translateY(-1px)",
                                 transition: "all 0.2s ease-in-out",
@@ -2306,7 +2331,7 @@ const AngelBot = () => {
                                   [`&.MuiLinearProgress-root`]: {
                                     backgroundColor: alpha(
                                       chartColors.primary,
-                                      0.12
+                                      0.12,
                                     ),
                                   },
                                   [`& .MuiLinearProgress-bar`]: {
@@ -2314,7 +2339,7 @@ const AngelBot = () => {
                                     backgroundColor: getProgressBarColor(
                                       (dept.storageUsed /
                                         dept.storageAllocated) *
-                                      100
+                                        100,
                                     ),
                                   },
                                 }}
@@ -2331,14 +2356,15 @@ const AngelBot = () => {
                               }}
                             >
                               {`${Math.round(
-                                (dept.storageUsed / dept.storageAllocated) * 100
+                                (dept.storageUsed / dept.storageAllocated) *
+                                  100,
                               )}%`}
                             </Typography>
                           </Box>
                         ))}
                       <TablePagination
                         component="div"
-                        count={getSortedDepartments.length}
+                        count={deptStorageTotalElements}
                         page={deptPage}
                         onPageChange={handleDeptPageChange}
                         rowsPerPage={deptRowsPerPage}
@@ -2347,9 +2373,9 @@ const AngelBot = () => {
                         sx={{
                           mt: 1,
                           ".MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows":
-                          {
-                            margin: 0,
-                          },
+                            {
+                              margin: 0,
+                            },
                         }}
                       />
                     </Box>
@@ -2444,9 +2470,8 @@ const AngelBot = () => {
         open={openCreateUser}
         onClose={() => setOpenCreateUser(false)}
         TransitionComponent={Transition}
-        keepMounted
-        maxWidth="md" // Options: 'xs' | 'sm' | 'md' | 'lg' | 'xl'
-        fullWidth={false} // ❌ don't stretch full width
+        maxWidth="md"
+        fullWidth={false}
       >
         <CreateUser
           handleClose={() => setOpenCreateUser(false)}
@@ -2540,7 +2565,7 @@ const AngelBot = () => {
                 const regex = /^[A-Za-z0-9\-_ ]{1,12}$/; // ✅ only A-Z, 0-9, -, _, and space (1–12 chars)
                 if (!regex.test(newRegion)) {
                   setRegionError(
-                    "Command must be 1-12 chars, only letters, numbers, spaces, - or _"
+                    "Command must be 1-12 chars, only letters, numbers, spaces, - or _",
                   );
                   return;
                 }
@@ -2581,7 +2606,6 @@ const AngelBot = () => {
               },
             }}
           >
-
             {regions.length === 0 ? (
               <Typography variant="body2" color="text.secondary">
                 No commands added yet.

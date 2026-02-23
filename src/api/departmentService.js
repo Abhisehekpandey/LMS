@@ -12,7 +12,7 @@ export const createDepartment = async (payload) => {
           Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
           username: `${sessionStorage.getItem("adminEmail")}`,
         },
-      }
+      },
     );
 
     return response.data;
@@ -37,9 +37,8 @@ export const getDepartments = async (page = 0, pageSize = 10, search = "") => {
           pageNumber: page,
           pageSize: pageSize,
         },
-      }
+      },
     );
-
 
     return response.data;
   } catch (error) {
@@ -50,14 +49,9 @@ export const getDepartments = async (page = 0, pageSize = 10, search = "") => {
 
 export const createRole = async (payload) => {
   try {
-
     const { department, role, isAdmin, appRole } = payload;
 
-
-
     const rolesArray = [{ roleName: role, isAdmin, appRole }];
-
-
 
     const response = await axios.post(
       `${window.__ENV__.REACT_APP_ROUTE}/tenants/departments/${department}/roles`,
@@ -68,9 +62,8 @@ export const createRole = async (payload) => {
           "Content-Type": "application/json",
           username: `${sessionStorage.getItem("adminEmail")}`,
         },
-      }
+      },
     );
-
 
     return response.data.uniqueRoles;
   } catch (error) {
@@ -78,10 +71,6 @@ export const createRole = async (payload) => {
     throw error;
   }
 };
-
-
-
-
 
 export const updateDepartment = async (payload) => {
   return await axios.put(
@@ -93,11 +82,9 @@ export const updateDepartment = async (payload) => {
         Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
         username: `${sessionStorage.getItem("adminEmail")}`,
       },
-    }
+    },
   );
 };
-
-
 
 export const deleteDepartment = async (deptName) => {
   return await axios.delete(
@@ -109,10 +96,9 @@ export const deleteDepartment = async (deptName) => {
         username: `${sessionStorage.getItem("adminEmail")}`,
       },
       params: { deptName },
-    }
+    },
   );
 };
-
 
 export const updateDepartmentStorage = async ({ deptName, allowedStorage }) => {
   return await axios.put(
@@ -124,15 +110,13 @@ export const updateDepartmentStorage = async ({ deptName, allowedStorage }) => {
         Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
         username: `${sessionStorage.getItem("adminEmail")}`,
       },
-    }
+    },
   );
 };
 
-
-
 export const updateDepartmentStoragePermission = async (
   permissionPayload,
-  pageNumber
+  pageNumber,
 ) => {
   const token = sessionStorage.getItem("authToken");
   const adminEmail = sessionStorage.getItem("adminEmail");
@@ -147,7 +131,7 @@ export const updateDepartmentStoragePermission = async (
           pageNumber: pageNumber.toString(),
           userName: adminEmail,
         },
-      }
+      },
     );
 
     return response.data;
@@ -157,9 +141,7 @@ export const updateDepartmentStoragePermission = async (
   }
 };
 
-
 export const deleteRole = async (roleId) => {
-
   return await axios.delete(`${window.__ENV__.REACT_APP_ROUTE}/tenants/role`, {
     params: {
       roleId,
@@ -171,7 +153,44 @@ export const deleteRole = async (roleId) => {
   });
 };
 
+export const getUserStorage = async (page = 1, size = 7, sort = "HTL") => {
+  const response = await axios.get(
+    `${window.__ENV__.REACT_APP_ROUTE}/tenants/dashboard/getUserStorage`,
+    {
+      headers: {
+        Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+        username: sessionStorage.getItem("adminEmail"),
+      },
+      params: { page, size, sort },
+    },
+  );
+  return response.data;
+};
 
+export const getDeptStorage = async (page = 1, size = 7, sort = "HTL") => {
+  const response = await axios.get(
+    `${window.__ENV__.REACT_APP_ROUTE}/tenants/dashboard/getDeptStorage`,
+    {
+      headers: {
+        Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+        username: sessionStorage.getItem("adminEmail"),
+      },
+      params: { page, size, sort },
+    },
+  );
+  return response.data;
+};
 
-
-
+// kunal's code
+export const getDashboardStats = async () => {
+  const response = await axios.get(
+    `${window.__ENV__.REACT_APP_ROUTE}/tenants/dashboard/getStats`,
+    {
+      headers: {
+        Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+        username: sessionStorage.getItem("adminEmail"),
+      },
+    },
+  );
+  return response.data;
+};
