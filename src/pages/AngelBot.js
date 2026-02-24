@@ -2143,8 +2143,9 @@ const AngelBot = () => {
                               <LinearProgress
                                 variant="determinate"
                                 value={
-                                  (user.storageUsed / user.storageAllocated) *
-                                  100
+                                  user.storageAllocated
+                                    ? (user.storageUsed / user.storageAllocated) * 100
+                                    : 0
                                 }
                                 sx={{
                                   height: 10,
@@ -2158,9 +2159,9 @@ const AngelBot = () => {
                                   [`& .MuiLinearProgress-bar`]: {
                                     borderRadius: 3,
                                     backgroundColor: getProgressBarColor(
-                                      (user.storageUsed /
-                                        user.storageAllocated) *
-                                        100,
+                                      user.storageAllocated
+                                        ? (user.storageUsed / user.storageAllocated) * 100
+                                        : 0,
                                     ),
                                   },
                                 }}
@@ -2177,8 +2178,9 @@ const AngelBot = () => {
                               }}
                             >
                               {`${Math.round(
-                                (user.storageUsed / user.storageAllocated) *
-                                  100,
+                                user.storageAllocated
+                                  ? (user.storageUsed / user.storageAllocated) * 100
+                                  : 0,
                               )}%`}
                             </Typography>
                           </Box>
@@ -2322,8 +2324,9 @@ const AngelBot = () => {
                               <LinearProgress
                                 variant="determinate"
                                 value={
-                                  (dept.storageUsed / dept.storageAllocated) *
-                                  100
+                                  dept.storageAllocated
+                                    ? (dept.storageUsed / dept.storageAllocated) * 100
+                                    : 0
                                 }
                                 sx={{
                                   height: 10,
@@ -2337,9 +2340,9 @@ const AngelBot = () => {
                                   [`& .MuiLinearProgress-bar`]: {
                                     borderRadius: 3,
                                     backgroundColor: getProgressBarColor(
-                                      (dept.storageUsed /
-                                        dept.storageAllocated) *
-                                        100,
+                                      dept.storageAllocated
+                                        ? (dept.storageUsed / dept.storageAllocated) * 100
+                                        : 0,
                                     ),
                                   },
                                 }}
@@ -2356,8 +2359,9 @@ const AngelBot = () => {
                               }}
                             >
                               {`${Math.round(
-                                (dept.storageUsed / dept.storageAllocated) *
-                                  100,
+                                dept.storageAllocated
+                                  ? (dept.storageUsed / dept.storageAllocated) * 100
+                                  : 0,
                               )}%`}
                             </Typography>
                           </Box>
