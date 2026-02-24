@@ -171,23 +171,53 @@ export const updateUser = async (userData) => {
   }
 };
 
+// OLD searchUsers (/tenants/search with pageNumber/pageSize) - COMMENTED OUT
+// export const searchUsers = async (
+//   page = 0,
+//   size = 10,
+//   searchColumn = "",
+//   searchQuery = ""
+// ) => {
+//   try {
+//     const response = await axios.get(
+//       `${window.__ENV__.REACT_APP_ROUTE}/tenants/search`,
+//       {
+//         headers: {
+//           Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+//           username: `${sessionStorage.getItem("adminEmail")}`,
+//         },
+//         params: {
+//           pageNumber: page,  // OLD param name
+//           pageSize: size,    // OLD param name
+//           searchColumn,
+//           searchQuery,
+//         },
+//       }
+//     );
+//     return response.data;
+//   } catch (error) {
+//     console.error("Failed to search users:", error);
+//     throw error;
+//   }
+// };
+
 export const searchUsers = async (
-  page = 0,
+  page = 0,   // 0-based from component (MUI TablePagination)
   size = 10,
   searchColumn = "",
   searchQuery = ""
 ) => {
   try {
     const response = await axios.get(
-      `${window.__ENV__.REACT_APP_ROUTE}/tenants/search`,
+      `${window.__ENV__.REACT_APP_ROUTE}/tenants/search/users`,
       {
         headers: {
           Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
           username: `${sessionStorage.getItem("adminEmail")}`,
         },
         params: {
-          pageNumber: page,
-          pageSize: size,
+          page: page + 1, // convert 0-based → 1-based index
+          size,
           searchColumn,
           searchQuery,
         },

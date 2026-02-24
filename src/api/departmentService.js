@@ -22,20 +22,90 @@ export const createDepartment = async (payload) => {
   }
 };
 
-export const getDepartments = async (page = 0, pageSize = 10, search = "") => {
+// OLD getDepartments (with search param) - COMMENTED OUT
+// export const getDepartments = async (page = 0, pageSize = 10, search = "") => {
+//   try {
+//     const response = await axios.get(
+//       `${window.__ENV__.REACT_APP_ROUTE}/tenants/departments`,
+//       {
+//         headers: {
+//           "Content-Type": "application/json",
+//           Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+//           username: `${sessionStorage.getItem("adminEmail")}`,
+//         },
+//         params: {
+//           search, // Optional search param
+//           pageNumber: page,
+//           pageSize: pageSize,
+//         },
+//       },
+//     );
+//     return response.data;
+//   } catch (error) {
+//     console.error("Failed to fetch departments:", error);
+//     throw error;
+//   }
+// };
+
+// COMMENTED OUT: old version sent Content-Type (unnecessary for GET) and pageNumber/pageSize as query params
+// export const getDepartments = async (page = 0, pageSize = 10) => {
+//   try {
+//     const response = await axios.get(
+//       `${window.__ENV__.REACT_APP_ROUTE}/tenants/departments`,
+//       {
+//         headers: {
+//           "Content-Type": "application/json",
+//           Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+//           username: `${sessionStorage.getItem("adminEmail")}`,
+//         },
+//         params: {
+//           // search, // REMOVED - search param no longer sent
+//           pageNumber: page,
+//           pageSize: pageSize,
+//         },
+//       },
+//     );
+//     return response.data;
+//   } catch (error) {
+//     console.error("Failed to fetch departments:", error);
+//     throw error;
+//   }
+// };
+
+// COMMENTED OUT: pageNumber/pageSize as headers was wrong — API uses query params page/size (1-based)
+// export const getDepartments = async (page = 0, pageSize = 10) => {
+//   try {
+//     const response = await axios.get(
+//       `${window.__ENV__.REACT_APP_ROUTE}/tenants/departments`,
+//       {
+//         headers: {
+//           Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+//           username: `${sessionStorage.getItem("adminEmail")}`,
+//           pageNumber: page.toString(),
+//           pageSize: pageSize.toString(),
+//         },
+//       },
+//     );
+//     return response.data;
+//   } catch (error) {
+//     console.error("Failed to fetch departments:", error);
+//     throw error;
+//   }
+// };
+
+// NEW: pagination as query params page/size (1-based); component passes 0-based so we convert with page + 1
+export const getDepartments = async (page = 0, pageSize = 10) => {
   try {
     const response = await axios.get(
       `${window.__ENV__.REACT_APP_ROUTE}/tenants/departments`,
       {
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
           username: `${sessionStorage.getItem("adminEmail")}`,
         },
         params: {
-          search, // Optional search param
-          pageNumber: page,
-          pageSize: pageSize,
+          page: page + 1,  // convert 0-based (MUI) → 1-based (API)
+          size: pageSize,
         },
       },
     );
@@ -43,6 +113,35 @@ export const getDepartments = async (page = 0, pageSize = 10, search = "") => {
     return response.data;
   } catch (error) {
     console.error("Failed to fetch departments:", error);
+    throw error;
+  }
+};
+
+export const searchDepartments = async (
+  page = 1,
+  size = 10,
+  searchColumn = "",
+  searchQuery = ""
+) => {
+  try {
+    const response = await axios.get(
+      `${window.__ENV__.REACT_APP_ROUTE}/tenants/search/departments`,
+      {
+        headers: {
+          Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+          username: `${sessionStorage.getItem("adminEmail")}`,
+        },
+        params: {
+          page,    // 1-based index
+          size,
+          searchColumn,
+          searchQuery,
+        },
+      },
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Failed to search departments:", error);
     throw error;
   }
 };

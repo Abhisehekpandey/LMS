@@ -46,7 +46,7 @@ import { Fab } from "@mui/material";
 import { Autocomplete } from "@mui/material";
 import { Card, CardContent } from "@mui/material";
 import { CircularProgress, keyframes } from "@mui/material";
-import { getDepartments } from "../api/departmentService";
+import { getDepartments, searchDepartments } from "../api/departmentService";
 import { createDepartment } from "../api/departmentService";
 import { createRole } from "../api/departmentService";
 
@@ -100,7 +100,7 @@ import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import { Checkbox } from "@mui/material";
 import styles from "./department.module.css";
-import { fetchUsers } from "../api/userService";
+import { fetchUsers, searchUsers } from "../api/userService";
 import { fetchUsersByDepartment } from "../api/userService";
 import { updateDepartment } from "../api/departmentService";
 import { deleteDepartment } from "../api/departmentService";
@@ -222,7 +222,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     allColumns.reduce((acc, col) => {
       acc[col.id] = true; // all visible by default
       return acc;
-    }, {})
+    }, {}),
   );
   const [anchorEl, setAnchorEl] = useState(null);
   // const [selectedDeptUsers, setSelectedDeptUsers] = useState([]);
@@ -237,8 +237,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
   const [searchUser, setSearchUser] = useState("");
 
-  const [searchColumn, setSearchColumn] = useState("name");
+  const [searchColumn, setSearchColumn] = useState("deptname"); // API column name (deptname/owner/shortname)
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
 
   const [bulkUploadDialogOpen, setBulkUploadDialogOpen] = useState(false);
   const [tabValue, setTabValue] = useState(0);
@@ -290,7 +291,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     name: "",
     displayName: "",
     initialRole: "",
-    storage: "1 GB", // ✅ default
+    storage: "1 GB", //  default
     departmentModerator: "",
     userAssignments: [{ user: null, role: "" }], // 👈 start with one empty row
     submitted: false,
@@ -357,8 +358,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
   const loadingDepartments = useRef(false);
 
-
-
   const handleToggle = (users) => {
     setSelectedDeptUsers(users);
     setOpenPopper((prev) => !prev);
@@ -385,7 +384,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       const res = await getDepartments(migrationPage, 10); // 10 per page
       const newDepts = res.content || [];
 
-
       setAllDepartments((prev) => [...prev, ...newDepts]);
       setMigrationPage((prev) => prev + 1);
       if (newDepts.length < 10) setHasMoreDepartments(false);
@@ -411,29 +409,57 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     try {
       setLoading(true);
 
-
-      const departmentData = await getDepartments(page, rowsPerPage);
+      // Use searchDepartments API when search is active, else use getDepartments
+      let departmentData;
+      if (debouncedSearchQuery.trim()) {
+        departmentData = await searchDepartments(
+          page + 1, // 1-based index
+          rowsPerPage,
+          searchColumn, // already API column name: deptname/owner/shortname
+          debouncedSearchQuery.trim(),
+        );
+      } else {
+        // OLD: getDepartments without search
+        departmentData = await getDepartments(page, rowsPerPage);
+      }
       const apiDepartments = departmentData.content || [];
-
 
       setTotalDepartments(departmentData.totalElements || 0);
 
       const mapped = apiDepartments.map((dept) => ({
-        id: dept.id, // 👈 add this
+        // COMMENTED OUT: dept.id doesn't exist in API — API returns deptId
+        // id: dept.id,
+        id: dept.deptId,
+
         name: dept.deptName,
         displayName: dept.deptDisplayName,
+
+        // COMMENTED OUT: old fields didn't match API response shape
+        // departmentModerator: dept.deptModerator || dept.permissions?.deptUsername || "",
         departmentModerator:
-          dept.deptModerator || dept.permissions?.deptUsername || "",
-        storage: dept.permissions?.displayStorage || "0 GB",
-        allowedStorage:
-          dept.permissions?.allowedStorageInBytesDisplay === "0 bytes"
-            ? "0 GB"
-            : dept.permissions?.allowedStorageInBytesDisplay || "0 GB",
+          dept.owner ||
+          dept.deptModerator ||
+          dept.permissions?.deptUsername ||
+          "",
+
+        // COMMENTED OUT: API no longer returns permissions object for storage fields
+        // storage: dept.permissions?.displayStorage || "0 GB",
+        // allowedStorage:
+        //   dept.permissions?.allowedStorageInBytesDisplay === "0 bytes"
+        //     ? "0 GB"
+        //     : dept.permissions?.allowedStorageInBytesDisplay || "0 GB",
+        storage: dept.storageUsed || "0 GB",
+        allowedStorage: dept.storageGiven || "0 GB",
 
         roles: dept.roles || [],
+        users: dept.users || [], // NEW: needed for DeptUsersDropdown users prop
 
         userCount: dept.numberOfUsers || 0,
-        isActive: dept.permissions?.active || false,
+
+        // COMMENTED OUT: permissions object no longer present in API response
+        // isActive: dept.permissions?.active || false,
+        isActive: dept.active ?? false,
+
         createdAt: dept.createdOn,
       }));
 
@@ -467,39 +493,86 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     const [loading, setLoading] = useState(false);
     const anchorRef = useRef(null);
 
+    // NEW: states for dialog server-side search + infinite scroll
+    const [dialogSearch, setDialogSearch] = useState("");
+    const [dialogPage, setDialogPage] = useState(0);
+    const [dialogHasMore, setDialogHasMore] = useState(true);
+    const [dialogLoadingMore, setDialogLoadingMore] = useState(false);
+    const sentinelRef = useRef(null);
+    const dialogScrollRef = useRef(null); // NEW: ref for the scrollable container (IO root)
+
     const handleToggle = () => setOpen((prev) => !prev);
     const handleClose = () => setOpen(false);
 
     const filteredUsers = useMemo(() => {
       return users.filter((user) =>
-        user.name.toLowerCase().includes(search.toLowerCase())
+        user.name.toLowerCase().includes(search.toLowerCase()),
       );
     }, [users, search]);
 
-    const handleOpenAddDialog = async () => {
-      setAddDialogOpen(true);
-      setLoading(true);
+    // COMMENTED OUT: old version loaded 100 users at once with no search
+    // const handleOpenAddDialog = async () => {
+    //   setAddDialogOpen(true);
+    //   setLoading(true);
+    //   try {
+    //     const res = await fetchUsers(0, 100); // fetch first 100 users
+    //     setAllUsers(res.content || []);
+    //   } catch (err) {
+    //     console.error(err);
+    //   } finally {
+    //     setLoading(false);
+    //   }
+    // };
+
+    // NEW: load a page of users (server-side search + infinite scroll)
+    const loadDialogUsers = async (page, query, replace = false) => {
+      if (replace) setLoading(true);
+      else setDialogLoadingMore(true);
       try {
-        const res = await fetchUsers(0, 100); // fetch first 100 users
-        setAllUsers(res.content || []);
+        let res;
+        if (query.trim()) {
+          res = await searchUsers(page, 20, "name", query);
+        } else {
+          res = await fetchUsers(page, 20);
+        }
+        const newUsers = res.content || [];
+        setAllUsers((prev) => (replace ? newUsers : [...prev, ...newUsers]));
+        setDialogHasMore(newUsers.length === 20);
+        setDialogPage(page + 1);
       } catch (err) {
         console.error(err);
       } finally {
         setLoading(false);
+        setDialogLoadingMore(false);
       }
+    };
+
+    // NEW: open dialog with fresh first page
+    const handleOpenAddDialog = () => {
+      setAddDialogOpen(true);
+      setAllUsers([]);
+      setDialogSearch("");
+      setDialogPage(0);
+      setDialogHasMore(true);
+      loadDialogUsers(0, "", true);
     };
 
     const handleCloseAddDialog = () => {
       setAddDialogOpen(false);
       setSelectedUsers([]);
       setSelectedRoles({});
+      // NEW: reset dialog search/pagination state
+      setDialogSearch("");
+      setAllUsers([]);
+      setDialogPage(0);
+      setDialogHasMore(true);
     };
 
     const handleToggleSelectUser = (user) => {
       setSelectedUsers((prev) =>
         prev.some((u) => u.id === user.id)
           ? prev.filter((u) => u.id !== user.id)
-          : [...prev, user]
+          : [...prev, user],
       );
 
       if (selectedUsers.some((u) => u.id === user.id)) {
@@ -527,11 +600,54 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       handleCloseAddDialog();
     };
 
-    const filteredAllUsers = useMemo(() => {
-      return allUsers.filter((user) =>
-        user.name.toLowerCase().includes(search.toLowerCase())
+    // COMMENTED OUT: replaced by server-side search + infinite scroll
+    // const filteredAllUsers = useMemo(() => {
+    //   return allUsers.filter((user) =>
+    //     user.name.toLowerCase().includes(search.toLowerCase())
+    //   );
+    // }, [allUsers, search]);
+
+    // NEW: debounce dialogSearch → reload from page 0
+    useEffect(() => {
+      if (!addDialogOpen) return;
+      const t = setTimeout(() => {
+        setAllUsers([]);
+        setDialogPage(0);
+        setDialogHasMore(true);
+        loadDialogUsers(0, dialogSearch, true);
+      }, 400);
+      return () => clearTimeout(t);
+    }, [dialogSearch]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // NEW: IntersectionObserver on sentinel div → load next page on scroll end
+    // FIX 1: guard !addDialogOpen so closing the dialog doesn't trigger an API call
+    // FIX 2: use dialogScrollRef as IO root so it fires on container scroll, not viewport scroll
+    useEffect(() => {
+      if (!sentinelRef.current || !dialogScrollRef.current || !addDialogOpen)
+        return;
+      const observer = new IntersectionObserver(
+        (entries) => {
+          if (
+            entries[0].isIntersecting &&
+            dialogHasMore &&
+            !dialogLoadingMore &&
+            !loading
+          ) {
+            loadDialogUsers(dialogPage, dialogSearch, false);
+          }
+        },
+        { root: dialogScrollRef.current, threshold: 0.1 },
       );
-    }, [allUsers, search]);
+      observer.observe(sentinelRef.current);
+      return () => observer.disconnect();
+    }, [
+      addDialogOpen,
+      dialogHasMore,
+      dialogLoadingMore,
+      loading,
+      dialogPage,
+      dialogSearch,
+    ]); // eslint-disable-line react-hooks/exhaustive-deps
 
     return (
       <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
@@ -737,14 +853,14 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                       {
                                         headers: {
                                           Authorization: `Bearer ${sessionStorage.getItem(
-                                            "authToken"
+                                            "authToken",
                                           )}`,
                                           username:
                                             sessionStorage.getItem(
-                                              "adminEmail"
+                                              "adminEmail",
                                             ),
                                         },
-                                      }
+                                      },
                                     );
 
                                     if (response.status === 200) {
@@ -760,7 +876,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                   } catch (error) {
                                     console.error(
                                       "Failed to unassign user:",
-                                      error
+                                      error,
                                     );
                                     setSnackbar({
                                       open: true,
@@ -840,19 +956,37 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           </DialogTitle>
 
           <DialogContent sx={{ mt: 1 }}>
+            {/* NEW: search input always visible above the list */}
+            <TextField
+              size="small"
+              placeholder="Search users"
+              fullWidth
+              value={dialogSearch}
+              onChange={(e) => setDialogSearch(e.target.value)}
+              sx={{ mb: 1 }}
+            />
+            {/* OLD: search was client-side filtering using shared `search` state
+            <TextField
+              size="small"
+              placeholder="Search users"
+              fullWidth
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              sx={{ mb: 1 }}
+            /> */}
+
             {loading ? (
-              <CircularProgress size={24} />
+              <Box sx={{ display: "flex", justifyContent: "center", py: 3 }}>
+                <CircularProgress size={24} />
+              </Box>
             ) : (
-              <>
-                <TextField
-                  size="small"
-                  placeholder="Search users"
-                  fullWidth
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  sx={{ mb: 1 }}
-                />
-                <Table size="small">
+              // NEW: scrollable container for infinite scroll (ref used as IO root)
+              <Box
+                ref={dialogScrollRef}
+                sx={{ maxHeight: 360, overflowY: "auto" }}
+              >
+                {/* OLD: <Table size="small"> */}
+                <Table size="small" stickyHeader>
                   <TableHead>
                     <TableRow>
                       <TableCell>Name</TableCell>
@@ -861,7 +995,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {filteredAllUsers.map((user) => (
+                    {/* OLD: {filteredAllUsers.map((user) => ( */}
+                    {allUsers.map((user) => (
                       <TableRow key={user.id}>
                         <TableCell>{user.name}</TableCell>
                         <TableCell>
@@ -887,14 +1022,15 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                         <TableCell>
                           <Checkbox
                             checked={selectedUsers.some(
-                              (u) => u.id === user.id
+                              (u) => u.id === user.id,
                             )}
                             onChange={() => handleToggleSelectUser(user)}
                           />
                         </TableCell>
                       </TableRow>
                     ))}
-                    {filteredAllUsers.length === 0 && (
+                    {/* OLD: {filteredAllUsers.length === 0 && ( */}
+                    {allUsers.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={3} align="center">
                           No Users Found
@@ -903,7 +1039,16 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     )}
                   </TableBody>
                 </Table>
-              </>
+                {/* NEW: sentinel div triggers IntersectionObserver for next page */}
+                <div ref={sentinelRef} style={{ height: 1 }} />
+                {dialogLoadingMore && (
+                  <Box
+                    sx={{ display: "flex", justifyContent: "center", py: 1 }}
+                  >
+                    <CircularProgress size={20} />
+                  </Box>
+                )}
+              </Box>
             )}
           </DialogContent>
 
@@ -929,9 +1074,20 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     const [isEditMode, setIsEditMode] = useState(false);
     const anchorRef = useRef(null);
 
+    // COMMENTED OUT: in-memory cache — lost on page refresh or component remount
+    // const [roleAppRoleCache, setRoleAppRoleCache] = useState({}); // { roleName: appRole }
+
+    // NEW: sessionStorage key helper — scoped to dept so roles from different depts don't clash
+    const ssKey = (roleName) =>
+      `appRole__${selectedDepartment?.name}__${roleName}`;
+
     const handleEditClick = (role) => {
       setNewRole(role.roleName);
-      setAppRole(role.appRole || ""); // Assuming appRole is available in role object
+      // COMMENTED OUT: role.appRole is always undefined — API GET response does not include appRole in roles
+      // setAppRole(role.appRole || "");
+      // NEW: use API field if ever returned, else fall back to sessionStorage (survives page refresh)
+      const cached = sessionStorage.getItem(ssKey(role.roleName)) || "";
+      setAppRole(role.appRole || cached);
       setIsEditMode(true);
       setShowAddRoleDialog(true);
       setOpen(false); // Close the dropdown when opening dialog
@@ -1243,10 +1399,28 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             >
               Cancel
             </Button>
+            {/* COMMENTED OUT: old click didn't update local appRole cache
             <Button
               onClick={() =>
                 handleAddRole(newRole, appRole, selectedDepartment)
               }
+              variant="contained"
+              color="primary"
+              sx={{ background: "rgb(251, 68, 36)" }}
+            >
+              {isEditMode ? "Update" : "Add"}
+            </Button> */}
+            {/* NEW: also save appRole to session cache so edit dialog can pre-fill it */}
+            <Button
+              onClick={async () => {
+                await handleAddRole(newRole, appRole, selectedDepartment);
+                // Save appRole to sessionStorage so edit dialog can pre-fill it
+                if (newRole) {
+                  // COMMENTED OUT: was in-memory cache (lost on refresh)
+                  // setRoleAppRoleCache((prev) => ({ ...prev, [newRole]: appRole }));
+                  sessionStorage.setItem(ssKey(newRole), appRole);
+                }
+              }}
               variant="contained"
               color="primary"
               sx={{ background: "rgb(251, 68, 36)" }}
@@ -1278,7 +1452,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       searchModerator !== editedDepartment.departmentModerator
     ) {
       const isValidOwner = filteredUsers.some(
-        (u) => u.name === searchModerator
+        (u) => u.name === searchModerator,
       );
 
       if (!isValidOwner) {
@@ -1304,13 +1478,13 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         prev.map((dept) =>
           dept.name === editedDepartment.originalName
             ? {
-              ...dept,
-              name: payload.deptName,
-              displayName: payload.deptDisplayName,
-              departmentModerator: payload.deptModerator,
-            }
-            : dept
-        )
+                ...dept,
+                name: payload.deptName,
+                displayName: payload.deptDisplayName,
+                departmentModerator: payload.deptModerator,
+              }
+            : dept,
+        ),
       );
 
       setSnackbar({
@@ -1344,7 +1518,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       const res = await fetchUsersByDepartment(
         editedDepartment.name,
         filteredPage,
-        10
+        10,
       );
       const users = res?.data?.users || [];
 
@@ -1434,8 +1608,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         prev.map((dept) =>
           dept.name === deptName
             ? { ...dept, allowedStorage: newStorageDisplay }
-            : dept
-        )
+            : dept,
+        ),
       );
 
       setSnackbar({
@@ -1471,8 +1645,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         (result) =>
           result.name === dept.name ||
           result.displayName === dept.displayName ||
-          result.roles.some((role) => dept.roles.includes(role))
-      )
+          result.roles.some((role) => dept.roles.includes(role)),
+      ),
     );
 
     setFilteredDepartments(filtered);
@@ -1510,7 +1684,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     } else if (selectedIndex > 0) {
       newSelected = newSelected.concat(
         selected.slice(0, selectedIndex),
-        selected.slice(selectedIndex + 1)
+        selected.slice(selectedIndex + 1),
       );
     }
 
@@ -1559,11 +1733,11 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         prevDepartments.map((dept) =>
           dept.name === deptName
             ? {
-              ...dept,
-              roles: dept.roles.filter((_, i) => i !== roleIndex),
-            }
-            : dept
-        )
+                ...dept,
+                roles: dept.roles.filter((_, i) => i !== roleIndex),
+              }
+            : dept,
+        ),
       );
 
       setSnackbar({
@@ -1595,13 +1769,13 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       prev.map((dept) =>
         dept.name === editingRole.departmentName
           ? {
-            ...dept,
-            roles: dept.roles.map((role, i) =>
-              i === editingRole.roleIndex ? editingRole.value : role.roleName
-            ),
-          }
-          : dept
-      )
+              ...dept,
+              roles: dept.roles.map((role, i) =>
+                i === editingRole.roleIndex ? editingRole.value : role.roleName,
+              ),
+            }
+          : dept,
+      ),
     );
 
     setEditRoleDialog(false);
@@ -1702,7 +1876,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             setSnackbar({
               open: true,
               message: `Invalid file format. Missing required columns: ${missingColumns.join(
-                ", "
+                ", ",
               )}`,
               severity: "error",
             });
@@ -1710,10 +1884,10 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           }
 
           const existingDeptNames = new Set(
-            departments.map((d) => d.name.toLowerCase())
+            departments.map((d) => d.name.toLowerCase()),
           );
           const existingDisplayNames = new Set(
-            departments.map((d) => d.displayName.toLowerCase())
+            departments.map((d) => d.displayName.toLowerCase()),
           );
 
           const invalidRows = [];
@@ -1764,7 +1938,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
             if (errors.length > 0) {
               invalidRows.push(
-                `Row ${rowNumber} issue(s): ${errors.join(", ")}`
+                `Row ${rowNumber} issue(s): ${errors.join(", ")}`,
               );
             }
           });
@@ -1797,11 +1971,11 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 headers: {
                   "Content-Type": "application/json",
                   Authorization: `Bearer ${sessionStorage.getItem(
-                    "authToken"
+                    "authToken",
                   )}`,
                   username: `${sessionStorage.getItem("adminEmail")}`,
                 },
-              }
+              },
             );
 
             setSnackbar({
@@ -1884,11 +2058,12 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     });
   }, [departments, filteredDepartments, order, orderBy]);
 
-
-  const filteredDepartments1 = sortedDepartments?.filter((row) => {
-    const value = row[searchColumn]?.toString().toLowerCase();
-    return value?.includes(searchQuery.toLowerCase());
-  });
+  // COMMENTED OUT: client-side filter replaced by server-side searchDepartments API
+  // const filteredDepartments1 = sortedDepartments?.filter((row) => {
+  //   const value = row[searchColumn]?.toString().toLowerCase();
+  //   return value?.includes(searchQuery.toLowerCase());
+  // });
+  const filteredDepartments1 = sortedDepartments; // now API handles filtering
 
   const StyledTableRow = styled(TableRow)(({ theme }) => ({
     "&:nth-of-type(odd)": {
@@ -1919,14 +2094,14 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
   const checkDuplicateDepartment = (value) => {
     const duplicate = departments.some(
-      (dept) => dept.name.toLowerCase() === value.toLowerCase()
+      (dept) => dept.name.toLowerCase() === value.toLowerCase(),
     );
     setDuplicateDepartmentError(duplicate);
   };
 
   const checkDuplicateShortName = (value) => {
     const duplicate = departments.some(
-      (dept) => dept.displayName.toLowerCase() === value.toLowerCase()
+      (dept) => dept.displayName.toLowerCase() === value.toLowerCase(),
     );
     setDuplicateShortNameError(duplicate);
   };
@@ -2052,14 +2227,14 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         prev.map((dept) =>
           dept.name === selectedDepartment.name
             ? {
-              ...dept,
-              roles: [
-                ...dept.roles,
-                { roleName: newRole.trim(), isAdmin: isAdminRole },
-              ],
-            }
-            : dept
-        )
+                ...dept,
+                roles: [
+                  ...dept.roles,
+                  { roleName: newRole.trim(), isAdmin: isAdminRole },
+                ],
+              }
+            : dept,
+        ),
       );
 
       setSelectedDepartment((prev) => ({
@@ -2093,13 +2268,14 @@ function Department({ departments, setDepartments, onThemeToggle }) {
   const handleDepartmentToggle = (dept) => {
     setDepartments((prev) =>
       prev.map((d) =>
-        d.name === dept.name ? { ...d, isActive: !d.isActive } : d
-      )
+        d.name === dept.name ? { ...d, isActive: !d.isActive } : d,
+      ),
     );
     setSnackbar({
       open: true,
-      message: `Unit "${dept.name}" ${!dept.isActive ? "activated" : "deactivated"
-        }`,
+      message: `Unit "${dept.name}" ${
+        !dept.isActive ? "activated" : "deactivated"
+      }`,
       severity: "success",
     });
   };
@@ -2128,7 +2304,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       await deleteDepartment(departmentToDelete.name);
 
       setDepartments((prev) =>
-        prev.filter((d) => d.name !== departmentToDelete.name)
+        prev.filter((d) => d.name !== departmentToDelete.name),
       );
 
       setSnackbar({
@@ -2187,10 +2363,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     try {
       const sourceData = rowData.length > 0 ? rowData : departments;
       const selectedDepartments = sourceData.filter((dept) =>
-        selectedItems.includes(dept.name)
+        selectedItems.includes(dept.name),
       );
-
-
 
       const exportData = selectedDepartments.flatMap((dept) => {
         // ✅ Collect all users across roles
@@ -2260,13 +2434,22 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     if (!val) return "";
     const [num, unit] = val.trim().split(/\s+/); // splits "25.00 GB" → ["25.00", "GB"]
     const rounded = parseFloat(num);
-    return `${Number.isInteger(rounded) ? rounded : Math.floor(rounded)
-      }${unit}`;
+    return `${
+      Number.isInteger(rounded) ? rounded : Math.floor(rounded)
+    }${unit}`;
   };
+
+  // Debounce searchQuery → debouncedSearchQuery (500ms delay)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   useEffect(() => {
     fetchDepartments();
-  }, [page, rowsPerPage]);
+  }, [page, rowsPerPage, debouncedSearchQuery, searchColumn]);
 
   useEffect(() => {
     loadMoreUsers();
@@ -2372,9 +2555,14 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 onChange={(e) => setSearchColumn(e.target.value)}
                 label="Filter By"
               >
-                <MenuItem value="name">Unit</MenuItem>
-                <MenuItem value="departmentModerator">Owner</MenuItem>
-                <MenuItem value="displayName">Short Name</MenuItem>
+                {/* OLD values (row object keys) - COMMENTED OUT */}
+                {/* <MenuItem value="name">Unit</MenuItem> */}
+                {/* <MenuItem value="departmentModerator">Owner</MenuItem> */}
+                {/* <MenuItem value="displayName">Short Name</MenuItem> */}
+                {/* NEW values match API searchColumn params */}
+                <MenuItem value="deptname">Unit</MenuItem>
+                <MenuItem value="shortname">Short Name</MenuItem>
+                <MenuItem value="owner">Owner</MenuItem>
               </Select>
             </FormControl>
 
@@ -2625,7 +2813,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                               <MenuItem key={option} value={option}>
                                 {option}
                               </MenuItem>
-                            )
+                            ),
                           )}
                         </Select>
                       </TableCell>
@@ -2634,16 +2822,32 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     {visibleColumns.users && (
                       <TableCell align="center">
                         <DeptUsersDropdown
-                          users={dept.roles.flatMap((role) =>
-                            (role.user || []).map((u) => ({
-                              ...u,
-                              roleName: role.roleName,
-                              roleId: role.id,
-                            }))
-                          )}
+                          // COMMENTED OUT: roles don't have a .user array in the API response
+                          // users={dept.roles.flatMap((role) =>
+                          //   (role.user || []).map((u) => ({
+                          //     ...u,
+                          //     roleName: role.roleName,
+                          //     roleId: role.id,   // ← role.id was also wrong (API uses roleId)
+                          //   }))
+                          // )}
+                          // NEW: map from dept.users (API: objectId, fullName, role as displayName)
+                          // look up roleId from dept.roles by matching roleDisplayName
+                          users={(dept.users || []).map((u) => {
+                            const matched = (dept.roles || []).find(
+                              (r) => r.roleDisplayName === u.role,
+                            );
+                            return {
+                              id: u.objectId,
+                              name: u.fullName,
+                              roleName: u.role,
+                              roleId: matched?.roleId || "",
+                            };
+                          })}
                           departmentId={dept.id}
                           departmentRoles={dept.roles.map((role) => ({
-                            id: role.id,
+                            // COMMENTED OUT: role.id doesn't exist in API — API uses roleId
+                            // id: role.id,
+                            id: role.roleId,
                             name: role.roleName,
                           }))}
                           // onEditUser={(user) =>}
@@ -2652,10 +2856,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                           // }
                           addUsersToDepartment={async (
                             deptId,
-                            selectedUsers
+                            selectedUsers,
                           ) => {
-
-
                             try {
                               const payload = selectedUsers.map((u) => [
                                 u.id,
@@ -2669,12 +2871,12 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                   headers: {
                                     "Content-Type": "application/json",
                                     Authorization: `Bearer ${sessionStorage.getItem(
-                                      "authToken"
+                                      "authToken",
                                     )}`,
                                     username:
                                       sessionStorage.getItem("adminEmail"),
                                   },
-                                }
+                                },
                               );
 
                               if (response.status === 200) {
@@ -2712,10 +2914,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                           handleAddRole={async (
                             newRole,
                             appRole,
-                            department
+                            department,
                           ) => {
-
-
                             try {
                               const response = await axios.post(
                                 `${window.__ENV__.REACT_APP_ROUTE}/tenants/departments/${department.name}/roles`,
@@ -2724,12 +2924,12 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                   headers: {
                                     "Content-Type": "application/json",
                                     Authorization: `Bearer ${sessionStorage.getItem(
-                                      "authToken"
+                                      "authToken",
                                     )}`,
                                     username:
                                       sessionStorage.getItem("adminEmail"),
                                   },
-                                }
+                                },
                               );
 
                               if (response.status === 200) {
@@ -3206,7 +3406,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                             onChange={(e) => {
                               const value = e.target.value;
                               const hasInvalidChar = /[^A-Za-z0-9-_]/.test(
-                                value
+                                value,
                               );
 
                               if (value.length <= 35) {
@@ -3218,7 +3418,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                               updateDepartmentField(
                                 index,
                                 "hasInvalidChar",
-                                hasInvalidChar
+                                hasInvalidChar,
                               );
                             }}
                             error={
@@ -3257,14 +3457,14 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                               const hasSpecialChar = /[^A-Z0-9]/.test(value);
                               const validValue = value.replace(
                                 /[^A-Z0-9]/g,
-                                ""
+                                "",
                               );
 
                               if (validValue.length <= 8) {
                                 updateDepartmentField(
                                   index,
                                   "displayName",
-                                  validValue
+                                  validValue,
                                 );
                                 checkDuplicateShortName(validValue);
                               }
@@ -3272,7 +3472,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                               updateDepartmentField(
                                 index,
                                 "hasSpecialChar",
-                                hasSpecialChar
+                                hasSpecialChar,
                               );
                             }}
                             error={
@@ -3311,7 +3511,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                 updateDepartmentField(
                                   index,
                                   "storage",
-                                  e.target.value
+                                  e.target.value,
                                 )
                               }
                               input={
@@ -3340,22 +3540,36 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                             getOptionLabel={(option) => option.email || ""}
                             value={
                               userOptions.find(
-                                (u) => u.email === dept.departmentModerator
+                                (u) => u.email === dept.departmentModerator,
                               ) || null
                             }
-                            onChange={(event, newValue) =>
+                            // COMMENTED OUT: only set departmentModerator, didn't auto-set permission
+                            // onChange={(event, newValue) =>
+                            //   updateDepartmentField(
+                            //     index,
+                            //     "departmentModerator",
+                            //     newValue?.email || ""
+                            //   )
+                            // }
+                            // NEW: owner is always ADMIN — auto-set permission when owner is selected/cleared
+                            onChange={(event, newValue) => {
                               updateDepartmentField(
                                 index,
                                 "departmentModerator",
-                                newValue?.email || ""
-                              )
-                            }
+                                newValue?.email || "",
+                              );
+                              updateDepartmentField(
+                                index,
+                                "permission",
+                                newValue ? "ADMIN" : "",
+                              );
+                            }}
                             ListboxProps={{
                               onScroll: (event) => {
                                 const listboxNode = event.currentTarget;
                                 if (
                                   listboxNode.scrollTop +
-                                  listboxNode.clientHeight >=
+                                    listboxNode.clientHeight >=
                                   listboxNode.scrollHeight - 1
                                 ) {
                                   loadMoreUsers();
@@ -3393,7 +3607,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                               updateDepartmentField(
                                 index,
                                 "role",
-                                e.target.value
+                                e.target.value,
                               )
                             }
                             fullWidth
@@ -3402,7 +3616,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                         </Grid>
 
                         <Grid item xs={6}>
-                          <FormControl fullWidth size="small">
+                          {/* COMMENTED OUT: permission was user-editable — owner must always be ADMIN */}
+                          {/* <FormControl fullWidth size="small">
                             <InputLabel>Permission</InputLabel>
                             <Select
                               value={dept.permission || ""}
@@ -3414,6 +3629,22 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                 )
                               }
                               label="Permission"
+                            >
+                              <MenuItem value="ADMIN">ADMIN</MenuItem>
+                              <MenuItem value="VIEWER">VIEWER</MenuItem>
+                              <MenuItem value="EDITOR">EDITOR</MenuItem>
+                              <MenuItem value="COMMENTOR">COMMENTOR</MenuItem>
+                              <MenuItem value="CONTRIBUTOR">CONTRIBUTOR</MenuItem>
+                              <MenuItem value="NO_ROLE">NO_ROLE</MenuItem>
+                            </Select>
+                          </FormControl> */}
+                          {/* NEW: disabled — always ADMIN, auto-set when owner is selected */}
+                          <FormControl fullWidth size="small">
+                            <InputLabel>Permission</InputLabel>
+                            <Select
+                              value={dept.permission || ""}
+                              label="Permission"
+                              disabled
                             >
                               <MenuItem value="ADMIN">ADMIN</MenuItem>
                               <MenuItem value="VIEWER">VIEWER</MenuItem>
@@ -3792,7 +4023,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                             .filter((user) =>
                               user.name
                                 .toLowerCase()
-                                .includes(searchModerator.toLowerCase())
+                                .includes(searchModerator.toLowerCase()),
                             )
                             .map((user, index) => (
                               <MenuItem
@@ -3813,10 +4044,10 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                           {filteredUsers.filter((user) =>
                             user.name
                               .toLowerCase()
-                              .includes(searchModerator.toLowerCase())
+                              .includes(searchModerator.toLowerCase()),
                           ).length === 0 && (
-                              <MenuItem disabled>No users found</MenuItem>
-                            )}
+                            <MenuItem disabled>No users found</MenuItem>
+                          )}
                         </Box>
                       </Paper>
                     </Grow>
@@ -4248,23 +4479,23 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     >
                       {`[${(assignment.role === "Admin"
                         ? [
-                          "Read",
-                          "Write",
-                          "Delete",
-                          "Share",
-                          "UserAdmin",
-                          "Comment",
-                          "Upload",
-                        ]
-                        : assignment.role === "Editor"
-                          ? [
                             "Read",
                             "Write",
                             "Delete",
                             "Share",
+                            "UserAdmin",
                             "Comment",
                             "Upload",
                           ]
+                        : assignment.role === "Editor"
+                          ? [
+                              "Read",
+                              "Write",
+                              "Delete",
+                              "Share",
+                              "Comment",
+                              "Upload",
+                            ]
                           : assignment.role === "Viewer"
                             ? ["Read", "Comment"]
                             : assignment.role === "Collaborator"
@@ -4279,7 +4510,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                       color="error"
                       onClick={() => {
                         setAddUserAssignments(
-                          addUserAssignments.filter((_, i) => i !== index)
+                          addUserAssignments.filter((_, i) => i !== index),
                         );
                       }}
                       size="small"
@@ -4314,7 +4545,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           <Button
             variant="contained"
             onClick={() => {
-
               setShowAddUserDialog(false);
             }}
           >

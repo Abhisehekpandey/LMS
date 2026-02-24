@@ -188,7 +188,7 @@ const allColumns = [
   { id: "name", label: "Name" },
   { id: "region", label: "Command" },
   { id: "department", label: "Unit" },
-  { id: "sections", label: "Section" },
+  // { id: "sections", label: "Section" }, // COMMENTED OUT
   { id: "role", label: "Role" },
   { id: "email", label: "Email" },
   { id: "storageUsed", label: "Storage" },
@@ -248,32 +248,33 @@ export default function UserTable() {
   const [userRoleMap, setUserRoleMap] = useState({});
   const [fullDepartments, setFullDepartments] = useState([]);
   const [regions, setRegions] = useState([]);
-  const [sections, setSections] = useState([]); // ✅ Added sections state
+  // COMMENTED OUT: Section state and fetch
+  // const [sections, setSections] = useState([]); // ✅ Added sections state
 
-  // ✅ Fetch sections when dialog opens or component mounts
-  const fetchSections = async () => {
-    try {
-      const response = await axios.get(
-        `${window.__ENV__.REACT_APP_ROUTE}/tenants/section/getAll`,
-        {
-          headers: {
-            Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
-            "Content-Type": "application/json",
-            username: sessionStorage.getItem("adminEmail"),
-          },
-        }
-      );
-      setSections(response.data.sections || []);
-    } catch (err) {
-      console.error("Failed to fetch sections:", err);
-    }
-  };
+  // // ✅ Fetch sections when dialog opens or component mounts
+  // const fetchSections = async () => {
+  //   try {
+  //     const response = await axios.get(
+  //       `${window.__ENV__.REACT_APP_ROUTE}/tenants/section/getAll`,
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+  //           "Content-Type": "application/json",
+  //           username: sessionStorage.getItem("adminEmail"),
+  //         },
+  //       }
+  //     );
+  //     setSections(response.data.sections || []);
+  //   } catch (err) {
+  //     console.error("Failed to fetch sections:", err);
+  //   }
+  // };
 
-  useEffect(() => {
-    if (editDialogOpen) {
-      fetchSections();
-    }
-  }, [editDialogOpen]);
+  // useEffect(() => {
+  //   if (editDialogOpen) {
+  //     fetchSections();
+  //   }
+  // }, [editDialogOpen]);
 
   <Autocomplete
     options={departments}
@@ -391,8 +392,8 @@ export default function UserTable() {
         return row.roles?.[0]?.roleName?.toLowerCase() || "";
       case "region": // ✅ NEW
         return row.region?.toLowerCase() || "";
-      case "sections": // ✅ Added Section sorting
-        return (row.sections || []).join(", ").toLowerCase();
+      // case "sections": // COMMENTED OUT - Section sorting
+      //   return (row.sections || []).join(", ").toLowerCase();
       case "storageUsed":
         return toBytes(row.permissions?.displayStorage);
       default:
@@ -402,7 +403,10 @@ export default function UserTable() {
 
   const fetchFullDepartments = async () => {
     try {
-      const res = await getDepartments();
+      // COMMENTED OUT: called with no args → only fetched first 10 departments, missing any beyond page 1
+      // const res = await getDepartments();
+      // NEW: use size=1000 to fetch all departments in one call
+      const res = await getDepartments(0, 1000);
 
       return res.content || [];
     } catch (error) {
@@ -449,7 +453,7 @@ export default function UserTable() {
         deptId: deptObj?.id || null,
         roleId: roleObj?.id || null,
         region: editData.region?.trim() || "",
-        sections: editData.sections || [],
+        // sections: editData.sections || [], // COMMENTED OUT
       };
 
       await updateUser(userPayload);
@@ -545,7 +549,7 @@ export default function UserTable() {
         role: matchedRole?.roleName || roleName,
         roles: row.roles || [],
         region: prefillRegion,
-        sections: row.sections || [], // ✅ Added sections
+        // sections: row.sections || [], // COMMENTED OUT
       };
 
       setEditData(newEditData);
@@ -620,7 +624,7 @@ export default function UserTable() {
       Role: row.roles?.[0]?.roleName || "N/A",
       "User Email": row.email || "N/A",
       Command: row.region || "N/A", // ✅ NEW COLUMN
-      Section: (row.sections || []).join(", ") || "N/A", // ✅ Added Section export
+      // Section: (row.sections || []).join(", ") || "N/A", // COMMENTED OUT
       "Phone Number": row.phoneNumber || "N/A",
       "Reporting Manager": row.reportingManager || "N/A",
       "Storage Used": row.permissions?.displayStorage || "N/A",
@@ -1015,9 +1019,9 @@ export default function UserTable() {
                 label="Filter By"
               >
                 <MenuItem value="name">Name</MenuItem>
-                <MenuItem value="email">Email</MenuItem>
                 <MenuItem value="department">Unit</MenuItem>
-                <MenuItem value="role">Role</MenuItem> {/* ✅ Added */}
+                <MenuItem value="role">Role</MenuItem>
+                <MenuItem value="email">Email</MenuItem>
               </Select>
             </FormControl>
 
@@ -1214,6 +1218,7 @@ export default function UserTable() {
                   </TableCell>
                 )}
 
+                {/* COMMENTED OUT: Section column header
                 {visibleColumns.sections && (
                   <TableCell
                     align="left"
@@ -1228,6 +1233,7 @@ export default function UserTable() {
                     </TableSortLabel>
                   </TableCell>
                 )}
+                */}
 
                 {visibleColumns.role && (
                   <TableCell
@@ -1398,6 +1404,7 @@ export default function UserTable() {
                       </TableCell>
                     )}
 
+                    {/* COMMENTED OUT: Section body cell
                     {visibleColumns.sections && (
                       <TableCell align="left">
                         {(() => {
@@ -1464,6 +1471,7 @@ export default function UserTable() {
                         })()}
                       </TableCell>
                     )}
+                    */}
 
                     {visibleColumns.role && (
                       <TableCell align="left">
@@ -2236,6 +2244,7 @@ export default function UserTable() {
                 />
               </Grid>
 
+              {/* COMMENTED OUT: Section field in Edit dialog
               <Grid item xs={6}>
                 <Autocomplete
                   multiple
@@ -2259,6 +2268,7 @@ export default function UserTable() {
                   )}
                 />
               </Grid>
+              */}
 
               <Grid item xs={6}>
                 <TextField

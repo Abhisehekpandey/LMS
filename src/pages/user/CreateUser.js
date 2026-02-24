@@ -1,4 +1,12 @@
-import { Add, Close, Download, Info, UploadFile, CheckBox, CheckBoxOutlineBlank } from "@mui/icons-material";
+import {
+  Add,
+  Close,
+  Download,
+  Info,
+  UploadFile,
+  CheckBox,
+  CheckBoxOutlineBlank,
+} from "@mui/icons-material";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import axios from "axios";
@@ -15,7 +23,7 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  FormControl,
+  // FormControl,
   Grid,
   IconButton,
   InputAdornment,
@@ -39,9 +47,7 @@ import {
 } from "../../api/departmentService";
 import { createUsers } from "../../api/userService";
 import { fetchUsers } from "../../api/userService";
-import { MenuItem } from "@mui/material";
-
-
+import { MenuItem, FormControl, InputLabel, Select } from "@mui/material";
 
 const icon = <CheckBoxOutlineBlank fontSize="small" />;
 const checkedIcon = <CheckBox fontSize="small" />;
@@ -53,7 +59,7 @@ const emptyUser = {
   role: "",
   department: "",
   reportingManager: "",
-  sections: [], // Added sections
+  // sections: [], // COMMENTED OUT
 };
 
 const CreateUser = ({
@@ -71,7 +77,7 @@ const CreateUser = ({
   const [bulkWarningMessage, setBulkWarningMessage] = useState("");
   const [isAdminRole, setIsAdminRole] = useState(false);
   const [regions, setRegions] = useState([]);
-  const [sections, setSections] = useState([]); // Added sections state
+  // const [sections, setSections] = useState([]); // COMMENTED OUT - Added sections state
   const [defaultRegion, setDefaultRegion] = useState("");
   const [selectedRegion, setSelectedRegion] = useState("");
 
@@ -82,6 +88,7 @@ const CreateUser = ({
   const [selectedDepartmentForRole, setSelectedDepartmentForRole] =
     useState(null);
   const [newRoleName, setNewRoleName] = useState("");
+  const [newAppRole, setNewAppRole] = useState(""); // NEW: App Role for role creation
   const [expandedIndex, setExpandedIndex] = useState(0);
   const [newDepartment, setNewDepartment] = useState({
     deptName: "",
@@ -234,7 +241,7 @@ const CreateUser = ({
         role: "",
         department: "",
         reportingManager: "",
-        sections: [], // Added sections
+        // sections: [], // COMMENTED OUT
       },
     ],
   };
@@ -249,21 +256,16 @@ const CreateUser = ({
           .email("Enter a valid email")
           .required("Email is required"),
 
+        department: yup.mixed().required("Unit is required"),
 
-        department: yup
-          .mixed()
-          .required("Unit is required"),
+        role: yup.string().required("Role is required"),
 
-        role: yup
-          .string()
-          .required("Role is required"),
-
-
-        sections: yup
-          .array()
-          .min(1, "Select at least one section")
-          .required("Section is required"),
-      })
+        // COMMENTED OUT: sections validation
+        // sections: yup
+        //   .array()
+        //   .min(1, "Select at least one section")
+        //   .required("Section is required"),
+      }),
     ),
   });
 
@@ -287,7 +289,7 @@ const CreateUser = ({
           console.error("CSV Parsing Error:", err);
           showSnackbar(
             "Failed to parse CSV. Please check the format.",
-            "error"
+            "error",
           );
         },
       });
@@ -309,7 +311,7 @@ const CreateUser = ({
     } else {
       showSnackbar(
         "Invalid file type. Please upload CSV or Excel (.xlsx)",
-        "error"
+        "error",
       );
     }
   };
@@ -317,9 +319,8 @@ const CreateUser = ({
   // ✅ Shared data processing
   const processParsedData = (data) => {
     const headers = Object.keys(data[0] || {}).map((h) =>
-      h.trim().toUpperCase()
+      h.trim().toUpperCase(),
     );
-
 
     const requiredHeaders = [
       "NAME",
@@ -357,17 +358,22 @@ const CreateUser = ({
         });
       });
 
-
-
-
     setCsvUsers(cleanedUsers);
   };
 
-  const addRoleToDepartment = async (dept, { role, isAdmin }) => {
+  // COMMENTED OUT: did not include appRole in payload
+  // const addRoleToDepartment = async (dept, { role, isAdmin }) => {
+  //   const payload = {
+  //     department: dept.deptName,
+  //     role,
+  //     isAdmin,
+  //   };
+  const addRoleToDepartment = async (dept, { role, isAdmin, appRole }) => {
     const payload = {
       department: dept.deptName,
       role,
-      isAdmin, // ✅ pass this to API
+      isAdmin,
+      appRole, // NEW: pass appRole to API
     };
 
     try {
@@ -409,9 +415,7 @@ const CreateUser = ({
     loadMoreUsers(); // Load first 10 users initially
   }, []);
 
-  useEffect(() => {
-
-  }, [departments]);
+  useEffect(() => {}, [departments]);
 
   useEffect(() => {
     if (open) {
@@ -435,7 +439,7 @@ const CreateUser = ({
                 "Content-Type": "application/json",
                 username: sessionStorage.getItem("adminEmail"), // same as your other APIs
               },
-            }
+            },
           );
           setRegions(response.data.regions || []);
           setDefaultRegion(response.data.defaultRegion || "");
@@ -445,27 +449,28 @@ const CreateUser = ({
         }
       };
 
-      const fetchSections = async () => {
-        try {
-          const response = await axios.get(
-            `${window.__ENV__.REACT_APP_ROUTE}/tenants/section/getAll`,
-            {
-              headers: {
-                Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
-                "Content-Type": "application/json",
-                username: sessionStorage.getItem("adminEmail"),
-              },
-            }
-          );
-          // API returns { sections: [...] }
-          setSections(response.data.sections || []);
-        } catch (err) {
-          console.error("Failed to fetch sections:", err);
-        }
-      };
+      // COMMENTED OUT: fetchSections
+      // const fetchSections = async () => {
+      //   try {
+      //     const response = await axios.get(
+      //       `${window.__ENV__.REACT_APP_ROUTE}/tenants/section/getAll`,
+      //       {
+      //         headers: {
+      //           Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+      //           "Content-Type": "application/json",
+      //           username: sessionStorage.getItem("adminEmail"),
+      //         },
+      //       }
+      //     );
+      //     // API returns { sections: [...] }
+      //     setSections(response.data.sections || []);
+      //   } catch (err) {
+      //     console.error("Failed to fetch sections:", err);
+      //   }
+      // };
 
       fetchRegions();
-      fetchSections();
+      // fetchSections(); // COMMENTED OUT
     }
   }, [open]);
 
@@ -586,10 +591,10 @@ const CreateUser = ({
                     response?.["Users already registered"] || [];
 
                   const createdUsers = csvUsers.filter(
-                    (u) => !alreadyRegistered.includes(u.email?.toLowerCase())
+                    (u) => !alreadyRegistered.includes(u.email?.toLowerCase()),
                   );
                   const ignoredUsers = csvUsers.filter((u) =>
-                    alreadyRegistered.includes(u.email?.toLowerCase())
+                    alreadyRegistered.includes(u.email?.toLowerCase()),
                   );
 
                   let closeAfter = 0;
@@ -599,7 +604,7 @@ const CreateUser = ({
                       .map((u) => u.name)
                       .join(", ");
                     setBulkSuccessMessage(
-                      `Users created successfully: ${createdNames}`
+                      `Users created successfully: ${createdNames}`,
                     );
                     if (onUserCreated) onUserCreated();
                     closeAfter = Math.max(closeAfter, 4000); // match autoHideDuration
@@ -610,7 +615,7 @@ const CreateUser = ({
                       .map((u) => u.name)
                       .join(", ");
                     setBulkWarningMessage(
-                      `The following user(s) were ignored as their email already exists: ${ignoredNames}`
+                      `The following user(s) were ignored as their email already exists: ${ignoredNames}`,
                     );
                     closeAfter = Math.max(closeAfter, 6000); // match autoHideDuration
                   }
@@ -690,7 +695,7 @@ const CreateUser = ({
                 storage: user.storage?.trim() ? user.storage : null,
                 reportingManager: user.reportingManager,
                 region: user.region || defaultRegion, // ✅ include region
-                sections: user.sections || [], // ✅ include sections
+                // sections: user.sections || [], // COMMENTED OUT
               }));
 
               const response = await createUsers(transformedUsers);
@@ -707,7 +712,7 @@ const CreateUser = ({
                   if (alreadyRegistered.includes(user.email)) {
                     actions.setFieldError(
                       `users[${index}].email`,
-                      "Email already exists"
+                      "Email already exists",
                     );
                     setExpandedIndex(index); // 👈 Expand duplicate email user
                   }
@@ -721,7 +726,7 @@ const CreateUser = ({
             } catch (error) {
               if (error.name === "ValidationError" && error.inner) {
                 const firstError = error.inner.find((e) =>
-                  e.path?.startsWith("users[")
+                  e.path?.startsWith("users["),
                 );
 
                 if (firstError) {
@@ -757,12 +762,10 @@ const CreateUser = ({
                 {({ push, remove }) => (
                   <>
                     {formik.values.users.map((user, index) => {
-
-
                       const userErrors = formik.errors.users?.[index] || {};
                       const userTouched = formik.touched.users?.[index] || {};
                       const hasErrors = Object.keys(userErrors).some(
-                        (field) => userTouched[field] && userErrors[field]
+                        (field) => userTouched[field] && userErrors[field],
                       );
 
                       const selectedDeptName =
@@ -770,13 +773,9 @@ const CreateUser = ({
                           ? user.department
                           : user.department?.deptName;
 
-
-
                       const selectedDept = departments.find(
-                        (dept) => dept.deptName === selectedDeptName
+                        (dept) => dept.deptName === selectedDeptName,
                       );
-
-
 
                       const roleOptions = selectedDept?.roles || [];
 
@@ -819,7 +818,7 @@ const CreateUser = ({
                                   onChange={formik.handleChange}
                                   error={Boolean(
                                     formik.touched.users?.[index]?.name &&
-                                    formik.errors.users?.[index]?.name
+                                    formik.errors.users?.[index]?.name,
                                   )}
                                   helperText={
                                     formik.touched.users?.[index]?.name &&
@@ -849,14 +848,14 @@ const CreateUser = ({
 
                                     formik.setFieldValue(
                                       `users[${index}].email`,
-                                      fullEmail
+                                      fullEmail,
                                     );
 
                                     const emailDomain = fullEmail.split("@")[1];
                                     if (emailDomain !== adminDomain) {
                                       formik.setFieldError(
                                         `users[${index}].email`,
-                                        "Email domain must match admin domain"
+                                        "Email domain must match admin domain",
                                       );
                                     } else {
                                       if (
@@ -865,14 +864,14 @@ const CreateUser = ({
                                       ) {
                                         formik.setFieldError(
                                           `users[${index}].email`,
-                                          undefined
+                                          undefined,
                                         );
                                       }
                                     }
                                   }}
                                   error={Boolean(
                                     formik.touched.users?.[index]?.email &&
-                                    formik.errors.users?.[index]?.email
+                                    formik.errors.users?.[index]?.email,
                                   )}
                                   helperText={
                                     formik.touched.users?.[index]?.email &&
@@ -897,7 +896,7 @@ const CreateUser = ({
                                   onChange={(e, value) =>
                                     formik.setFieldValue(
                                       `users[${index}].storage`,
-                                      value
+                                      value,
                                     )
                                   }
                                   renderInput={(params) => (
@@ -929,7 +928,7 @@ const CreateUser = ({
                                   FormHelperTextProps={{ sx: { ml: 0 } }}
                                   error={Boolean(
                                     formik.touched.users?.[index]?.region &&
-                                    formik.errors.users?.[index]?.region
+                                    formik.errors.users?.[index]?.region,
                                   )}
                                   helperText={
                                     formik.touched.users?.[index]?.region &&
@@ -957,7 +956,7 @@ const CreateUser = ({
                                       const threshold = 50;
                                       if (
                                         listboxNode.scrollTop +
-                                        listboxNode.clientHeight >=
+                                          listboxNode.clientHeight >=
                                         listboxNode.scrollHeight - threshold
                                       ) {
                                         loadMoreDepartments();
@@ -976,11 +975,11 @@ const CreateUser = ({
                                   onChange={(e, value) => {
                                     formik.setFieldValue(
                                       `users[${index}].department`,
-                                      value
+                                      value,
                                     );
                                     formik.setFieldValue(
                                       `users[${index}].role`,
-                                      value?.role || ""
+                                      value?.role || "",
                                     );
                                   }}
                                   renderInput={(params) => (
@@ -989,18 +988,24 @@ const CreateUser = ({
                                       label={
                                         <>
                                           Unit
-                                          <span style={{ color: "red" }}> *</span>
+                                          <span style={{ color: "red" }}>
+                                            {" "}
+                                            *
+                                          </span>
                                         </>
                                       }
                                       fullWidth
                                       size="small"
                                       autoComplete="off"
                                       error={Boolean(
-                                        formik.touched.users?.[index]?.department &&
-                                        formik.errors.users?.[index]?.department
+                                        formik.touched.users?.[index]
+                                          ?.department &&
+                                        formik.errors.users?.[index]
+                                          ?.department,
                                       )}
                                       helperText={
-                                        formik.touched.users?.[index]?.department &&
+                                        formik.touched.users?.[index]
+                                          ?.department &&
                                         formik.errors.users?.[index]?.department
                                       }
                                     />
@@ -1008,6 +1013,7 @@ const CreateUser = ({
                                 />
                               </Grid>
 
+                              {/* COMMENTED OUT: Sections dropdown field
                               <Grid item xs={3}>
                                 <Autocomplete
                                   multiple
@@ -1058,6 +1064,7 @@ const CreateUser = ({
                                   )}
                                 />
                               </Grid>
+                              */}
 
                               <Grid item xs={3}>
                                 <Tooltip
@@ -1112,14 +1119,14 @@ const CreateUser = ({
                                       onChange={(e, value) => {
                                         if (value?.isAddOption) {
                                           setSelectedDepartmentForRole(
-                                            user.department
+                                            user.department,
                                           );
                                           setAddRole(true);
                                           return;
                                         }
                                         formik.setFieldValue(
                                           `users[${index}].role`,
-                                          value
+                                          value,
                                         );
                                       }}
                                       renderInput={(params) => (
@@ -1128,18 +1135,23 @@ const CreateUser = ({
                                           label={
                                             <>
                                               Role
-                                              <span style={{ color: "red" }}> *</span>
+                                              <span style={{ color: "red" }}>
+                                                {" "}
+                                                *
+                                              </span>
                                             </>
                                           }
                                           fullWidth
                                           size="small"
                                           autoComplete="off"
                                           error={Boolean(
-                                            formik.touched.users?.[index]?.role &&
-                                            formik.errors.users?.[index]?.role
+                                            formik.touched.users?.[index]
+                                              ?.role &&
+                                            formik.errors.users?.[index]?.role,
                                           )}
                                           helperText={
-                                            formik.touched.users?.[index]?.role &&
+                                            formik.touched.users?.[index]
+                                              ?.role &&
                                             formik.errors.users?.[index]?.role
                                           }
                                         />
@@ -1201,7 +1213,7 @@ const CreateUser = ({
                             department: "",
                             reportingManager: "",
                             region: defaultRegion,
-                            sections: [],
+                            // sections: [], // COMMENTED OUT
                           });
                         }}
                       >
@@ -1340,7 +1352,7 @@ const CreateUser = ({
                 getOptionLabel={(option) => option.email || ""}
                 value={
                   userOptions.find(
-                    (user) => user.email === newDepartment.deptModerator
+                    (user) => user.email === newDepartment.deptModerator,
                   ) || null
                 }
                 onChange={(event, value) =>
@@ -1393,8 +1405,8 @@ const CreateUser = ({
                 value={
                   Array.isArray(newDepartment.selectedUsers)
                     ? userOptions.filter((user) =>
-                      newDepartment.selectedUsers.includes(user.name)
-                    )
+                        newDepartment.selectedUsers.includes(user.name),
+                      )
                     : []
                 }
                 onChange={(event, selectedValues) =>
@@ -1432,8 +1444,8 @@ const CreateUser = ({
                     }
                     helperText={
                       departmentSubmitted &&
-                        (!newDepartment.selectedUsers ||
-                          newDepartment.selectedUsers.length === 0)
+                      (!newDepartment.selectedUsers ||
+                        newDepartment.selectedUsers.length === 0)
                         ? "At least one user must be selected"
                         : ""
                     }
@@ -1527,7 +1539,7 @@ const CreateUser = ({
                 newDepartment.selectedUsers.length === 0
               ) {
                 setSnackbarMessage(
-                  "Please fill all mandatory fields before creating department."
+                  "Please fill all mandatory fields before creating department.",
                 );
                 setSnackbarSeverity("warning");
                 setSnackbarOpen(true);
@@ -1542,7 +1554,7 @@ const CreateUser = ({
                   !newDepartment.storage
                 ) {
                   setSnackbarMessage(
-                    "Please fill all mandatory fields before creating department."
+                    "Please fill all mandatory fields before creating department.",
                   );
                   setSnackbarSeverity("warning");
                   setSnackbarOpen(true);
@@ -1560,7 +1572,6 @@ const CreateUser = ({
 
                 const createdDept = await createDepartment(payload);
 
-
                 setDepartments((prev) => [...prev, payload]);
 
                 setSnackbarMessage("Department created successfully!");
@@ -1577,7 +1588,7 @@ const CreateUser = ({
                 setAddDepartment(false);
               } catch (error) {
                 setSnackbarMessage(
-                  "Failed to create department(Department with this name already Exist). Please try another."
+                  "Failed to create department(Department with this name already Exist). Please try another.",
                 );
                 setSnackbarSeverity("error");
                 setSnackbarOpen(true);
@@ -1596,7 +1607,12 @@ const CreateUser = ({
       {/* Add Role Dialog */}
       <Dialog
         open={addRole}
-        onClose={() => setAddRole(false)}
+        onClose={() => {
+          setAddRole(false);
+          setNewRoleName("");
+          setNewAppRole("");
+          setRoleSubmitted(false);
+        }}
         fullWidth
         sx={{
           animation: "slideInFromLeft 0.2s ease-in-out forwards",
@@ -1658,7 +1674,7 @@ const CreateUser = ({
             />
           </IconButton>
         </DialogTitle>
-        {/* <DialogContent> */}
+        {/* COMMENTED OUT: old layout had Role Name (xs=8) + empty FormControl (xs=4) with no App Role field
         <DialogContent dividers padding="0 !important">
           <Grid container spacing={2} alignItems="center">
             <Grid item xs={8}>
@@ -1681,6 +1697,46 @@ const CreateUser = ({
               <FormControl></FormControl>
             </Grid>
           </Grid>
+        </DialogContent> */}
+
+        {/* NEW: Role Name + App Role Select (matching Department page style) */}
+        <DialogContent dividers padding="0 !important">
+          <Grid container spacing={2} direction="column">
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                size="small"
+                label="Role Name"
+                FormHelperTextProps={{ sx: { ml: 0 } }}
+                value={newRoleName}
+                onChange={(e) => setNewRoleName(e.target.value)}
+                error={roleSubmitted && !newRoleName.trim()}
+                helperText={
+                  roleSubmitted && !newRoleName.trim()
+                    ? "Role Name is required"
+                    : ""
+                }
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <FormControl fullWidth size="small">
+                <InputLabel id="app-role-label">App Role</InputLabel>
+                <Select
+                  labelId="app-role-label"
+                  value={newAppRole}
+                  label="App Role"
+                  onChange={(e) => setNewAppRole(e.target.value)}
+                >
+                  <MenuItem value="ADMIN">ADMIN</MenuItem>
+                  <MenuItem value="VIEWER">VIEWER</MenuItem>
+                  <MenuItem value="EDITOR">EDITOR</MenuItem>
+                  <MenuItem value="COMMENTOR">COMMENTOR</MenuItem>
+                  <MenuItem value="CONTRIBUTOR">CONTRIBUTOR</MenuItem>
+                  <MenuItem value="NO_ROLE">NO_ROLE</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+          </Grid>
         </DialogContent>
 
         <DialogActions>
@@ -1695,19 +1751,20 @@ const CreateUser = ({
                   selectedDepartmentForRole,
                   {
                     role: newRoleName.trim(),
-                    isAdmin: isAdminRole, // ✅ boolean flag from checkbox
-                  }
+                    isAdmin: isAdminRole,
+                    appRole: newAppRole, // NEW: pass selected App Role
+                  },
                 );
 
                 setDepartments((prevDepartments) =>
                   prevDepartments.map((dept) =>
                     dept.deptName === selectedDepartmentForRole.deptName
                       ? {
-                        ...dept,
-                        roles: [...(dept.roles || []), addedRole[0]],
-                      }
-                      : dept
-                  )
+                          ...dept,
+                          roles: [...(dept.roles || []), addedRole[0]],
+                        }
+                      : dept,
+                  ),
                 );
 
                 setSnackbarMessage("Role added successfully!");
@@ -1715,13 +1772,14 @@ const CreateUser = ({
                 setSnackbarOpen(true);
 
                 setNewRoleName("");
+                setNewAppRole(""); // NEW: reset App Role
                 setAddRole(false);
                 setRoleSubmitted(false);
-                setIsAdminRole(false); // ✅ reset checkbox
+                setIsAdminRole(false);
               } catch (error) {
                 console.error("Add role error:", error);
                 setSnackbarMessage(
-                  "Failed to add role. Role might already exist or there was a server error."
+                  "Failed to add role. Role might already exist or there was a server error.",
                 );
                 setSnackbarSeverity("error");
                 setSnackbarOpen(true);

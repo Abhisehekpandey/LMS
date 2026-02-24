@@ -558,6 +558,7 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
 
         {/* Actions Right */}
         <Box sx={{ display: "flex", gap: 1.5, alignItems: "center", ml: 2 }}>
+          {/* COMMENTED OUT: Create Section button
           <Button
             variant="outlined"
             size="small"
@@ -592,7 +593,9 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
           >
             Create Section
           </Button>
+          */}
 
+          {/* COMMENTED OUT: Create Command button
           <Button
             variant="outlined"
             size="small"
@@ -627,6 +630,7 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
           >
             Create Command
           </Button>
+          */}
 
           {/* <Button
             variant="outlined"
@@ -801,7 +805,7 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
         </DialogActions>
       </Dialog>
 
-      {/* Create Section Dialog */}
+      {/* COMMENTED OUT: Create Section Dialog
       <Dialog
         open={openSectionDialog}
         onClose={() => {
@@ -916,7 +920,7 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
             </Button>
           </Box>
 
-          {/* Sections List */}
+          {/* Sections List * /}
           <Box
             sx={{
               mt: 2,
@@ -1048,6 +1052,7 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
           </Button>
         </DialogActions>
       </Dialog>
+      */}
 
       {/* Create Command Dialog */}
       <Dialog
