@@ -24,21 +24,45 @@ export const createUsers = async (users) => {
   }
 };
 
-export const fetchUsers = async (page = 0, size = 10) => {
+// OLD: fetchUsers sent page/size as headers — API now uses query params
+// OLD: export const fetchUsers = async (page = 0, size = 10) => {
+//   const response = await axios.get(`${window.__ENV__.REACT_APP_ROUTE}/tenants/users`, {
+//     headers: {
+//       Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+//       username: `${sessionStorage.getItem("adminEmail")}`,
+//       pageNumber: page.toString(),
+//       pageSize: size.toString(),
+//     },
+//   });
+//   return response.data;
+// };
+
+// NEW: page/size as query params (1-based); also accepts optional searchColumn/searchQuery
+export const fetchUsers = async (page = 0, size = 10, searchColumn = "", searchQuery = "") => {
   try {
+    const params = {
+      page: page + 1, // convert 0-based (MUI) → 1-based (API)
+      size,
+    };
+
+    // include search params only when a search is active
+    if (searchColumn && searchQuery) {
+      params.searchColumn = searchColumn;
+      params.searchQuery = searchQuery;
+    }
+
     const response = await axios.get(
       `${window.__ENV__.REACT_APP_ROUTE}/tenants/users`,
       {
         headers: {
           Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
           username: `${sessionStorage.getItem("adminEmail")}`,
-          pageNumber: page.toString(), // send page number as header
-          pageSize: size.toString(), // ✅ add page size as header
         },
+        params,
       }
     );
 
-    return response.data; // Assume it's an array of user objects
+    return response.data;
   } catch (error) {
     console.error("Failed to fetch users:", error);
     throw error;

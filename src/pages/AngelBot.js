@@ -46,7 +46,12 @@ import { License } from "@mui/icons-material"; // Optional icon
 import { VerifiedUser } from "@mui/icons-material";
 import { Snackbar, Alert } from "@mui/material"; // already likely imported
 import { fetchUsers } from "../api/userService";
-import { getDepartments, getDashboardStats, getUserStorage, getDeptStorage } from "../api/departmentService";
+import {
+  getDepartments,
+  getDashboardStats,
+  getUserStorage,
+  getDeptStorage,
+} from "../api/departmentService";
 
 import Loading from "../components/Loading";
 import CreateUser from "./user/CreateUser";
@@ -479,17 +484,26 @@ const AngelBot = () => {
 
   const mapSortToApi = (option) => {
     switch (option) {
-      case "high": return "HTL";
-      case "low":  return "LTH";
-      case "az":   return "ASC";
-      case "za":   return "DESC";
-      default:     return "HTL";
+      case "high":
+        return "HTL";
+      case "low":
+        return "LTH";
+      case "az":
+        return "ASC";
+      case "za":
+        return "DSC";
+      default:
+        return "HTL";
     }
   };
 
   const loadUserStorageData = async (page, rowsPerPage, sortOption) => {
     try {
-      const res = await getUserStorage(page + 1, rowsPerPage, mapSortToApi(sortOption));
+      const res = await getUserStorage(
+        page + 1,
+        rowsPerPage,
+        mapSortToApi(sortOption),
+      );
       const mapped = (res.content || []).map((u) => ({
         name: u.name,
         storageUsed: u.consumedStorage,
@@ -504,7 +518,11 @@ const AngelBot = () => {
 
   const loadDeptStorageData = async (page, rowsPerPage, sortOption) => {
     try {
-      const res = await getDeptStorage(page + 1, rowsPerPage, mapSortToApi(sortOption));
+      const res = await getDeptStorage(
+        page + 1,
+        rowsPerPage,
+        mapSortToApi(sortOption),
+      );
       const mapped = (res.content || []).map((d) => ({
         name: d.name,
         storageUsed: d.consumedStorage,
@@ -2094,97 +2112,97 @@ const AngelBot = () => {
                     </Box>
 
                     <Box>
-                      {getSortedStorageUsers
-                        .map((user, index) => (
-                          <Box
-                            key={index}
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              p: 1,
-                              mb: 0.5,
-                              borderRadius: 1.5,
-                              backgroundColor:
-                                index % 2 === 0
-                                  ? alpha(chartColors.primary, 0.02)
-                                  : alpha(chartColors.primary, 0.06),
-                              "&:hover": {
-                                backgroundColor: alpha(
-                                  chartColors.primary,
-                                  0.1,
-                                ),
-                                transform: "translateY(-1px)",
-                                transition: "all 0.2s ease-in-out",
-                              },
-                            }}
-                          >
-                            <Box sx={{ minWidth: 120 }}>
-                              <Typography
-                                variant="body2"
-                                sx={{
-                                  fontWeight: 600,
-                                  color: chartColors.primary,
-                                  fontSize: "0.875rem",
-                                }}
-                              >
-                                {user.name}
-                              </Typography>
-                              <Typography
-                                variant="caption"
-                                sx={{
-                                  color: "text.secondary",
-                                  fontSize: "0.75rem",
-                                }}
-                              >
-                                {`${user.storageUsed}/${user.storageAllocated}GB`}
-                              </Typography>
-                            </Box>
-                            <Box sx={{ flex: 1, mx: 2 }}>
-                              <LinearProgress
-                                variant="determinate"
-                                value={
-                                  user.storageAllocated
-                                    ? (user.storageUsed / user.storageAllocated) * 100
-                                    : 0
-                                }
-                                sx={{
-                                  height: 10,
-                                  borderRadius: 2,
-                                  [`&.MuiLinearProgress-root`]: {
-                                    backgroundColor: alpha(
-                                      chartColors.primary,
-                                      0.12,
-                                    ),
-                                  },
-                                  [`& .MuiLinearProgress-bar`]: {
-                                    borderRadius: 3,
-                                    backgroundColor: getProgressBarColor(
-                                      user.storageAllocated
-                                        ? (user.storageUsed / user.storageAllocated) * 100
-                                        : 0,
-                                    ),
-                                  },
-                                }}
-                              />
-                            </Box>
+                      {getSortedStorageUsers.map((user, index) => (
+                        <Box
+                          key={index}
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            p: 1,
+                            mb: 0.5,
+                            borderRadius: 1.5,
+                            backgroundColor:
+                              index % 2 === 0
+                                ? alpha(chartColors.primary, 0.02)
+                                : alpha(chartColors.primary, 0.06),
+                            "&:hover": {
+                              backgroundColor: alpha(chartColors.primary, 0.1),
+                              transform: "translateY(-1px)",
+                              transition: "all 0.2s ease-in-out",
+                            },
+                          }}
+                        >
+                          <Box sx={{ minWidth: 120 }}>
                             <Typography
                               variant="body2"
                               sx={{
-                                minWidth: 40,
-                                textAlign: "right",
                                 fontWeight: 600,
                                 color: chartColors.primary,
                                 fontSize: "0.875rem",
                               }}
                             >
-                              {`${Math.round(
-                                user.storageAllocated
-                                  ? (user.storageUsed / user.storageAllocated) * 100
-                                  : 0,
-                              )}%`}
+                              {user.name}
+                            </Typography>
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                color: "text.secondary",
+                                fontSize: "0.75rem",
+                              }}
+                            >
+                              {`${user.storageUsed}/${user.storageAllocated}GB`}
                             </Typography>
                           </Box>
-                        ))}
+                          <Box sx={{ flex: 1, mx: 2 }}>
+                            <LinearProgress
+                              variant="determinate"
+                              value={
+                                user.storageAllocated
+                                  ? (user.storageUsed / user.storageAllocated) *
+                                    100
+                                  : 0
+                              }
+                              sx={{
+                                height: 10,
+                                borderRadius: 2,
+                                [`&.MuiLinearProgress-root`]: {
+                                  backgroundColor: alpha(
+                                    chartColors.primary,
+                                    0.12,
+                                  ),
+                                },
+                                [`& .MuiLinearProgress-bar`]: {
+                                  borderRadius: 3,
+                                  backgroundColor: getProgressBarColor(
+                                    user.storageAllocated
+                                      ? (user.storageUsed /
+                                          user.storageAllocated) *
+                                          100
+                                      : 0,
+                                  ),
+                                },
+                              }}
+                            />
+                          </Box>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              minWidth: 40,
+                              textAlign: "right",
+                              fontWeight: 600,
+                              color: chartColors.primary,
+                              fontSize: "0.875rem",
+                            }}
+                          >
+                            {`${Math.round(
+                              user.storageAllocated
+                                ? (user.storageUsed / user.storageAllocated) *
+                                    100
+                                : 0,
+                            )}%`}
+                          </Typography>
+                        </Box>
+                      ))}
                       <TablePagination
                         component="div"
                         count={userStorageTotalElements}
@@ -2275,97 +2293,97 @@ const AngelBot = () => {
                       </FormControl>
                     </Box>
                     <Box>
-                      {getSortedDepartments
-                        .map((dept, index) => (
-                          <Box
-                            key={index}
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              p: 1,
-                              mb: 0.5,
-                              borderRadius: 1.5,
-                              backgroundColor:
-                                index % 2 === 0
-                                  ? alpha(chartColors.primary, 0.02)
-                                  : alpha(chartColors.primary, 0.06),
-                              "&:hover": {
-                                backgroundColor: alpha(
-                                  chartColors.primary,
-                                  0.1,
-                                ),
-                                transform: "translateY(-1px)",
-                                transition: "all 0.2s ease-in-out",
-                              },
-                            }}
-                          >
-                            <Box sx={{ minWidth: 120 }}>
-                              <Typography
-                                variant="body2"
-                                sx={{
-                                  fontWeight: 600,
-                                  color: chartColors.primary,
-                                  fontSize: "0.875rem",
-                                }}
-                              >
-                                {dept.name}
-                              </Typography>
-                              <Typography
-                                variant="caption"
-                                sx={{
-                                  color: "text.secondary",
-                                  fontSize: "0.75rem",
-                                }}
-                              >
-                                {`${dept.storageUsed}/${dept.storageAllocated}GB`}
-                              </Typography>
-                            </Box>
-                            <Box sx={{ flex: 1, mx: 2 }}>
-                              <LinearProgress
-                                variant="determinate"
-                                value={
-                                  dept.storageAllocated
-                                    ? (dept.storageUsed / dept.storageAllocated) * 100
-                                    : 0
-                                }
-                                sx={{
-                                  height: 10,
-                                  borderRadius: 2,
-                                  [`&.MuiLinearProgress-root`]: {
-                                    backgroundColor: alpha(
-                                      chartColors.primary,
-                                      0.12,
-                                    ),
-                                  },
-                                  [`& .MuiLinearProgress-bar`]: {
-                                    borderRadius: 3,
-                                    backgroundColor: getProgressBarColor(
-                                      dept.storageAllocated
-                                        ? (dept.storageUsed / dept.storageAllocated) * 100
-                                        : 0,
-                                    ),
-                                  },
-                                }}
-                              />
-                            </Box>
+                      {getSortedDepartments.map((dept, index) => (
+                        <Box
+                          key={index}
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            p: 1,
+                            mb: 0.5,
+                            borderRadius: 1.5,
+                            backgroundColor:
+                              index % 2 === 0
+                                ? alpha(chartColors.primary, 0.02)
+                                : alpha(chartColors.primary, 0.06),
+                            "&:hover": {
+                              backgroundColor: alpha(chartColors.primary, 0.1),
+                              transform: "translateY(-1px)",
+                              transition: "all 0.2s ease-in-out",
+                            },
+                          }}
+                        >
+                          <Box sx={{ minWidth: 120 }}>
                             <Typography
                               variant="body2"
                               sx={{
-                                minWidth: 40,
-                                textAlign: "right",
                                 fontWeight: 600,
                                 color: chartColors.primary,
                                 fontSize: "0.875rem",
                               }}
                             >
-                              {`${Math.round(
-                                dept.storageAllocated
-                                  ? (dept.storageUsed / dept.storageAllocated) * 100
-                                  : 0,
-                              )}%`}
+                              {dept.name}
+                            </Typography>
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                color: "text.secondary",
+                                fontSize: "0.75rem",
+                              }}
+                            >
+                              {`${dept.storageUsed}/${dept.storageAllocated}GB`}
                             </Typography>
                           </Box>
-                        ))}
+                          <Box sx={{ flex: 1, mx: 2 }}>
+                            <LinearProgress
+                              variant="determinate"
+                              value={
+                                dept.storageAllocated
+                                  ? (dept.storageUsed / dept.storageAllocated) *
+                                    100
+                                  : 0
+                              }
+                              sx={{
+                                height: 10,
+                                borderRadius: 2,
+                                [`&.MuiLinearProgress-root`]: {
+                                  backgroundColor: alpha(
+                                    chartColors.primary,
+                                    0.12,
+                                  ),
+                                },
+                                [`& .MuiLinearProgress-bar`]: {
+                                  borderRadius: 3,
+                                  backgroundColor: getProgressBarColor(
+                                    dept.storageAllocated
+                                      ? (dept.storageUsed /
+                                          dept.storageAllocated) *
+                                          100
+                                      : 0,
+                                  ),
+                                },
+                              }}
+                            />
+                          </Box>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              minWidth: 40,
+                              textAlign: "right",
+                              fontWeight: 600,
+                              color: chartColors.primary,
+                              fontSize: "0.875rem",
+                            }}
+                          >
+                            {`${Math.round(
+                              dept.storageAllocated
+                                ? (dept.storageUsed / dept.storageAllocated) *
+                                    100
+                                : 0,
+                            )}%`}
+                          </Typography>
+                        </Box>
+                      ))}
                       <TablePagination
                         component="div"
                         count={deptStorageTotalElements}

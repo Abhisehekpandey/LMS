@@ -46,7 +46,9 @@ import { Fab } from "@mui/material";
 import { Autocomplete } from "@mui/material";
 import { Card, CardContent } from "@mui/material";
 import { CircularProgress, keyframes } from "@mui/material";
-import { getDepartments, searchDepartments } from "../api/departmentService";
+// COMMENTED OUT: searchDepartments no longer used — getDepartments handles search params
+// import { getDepartments, searchDepartments } from "../api/departmentService";
+import { getDepartments } from "../api/departmentService";
 import { createDepartment } from "../api/departmentService";
 import { createRole } from "../api/departmentService";
 
@@ -409,19 +411,24 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     try {
       setLoading(true);
 
-      // Use searchDepartments API when search is active, else use getDepartments
-      let departmentData;
-      if (debouncedSearchQuery.trim()) {
-        departmentData = await searchDepartments(
-          page + 1, // 1-based index
-          rowsPerPage,
-          searchColumn, // already API column name: deptname/owner/shortname
-          debouncedSearchQuery.trim(),
-        );
-      } else {
-        // OLD: getDepartments without search
-        departmentData = await getDepartments(page, rowsPerPage);
-      }
+      // COMMENTED OUT: used separate searchDepartments API for search queries
+      // if (debouncedSearchQuery.trim()) {
+      //   departmentData = await searchDepartments(
+      //     page + 1,
+      //     rowsPerPage,
+      //     searchColumn,
+      //     debouncedSearchQuery.trim(),
+      //   );
+      // } else {
+      //   departmentData = await getDepartments(page, rowsPerPage);
+      // }
+      // NEW: always use getDepartments — pass searchColumn/searchQuery when search is active
+      const departmentData = await getDepartments(
+        page,
+        rowsPerPage,
+        searchColumn, // API column name: deptname/owner/shortname
+        debouncedSearchQuery.trim(), // empty string when no search
+      );
       const apiDepartments = departmentData.content || [];
 
       setTotalDepartments(departmentData.totalElements || 0);
@@ -1066,12 +1073,19 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     );
   };
 
-  const DeptRolesDropdown = ({ roles, selectedDepartment, handleAddRole }) => {
+  // OLD: const DeptRolesDropdown = ({ roles, selectedDepartment, handleAddRole }) => {
+  const DeptRolesDropdown = ({
+    roles,
+    selectedDepartment,
+    handleAddRole,
+    handleUpdateRole,
+  }) => {
     const [open, setOpen] = useState(false);
     const [showAddRoleDialog, setShowAddRoleDialog] = useState(false);
     const [newRole, setNewRole] = useState("");
     const [appRole, setAppRole] = useState("");
     const [isEditMode, setIsEditMode] = useState(false);
+    const [editingRoleId, setEditingRoleId] = useState(null); // NEW: store role.id for PUT call
     const anchorRef = useRef(null);
 
     // COMMENTED OUT: in-memory cache — lost on page refresh or component remount
@@ -1083,6 +1097,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
     const handleEditClick = (role) => {
       setNewRole(role.roleName);
+      // COMMENTED OUT: role.id doesn't exist — API returns roleId not id
+      // setEditingRoleId(role.id || null);
+      setEditingRoleId(role.roleId || null); // NEW: store role id for PUT /tenants/roles
       // COMMENTED OUT: role.appRole is always undefined — API GET response does not include appRole in roles
       // setAppRole(role.appRole || "");
       // NEW: use API field if ever returned, else fall back to sessionStorage (survives page refresh)
@@ -1219,7 +1236,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     ) : (
                       roles.map((role) => (
                         <TableRow
-                          key={role.id}
+                          // COMMENTED OUT: role.id doesn't exist — API returns roleId
+                          // key={role.id}
+                          key={role.roleId}
                           sx={{
                             "&:hover": { backgroundColor: "#f1f5f9" },
                             transition: "background-color 0.2s",
@@ -1411,9 +1430,33 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               {isEditMode ? "Update" : "Add"}
             </Button> */}
             {/* NEW: also save appRole to session cache so edit dialog can pre-fill it */}
+            {/* OLD: single handler for both add and edit — now split by isEditMode
             <Button
               onClick={async () => {
                 await handleAddRole(newRole, appRole, selectedDepartment);
+                if (newRole) {
+                  sessionStorage.setItem(ssKey(newRole), appRole);
+                }
+              }}
+              variant="contained"
+              color="primary"
+              sx={{ background: "rgb(251, 68, 36)" }}
+            >
+              {isEditMode ? "Update" : "Add"}
+            </Button> */}
+            {/* NEW: call handleUpdateRole (PUT) on edit, handleAddRole (POST) on add */}
+            <Button
+              onClick={async () => {
+                if (isEditMode) {
+                  await handleUpdateRole(
+                    editingRoleId,
+                    newRole,
+                    appRole,
+                    selectedDepartment,
+                  );
+                } else {
+                  await handleAddRole(newRole, appRole, selectedDepartment);
+                }
                 // Save appRole to sessionStorage so edit dialog can pre-fill it
                 if (newRole) {
                   // COMMENTED OUT: was in-memory cache (lost on refresh)
@@ -2440,9 +2483,11 @@ function Department({ departments, setDepartments, onThemeToggle }) {
   };
 
   // Debounce searchQuery → debouncedSearchQuery (500ms delay)
+  // NEW: also reset page to 0 (MUI 0-based → API page=1) when search changes
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchQuery(searchQuery);
+      setPage(0); // reset to first page on new search
     }, 500);
     return () => clearTimeout(timer);
   }, [searchQuery]);
@@ -2561,7 +2606,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 {/* <MenuItem value="displayName">Short Name</MenuItem> */}
                 {/* NEW values match API searchColumn params */}
                 <MenuItem value="deptname">Unit</MenuItem>
-                <MenuItem value="shortname">Short Name</MenuItem>
+                <MenuItem value="shortname">Display Name</MenuItem>
                 <MenuItem value="owner">Owner</MenuItem>
               </Select>
             </FormControl>
@@ -2949,6 +2994,57 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                               }
                             } catch (error) {
                               console.error("Failed to add role:", error);
+                              setSnackbar({
+                                open: true,
+                                message: `Error: ${error.message}`,
+                                severity: "error",
+                              });
+                            }
+                          }}
+                          // NEW: PUT /tenants/roles — update existing role
+                          handleUpdateRole={async (
+                            roleId,
+                            newRoleName,
+                            appRole,
+                            department,
+                          ) => {
+                            try {
+                              const response = await axios.put(
+                                `${window.__ENV__.REACT_APP_ROUTE}/tenants/roles`,
+                                {
+                                  roleId: roleId,
+                                  roleName: newRoleName,
+                                  departmentId: department.id || "",
+                                  appRole: appRole,
+                                },
+                                {
+                                  headers: {
+                                    "Content-Type": "application/json",
+                                    Authorization: `Bearer ${sessionStorage.getItem(
+                                      "authToken",
+                                    )}`,
+                                    username:
+                                      sessionStorage.getItem("adminEmail"),
+                                  },
+                                },
+                              );
+
+                              if (response.status === 200) {
+                                setSnackbar({
+                                  open: true,
+                                  message: `Role "${newRoleName}" updated successfully!`,
+                                  severity: "success",
+                                });
+                                if (fetchDepartments) await fetchDepartments();
+                              } else {
+                                setSnackbar({
+                                  open: true,
+                                  message: `Failed to update role: ${response.statusText}`,
+                                  severity: "error",
+                                });
+                              }
+                            } catch (error) {
+                              console.error("Failed to update role:", error);
                               setSnackbar({
                                 open: true,
                                 message: `Error: ${error.message}`,

@@ -241,89 +241,135 @@ const ThemeSetting = () => {
       </DialogTitle>
 
       <DialogContent dividers>
+        {/* NEW: full app preview wrapper */}
         <Box
           sx={{
-            border: "1px solid rgba(0,0,0,0.1)",
+            border: "1px solid rgba(0,0,0,0.15)",
             borderRadius: 3,
             overflow: "hidden",
-            position: "relative",
-            height: deviceView === "mobile" ? 500 : 400,
-            width: deviceView === "mobile" ? 280 : "100%",
+            width: deviceView === "mobile" ? 320 : "100%",
             mx: "auto",
-            backgroundColor: "#f5f5f5",
-            backgroundImage: form.loginBackground
-              ? `url(${form.loginBackground})`
-              : "linear-gradient(135deg, #ece9e6, #ffffff)",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flexDirection: "column",
           }}
         >
-          {form.feviconLogo && (
-            <Box
-              component="img"
-              src={form.feviconLogo}
-              alt="Favicon"
-              sx={{
-                width: 40,
-                height: 40,
-                borderRadius: "8px",
-                position: "absolute",
-                top: 16,
-                left: 16,
-                border: "1px solid rgba(0,0,0,0.1)",
-                background: "white",
-              }}
-            />
-          )}
-
-          {form.loginLogo && (
-            <Box
-              component="img"
-              src={form.loginLogo}
-              alt="Login Logo"
-              sx={{
-                maxWidth: deviceView === "mobile" ? 100 : 150,
-                maxHeight: 80,
-                mb: 2,
-                background: "rgba(255,255,255,0.6)",
-                borderRadius: 2,
-                p: 1,
-              }}
-            />
-          )}
-
-          {form.applicationName && (
+          {/* NEW: simulated app header bar showing mainAppHeaderLogo */}
+          <Box
+            sx={{
+              background: "linear-gradient(90deg, #1565c0, #1976d2)",
+              px: 2,
+              py: 1,
+              display: "flex",
+              alignItems: "center",
+              gap: 1.5,
+              minHeight: 52,
+            }}
+          >
+            {form.mainAppHeaderLogo ? (
+              <Box
+                component="img"
+                src={form.mainAppHeaderLogo}
+                alt="Header Logo"
+                sx={{ height: 36, maxWidth: 120, objectFit: "contain" }}
+              />
+            ) : (
+              <Box
+                sx={{
+                  width: 36, height: 36, borderRadius: "50%",
+                  bgcolor: "rgba(255,255,255,0.25)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}
+              >
+                <Typography sx={{ color: "white", fontSize: 18 }}>☰</Typography>
+              </Box>
+            )}
             <Typography
-              variant={deviceView === "mobile" ? "h6" : "h5"}
-              fontWeight="bold"
-              sx={{
-                color: "#333",
-                textShadow: "0 1px 2px rgba(0,0,0,0.3)",
-              }}
+              sx={{ color: "white", fontWeight: 700, fontSize: deviceView === "mobile" ? 13 : 15 }}
             >
-              {form.applicationName}
+              {form.applicationName || "Application Name"}
             </Typography>
-          )}
+          </Box>
 
-          {form.loginSlogan && (
-            <Typography
-              variant="subtitle1"
-              sx={{
-                mt: 1,
-                color: "#555",
-                fontStyle: "italic",
-                textAlign: "center",
-                px: 2,
-                textShadow: "0 1px 2px rgba(0,0,0,0.2)",
-              }}
-            >
-              {form.loginSlogan}
-            </Typography>
-          )}
+          {/* OLD login preview area — kept as-is, now sits below the header bar */}
+          {/* OLD: was the only element, now wrapped inside the outer Box */}
+          <Box
+            sx={{
+              position: "relative",
+              height: deviceView === "mobile" ? 400 : 320,
+              backgroundColor: "#f5f5f5",
+              backgroundImage: form.loginBackground
+                ? `url(${form.loginBackground})`
+                : "linear-gradient(135deg, #ece9e6, #ffffff)",
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexDirection: "column",
+            }}
+          >
+            {form.feviconLogo && (
+              <Box
+                component="img"
+                src={form.feviconLogo}
+                alt="Favicon"
+                sx={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: "8px",
+                  position: "absolute",
+                  top: 16,
+                  left: 16,
+                  border: "1px solid rgba(0,0,0,0.1)",
+                  background: "white",
+                }}
+              />
+            )}
+
+            {form.loginLogo && (
+              <Box
+                component="img"
+                src={form.loginLogo}
+                alt="Login Logo"
+                sx={{
+                  maxWidth: deviceView === "mobile" ? 100 : 150,
+                  maxHeight: 80,
+                  mb: 2,
+                  background: "rgba(255,255,255,0.6)",
+                  borderRadius: 2,
+                  p: 1,
+                }}
+              />
+            )}
+
+            {form.applicationName && (
+              <Typography
+                variant={deviceView === "mobile" ? "h6" : "h5"}
+                fontWeight="bold"
+                sx={{ color: "#333", textShadow: "0 1px 2px rgba(0,0,0,0.3)" }}
+              >
+                {form.applicationName}
+              </Typography>
+            )}
+
+            {form.loginSlogan && (
+              <Typography
+                variant="subtitle1"
+                sx={{
+                  mt: 1, color: "#555", fontStyle: "italic",
+                  textAlign: "center", px: 2,
+                  textShadow: "0 1px 2px rgba(0,0,0,0.2)",
+                }}
+              >
+                {form.loginSlogan}
+              </Typography>
+            )}
+
+            {/* NEW: placeholder when no login assets are set */}
+            {!form.loginBackground && !form.loginLogo && !form.applicationName && !form.loginSlogan && (
+              <Typography sx={{ color: "#aaa", fontStyle: "italic", fontSize: 14 }}>
+                Upload a login logo or background to preview
+              </Typography>
+            )}
+          </Box>
         </Box>
 
         <Typography

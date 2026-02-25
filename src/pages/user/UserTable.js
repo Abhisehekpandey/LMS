@@ -73,7 +73,8 @@ import { getDepartments } from "../../api/departmentService";
 import { updateUser } from "../../api/userService";
 // import { activateAll } from "../../api/userService";
 import { TableSortLabel } from "@mui/material";
-import { searchUsers } from "../../api/userService";
+// COMMENTED OUT: searchUsers no longer used — fetchUsers handles search params
+// import { searchUsers } from "../../api/userService";
 import { debounce } from "lodash";
 
 const CustomSwitch = styled(Switch)(({ theme, checked }) => ({
@@ -824,19 +825,19 @@ export default function UserTable() {
     try {
       const adminEmail = sessionStorage.getItem("adminEmail");
 
-      // ✅ Decide API based on search
-      let users;
-      if (debouncedSearchQuery.trim()) {
-        users = await searchUsers(
-          page,
-          rowsPerPage,
-          searchColumn,
-          debouncedSearchQuery.trim()
-        );
-      } else {
-        // users = await fetchUsers(page);
-        users = await fetchUsers(page, rowsPerPage);
-      }
+      // COMMENTED OUT: used separate searchUsers API for search queries
+      // if (debouncedSearchQuery.trim()) {
+      //   users = await searchUsers(page, rowsPerPage, searchColumn, debouncedSearchQuery.trim());
+      // } else {
+      //   users = await fetchUsers(page, rowsPerPage);
+      // }
+      // NEW: always use fetchUsers — pass searchColumn/searchQuery when search is active
+      const users = await fetchUsers(
+        page,
+        rowsPerPage,
+        searchColumn,
+        debouncedSearchQuery.trim(), // empty string when no search
+      );
       // ✅ Normalize storage format like "1.00 GB" → "1GB"
       const normalizedUsers = (users.content || []).map((user) => {
         const display = user.permissions?.allowedStorageInBytesDisplay;
@@ -879,6 +880,7 @@ export default function UserTable() {
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearchQuery(searchQuery);
+      setPage(0); // NEW: reset to page 1 (0-based) when search changes
     }, 500); // wait 500ms after user stops typing
 
     return () => {
@@ -912,6 +914,10 @@ export default function UserTable() {
 
     if (searchColumn === "name") {
       return row.name?.toLowerCase().includes(query);
+    }
+
+    if (searchColumn === "region") {
+      return row.region?.toLowerCase().includes(query);
     }
 
     if (searchColumn === "email") {
@@ -1019,6 +1025,7 @@ export default function UserTable() {
                 label="Filter By"
               >
                 <MenuItem value="name">Name</MenuItem>
+                <MenuItem value="region">Command</MenuItem>
                 <MenuItem value="department">Unit</MenuItem>
                 <MenuItem value="role">Role</MenuItem>
                 <MenuItem value="email">Email</MenuItem>
@@ -1690,6 +1697,7 @@ export default function UserTable() {
                                   checked={row.active && row.enabled}
                                   onChange={() => handleStatusToggle(row.name)}
                                   disabled={
+                                    row.email === adminEmail ||
                                     (row.active && !row.enabled) ||
                                     (!row.active &&
                                       (!row.permissions

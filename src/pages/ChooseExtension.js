@@ -80,6 +80,32 @@ const ChooseExtension = () => {
   const handleSaveGlobalSize = async () => {
     const limit = `${globalFileSize}${globalFileSizeUnit}`; // e.g., "30MB"
 
+    // Validation: KB cannot exceed 1,000,000 | MB cannot exceed 1000 | GB cannot exceed 1
+    if (globalFileSizeUnit === "KB" && parseFloat(globalFileSize) > 1000000) {
+      setSnackbar({
+        open: true,
+        message: "File size cannot exceed 1,000,000 KB. Please enter a value of 1,000,000 KB or less.",
+        severity: "error",
+      });
+      return;
+    }
+    if (globalFileSizeUnit === "MB" && parseFloat(globalFileSize) > 1000) {
+      setSnackbar({
+        open: true,
+        message: "File size cannot exceed 1000 MB. Please enter a value of 1000 MB or less.",
+        severity: "error",
+      });
+      return;
+    }
+    if (globalFileSizeUnit === "GB" && parseFloat(globalFileSize) > 1) {
+      setSnackbar({
+        open: true,
+        message: "File size cannot exceed 1 GB. Please enter a value of 1 GB or less.",
+        severity: "error",
+      });
+      return;
+    }
+
     try {
       const response = await axios.post(
         `${window.__ENV__.REACT_APP_ROUTE}/tenants/addFileLimit`,
@@ -111,6 +137,16 @@ const ChooseExtension = () => {
   };
 
   const handleSaveBatchSize = async () => {
+    // Validation: batch size cannot exceed 30
+    if (parseInt(fileBatchSize, 10) > 30) {
+      setSnackbar({
+        open: true,
+        message: "Batch size cannot exceed 30. Please enter a value of 30 or less.",
+        severity: "error",
+      });
+      return;
+    }
+
     try {
       const response = await axios.post(
         `${window.__ENV__.REACT_APP_ROUTE}/tenants/addBatchLimit`,
@@ -254,6 +290,23 @@ const ChooseExtension = () => {
 
       setSelectedExtensions(selected);
       setPreCheckedExtensions(selected);
+
+      // NEW: pre-fill Global File Size Limit — API returns e.g. "1GB", "30MB", "500KB"
+      // COMMENTED OUT: wrong field name — API uses fileSizeLimit not fileSize
+      // if (data.fileSize) { const match = data.fileSize.match(...) }
+      if (data.fileSizeLimit) {
+        const match = data.fileSizeLimit.match(/^(\d+\.?\d*)(KB|MB|GB)$/i);
+        if (match) {
+          setGlobalFileSize(match[1]);
+          setGlobalFileSizeUnit(match[2].toUpperCase());
+        }
+      }
+
+      // NEW: pre-fill File Batch Size — API returns e.g. { batchSizeLimit: 30 }
+      if (data.batchSizeLimit !== undefined && data.batchSizeLimit !== null) {
+        setFileBatchSize(String(data.batchSizeLimit));
+      }
+
     } catch (error) {
       console.error("Failed to fetch allowed extensions:", error);
     }
@@ -585,8 +638,15 @@ const ChooseExtension = () => {
                 label="File Size"
                 size="small"
                 value={globalFileSize}
+                // OLD: onChange={(e) => setGlobalFileSize(e.target.value)}
                 onChange={(e) => setGlobalFileSize(e.target.value)}
-                InputProps={{ inputProps: { min: 1 } }}
+                InputProps={{
+                  inputProps: {
+                    min: 1,
+                    // OLD: max: globalFileSizeUnit === "GB" ? 1 : globalFileSizeUnit === "MB" ? 1000 : undefined,
+                    max: globalFileSizeUnit === "GB" ? 1 : globalFileSizeUnit === "MB" ? 1000 : globalFileSizeUnit === "KB" ? 1000000 : undefined,
+                  },
+                }}
                 fullWidth
               />
               <TextField
@@ -601,7 +661,8 @@ const ChooseExtension = () => {
                 <option value="KB">KB</option>
                 <option value="MB">MB</option>
                 <option value="GB">GB</option>
-                <option value="TB">TB</option>
+                {/* COMMENTED OUT: TB removed — max allowed is 1 GB */}
+                {/* <option value="TB">TB</option> */}
               </TextField>
             </Box>
             <Button
@@ -627,7 +688,8 @@ const ChooseExtension = () => {
               size="small"
               value={fileBatchSize}
               onChange={(e) => setFileBatchSize(e.target.value)}
-              InputProps={{ inputProps: { min: 1 } }}
+              // OLD: InputProps={{ inputProps: { min: 1 } }}
+              InputProps={{ inputProps: { min: 1, max: 30 } }}
               fullWidth
             />
             <Button

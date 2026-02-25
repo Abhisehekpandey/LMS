@@ -94,8 +94,21 @@ export const createDepartment = async (payload) => {
 // };
 
 // NEW: pagination as query params page/size (1-based); component passes 0-based so we convert with page + 1
-export const getDepartments = async (page = 0, pageSize = 10) => {
+// UPDATED: also accepts optional searchColumn/searchQuery — when provided, sent as query params to same endpoint
+// OLD: export const getDepartments = async (page = 0, pageSize = 10) => {
+export const getDepartments = async (page = 0, pageSize = 10, searchColumn = "", searchQuery = "") => {
   try {
+    const params = {
+      page: page + 1,  // convert 0-based (MUI) → 1-based (API)
+      size: pageSize,
+    };
+
+    // NEW: include search params only when a search is active
+    if (searchColumn && searchQuery) {
+      params.searchColumn = searchColumn;
+      params.searchQuery = searchQuery;
+    }
+
     const response = await axios.get(
       `${window.__ENV__.REACT_APP_ROUTE}/tenants/departments`,
       {
@@ -103,10 +116,7 @@ export const getDepartments = async (page = 0, pageSize = 10) => {
           Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
           username: `${sessionStorage.getItem("adminEmail")}`,
         },
-        params: {
-          page: page + 1,  // convert 0-based (MUI) → 1-based (API)
-          size: pageSize,
-        },
+        params,
       },
     );
 
