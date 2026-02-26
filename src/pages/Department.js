@@ -2238,9 +2238,19 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       setExpandedIndices([0]);
     } catch (error) {
       console.error(error);
+      // OLD: hardcoded message, did not show backend reason
+      // setSnackbar({
+      //   open: true,
+      //   message: "Failed to create Unit",
+      //   severity: "error",
+      // });
+      const backendMsg =
+        error?.response?.data?.error ||
+        (typeof error?.response?.data === "string" ? error.response.data : null) ||
+        "Failed to create Unit";
       setSnackbar({
         open: true,
-        message: "Failed to create Unit",
+        message: backendMsg,
         severity: "error",
       });
     }
@@ -2300,9 +2310,11 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       setIsAdminRole(false);
     } catch (error) {
       console.error("Failed to create role:", error);
+      const backendMessage =
+        error?.response?.data || "Failed to create role. Please try again.";
       setSnackbar({
         open: true,
-        message: "Failed to create role. Please try again.",
+        message: typeof backendMessage === "string" ? backendMessage : "Failed to create role. Please try again.",
         severity: "error",
       });
     }
@@ -2940,9 +2952,13 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                 });
                               }
                             } catch (error) {
+                              const backendMsg =
+                                error?.response?.data && typeof error.response.data === "string"
+                                  ? error.response.data
+                                  : error.message;
                               setSnackbar({
                                 open: true,
-                                message: `Error: ${error.message}`,
+                                message: backendMsg,
                                 severity: "error",
                               });
                             }
@@ -2994,9 +3010,13 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                               }
                             } catch (error) {
                               console.error("Failed to add role:", error);
+                              const backendMsg =
+                                error?.response?.data && typeof error.response.data === "string"
+                                  ? error.response.data
+                                  : error.message;
                               setSnackbar({
                                 open: true,
-                                message: `Error: ${error.message}`,
+                                message: backendMsg,
                                 severity: "error",
                               });
                             }
