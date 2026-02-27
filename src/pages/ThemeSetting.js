@@ -256,19 +256,20 @@ const ThemeSetting = () => {
             sx={{
               background: "linear-gradient(90deg, #1565c0, #1976d2)",
               px: 2,
-              py: 1,
               display: "flex",
               alignItems: "center",
               gap: 1.5,
-              minHeight: 52,
+              height: 64,
             }}
           >
             {form.mainAppHeaderLogo ? (
+              // OLD: width: 220, height: 44 in a nested container — still too small
+              // OLD: width: "100%" — made it span full header like the actual navbar
               <Box
                 component="img"
                 src={form.mainAppHeaderLogo}
                 alt="Header Logo"
-                sx={{ height: 36, maxWidth: 120, objectFit: "contain" }}
+                sx={{ height: 52, maxWidth: "70%", objectFit: "contain", objectPosition: "left" }}
               />
             ) : (
               <Box
@@ -281,94 +282,127 @@ const ThemeSetting = () => {
                 <Typography sx={{ color: "white", fontSize: 18 }}>☰</Typography>
               </Box>
             )}
-            <Typography
+            {/* OLD: showed application name in header — removed from preview per user request */}
+            {/* <Typography
               sx={{ color: "white", fontWeight: 700, fontSize: deviceView === "mobile" ? 13 : 15 }}
             >
               {form.applicationName || "Application Name"}
-            </Typography>
+            </Typography> */}
           </Box>
 
-          {/* OLD login preview area — kept as-is, now sits below the header bar */}
-          {/* OLD: was the only element, now wrapped inside the outer Box */}
+          {/* Login page preview — two-panel layout matching actual login page */}
           <Box
             sx={{
               position: "relative",
-              height: deviceView === "mobile" ? 400 : 320,
-              backgroundColor: "#f5f5f5",
+              height: deviceView === "mobile" ? 420 : 300,
               backgroundImage: form.loginBackground
                 ? `url(${form.loginBackground})`
-                : "linear-gradient(135deg, #ece9e6, #ffffff)",
+                : "linear-gradient(135deg, #0f2027, #203a43, #2c5364)",
               backgroundSize: "cover",
               backgroundPosition: "center",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              flexDirection: "column",
+              p: 2,
             }}
           >
-            {form.feviconLogo && (
+            {/* OLD: favicon shown in top-left — removed from preview per user request */}
+            {/* {form.feviconLogo && ( ... )} */}
+
+            {/* Two-panel card matching actual login layout */}
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: deviceView === "mobile" ? "column" : "row",
+                borderRadius: 2,
+                overflow: "hidden",
+                width: deviceView === "mobile" ? "90%" : "80%",
+                maxWidth: 600,
+                backdropFilter: "blur(12px)",
+                background: "rgba(255,255,255,0.08)",
+                border: "1px solid rgba(255,255,255,0.2)",
+                boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
+              }}
+            >
+              {/* Left — branding panel */}
               <Box
-                component="img"
-                src={form.feviconLogo}
-                alt="Favicon"
                 sx={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: "8px",
-                  position: "absolute",
-                  top: 16,
-                  left: 16,
-                  border: "1px solid rgba(0,0,0,0.1)",
-                  background: "white",
-                }}
-              />
-            )}
-
-            {form.loginLogo && (
-              <Box
-                component="img"
-                src={form.loginLogo}
-                alt="Login Logo"
-                sx={{
-                  maxWidth: deviceView === "mobile" ? 100 : 150,
-                  maxHeight: 80,
-                  mb: 2,
-                  background: "rgba(255,255,255,0.6)",
-                  borderRadius: 2,
-                  p: 1,
-                }}
-              />
-            )}
-
-            {form.applicationName && (
-              <Typography
-                variant={deviceView === "mobile" ? "h6" : "h5"}
-                fontWeight="bold"
-                sx={{ color: "#333", textShadow: "0 1px 2px rgba(0,0,0,0.3)" }}
-              >
-                {form.applicationName}
-              </Typography>
-            )}
-
-            {form.loginSlogan && (
-              <Typography
-                variant="subtitle1"
-                sx={{
-                  mt: 1, color: "#555", fontStyle: "italic",
-                  textAlign: "center", px: 2,
-                  textShadow: "0 1px 2px rgba(0,0,0,0.2)",
+                  flex: 1,
+                  p: deviceView === "mobile" ? 2 : 3,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: "rgba(255,255,255,0.12)",
+                  borderRight: deviceView === "mobile" ? "none" : "1px solid rgba(255,255,255,0.15)",
+                  borderBottom: deviceView === "mobile" ? "1px solid rgba(255,255,255,0.15)" : "none",
+                  gap: 1,
                 }}
               >
-                {form.loginSlogan}
-              </Typography>
-            )}
+                {form.loginLogo ? (
+                  <Box sx={{ width: "100%", height: "100%", flexShrink: 0 }}>
+                    <Box
+                      component="img"
+                      src={form.loginLogo}
+                      alt="Login Logo"
+                      sx={{ width: "100%", height: "100%", objectFit: "contain" }}
+                    />
+                  </Box>
+                ) : (
+                  <Box
+                    sx={{
+                      width: 60, height: 60, borderRadius: "50%",
+                      bgcolor: "rgba(255,255,255,0.2)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}
+                  >
+                    <Typography sx={{ color: "white", fontSize: 26 }}>🏛</Typography>
+                  </Box>
+                )}
+                {form.loginSlogan && (
+                  <Typography
+                    sx={{
+                      color: "white", fontWeight: 600, fontSize: 11,
+                      textAlign: "center", mt: 0.5,
+                    }}
+                  >
+                    {form.loginSlogan}
+                  </Typography>
+                )}
+              </Box>
 
-            {/* NEW: placeholder when no login assets are set */}
-            {!form.loginBackground && !form.loginLogo && !form.applicationName && !form.loginSlogan && (
-              <Typography sx={{ color: "#aaa", fontStyle: "italic", fontSize: 14 }}>
-                Upload a login logo or background to preview
-              </Typography>
-            )}
+              {/* Right — sign-in form mock */}
+              <Box
+                sx={{
+                  flex: 1,
+                  p: deviceView === "mobile" ? 2 : 3,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: "rgba(255,255,255,0.88)",
+                  gap: 1,
+                }}
+              >
+                <Typography sx={{ fontWeight: 700, fontSize: 15, mb: 0.5, color: "#222" }}>
+                  Login
+                </Typography>
+                <Box sx={{ width: "100%", height: 28, borderRadius: 1, border: "1px solid #ccc", bgcolor: "#f9f9f9", display: "flex", alignItems: "center", px: 1 }}>
+                  <Typography sx={{ fontSize: 10, color: "#aaa" }}>Email</Typography>
+                </Box>
+                <Box sx={{ width: "100%", height: 28, borderRadius: 1, border: "1px solid #ccc", bgcolor: "#f9f9f9", display: "flex", alignItems: "center", px: 1 }}>
+                  <Typography sx={{ fontSize: 10, color: "#aaa" }}>Password</Typography>
+                </Box>
+                <Box sx={{ width: "100%", height: 28, borderRadius: 1, bgcolor: "#3b82f6", display: "flex", alignItems: "center", justifyContent: "center", mt: 0.5 }}>
+                  <Typography sx={{ fontSize: 11, color: "white", fontWeight: 600 }}>Login</Typography>
+                </Box>
+              </Box>
+            </Box>
+
+            {/* OLD: version badge shown in preview — removed per user request */}
+            {/* <Typography variant="caption" sx={{ position: "absolute", bottom: 8, right: 10 }}>
+              v{APP_VERSION}
+            </Typography> */}
           </Box>
         </Box>
 

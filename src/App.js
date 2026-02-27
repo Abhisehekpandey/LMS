@@ -11,6 +11,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import ProtectedRoute from "./ProtectedRoute";
+import PublicRoute from "./PublicRoute";
 import Department from "./pages/Department";
 import Role from "./pages/Role";
 import AngelBot from "./pages/AngelBot";
@@ -52,9 +53,12 @@ function App() {
       <LogoProvider>
         <Router>
           <Routes>
-            {/* Public routes */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
+            {/* Public routes — wrapped in PublicRoute to redirect logged-in users away */}
+            {/* OLD: no guard — logged-in users could visit /login and then freely navigate to protected routes */}
+            {/* <Route path="/login" element={<Login />} /> */}
+            {/* <Route path="/signup" element={<Signup />} /> */}
+            <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+            <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
             <Route path="/set-password" element={<ResetPassword />} />
             <Route path="/forget-password" element={<ForgetPassword />} />
             <Route

@@ -19,6 +19,7 @@ import { loginUser } from "../api/authApi."; // assumes your login API call
 import { keyframes } from "@emotion/react";
 import CryptoJS from "crypto-js";
 import { LogoContext } from "../context/LogoContext";
+import APP_VERSION from "../version";
 
 // 🔐 Encryption
 function encryptFun(password, username) {
@@ -52,7 +53,7 @@ const refreshAccessToken = async () => {
         headers: {
           username: sessionStorage.getItem("adminEmail"), // ✅ added header
         },
-      }
+      },
     );
 
     const data = await response.json();
@@ -62,11 +63,11 @@ const refreshAccessToken = async () => {
       sessionStorage.setItem("refreshToken", data.refresh_token);
       sessionStorage.setItem(
         "tokenExpiry",
-        Date.now() + data.expires_in * 1000
+        Date.now() + data.expires_in * 1000,
       );
       sessionStorage.setItem(
         "refreshExpiry",
-        Date.now() + data.refresh_expires_in * 1000
+        Date.now() + data.refresh_expires_in * 1000,
       );
 
       return true;
@@ -92,9 +93,12 @@ const clearSessionAndRedirect = () => {
 
 // ⏱ Sets interval to refresh token
 const setupAutoRefresh = () => {
-  const intervalId = setInterval(() => {
-    refreshAccessToken();
-  }, 25 * 60 * 1000); // every 25 mins
+  const intervalId = setInterval(
+    () => {
+      refreshAccessToken();
+    },
+    25 * 60 * 1000,
+  ); // every 25 mins
   sessionStorage.setItem("refreshIntervalId", intervalId);
 };
 
@@ -158,7 +162,7 @@ const Login = () => {
       sessionStorage.setItem("tokenExpiry", Date.now() + expires_in * 1000);
       sessionStorage.setItem(
         "refreshExpiry",
-        Date.now() + refresh_expires_in * 1000
+        Date.now() + refresh_expires_in * 1000,
       );
 
       setupAutoRefresh(); // 🟢 Start auto refresh
@@ -174,7 +178,7 @@ const Login = () => {
         const superAdmin = sessionStorage.getItem("superAdmin") === "true";
 
         if (deptAdmin && !superAdmin) {
-          navigate("/department");
+          navigate("/unit");
         } else {
           navigate("/angelbot");
         }
@@ -258,7 +262,15 @@ const Login = () => {
                 }}
               />
             </Box>
-            <Typography variant="body1" sx={{ mt: 3, color: "white", textAlign: "center", fontWeight: 600 }}>
+            <Typography
+              variant="body1"
+              sx={{
+                mt: 3,
+                color: "white",
+                textAlign: "center",
+                fontWeight: 600,
+              }}
+            >
               {logoData.slogan}
             </Typography>
           </Box>
@@ -399,9 +411,24 @@ const Login = () => {
           {snackbar.message}
         </MuiAlert>
       </Snackbar>
+
+      <Typography
+        variant="caption"
+        sx={{
+          position: "fixed",
+          bottom: 10,
+          right: 14,
+          color: "rgba(0,0,0,0.45)",
+          fontWeight: 600,
+          letterSpacing: 0.5,
+          pointerEvents: "none",
+          userSelect: "none",
+        }}
+      >
+        v{APP_VERSION}
+      </Typography>
     </Box>
   );
 };
 
 export default Login;
-

@@ -639,7 +639,15 @@ const ChooseExtension = () => {
                 size="small"
                 value={globalFileSize}
                 // OLD: onChange={(e) => setGlobalFileSize(e.target.value)}
-                onChange={(e) => setGlobalFileSize(e.target.value)}
+                onKeyDown={(e) => {
+                  // Prevent e, E, +, - which are valid in HTML number inputs but unwanted here
+                  if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
+                }}
+                onChange={(e) => {
+                  const max = globalFileSizeUnit === "GB" ? 1 : globalFileSizeUnit === "MB" ? 1000 : 1000000;
+                  const val = e.target.value === "" ? "" : Math.min(Number(e.target.value), max);
+                  setGlobalFileSize(val === "" ? "" : String(val));
+                }}
                 InputProps={{
                   inputProps: {
                     min: 1,
@@ -654,7 +662,16 @@ const ChooseExtension = () => {
                 label="Unit"
                 value={globalFileSizeUnit}
                 size="small"
-                onChange={(e) => setGlobalFileSizeUnit(e.target.value)}
+                // OLD: onChange={(e) => setGlobalFileSizeUnit(e.target.value)}
+                onChange={(e) => {
+                  const newUnit = e.target.value;
+                  const max = newUnit === "GB" ? 1 : newUnit === "MB" ? 1000 : 1000000;
+                  // Clamp current value to the new unit's max when unit changes
+                  if (globalFileSize !== "" && Number(globalFileSize) > max) {
+                    setGlobalFileSize(String(max));
+                  }
+                  setGlobalFileSizeUnit(newUnit);
+                }}
                 SelectProps={{ native: true }}
                 sx={{ minWidth: 100 }}
               >
@@ -687,8 +704,15 @@ const ChooseExtension = () => {
               label="Batch Size"
               size="small"
               value={fileBatchSize}
-              onChange={(e) => setFileBatchSize(e.target.value)}
-              // OLD: InputProps={{ inputProps: { min: 1 } }}
+              onKeyDown={(e) => {
+                // Prevent e, E, +, - which are valid in HTML number inputs but unwanted here
+                if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
+              }}
+              // OLD: onChange={(e) => setFileBatchSize(e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value === "" ? "" : Math.min(Number(e.target.value), 30);
+                setFileBatchSize(val === "" ? "" : String(val));
+              }}
               InputProps={{ inputProps: { min: 1, max: 30 } }}
               fullWidth
             />
