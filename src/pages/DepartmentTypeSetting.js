@@ -130,8 +130,6 @@ const DepartmentTypeSetting = () => {
   const [searchText, setSearchText] = useState("");
 
   const handleEditType = (row) => {
-
-
     setDocumentType(row.type || "");
     setAttributes(
       row.attributes?.map((attr) => ({
@@ -141,7 +139,7 @@ const DepartmentTypeSetting = () => {
         description: attr.fileTypeDescription || "",
         mandatory: attr.isMandatory || false,
         aiRequired: attr.isAiRequired || false,
-      })) || [createAttributeTemplate()]
+      })) || [createAttributeTemplate()],
     );
 
     let scope = "global";
@@ -152,7 +150,7 @@ const DepartmentTypeSetting = () => {
     } else if (Array.isArray(row.createdFor) && row.createdFor.length > 0) {
       const matchedUsers = users.filter((u) => row.createdFor.includes(u.name));
       const matchedDepartments = departments.filter((d) =>
-        row.createdFor.includes(d.deptName)
+        row.createdFor.includes(d.deptName),
       );
 
       if (matchedUsers.length > 0) {
@@ -178,7 +176,7 @@ const DepartmentTypeSetting = () => {
     if (typeScope === "user" && selectedEntityId.length && users.length) {
       // make sure all selected IDs exist in users
       const validIds = selectedEntityId.filter((id) =>
-        users.some((u) => u.id === id)
+        users.some((u) => u.id === id),
       );
       setSelectedEntityId(validIds);
     }
@@ -190,7 +188,7 @@ const DepartmentTypeSetting = () => {
     ) {
       // make sure all selected IDs exist in departments
       const validIds = selectedEntityId.filter((id) =>
-        departments.some((d) => d.id === id)
+        departments.some((d) => d.id === id),
       );
       setSelectedEntityId(validIds);
     }
@@ -207,7 +205,7 @@ const DepartmentTypeSetting = () => {
             username: `${sessionStorage.getItem("adminEmail")}`,
             pageNumber: page.toString(),
           },
-        }
+        },
       );
       if (res.data?.content?.length) {
         setUsers((prev) => [...prev, ...res.data.content]);
@@ -238,7 +236,7 @@ const DepartmentTypeSetting = () => {
             pageSize: 10,
             search: "",
           },
-        }
+        },
       );
       if (res.data?.content?.length) {
         setDepartments((prev) => [...prev, ...res.data.content]);
@@ -316,7 +314,7 @@ const DepartmentTypeSetting = () => {
 
   const handleCheckboxToggle = (id) => {
     setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
     );
   };
 
@@ -357,7 +355,7 @@ const DepartmentTypeSetting = () => {
             Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
             username: `${sessionStorage.getItem("adminEmail")}`,
           },
-        }
+        },
       );
 
       // ✅ take fullObject array instead of data
@@ -389,7 +387,7 @@ const DepartmentTypeSetting = () => {
 
   const paginatedRows = sortedRows.slice(
     page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage
+    page * rowsPerPage + rowsPerPage,
   );
 
   const handleUserDropdownScroll = (event) => {
@@ -433,6 +431,29 @@ const DepartmentTypeSetting = () => {
       return; // stop submission
     }
 
+    if (!documentType.trim()) {
+      setSnackbar({
+        open: true,
+        message: "Document Type is mandatory.",
+        severity: "error",
+      });
+      return;
+    }
+
+    const invalidAttribute = attributes.find(
+      (attr) => !attr.name.trim() || !attr.description.trim(),
+    );
+
+    if (invalidAttribute) {
+      setSnackbar({
+        open: true,
+        message:
+          "Attribute Name and Description are mandatory for all attributes.",
+        severity: "error",
+      });
+      return;
+    }
+
     const payload = {
       type: documentType,
       attributes: attributes.map((attr) => ({
@@ -459,7 +480,7 @@ const DepartmentTypeSetting = () => {
               Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
               username: sessionStorage.getItem("adminEmail"),
             },
-          }
+          },
         );
         setSnackbar({
           open: true,
@@ -476,7 +497,7 @@ const DepartmentTypeSetting = () => {
               Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
               username: sessionStorage.getItem("adminEmail"),
             },
-          }
+          },
         );
         setSnackbar({
           open: true,
@@ -544,7 +565,7 @@ const DepartmentTypeSetting = () => {
             "Content-Type": "application/json",
           },
           data: idsArray,
-        }
+        },
       );
 
       setSnackbar({
@@ -877,7 +898,7 @@ const DepartmentTypeSetting = () => {
                 <Tooltip
                   title={
                     sessionStorage.getItem("deptAdmin") === "true" &&
-                      sessionStorage.getItem("superAdmin") !== "true"
+                    sessionStorage.getItem("superAdmin") !== "true"
                       ? "Only applicable for Super Admin"
                       : ""
                   }
@@ -911,7 +932,7 @@ const DepartmentTypeSetting = () => {
                   value={selectedEntityId.map(getOptionValue).filter(Boolean)} // map IDs to objects
                   onChange={(event, newValue) => {
                     const uniqueIds = Array.from(
-                      new Set(newValue.map((item) => item.id))
+                      new Set(newValue.map((item) => item.id)),
                     );
                     setSelectedEntityId(uniqueIds);
                   }}
@@ -927,16 +948,17 @@ const DepartmentTypeSetting = () => {
                   renderInput={(params) => (
                     <TextField
                       {...params}
-                      label={`Select ${typeScope === "user" ? "Users" : "Departments"
-                        }`}
+                      label={`Select ${
+                        typeScope === "user" ? "Users" : "Departments"
+                      }`}
                       size="small"
                       InputProps={{
                         ...params.InputProps,
                         endAdornment: (
                           <>
                             {(typeScope === "user" && loadingUsers) ||
-                              (typeScope === "department" &&
-                                loadingDepartments) ? (
+                            (typeScope === "department" &&
+                              loadingDepartments) ? (
                               <CircularProgress color="inherit" size={20} />
                             ) : null}
                             {params.InputProps.endAdornment}
@@ -969,6 +991,7 @@ const DepartmentTypeSetting = () => {
             )}
 
             <TextField
+              required
               fullWidth
               label="Document Type"
               value={documentType}
@@ -1012,6 +1035,7 @@ const DepartmentTypeSetting = () => {
                   <Grid container spacing={2}>
                     <Grid item xs={12} sm={2.5}>
                       <TextField
+                        required
                         fullWidth
                         label="Attribute Name"
                         value={attr.name}
@@ -1046,7 +1070,7 @@ const DepartmentTypeSetting = () => {
                           handleAttributeChange(
                             index,
                             "defaultValue",
-                            e.target.value
+                            e.target.value,
                           )
                         }
                       />
@@ -1061,7 +1085,7 @@ const DepartmentTypeSetting = () => {
                                 handleAttributeChange(
                                   index,
                                   "mandatory",
-                                  e.target.checked
+                                  e.target.checked,
                                 )
                               }
                             />
@@ -1076,7 +1100,7 @@ const DepartmentTypeSetting = () => {
                                 handleAttributeChange(
                                   index,
                                   "aiRequired",
-                                  e.target.checked
+                                  e.target.checked,
                                 )
                               }
                             />
@@ -1094,6 +1118,7 @@ const DepartmentTypeSetting = () => {
                     </Grid>
                     <Grid item xs={12}>
                       <TextField
+                        required
                         fullWidth
                         label="Description"
                         value={attr.description}
@@ -1101,7 +1126,7 @@ const DepartmentTypeSetting = () => {
                           handleAttributeChange(
                             index,
                             "description",
-                            e.target.value
+                            e.target.value,
                           )
                         }
                       />

@@ -96,7 +96,7 @@ const ChatHistoryDialog = ({
   const sortedHistory = useMemo(() => {
     if (!row || !row.feedResponses) return [];
     return [...row.feedResponses].sort(
-      (a, b) => new Date(a.date) - new Date(b.date)
+      (a, b) => new Date(a.date) - new Date(b.date),
     );
   }, [row]);
 
@@ -106,7 +106,7 @@ const ChatHistoryDialog = ({
 
   const toggleChatSelection = (index) => {
     setSelectedChats((prev) =>
-      prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]
+      prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index],
     );
   };
 
@@ -118,7 +118,7 @@ const ChatHistoryDialog = ({
           await handleUpdateAction(
             row.conversationId,
             chat.responseId,
-            actionType
+            actionType,
           );
         }
       }
@@ -153,7 +153,7 @@ const ChatHistoryDialog = ({
         (chat) =>
           `"${chat.questionText}","${chat.answerText}","${chat.date}","${
             chat.time || ""
-          }"`
+          }"`,
       ),
     ];
 
@@ -165,7 +165,7 @@ const ChatHistoryDialog = ({
     link.href = url;
     link.setAttribute(
       "download",
-      `${rowData?.user || "chat_history"}_${Date.now()}.csv`
+      `${rowData?.user || "chat_history"}_${Date.now()}.csv`,
     );
     document.body.appendChild(link);
     link.click();
@@ -303,7 +303,10 @@ const ChatHistoryDialog = ({
                         alignSelf: "flex-end",
                       }}
                     >
-                      <Typography variant="body2">{chat.answerText}</Typography>
+                      <Typography
+                        variant="body2"
+                        dangerouslySetInnerHTML={{ __html: chat.answerText }}
+                      />
                     </Box>
 
                     <Box
@@ -436,7 +439,7 @@ export default function FeedbackTable() {
             Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
             username: `${sessionStorage.getItem("adminEmail")}`,
           },
-        }
+        },
       );
 
       const growthData = res.data; // [{like, dislike}, ...]
@@ -484,7 +487,7 @@ export default function FeedbackTable() {
               Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
               username: `${sessionStorage.getItem("adminEmail")}`,
             },
-          }
+          },
         );
 
         const data = res.data;
@@ -585,7 +588,7 @@ export default function FeedbackTable() {
               Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
               username: `${sessionStorage.getItem("adminEmail")}`,
             },
-          }
+          },
         );
         if (!res.ok) throw new Error("Failed to fetch feedback");
         const data = await res.json();
@@ -639,7 +642,7 @@ export default function FeedbackTable() {
             Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
             username: `${sessionStorage.getItem("adminEmail")}`,
           },
-        }
+        },
       );
       if (!res.ok) throw new Error("Failed to fetch chat history");
       const data = await res.json();
@@ -662,13 +665,13 @@ export default function FeedbackTable() {
             Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
             username: sessionStorage.getItem("adminEmail"),
           },
-        }
+        },
       );
 
       if (!res.ok) throw new Error("Failed to delete feedback");
 
       setFeedbackRows((prev) =>
-        prev.filter((row) => row.conversationId !== conversationId)
+        prev.filter((row) => row.conversationId !== conversationId),
       );
 
       setSnackbar({
@@ -694,7 +697,7 @@ export default function FeedbackTable() {
             Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
             username: `${sessionStorage.getItem("adminEmail")}`,
           },
-        }
+        },
       );
 
       if (!res.ok) throw new Error(`Failed to ${actionType}`);
@@ -719,7 +722,7 @@ export default function FeedbackTable() {
             return { ...row, status: actionType }; // update status
           }
           return row;
-        })
+        }),
       );
 
       setSnackbar({
@@ -795,7 +798,7 @@ export default function FeedbackTable() {
         Object.values(row).some(
           (val) =>
             typeof val === "string" &&
-            val.toLowerCase().includes(searchTerm.toLowerCase())
+            val.toLowerCase().includes(searchTerm.toLowerCase()),
         );
 
       return passesFilters && passesSearch;
@@ -806,7 +809,7 @@ export default function FeedbackTable() {
     if (colKey === "latestChat")
       return [
         ...new Set(
-          feedbackRows.map((row) => `${row.latestFBC} ${row.latestFBA}`)
+          feedbackRows.map((row) => `${row.latestFBC} ${row.latestFBA}`),
         ),
       ];
     if (colKey === "dateTime")
@@ -821,7 +824,7 @@ export default function FeedbackTable() {
   };
   const handleClick = (id) => {
     setSelected((prev) =>
-      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id],
     );
   };
 
@@ -833,7 +836,7 @@ export default function FeedbackTable() {
     const csvRows = [
       headers.join(","),
       ...rows.map((row) =>
-        columns.map((c) => `"${row[c.key] ?? ""}"`).join(",")
+        columns.map((c) => `"${row[c.key] ?? ""}"`).join(","),
       ),
     ];
 
@@ -1136,7 +1139,7 @@ export default function FeedbackTable() {
                         renderLabel: (params) => {
                           const total = contributionSeries.reduce(
                             (sum, item) => sum + item.value,
-                            0
+                            0,
                           );
                           const percentage = (
                             (params.value / total) *
@@ -1181,7 +1184,7 @@ export default function FeedbackTable() {
                 {contributionSeries.map((s) => {
                   const total = contributionSeries.reduce(
                     (sum, item) => sum + item.value,
-                    0
+                    0,
                   );
                   const percentage = ((s.value / total) * 100).toFixed(1);
 
@@ -1257,7 +1260,7 @@ export default function FeedbackTable() {
                         renderLabel: (params) => {
                           const total = sourceSeries.reduce(
                             (sum, item) => sum + item.value,
-                            0
+                            0,
                           );
                           const percentage = (
                             (params.value / total) *
@@ -1302,7 +1305,7 @@ export default function FeedbackTable() {
                 {sourceSeries.map((s) => {
                   const total = sourceSeries.reduce(
                     (sum, item) => sum + item.value,
-                    0
+                    0,
                   );
                   const percentage = ((s.value / total) * 100).toFixed(1);
 
@@ -1518,7 +1521,7 @@ export default function FeedbackTable() {
                             e.stopPropagation();
 
                             const fullHistory = await fetchChatHistory(
-                              row.conversationId
+                              row.conversationId,
                             );
                             setSelectedRow({
                               ...row,
@@ -1542,8 +1545,8 @@ export default function FeedbackTable() {
                               row.status === "Approved"
                                 ? "/images/approved_logo.png"
                                 : row.status === "rejected"
-                                ? "/images/rejected_logo.png"
-                                : "/images/view_logo.png"
+                                  ? "/images/rejected_logo.png"
+                                  : "/images/view_logo.png"
                             }
                             alt={row.status}
                           />
@@ -1568,7 +1571,7 @@ export default function FeedbackTable() {
                                   handleUpdateAction(
                                     row.conversationId,
                                     row.responseId,
-                                    "Approved"
+                                    "Approved",
                                   )
                                 }
                               >
@@ -1584,7 +1587,7 @@ export default function FeedbackTable() {
                                   handleUpdateAction(
                                     row.conversationId,
                                     row.responseId,
-                                    "rejected"
+                                    "rejected",
                                   )
                                 }
                               >
@@ -1674,8 +1677,8 @@ export default function FeedbackTable() {
                   val
                     .toLowerCase()
                     .includes(
-                      (filters[`${filterColumn}_search`] || "").toLowerCase()
-                    )
+                      (filters[`${filterColumn}_search`] || "").toLowerCase(),
+                    ),
                 )
                 .map((val, i) => (
                   <MenuItem
