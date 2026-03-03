@@ -236,6 +236,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
   ]);
 
   const [searchModerator, setSearchModerator] = useState("");
+  const [debouncedSearchModerator, setDebouncedSearchModerator] = useState("");
 
   const [searchUser, setSearchUser] = useState("");
 
@@ -263,6 +264,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
   const [userPage, setUserPage] = useState(0);
   const [hasMoreUsers, setHasMoreUsers] = useState(true);
   const loadingUsers = useRef(false);
+  const [userSearchQuery, setUserSearchQuery] = useState("");
+  const [debouncedUserSearchQuery, setDebouncedUserSearchQuery] = useState("");
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   // const anchorRef = useRef(null);
 
@@ -532,22 +535,33 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     // };
 
     // NEW: load a page of users (server-side search + infinite scroll)
-    const loadDialogUsers = async (page, query, replace = false) => {
+    const loadDialogUsers = async (page = 0, query = "", replace = false) => {
+      if (loading.current || (replace && loading)) return;
+      if (!replace && (!dialogHasMore || dialogLoadingMore)) return;
+
       if (replace) setLoading(true);
       else setDialogLoadingMore(true);
+
       try {
         let res;
+        // API wants page starting from 0 (or 1 depending on service, fetchUsers handles 0->1)
         if (query.trim()) {
           res = await searchUsers(page, 20, "name", query);
         } else {
           res = await fetchUsers(page, 20);
         }
         const newUsers = res.content || [];
-        setAllUsers((prev) => (replace ? newUsers : [...prev, ...newUsers]));
+
+        if (replace) {
+          setAllUsers(newUsers);
+          setDialogPage(1);
+        } else {
+          setAllUsers((prev) => [...prev, ...newUsers]);
+          setDialogPage(page + 1);
+        }
         setDialogHasMore(newUsers.length === 20);
-        setDialogPage(page + 1);
       } catch (err) {
-        console.error(err);
+        console.error("Failed to load dialog users:", err);
       } finally {
         setLoading(false);
         setDialogLoadingMore(false);
@@ -618,43 +632,23 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     useEffect(() => {
       if (!addDialogOpen) return;
       const t = setTimeout(() => {
-        setAllUsers([]);
-        setDialogPage(0);
-        setDialogHasMore(true);
         loadDialogUsers(0, dialogSearch, true);
-      }, 400);
+      }, 500);
       return () => clearTimeout(t);
-    }, [dialogSearch]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [dialogSearch, addDialogOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // NEW: IntersectionObserver on sentinel div → load next page on scroll end
-    // FIX 1: guard !addDialogOpen so closing the dialog doesn't trigger an API call
-    // FIX 2: use dialogScrollRef as IO root so it fires on container scroll, not viewport scroll
-    useEffect(() => {
-      if (!sentinelRef.current || !dialogScrollRef.current || !addDialogOpen)
-        return;
-      const observer = new IntersectionObserver(
-        (entries) => {
-          if (
-            entries[0].isIntersecting &&
-            dialogHasMore &&
-            !dialogLoadingMore &&
-            !loading
-          ) {
-            loadDialogUsers(dialogPage, dialogSearch, false);
-          }
-        },
-        { root: dialogScrollRef.current, threshold: 0.1 },
-      );
-      observer.observe(sentinelRef.current);
-      return () => observer.disconnect();
-    }, [
-      addDialogOpen,
-      dialogHasMore,
-      dialogLoadingMore,
-      loading,
-      dialogPage,
-      dialogSearch,
-    ]); // eslint-disable-line react-hooks/exhaustive-deps
+    const handleDialogScroll = (event) => {
+      const { scrollTop, clientHeight, scrollHeight } = event.currentTarget;
+      const threshold = 50;
+      if (
+        scrollTop + clientHeight >= scrollHeight - threshold &&
+        dialogHasMore &&
+        !dialogLoadingMore &&
+        !loading
+      ) {
+        loadDialogUsers(dialogPage, dialogSearch, false);
+      }
+    };
 
     return (
       <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
@@ -991,6 +985,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               <Box
                 ref={dialogScrollRef}
                 sx={{ maxHeight: 360, overflowY: "auto" }}
+                onScroll={handleDialogScroll}
               >
                 {/* OLD: <Table size="small"> */}
                 <Table size="small" stickyHeader>
@@ -1047,7 +1042,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                   </TableBody>
                 </Table>
                 {/* NEW: sentinel div triggers IntersectionObserver for next page */}
-                <div ref={sentinelRef} style={{ height: 1 }} />
                 {dialogLoadingMore && (
                   <Box
                     sx={{ display: "flex", justifyContent: "center", py: 1 }}
@@ -1521,11 +1515,11 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         prev.map((dept) =>
           dept.name === editedDepartment.originalName
             ? {
-                ...dept,
-                name: payload.deptName,
-                displayName: payload.deptDisplayName,
-                departmentModerator: payload.deptModerator,
-              }
+              ...dept,
+              name: payload.deptName,
+              displayName: payload.deptDisplayName,
+              departmentModerator: payload.deptModerator,
+            }
             : dept,
         ),
       );
@@ -1548,51 +1542,65 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     }
   };
 
-  const loadFilteredUsers = async () => {
-    if (
-      loadingFilteredUsers.current ||
-      !hasMoreFilteredUsers ||
-      !editedDepartment
-    )
+  const loadFilteredUsers = async (isSearch = false) => {
+    if (loadingFilteredUsers.current || (!hasMoreFilteredUsers && !isSearch))
       return;
     loadingFilteredUsers.current = true;
 
     try {
-      const res = await fetchUsersByDepartment(
-        editedDepartment.name,
-        filteredPage,
+      const currentPage = isSearch ? 0 : filteredPage;
+      const res = await fetchUsers(
+        currentPage,
         10,
+        debouncedSearchModerator ? "email" : "",
+        debouncedSearchModerator,
       );
-      const users = res?.data?.users || [];
-
-      if (users.length < 10) setHasMoreFilteredUsers(false);
+      const users = res?.content || [];
 
       const simplifiedUsers = users.map((u) => ({
         name: u.email,
-        id: u.id, // optional, if you need it later
+        id: u.id,
       }));
 
-      setFilteredUsers((prev) => [...prev, ...simplifiedUsers]);
-      setFilteredPage((prev) => prev + 1);
+      if (isSearch) {
+        setFilteredUsers(simplifiedUsers);
+        setFilteredPage(1);
+        setHasMoreFilteredUsers(users.length === 10);
+      } else {
+        setFilteredUsers((prev) => [...prev, ...simplifiedUsers]);
+        setFilteredPage((prev) => prev + 1);
+        if (users.length < 10) setHasMoreFilteredUsers(false);
+      }
     } catch (error) {
-      console.error("Failed to load users by Unit:", error);
+      console.error("Failed to load users:", error);
     } finally {
       loadingFilteredUsers.current = false;
     }
   };
 
-  const loadMoreUsers = async () => {
-    if (loadingUsers.current || !hasMoreUsers) return;
+  const loadMoreUsers = async (isSearch = false) => {
+    if (loadingUsers.current || (!hasMoreUsers && !isSearch)) return;
     loadingUsers.current = true;
 
     try {
-      const res = await fetchUsers(userPage);
+      const currentPage = isSearch ? 0 : userPage;
+      const res = await fetchUsers(
+        currentPage,
+        10,
+        debouncedUserSearchQuery ? "email" : "",
+        debouncedUserSearchQuery
+      );
       const users = res?.content || [];
 
-      if (users.length < 10) setHasMoreUsers(false);
-
-      setUserOptions((prev) => [...prev, ...users]);
-      setUserPage((prev) => prev + 1);
+      if (isSearch) {
+        setUserOptions(users);
+        setUserPage(1);
+        setHasMoreUsers(users.length === 10);
+      } else {
+        setUserOptions((prev) => [...prev, ...users]);
+        setUserPage((prev) => prev + 1);
+        if (users.length < 10) setHasMoreUsers(false);
+      }
     } catch (error) {
       console.error("Failed to load users:", error);
     } finally {
@@ -1776,9 +1784,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         prevDepartments.map((dept) =>
           dept.name === deptName
             ? {
-                ...dept,
-                roles: dept.roles.filter((_, i) => i !== roleIndex),
-              }
+              ...dept,
+              roles: dept.roles.filter((_, i) => i !== roleIndex),
+            }
             : dept,
         ),
       );
@@ -1812,11 +1820,11 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       prev.map((dept) =>
         dept.name === editingRole.departmentName
           ? {
-              ...dept,
-              roles: dept.roles.map((role, i) =>
-                i === editingRole.roleIndex ? editingRole.value : role.roleName,
-              ),
-            }
+            ...dept,
+            roles: dept.roles.map((role, i) =>
+              i === editingRole.roleIndex ? editingRole.value : role.roleName,
+            ),
+          }
           : dept,
       ),
     );
@@ -2280,12 +2288,12 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         prev.map((dept) =>
           dept.name === selectedDepartment.name
             ? {
-                ...dept,
-                roles: [
-                  ...dept.roles,
-                  { roleName: newRole.trim(), isAdmin: isAdminRole },
-                ],
-              }
+              ...dept,
+              roles: [
+                ...dept.roles,
+                { roleName: newRole.trim(), isAdmin: isAdminRole },
+              ],
+            }
             : dept,
         ),
       );
@@ -2328,9 +2336,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     );
     setSnackbar({
       open: true,
-      message: `Unit "${dept.name}" ${
-        !dept.isActive ? "activated" : "deactivated"
-      }`,
+      message: `Unit "${dept.name}" ${!dept.isActive ? "activated" : "deactivated"
+        }`,
       severity: "success",
     });
   };
@@ -2489,9 +2496,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     if (!val) return "";
     const [num, unit] = val.trim().split(/\s+/); // splits "25.00 GB" → ["25.00", "GB"]
     const rounded = parseFloat(num);
-    return `${
-      Number.isInteger(rounded) ? rounded : Math.floor(rounded)
-    }${unit}`;
+    return `${Number.isInteger(rounded) ? rounded : Math.floor(rounded)
+      }${unit}`;
   };
 
   // Debounce searchQuery → debouncedSearchQuery (500ms delay)
@@ -2509,8 +2515,32 @@ function Department({ departments, setDepartments, onThemeToggle }) {
   }, [page, rowsPerPage, debouncedSearchQuery, searchColumn]);
 
   useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedUserSearchQuery(userSearchQuery);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [userSearchQuery]);
+
+  useEffect(() => {
+    loadMoreUsers(true);
+  }, [debouncedUserSearchQuery]);
+
+  useEffect(() => {
     loadMoreUsers();
   }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchModerator(searchModerator);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchModerator]);
+
+  useEffect(() => {
+    if (editDialogOpen) {
+      loadFilteredUsers(true);
+    }
+  }, [debouncedSearchModerator, editDialogOpen]);
 
   return (
     <Box
@@ -3654,6 +3684,10 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                             fullWidth
                             options={userOptions}
                             getOptionLabel={(option) => option.email || ""}
+                            loading={loadingUsers.current}
+                            onInputChange={(event, newInputValue) => {
+                              setUserSearchQuery(newInputValue);
+                            }}
                             value={
                               userOptions.find(
                                 (u) => u.email === dept.departmentModerator,
@@ -3685,7 +3719,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                 const listboxNode = event.currentTarget;
                                 if (
                                   listboxNode.scrollTop +
-                                    listboxNode.clientHeight >=
+                                  listboxNode.clientHeight >=
                                   listboxNode.scrollHeight - 1
                                 ) {
                                   loadMoreUsers();
@@ -3710,6 +3744,20 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                     ? "Required"
                                     : ""
                                 }
+                                InputProps={{
+                                  ...params.InputProps,
+                                  endAdornment: (
+                                    <React.Fragment>
+                                      {loadingUsers.current ? (
+                                        <CircularProgress
+                                          color="inherit"
+                                          size={20}
+                                        />
+                                      ) : null}
+                                      {params.InputProps.endAdornment}
+                                    </React.Fragment>
+                                  ),
+                                }}
                               />
                             )}
                           />
@@ -4079,19 +4127,24 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                   value={searchModerator}
                   onFocus={() => {
                     setShowUserDropdown(true);
-                    setFilteredUsers([]); // reset list
-                    setFilteredPage(0); // reset page
-                    setHasMoreFilteredUsers(true); // reset scroll
-                    loadingFilteredUsers.current = false;
-                    setTimeout(() => {
-                      loadFilteredUsers();
-                    }, 0);
+                    if (filteredUsers.length === 0) {
+                      loadFilteredUsers(true);
+                    }
                   }}
                   onChange={(e) => {
                     setSearchModerator(e.target.value);
                   }}
                   inputRef={anchorRef}
-                  autoComplete="off" // ✅ Disable browser auto-suggestions
+                  autoComplete="off"
+                  InputProps={{
+                    endAdornment: (
+                      <React.Fragment>
+                        {loadingFilteredUsers.current ? (
+                          <CircularProgress color="inherit" size={20} />
+                        ) : null}
+                      </React.Fragment>
+                    ),
+                  }}
                 />
 
                 <Popper
@@ -4131,39 +4184,30 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                             const { scrollTop, clientHeight, scrollHeight } =
                               event.currentTarget;
                             if (scrollTop + clientHeight >= scrollHeight - 50) {
-                              loadFilteredUsers(); // keep pagination logic
+                              loadFilteredUsers();
                             }
                           }}
                         >
-                          {filteredUsers
-                            .filter((user) =>
-                              user.name
-                                .toLowerCase()
-                                .includes(searchModerator.toLowerCase()),
-                            )
-                            .map((user, index) => (
-                              <MenuItem
-                                key={index}
-                                onClick={() => {
-                                  setEditedDepartment((prev) => ({
-                                    ...prev,
-                                    departmentModerator: user.name,
-                                  }));
-                                  setSearchModerator(user.name);
-                                  setShowUserDropdown(false);
-                                }}
-                              >
-                                {user.name}
-                              </MenuItem>
-                            ))}
+                          {filteredUsers.map((user, index) => (
+                            <MenuItem
+                              key={index}
+                              onClick={() => {
+                                setEditedDepartment((prev) => ({
+                                  ...prev,
+                                  departmentModerator: user.name,
+                                }));
+                                setSearchModerator(user.name);
+                                setShowUserDropdown(false);
+                              }}
+                            >
+                              {user.name}
+                            </MenuItem>
+                          ))}
 
-                          {filteredUsers.filter((user) =>
-                            user.name
-                              .toLowerCase()
-                              .includes(searchModerator.toLowerCase()),
-                          ).length === 0 && (
-                            <MenuItem disabled>No users found</MenuItem>
-                          )}
+                          {filteredUsers.length === 0 &&
+                            !loadingFilteredUsers.current && (
+                              <MenuItem disabled>No users found</MenuItem>
+                            )}
                         </Box>
                       </Paper>
                     </Grow>
@@ -4525,7 +4569,11 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     size="small"
                     fullWidth
                     options={userOptions}
-                    getOptionLabel={(option) => option.name || ""}
+                    getOptionLabel={(option) => option.email || option.name || ""}
+                    loading={loadingUsers.current}
+                    onInputChange={(event, newInputValue) => {
+                      setUserSearchQuery(newInputValue);
+                    }}
                     value={assignment.user}
                     onChange={(event, newValue) => {
                       const updated = [...addUserAssignments];
@@ -4536,7 +4584,25 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                       option.id === value.id
                     }
                     renderInput={(params) => (
-                      <TextField {...params} label="Select User" required />
+                      <TextField
+                        {...params}
+                        label="Select User"
+                        required
+                        InputProps={{
+                          ...params.InputProps,
+                          endAdornment: (
+                            <React.Fragment>
+                              {loadingUsers.current ? (
+                                <CircularProgress
+                                  color="inherit"
+                                  size={20}
+                                />
+                              ) : null}
+                              {params.InputProps.endAdornment}
+                            </React.Fragment>
+                          ),
+                        }}
+                      />
                     )}
                     ListboxProps={{
                       style: { maxHeight: 300, overflow: "auto" },
@@ -4595,23 +4661,23 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     >
                       {`[${(assignment.role === "Admin"
                         ? [
+                          "Read",
+                          "Write",
+                          "Delete",
+                          "Share",
+                          "UserAdmin",
+                          "Comment",
+                          "Upload",
+                        ]
+                        : assignment.role === "Editor"
+                          ? [
                             "Read",
                             "Write",
                             "Delete",
                             "Share",
-                            "UserAdmin",
                             "Comment",
                             "Upload",
                           ]
-                        : assignment.role === "Editor"
-                          ? [
-                              "Read",
-                              "Write",
-                              "Delete",
-                              "Share",
-                              "Comment",
-                              "Upload",
-                            ]
                           : assignment.role === "Viewer"
                             ? ["Read", "Comment"]
                             : assignment.role === "Collaborator"
@@ -4672,7 +4738,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       <Portal>
         <Snackbar
           open={snackbar.open}
-          autoHideDuration={3000}
+          autoHideDuration={500}
           onClose={handleSnackbarClose}
           anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
           sx={{ zIndex: 5000 }} // ✅ Makes Snackbar appear on top of all dialogs/drawers

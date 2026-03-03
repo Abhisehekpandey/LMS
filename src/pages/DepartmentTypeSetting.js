@@ -1,20 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Collapse } from "@mui/material";
 import {
+  Collapse,
   Accordion,
   AccordionSummary,
   AccordionDetails,
   Typography,
-} from "@mui/material";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import { Autocomplete } from "@mui/material";
-import { Chip, styled } from "@mui/material";
-import VerifiedIcon from "@mui/icons-material/Verified";
-import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
-
-import ForCell from "./ForCell";
-
-import {
+  Chip,
+  styled,
   Paper,
   Table,
   TableBody,
@@ -24,9 +16,7 @@ import {
   TableRow,
   TablePagination,
   Box,
-  Checkbox,
   IconButton,
-  Tooltip,
   Snackbar,
   Alert,
   TableSortLabel,
@@ -38,45 +28,38 @@ import {
   Button,
   Grid,
   MenuItem,
+  Tooltip,
+  Checkbox,
   FormControlLabel,
   Switch,
-  Select,
-  InputLabel,
-  FormControl,
-  RadioGroup,
-  FormControlLabel as MuiFormControlLabel,
-  Radio,
-  CircularProgress,
+  Divider,
 } from "@mui/material";
-import { Add, Delete, Edit } from "@mui/icons-material";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import VerifiedIcon from "@mui/icons-material/Verified";
+import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
+import ForCell from "./ForCell";
+import { Add, Delete, Edit, Close } from "@mui/icons-material";
 import axios from "axios";
 import { Search as SearchIcon, Clear as ClearIcon } from "@mui/icons-material";
 import { InputAdornment } from "@mui/material";
 
-const attributeTemplate = {
-  name: "",
-  type: "STRING",
-  defaultValue: "",
-  mandatory: false,
-  description: "",
-  mandatory: false, // ✅ ensure this is present
-};
+
 
 const GradientChip = styled(Chip)(({ theme, type }) => ({
-  fontWeight: 500,
+  fontWeight: 700,
   color: "white",
+  height: "22px",
+  fontSize: "0.65rem",
   cursor: "default",
-  transition: "transform 0.2s, box-shadow 0.2s",
   marginLeft: theme.spacing(1),
-  "&:hover": {
-    transform: "scale(1.05)",
-    boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
-  },
+  borderRadius: "12px",
+  "& .MuiChip-label": { padding: "0 8px" },
+  "& .MuiChip-icon": { color: "white", fontSize: "0.9rem", marginLeft: "4px" },
   ...(type === "mandatory" && {
-    background: "linear-gradient(135deg, #6a0dad, #9b59b6)", // violet to purple gradient
+    background: "linear-gradient(135deg, #ff4b2b, #ff416c)", // Vibrant Red
   }),
   ...(type === "ai" && {
-    background: "linear-gradient(45deg, #36d1dc, #5b86e5)", // keep previous orange gradient
+    background: "linear-gradient(45deg, #2196f3, #00bcd4)", // Vibrant Blue
   }),
 }));
 
@@ -103,29 +86,17 @@ const DepartmentTypeSetting = () => {
     defaultValue: "",
     mandatory: false,
     aiRequired: false,
+    aiPrompt: "",
     description: "",
   });
 
   const [attributes, setAttributes] = useState([createAttributeTemplate()]);
-  const [typeScope, setTypeScope] = useState("user");
-  const [users, setUsers] = useState([]);
-  const [userPage, setUserPage] = useState(0);
-  const [hasMoreUsers, setHasMoreUsers] = useState(true);
-  const [loadingUsers, setLoadingUsers] = useState(false);
-  const [departments, setDepartments] = useState([]);
-  const [departmentPage, setDepartmentPage] = useState(0);
-  const [hasMoreDepartments, setHasMoreDepartments] = useState(true);
-  const [loadingDepartments, setLoadingDepartments] = useState(false);
-  const [selectedEntityId, setSelectedEntityId] = useState([]);
-
-  const [typeNames, setTypeNames] = useState([]);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
     severity: "success",
   });
 
-  const [searchTerm, setSearchTerm] = useState("");
   const [searchColumn, setSearchColumn] = useState("typeName");
   const [searchText, setSearchText] = useState("");
 
@@ -139,122 +110,17 @@ const DepartmentTypeSetting = () => {
         description: attr.fileTypeDescription || "",
         mandatory: attr.isMandatory || false,
         aiRequired: attr.isAiRequired || false,
-      })) || [createAttributeTemplate()],
+        aiPrompt: attr.aiPrompt || "",
+      })) || [createAttributeTemplate()]
     );
 
-    let scope = "global";
-    let entityIds = [];
-
-    if (row.global === true) {
-      scope = "global";
-    } else if (Array.isArray(row.createdFor) && row.createdFor.length > 0) {
-      const matchedUsers = users.filter((u) => row.createdFor.includes(u.name));
-      const matchedDepartments = departments.filter((d) =>
-        row.createdFor.includes(d.deptName),
-      );
-
-      if (matchedUsers.length > 0) {
-        scope = "user";
-        entityIds = matchedUsers.map((u) => u.id);
-      } else if (matchedDepartments.length > 0) {
-        scope = "department";
-        entityIds = matchedDepartments.map((d) => d.id);
-      }
-    }
-
-    // ✅ Deduplicate and update
-    const uniqueIds = Array.from(new Set(entityIds));
-
-    setTypeScope(scope);
-    setSelectedEntityId(uniqueIds);
     setIsEditMode(true);
     setEditingTypeId(row.id);
     setOpenDialog(true);
   };
 
   useEffect(() => {
-    if (typeScope === "user" && selectedEntityId.length && users.length) {
-      // make sure all selected IDs exist in users
-      const validIds = selectedEntityId.filter((id) =>
-        users.some((u) => u.id === id),
-      );
-      setSelectedEntityId(validIds);
-    }
-
-    if (
-      typeScope === "department" &&
-      selectedEntityId.length &&
-      departments.length
-    ) {
-      // make sure all selected IDs exist in departments
-      const validIds = selectedEntityId.filter((id) =>
-        departments.some((d) => d.id === id),
-      );
-      setSelectedEntityId(validIds);
-    }
-  }, [users, departments, typeScope]);
-
-  const fetchUsers = async (page = 0) => {
-    try {
-      setLoadingUsers(true);
-      const res = await axios.get(
-        `${window.__ENV__.REACT_APP_ROUTE}/tenants/users`,
-        {
-          headers: {
-            Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
-            username: `${sessionStorage.getItem("adminEmail")}`,
-            pageNumber: page.toString(),
-          },
-        },
-      );
-      if (res.data?.content?.length) {
-        setUsers((prev) => [...prev, ...res.data.content]);
-        setUserPage(page);
-        setHasMoreUsers(true);
-      } else {
-        setHasMoreUsers(false);
-      }
-    } catch (error) {
-      console.error("Failed to fetch users", error);
-    } finally {
-      setLoadingUsers(false);
-    }
-  };
-  const fetchDepartments = async (page = 0) => {
-    try {
-      setLoadingDepartments(true);
-      const res = await axios.get(
-        `${window.__ENV__.REACT_APP_ROUTE}/tenants/departments`,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
-            username: `${sessionStorage.getItem("adminEmail")}`,
-          },
-          params: {
-            pageNumber: page,
-            pageSize: 10,
-            search: "",
-          },
-        },
-      );
-      if (res.data?.content?.length) {
-        setDepartments((prev) => [...prev, ...res.data.content]);
-        setDepartmentPage(page);
-        setHasMoreDepartments(true);
-      } else {
-        setHasMoreDepartments(false);
-      }
-    } catch (error) {
-      console.error("Failed to fetch departments", error);
-    } finally {
-      setLoadingDepartments(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchUsers();
-    fetchDepartments();
+    fetchFileTypes();
   }, []);
   const handleRequestSort = (property) => {
     const isAsc = orderBy === property && order === "asc";
@@ -314,7 +180,7 @@ const DepartmentTypeSetting = () => {
 
   const handleCheckboxToggle = (id) => {
     setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
     );
   };
 
@@ -327,25 +193,6 @@ const DepartmentTypeSetting = () => {
     }
   };
 
-  const getSelectedIds = () => {
-    if (!selected || selected.length === 0) return [];
-
-    // if selected array already stores string ids
-    if (typeof selected[0] === "string") return selected;
-
-    // try treat selected as indices into sortedRows (best for global selection state)
-    const idsFromSorted = selected
-      .map((i) => sortedRows[i]?.id)
-      .filter(Boolean);
-    if (idsFromSorted.length === selected.length) return idsFromSorted;
-
-    // fallback: treat selected as indices into fileTypes (original)
-    const idsFromFileTypes = selected
-      .map((i) => fileTypes[i]?.id)
-      .filter(Boolean);
-    return idsFromFileTypes;
-  };
-
   const fetchFileTypes = async () => {
     try {
       const response = await axios.get(
@@ -355,7 +202,7 @@ const DepartmentTypeSetting = () => {
             Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
             username: `${sessionStorage.getItem("adminEmail")}`,
           },
-        },
+        }
       );
 
       // ✅ take fullObject array instead of data
@@ -387,49 +234,12 @@ const DepartmentTypeSetting = () => {
 
   const paginatedRows = sortedRows.slice(
     page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage,
+    page * rowsPerPage + rowsPerPage
   );
 
-  const handleUserDropdownScroll = (event) => {
-    const { scrollTop, scrollHeight, clientHeight } = event.target;
-    if (
-      scrollTop + clientHeight >= scrollHeight - 5 &&
-      hasMoreUsers &&
-      !loadingUsers
-    ) {
-      fetchUsers(userPage + 1);
-    }
-  };
 
-  const handleDepartmentDropdownScroll = (event) => {
-    const { scrollTop, scrollHeight, clientHeight } = event.target;
-    if (
-      scrollTop + clientHeight >= scrollHeight - 5 &&
-      hasMoreDepartments &&
-      !loadingDepartments
-    ) {
-      fetchDepartments(departmentPage + 1);
-    }
-  };
 
   const handleDialogSubmit = async () => {
-    // Validation for User/Department selection
-    if (
-      (typeScope === "user" &&
-        (!selectedEntityId || selectedEntityId.length === 0)) ||
-      (typeScope === "department" &&
-        (!selectedEntityId || selectedEntityId.length === 0))
-    ) {
-      setSnackbar({
-        open: true,
-        message:
-          typeScope === "user"
-            ? "Please select at least one user."
-            : "Please select at least one department.",
-        severity: "error",
-      });
-      return; // stop submission
-    }
 
     if (!documentType.trim()) {
       setSnackbar({
@@ -441,14 +251,13 @@ const DepartmentTypeSetting = () => {
     }
 
     const invalidAttribute = attributes.find(
-      (attr) => !attr.name.trim() || !attr.description.trim(),
+      (attr) => !attr.name.trim() || !attr.description.trim()
     );
 
     if (invalidAttribute) {
       setSnackbar({
         open: true,
-        message:
-          "Attribute Name and Description are mandatory for all attributes.",
+        message: "Attribute Name and Description are mandatory for all attributes.",
         severity: "error",
       });
       return;
@@ -463,10 +272,11 @@ const DepartmentTypeSetting = () => {
         fileTypeDescription: attr.description,
         isMandatory: attr.mandatory,
         aiRequired: attr.aiRequired,
+        aiPrompt: attr.aiPrompt,
       })),
-      users: typeScope === "user" ? selectedEntityId : [],
-      departments: typeScope === "department" ? selectedEntityId : [],
-      global: typeScope === "global",
+      users: [],
+      departments: [],
+      global: true,
     };
 
     try {
@@ -480,7 +290,7 @@ const DepartmentTypeSetting = () => {
               Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
               username: sessionStorage.getItem("adminEmail"),
             },
-          },
+          }
         );
         setSnackbar({
           open: true,
@@ -497,7 +307,7 @@ const DepartmentTypeSetting = () => {
               Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
               username: sessionStorage.getItem("adminEmail"),
             },
-          },
+          }
         );
         setSnackbar({
           open: true,
@@ -509,8 +319,6 @@ const DepartmentTypeSetting = () => {
       setOpenDialog(false);
       setDocumentType("");
       setAttributes([createAttributeTemplate()]);
-      setTypeScope("global");
-      setSelectedEntityId([]);
       setIsEditMode(false);
       setEditingTypeId(null);
 
@@ -565,7 +373,7 @@ const DepartmentTypeSetting = () => {
             "Content-Type": "application/json",
           },
           data: idsArray,
-        },
+        }
       );
 
       setSnackbar({
@@ -587,13 +395,6 @@ const DepartmentTypeSetting = () => {
         severity: "error",
       });
     }
-  };
-
-  const getOptionValue = (id) => {
-    if (typeScope === "user") return users.find((u) => u.id === id) || null;
-    if (typeScope === "department")
-      return departments.find((d) => d.id === id) || null;
-    return null;
   };
 
   return (
@@ -870,134 +671,58 @@ const DepartmentTypeSetting = () => {
         open={openDialog}
         onClose={() => setOpenDialog(false)}
         fullWidth
-        maxWidth="md"
+        maxWidth="lg"
+        PaperProps={{
+          sx: { borderRadius: "12px" }
+        }}
       >
-        <DialogTitle sx={{ bgcolor: "primary.main", color: "white" }}>
-          {isEditMode ? "Edit Type" : "Add New Type"}
+        <DialogTitle sx={{ bgcolor: "primary.main", color: "white", display: "flex", justifyContent: "space-between", alignItems: "center", py: 1 }}>
+          <Typography variant="h6" sx={{ fontWeight: 600, fontSize: "1.1rem" }}>TYPE</Typography>
+          <IconButton onClick={() => setOpenDialog(false)} sx={{ color: "white" }}>
+            <Close fontSize="small" />
+          </IconButton>
         </DialogTitle>
 
-        <DialogContent dividers>
+        <DialogContent dividers sx={{ p: 3 }}>
           <Box>
-            <FormControl component="fieldset" fullWidth sx={{ mb: 2 }}>
-              <RadioGroup
-                row
-                value={typeScope}
-                onChange={(e) => setTypeScope(e.target.value)}
+            <Box sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              mb: 2,
+              pb: 1,
+              borderBottom: "1px solid #e0e0e0"
+            }}>
+              <Typography sx={{ fontWeight: 700, color: "#555", fontSize: "0.85rem" }}>CREATE TYPE</Typography>
+              <IconButton
+                size="small"
+                onClick={() => setOpenDialog(false)}
+                sx={{ bgcolor: "#ff5722", color: "white", borderRadius: "4px", "&:hover": { bgcolor: "#e64a19" } }}
               >
-                <FormControlLabel
-                  value="user"
-                  control={<Radio />}
-                  label="User"
-                />
-                <FormControlLabel
-                  value="department"
-                  control={<Radio />}
-                  label="Department"
-                />
-
-                <Tooltip
-                  title={
-                    sessionStorage.getItem("deptAdmin") === "true" &&
-                    sessionStorage.getItem("superAdmin") !== "true"
-                      ? "Only applicable for Super Admin"
-                      : ""
-                  }
-                  placement="top"
-                  arrow
-                >
-                  <span>
-                    <FormControlLabel
-                      value="global"
-                      control={<Radio />}
-                      label="Global"
-                      disabled={
-                        sessionStorage.getItem("deptAdmin") === "true" &&
-                        sessionStorage.getItem("superAdmin") !== "true"
-                      }
-                    />
-                  </span>
-                </Tooltip>
-              </RadioGroup>
-            </FormControl>
-
-            {(typeScope === "user" || typeScope === "department") && (
-              <>
-                <Autocomplete
-                  multiple
-                  disableCloseOnSelect
-                  options={typeScope === "user" ? users : departments}
-                  getOptionLabel={(option) =>
-                    typeScope === "user" ? option.name : option.deptName
-                  }
-                  value={selectedEntityId.map(getOptionValue).filter(Boolean)} // map IDs to objects
-                  onChange={(event, newValue) => {
-                    const uniqueIds = Array.from(
-                      new Set(newValue.map((item) => item.id)),
-                    );
-                    setSelectedEntityId(uniqueIds);
-                  }}
-                  isOptionEqualToValue={(option, value) =>
-                    option.id === value.id
-                  }
-                  renderOption={(props, option, { selected }) => (
-                    <li {...props}>
-                      <Checkbox style={{ marginRight: 8 }} checked={selected} />
-                      {typeScope === "user" ? option.name : option.deptName}
-                    </li>
-                  )}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      label={`Select ${
-                        typeScope === "user" ? "Users" : "Departments"
-                      }`}
-                      size="small"
-                      InputProps={{
-                        ...params.InputProps,
-                        endAdornment: (
-                          <>
-                            {(typeScope === "user" && loadingUsers) ||
-                            (typeScope === "department" &&
-                              loadingDepartments) ? (
-                              <CircularProgress color="inherit" size={20} />
-                            ) : null}
-                            {params.InputProps.endAdornment}
-                          </>
-                        ),
-                      }}
-                    />
-                  )}
-                  ListboxProps={{
-                    onScroll:
-                      typeScope === "user"
-                        ? handleUserDropdownScroll
-                        : typeScope === "department"
-                          ? handleDepartmentDropdownScroll
-                          : undefined,
-                    style: { maxHeight: 300 },
-                  }}
-                  sx={{ mb: 0.5 }}
-                />
-
-                {/* Inline error message */}
-                {selectedEntityId.length === 0 && (
-                  <Typography color="error" variant="caption" sx={{ ml: 1 }}>
-                    {typeScope === "user"
-                      ? "At least one user must be selected."
-                      : "At least one department must be selected."}
-                  </Typography>
-                )}
-              </>
-            )}
+                <Close fontSize="inherit" />
+              </IconButton>
+            </Box>
 
             <TextField
               required
               fullWidth
-              label="Document Type"
+              label="DOCUMENT TYPE"
               value={documentType}
               onChange={(e) => setDocumentType(e.target.value)}
-              sx={{ mb: 2 }}
+              sx={{ mb: 1 }}
+              InputLabelProps={{ shrink: true }}
+              placeholder="DOCUMENT TYPE"
+              size="small"
             />
+
+
+            <Box sx={{ position: "relative", mt: 1, mb: 2 }}>
+              <Divider textAlign="left">
+                <Typography sx={{ fontWeight: 700, color: "#888", fontSize: "0.75rem", px: 1 }}>
+                  TYPE'S ATTRIBUTES
+                </Typography>
+              </Divider>
+            </Box>
 
             {attributes.map((attr, index) => (
               <Accordion
@@ -1006,53 +731,94 @@ const DepartmentTypeSetting = () => {
                 onChange={() =>
                   setExpandedIndex(expandedIndex === index ? -1 : index)
                 }
+                sx={{
+                  mb: 1,
+                  border: "1px solid #e0e0e0",
+                  boxShadow: "none",
+                  "&:before": { display: "none" },
+                  borderRadius: "8px !important"
+                }}
               >
-                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                  <Typography sx={{ flexGrow: 1 }}>
-                    {attr.name ? attr.name : ""}
-                    {attr.type ? ` — ${attr.type}` : ""}
+                <AccordionSummary
+                  expandIcon={<ExpandMoreIcon sx={{ fontSize: "1.2rem" }} />}
+                  sx={{
+                    flexDirection: "row",
+                    "& .MuiAccordionSummary-content": {
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between"
+                    }
+                  }}
+                >
+                  <Typography sx={{ fontWeight: 500, fontSize: "0.9rem", color: "#666" }}>
+                    Attribute {index + 1}
                   </Typography>
 
-                  {attr.mandatory && (
-                    <GradientChip
-                      type="mandatory"
-                      label="Mandatory"
-                      icon={<VerifiedIcon />}
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    {attr.mandatory && (
+                      <GradientChip
+                        type="mandatory"
+                        label="MANDATORY"
+                        icon={<VerifiedIcon />}
+                      />
+                    )}
+                    {attr.aiRequired && (
+                      <GradientChip
+                        type="ai"
+                        label="AI REQUIRED"
+                        icon={<AutoAwesomeIcon />}
+                      />
+                    )}
+                    <IconButton
                       size="small"
-                    />
-                  )}
-                  {attr.aiRequired && (
-                    <GradientChip
-                      type="ai"
-                      label="AI Required"
-                      icon={<AutoAwesomeIcon />}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAttributeRemove(index);
+                      }}
+                      disabled={attributes.length === 1}
+                      sx={{ color: "#777" }}
+                    >
+                      <Delete fontSize="small" />
+                    </IconButton>
+                    <IconButton
                       size="small"
-                    />
-                  )}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAddAttribute();
+                      }}
+                      sx={{ color: "#2196f3" }}
+                    >
+                      <Add fontSize="small" />
+                    </IconButton>
+                  </Box>
                 </AccordionSummary>
 
-                <AccordionDetails>
+                <AccordionDetails sx={{ pt: 0 }}>
                   <Grid container spacing={2}>
-                    <Grid item xs={12} sm={2.5}>
+                    <Grid item xs={12} sm={3}>
                       <TextField
                         required
                         fullWidth
-                        label="Attribute Name"
+                        label="ATTRIBUTE NAME"
                         value={attr.name}
                         onChange={(e) =>
                           handleAttributeChange(index, "name", e.target.value)
                         }
+                        size="small"
+                        InputLabelProps={{ shrink: true }}
                       />
                     </Grid>
-                    <Grid item xs={12} sm={2.5}>
+                    <Grid item xs={12} sm={3}>
                       <TextField
                         select
                         fullWidth
-                        label="Type"
+                        label="ATTRIBUTE TYPE"
                         value={attr.type}
                         onChange={(e) =>
                           handleAttributeChange(index, "type", e.target.value)
                         }
+                        size="small"
+                        InputLabelProps={{ shrink: true }}
                       >
                         {attributeTypes.map((type) => (
                           <MenuItem key={type} value={type}>
@@ -1061,98 +827,104 @@ const DepartmentTypeSetting = () => {
                         ))}
                       </TextField>
                     </Grid>
-                    <Grid item xs={12} sm={2.5}>
+                    <Grid item xs={12} sm={2}>
                       <TextField
                         fullWidth
-                        label="Default Value"
+                        label="DEFAULT VALUE"
                         value={attr.defaultValue}
                         onChange={(e) =>
                           handleAttributeChange(
                             index,
                             "defaultValue",
-                            e.target.value,
+                            e.target.value
                           )
                         }
+                        size="small"
+                        InputLabelProps={{ shrink: true }}
                       />
                     </Grid>
                     <Grid item xs={12} sm={4}>
-                      <Box display="flex" gap={2}>
-                        <FormControlLabel
-                          control={
-                            <Checkbox
-                              checked={attr.mandatory}
-                              onChange={(e) =>
-                                handleAttributeChange(
-                                  index,
-                                  "mandatory",
-                                  e.target.checked,
-                                )
-                              }
-                            />
-                          }
-                          label="Mandatory"
-                        />
-                        <FormControlLabel
-                          control={
-                            <Checkbox
-                              checked={attr.aiRequired}
-                              onChange={(e) =>
-                                handleAttributeChange(
-                                  index,
-                                  "aiRequired",
-                                  e.target.checked,
-                                )
-                              }
-                            />
-                          }
-                          label="AI Required"
-                        />
-                        <IconButton
-                          color="error"
-                          onClick={() => handleAttributeRemove(index)}
-                          disabled={attributes.length === 1}
-                        >
-                          <Delete />
-                        </IconButton>
+                      <Box display="flex" gap={1} justifyContent="space-around" height="100%" alignItems="center">
+                        <Box sx={{ textAlign: "center" }}>
+                          <Typography variant="caption" sx={{ fontWeight: 700, color: "#777", display: "block", fontSize: "0.65rem" }}>MANDATORY</Typography>
+                          <Switch
+                            size="small"
+                            checked={attr.mandatory}
+                            onChange={(e) =>
+                              handleAttributeChange(
+                                index,
+                                "mandatory",
+                                e.target.checked
+                              )
+                            }
+                          />
+                        </Box>
+                        <Box sx={{ textAlign: "center" }}>
+                          <Typography variant="caption" sx={{ fontWeight: 700, color: "#777", display: "block", fontSize: "0.65rem" }}>AI REQUIRED</Typography>
+                          <Switch
+                            size="small"
+                            checked={attr.aiRequired}
+                            onChange={(e) =>
+                              handleAttributeChange(
+                                index,
+                                "aiRequired",
+                                e.target.checked
+                              )
+                            }
+                          />
+                        </Box>
                       </Box>
                     </Grid>
                     <Grid item xs={12}>
                       <TextField
                         required
                         fullWidth
-                        label="Description"
+                        label="ATTRIBUTE DESCRIPTION"
                         value={attr.description}
                         onChange={(e) =>
                           handleAttributeChange(
                             index,
                             "description",
-                            e.target.value,
+                            e.target.value
                           )
                         }
+                        size="small"
+                        InputLabelProps={{ shrink: true }}
                       />
                     </Grid>
+                    {attr.aiRequired && (
+                      <Grid item xs={12}>
+                        <TextField
+                          required
+                          fullWidth
+                          label="AI PROMPT"
+                          value={attr.aiPrompt}
+                          onChange={(e) =>
+                            handleAttributeChange(
+                              index,
+                              "aiPrompt",
+                              e.target.value
+                            )
+                          }
+                          size="small"
+                          InputLabelProps={{ shrink: true }}
+                          placeholder="AI PROMPT"
+                        />
+                      </Grid>
+                    )}
                   </Grid>
                 </AccordionDetails>
               </Accordion>
             ))}
-
-            <Button
-              onClick={handleAddAttribute}
-              startIcon={<Add />}
-              sx={{ mt: 2 }}
-            >
-              Add Attribute
-            </Button>
           </Box>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
-
+        <DialogActions sx={{ px: 3, py: 2 }}>
           <Button
             variant="contained"
-            onClick={handleDialogSubmit} // validation happens inside
+            sx={{ px: 4, bgcolor: "primary.main", "&:hover": { bgcolor: "primary.dark" } }}
+            onClick={handleDialogSubmit}
           >
-            Save
+            SAVE
           </Button>
         </DialogActions>
       </Dialog>

@@ -129,23 +129,21 @@ const CreateUser = ({
     const headers = [
       "NAME",
       "EMAIL",
-      "PHONE",
       "STORAGE",
       "ROLE",
       "UNIT",
       "REPORTINGMANAGER",
-      "REGION",
+      "COMMAND",
     ];
 
     const exampleRow = [
       "abc",
       "abc@costacloud.com",
-      "1234567890",
       "10GB",
       "software engineer",
       "frontend",
       "dhruv sethi",
-      "Asia",
+      "Delhi",
     ];
 
     const worksheetData = [headers, exampleRow];
@@ -325,12 +323,11 @@ const CreateUser = ({
     const requiredHeaders = [
       "NAME",
       "EMAIL",
-      "PHONE",
       "STORAGE",
       "ROLE",
-      "DEPARTMENT",
+      "UNIT",
       "REPORTINGMANAGER",
-      "REGION",
+      "COMMAND",
     ];
 
     const hasAllHeaders = requiredHeaders.every((h) => headers.includes(h));
@@ -352,9 +349,9 @@ const CreateUser = ({
           email: (row["EMAIL"] || "").trim().toLowerCase(),
           storage: row["STORAGE"]?.trim() || null,
           roleName: row["ROLE"]?.trim() || "",
-          deptName: row["DEPARTMENT"]?.trim() || "",
+          deptName: row["UNIT"]?.trim() || "",
           reportingManager: row["REPORTINGMANAGER"]?.trim() || "",
-          region: row["REGION"]?.trim() || defaultRegion,
+          region: row["COMMAND"]?.trim() || defaultRegion,
         });
       });
 
@@ -415,7 +412,7 @@ const CreateUser = ({
     loadMoreUsers(); // Load first 10 users initially
   }, []);
 
-  useEffect(() => {}, [departments]);
+  useEffect(() => { }, [departments]);
 
   useEffect(() => {
     if (open) {
@@ -956,7 +953,7 @@ const CreateUser = ({
                                       const threshold = 50;
                                       if (
                                         listboxNode.scrollTop +
-                                          listboxNode.clientHeight >=
+                                        listboxNode.clientHeight >=
                                         listboxNode.scrollHeight - threshold
                                       ) {
                                         loadMoreDepartments();
@@ -1405,8 +1402,8 @@ const CreateUser = ({
                 value={
                   Array.isArray(newDepartment.selectedUsers)
                     ? userOptions.filter((user) =>
-                        newDepartment.selectedUsers.includes(user.name),
-                      )
+                      newDepartment.selectedUsers.includes(user.name),
+                    )
                     : []
                 }
                 onChange={(event, selectedValues) =>
@@ -1444,8 +1441,8 @@ const CreateUser = ({
                     }
                     helperText={
                       departmentSubmitted &&
-                      (!newDepartment.selectedUsers ||
-                        newDepartment.selectedUsers.length === 0)
+                        (!newDepartment.selectedUsers ||
+                          newDepartment.selectedUsers.length === 0)
                         ? "At least one user must be selected"
                         : ""
                     }
@@ -1760,9 +1757,9 @@ const CreateUser = ({
                   prevDepartments.map((dept) =>
                     dept.deptName === selectedDepartmentForRole.deptName
                       ? {
-                          ...dept,
-                          roles: [...(dept.roles || []), addedRole[0]],
-                        }
+                        ...dept,
+                        roles: [...(dept.roles || []), addedRole[0]],
+                      }
                       : dept,
                   ),
                 );
