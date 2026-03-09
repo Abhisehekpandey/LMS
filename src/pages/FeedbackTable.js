@@ -29,10 +29,7 @@ import {
   ButtonBase,
   Grid,
   Card,
-  Collapse,
   Button,
-  ToggleButton,
-  ToggleButtonGroup,
 } from "@mui/material";
 
 import FeedbackIcon from "@mui/icons-material/Feedback";
@@ -45,11 +42,6 @@ import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 import ThumbDownIcon from "@mui/icons-material/ThumbDown";
 import CloseIcon from "@mui/icons-material/Close";
 import SimCardDownloadIcon from "@mui/icons-material/SimCardDownload";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import ExpandLessIcon from "@mui/icons-material/ExpandLess";
-
-import { LineChart, PieChart } from "@mui/x-charts";
-import CountUp from "react-countup";
 
 const columns = [
   { key: "document", label: "Document" },
@@ -61,22 +53,6 @@ const columns = [
   { key: "latestChat", label: "Latest Chat" },
   { key: "dateTime", label: "Date & Time" },
   { key: "status", label: "Status" },
-];
-
-const trendData = [
-  { month: "Sun", likes: 420, dislikes: 260 },
-  { month: "Mon", likes: 380, dislikes: 120 },
-  { month: "Tue", likes: 680, dislikes: 710 },
-  { month: "Wed", likes: 450, dislikes: 360 },
-  { month: "Thu", likes: 500, dislikes: 380 },
-  { month: "Fri", likes: 640, dislikes: 420 },
-  { month: "Sat", likes: 920, dislikes: 220 },
-];
-
-const contributionSeries = [
-  { label: "User", value: 40, color: "#7b61ff" },
-  { label: "Department", value: 17, color: "#16c098" },
-  { label: "Other", value: 13, color: "#ff4f6d" },
 ];
 
 const cardShadow = "0 8px 24px rgba(44, 60, 80, 0.06)";
@@ -403,154 +379,6 @@ const ChatHistoryDialog = ({
 };
 
 export default function FeedbackTable() {
-  // dashboard states
-  const [statsData, setStatsData] = useState([]);
-  const [range, setRange] = useState("week");
-  const [showCharts, setShowCharts] = useState(false);
-
-  const [sourceSeries, setSourceSeries] = useState([]);
-  const [dataset, setDataset] = useState([]);
-
-  const weekLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-  const monthLabels = [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec",
-  ];
-
-  const handleRange = async (event, newRange) => {
-    if (!newRange) return;
-    setRange(newRange);
-
-    try {
-      const res = await axios.get(
-        `${window.__ENV__.REACT_APP_ROUTE}/mainGpt/getFeedbackGrowth?query=${newRange}`,
-        {
-          headers: {
-            Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
-            username: `${sessionStorage.getItem("adminEmail")}`,
-          },
-        },
-      );
-
-      const growthData = res.data; // [{like, dislike}, ...]
-
-      let mappedData;
-
-      if (newRange === "week") {
-        mappedData = growthData.map((item, index) => ({
-          label: weekLabels[index] || `#${index + 1}`,
-          likes: item.like,
-          dislikes: item.dislike,
-        }));
-      } else if (newRange === "month") {
-        mappedData = growthData.map((item, index) => ({
-          label: monthLabels[index] || `#${index + 1}`,
-          likes: item.like,
-          dislikes: item.dislike,
-        }));
-      } else {
-        // day → use numeric labels (1–31)
-        mappedData = growthData.map((item, index) => ({
-          label: `${index + 1}`,
-          likes: item.like,
-          dislikes: item.dislike,
-        }));
-      }
-
-      setDataset(mappedData);
-    } catch (error) {
-      console.error("Error fetching feedback growth:", error);
-    }
-  };
-
-  useEffect(() => {
-    handleRange(null, range); // fetch data for default range on component mount
-  }, []);
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const res = await axios.get(
-          `${window.__ENV__.REACT_APP_ROUTE}/mainGpt/getDashboardData`,
-          {
-            headers: {
-              Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
-              username: `${sessionStorage.getItem("adminEmail")}`,
-            },
-          },
-        );
-
-        const data = res.data;
-
-        // Stats Cards
-        const mappedStats = [
-          {
-            key: "feedback",
-            label: "Total Feedback",
-            value: data.totalFeedback,
-            changePct: data.feedbackChangePercent,
-            icon: "/icons/feedback.png",
-            accentBg: "rgba(37, 211, 102, 0.12)",
-          },
-          {
-            key: "likes",
-            label: "Total Likes",
-            value: data.totalLikes,
-            changePct: data.likesChangePercent,
-            icon: "/icons/likes.png",
-            accentBg: "rgba(105, 92, 255, 0.08)",
-          },
-          {
-            key: "dislikes",
-            label: "Total Dislikes",
-            value: data.totalDislikes,
-            changePct: data.dislikesChangePercent,
-            icon: "/icons/dislikes.png",
-            accentBg: "rgba(255, 99, 132, 0.08)",
-          },
-          {
-            key: "pending",
-            label: "Pending Actions",
-            value: data.pendingActions, // ✅ real value
-            changePct: data.pendingActionsChangePercent, // ✅ real %
-            icon: "/icons/pending.png",
-            accentBg: "rgba(18, 140, 126, 0.08)",
-          },
-        ];
-        setStatsData(mappedStats);
-
-        // Feedback Source Pie Chart
-        const source = [
-          {
-            label: "DbTalk",
-            value: data.dbtalkResponse,
-            color: "#7b61ff",
-          },
-          {
-            label: "DocuTalk",
-            value: data.docutalkResponse,
-            color: "#ff4f6d",
-          },
-        ];
-        setSourceSeries(source);
-      } catch (error) {
-        console.error("Error fetching feedback stats:", error);
-      }
-    };
-
-    fetchStats();
-  }, []);
-
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbar, setSnackbar] = useState({
     message: "",
@@ -571,6 +399,38 @@ export default function FeedbackTable() {
   const [searchTerm, setSearchTerm] = useState("");
 
   const [activeTab, setActiveTab] = useState(0); // 0 = ALL, 1 = APPROVED, 2 = REJECTED
+
+  const stats = useMemo(() => {
+    const totalFeedbackCount = feedbackRows.length;
+    const likesCount = feedbackRows.filter((r) => r.feedback === "like").length;
+    const dislikesCount = feedbackRows.filter(
+      (r) => r.feedback === "dislike",
+    ).length;
+
+    return [
+      {
+        key: "feedback",
+        label: "Total Feedback",
+        value: totalFeedbackCount,
+        icon: "/icons/feedback.png",
+        accentBg: "rgba(37, 211, 102, 0.12)",
+      },
+      {
+        key: "likes",
+        label: "Total Likes",
+        value: likesCount,
+        icon: "/icons/likes.png",
+        accentBg: "rgba(105, 92, 255, 0.08)",
+      },
+      {
+        key: "dislikes",
+        label: "Total Dislikes",
+        value: dislikesCount,
+        icon: "/icons/dislikes.png",
+        accentBg: "rgba(255, 99, 132, 0.08)",
+      },
+    ];
+  }, [feedbackRows]);
 
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
@@ -931,8 +791,8 @@ export default function FeedbackTable() {
       </Box>
 
       <Grid container spacing={3} sx={{ mb: 2 }}>
-        {statsData.map((s) => (
-          <Grid item xs={12} sm={6} md={3} key={s.key}>
+        {stats.map((s) => (
+          <Grid item xs={12} sm={4} md={4} key={s.key}>
             <Card
               elevation={0}
               sx={{
@@ -967,27 +827,9 @@ export default function FeedbackTable() {
               </Box>
 
               <Box sx={{ flex: 1 }}>
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: 2,
-                  }}
-                >
-                  <Typography variant="h5" fontWeight={800} color="#1f2937">
-                    <CountUp end={s.value} duration={1.2} separator="," />
-                  </Typography>
-                  <Typography
-                    sx={{
-                      fontSize: 15,
-                      fontWeight: 700,
-                      color: s.changePct >= 0 ? "#1bb77b" : "#ff6b6b",
-                    }}
-                  >
-                    {s.changePct >= 0 ? "▲" : "▼"} {Math.abs(s.changePct)}%
-                  </Typography>
-                </Box>
+                <Typography variant="h5" fontWeight={800} color="#1f2937">
+                  {s.value.toLocaleString()}
+                </Typography>
                 <Typography
                   variant="body2"
                   sx={{ color: "#6b7280", mt: 0.6, fontWeight: 600 }}
@@ -999,340 +841,6 @@ export default function FeedbackTable() {
           </Grid>
         ))}
       </Grid>
-
-      <Box display="flex" justifyContent="flex-end" mb={2}>
-        <Button
-          variant="outlined"
-          endIcon={showCharts ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-          onClick={() => setShowCharts(!showCharts)}
-        >
-          {showCharts ? "Hide Charts" : "More"}
-        </Button>
-      </Box>
-
-      <Collapse in={showCharts}>
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} md={5}>
-            <Card sx={{ borderRadius: 3, boxShadow: cardShadow, p: 2.5 }}>
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  mb: 2,
-                }}
-              >
-                <Typography
-                  variant="h6"
-                  sx={{
-                    fontWeight: 600,
-                    color: "#1e293b",
-                    letterSpacing: 0.3,
-                  }}
-                >
-                  Feedback Growth
-                </Typography>
-
-                <ToggleButtonGroup
-                  value={range}
-                  exclusive
-                  onChange={handleRange}
-                  sx={{
-                    ".MuiToggleButton-root": {
-                      borderRadius: 99,
-                      textTransform: "none",
-                      fontWeight: 700,
-                      px: 1.5,
-                      py: 0.5,
-                      fontSize: 13,
-                    },
-                    ".MuiToggleButton-root.Mui-selected": {
-                      bgcolor: "#fff",
-                      color: "#111827",
-                      boxShadow: "0 6px 18px rgba(19,39,63,0.06)",
-                    },
-                  }}
-                >
-                  <ToggleButton value="day">Day</ToggleButton>
-                  <ToggleButton value="week">Week</ToggleButton>
-                  <ToggleButton value="month">Month</ToggleButton>
-                </ToggleButtonGroup>
-              </Box>
-
-              <Box sx={{ height: 340 }}>
-                <LineChart
-                  xAxis={[{ dataKey: "label", scaleType: "band" }]}
-                  dataset={dataset}
-                  series={[
-                    {
-                      dataKey: "likes",
-                      label: "Likes",
-                      color: "#7b61ff",
-                      lineWidth: 3,
-                      curve: "monotoneX",
-                      showMark: true,
-                      markStyle: { size: 8, strokeWidth: 0, shadowBlur: 8 },
-                    },
-                    {
-                      dataKey: "dislikes",
-                      label: "Dislikes",
-                      color: "#ff4f6d",
-                      lineWidth: 3,
-                      curve: "monotoneX",
-                      showMark: true,
-                      markStyle: { size: 8, strokeWidth: 0, shadowBlur: 8 },
-                    },
-                  ]}
-                  height={340}
-                  grid={{ horizontal: true, vertical: false }}
-                />
-              </Box>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12} md={3.5}>
-            <Card
-              sx={{
-                bgcolor: "#fff",
-                borderRadius: 3,
-                boxShadow: cardShadow,
-                p: 2.5,
-                minHeight: 420,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-              }}
-            >
-              <Typography
-                variant="h6"
-                sx={{
-                  fontWeight: 600,
-                  color: "#1e293b",
-                  letterSpacing: 0.3,
-                  alignSelf: "flex-start",
-                  mb: 1.5,
-                }}
-              >
-                Feedback Contribution
-              </Typography>
-
-              <Box
-                sx={{
-                  width: "100%",
-                  display: "flex",
-                  justifyContent: "center",
-                }}
-              >
-                <PieChart
-                  series={[
-                    {
-                      data: contributionSeries.map((item) => ({
-                        value: item.value,
-                        color: item.color,
-                      })),
-                      innerRadius: 70,
-                      outerRadius: 110,
-                      paddingAngle: 3,
-                      label: {
-                        visible: true,
-                        position: "outside",
-                        renderLabel: (params) => {
-                          const total = contributionSeries.reduce(
-                            (sum, item) => sum + item.value,
-                            0,
-                          );
-                          const percentage = (
-                            (params.value / total) *
-                            100
-                          ).toFixed(1);
-                          return (
-                            <Box
-                              sx={{
-                                bgcolor: "#fff",
-                                borderRadius: "50%",
-                                width: 56,
-                                height: 56,
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                boxShadow: "0 8px 22px rgba(2,6,23,0.12)",
-                              }}
-                            >
-                              <Typography fontWeight={800}>
-                                {percentage}%
-                              </Typography>
-                            </Box>
-                          );
-                        },
-                      },
-                    },
-                  ]}
-                  height={260}
-                />
-              </Box>
-
-              <Box
-                sx={{
-                  display: "flex",
-                  gap: 4,
-                  mt: 4,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: "100%",
-                }}
-              >
-                {contributionSeries.map((s) => {
-                  const total = contributionSeries.reduce(
-                    (sum, item) => sum + item.value,
-                    0,
-                  );
-                  const percentage = ((s.value / total) * 100).toFixed(1);
-
-                  return (
-                    <Box
-                      key={s.label}
-                      sx={{ display: "flex", gap: 1, alignItems: "center" }}
-                    >
-                      <Box
-                        sx={{
-                          width: 12,
-                          height: 12,
-                          bgcolor: s.color,
-                          borderRadius: "50%",
-                        }}
-                      />
-                      <Typography sx={{ fontWeight: 600, color: "#374151" }}>
-                        {s.label} ({percentage}%)
-                      </Typography>
-                    </Box>
-                  );
-                })}
-              </Box>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12} md={3.5}>
-            <Card
-              sx={{
-                bgcolor: "#fff",
-                borderRadius: 3,
-                boxShadow: cardShadow,
-                p: 2.5,
-                minHeight: 420,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-              }}
-            >
-              <Typography
-                variant="h6"
-                sx={{
-                  fontWeight: 600,
-                  color: "#1e293b",
-                  letterSpacing: 0.3,
-                  alignSelf: "flex-start",
-                  mb: 1.5,
-                }}
-              >
-                Feedback Source
-              </Typography>
-
-              <Box
-                sx={{
-                  width: "100%",
-                  display: "flex",
-                  justifyContent: "center",
-                }}
-              >
-                <PieChart
-                  series={[
-                    {
-                      data: sourceSeries.map((item) => ({
-                        value: item.value,
-                        color: item.color,
-                      })),
-                      innerRadius: 70,
-                      outerRadius: 110,
-                      paddingAngle: 3,
-                      label: {
-                        visible: true,
-                        position: "outside",
-                        renderLabel: (params) => {
-                          const total = sourceSeries.reduce(
-                            (sum, item) => sum + item.value,
-                            0,
-                          );
-                          const percentage = (
-                            (params.value / total) *
-                            100
-                          ).toFixed(1);
-                          return (
-                            <Box
-                              sx={{
-                                bgcolor: "#fff",
-                                borderRadius: "50%",
-                                width: 56,
-                                height: 56,
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                boxShadow: "0 8px 22px rgba(2,6,23,0.12)",
-                              }}
-                            >
-                              <Typography fontWeight={800}>
-                                {percentage}%
-                              </Typography>
-                            </Box>
-                          );
-                        },
-                      },
-                    },
-                  ]}
-                  height={260}
-                />
-              </Box>
-
-              <Box
-                sx={{
-                  display: "flex",
-                  gap: 4,
-                  mt: 4,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: "100%",
-                }}
-              >
-                {sourceSeries.map((s) => {
-                  const total = sourceSeries.reduce(
-                    (sum, item) => sum + item.value,
-                    0,
-                  );
-                  const percentage = ((s.value / total) * 100).toFixed(1);
-
-                  return (
-                    <Box
-                      key={s.label}
-                      sx={{ display: "flex", gap: 1, alignItems: "center" }}
-                    >
-                      <Box
-                        sx={{
-                          width: 12,
-                          height: 12,
-                          bgcolor: s.color,
-                          borderRadius: "50%",
-                        }}
-                      />
-                      <Typography sx={{ fontWeight: 600, color: "#374151" }}>
-                        {s.label} ({percentage}%)
-                      </Typography>
-                    </Box>
-                  );
-                })}
-              </Box>
-            </Card>
-          </Grid>
-        </Grid>
-      </Collapse>
 
       <Paper sx={{ borderRadius: 3, overflow: "hidden" }}>
         <TableContainer sx={{ maxHeight: 450 }}>

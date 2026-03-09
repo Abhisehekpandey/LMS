@@ -1515,11 +1515,11 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         prev.map((dept) =>
           dept.name === editedDepartment.originalName
             ? {
-              ...dept,
-              name: payload.deptName,
-              displayName: payload.deptDisplayName,
-              departmentModerator: payload.deptModerator,
-            }
+                ...dept,
+                name: payload.deptName,
+                displayName: payload.deptDisplayName,
+                departmentModerator: payload.deptModerator,
+              }
             : dept,
         ),
       );
@@ -1588,7 +1588,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         currentPage,
         10,
         debouncedUserSearchQuery ? "email" : "",
-        debouncedUserSearchQuery
+        debouncedUserSearchQuery,
       );
       const users = res?.content || [];
 
@@ -1784,9 +1784,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         prevDepartments.map((dept) =>
           dept.name === deptName
             ? {
-              ...dept,
-              roles: dept.roles.filter((_, i) => i !== roleIndex),
-            }
+                ...dept,
+                roles: dept.roles.filter((_, i) => i !== roleIndex),
+              }
             : dept,
         ),
       );
@@ -1820,11 +1820,11 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       prev.map((dept) =>
         dept.name === editingRole.departmentName
           ? {
-            ...dept,
-            roles: dept.roles.map((role, i) =>
-              i === editingRole.roleIndex ? editingRole.value : role.roleName,
-            ),
-          }
+              ...dept,
+              roles: dept.roles.map((role, i) =>
+                i === editingRole.roleIndex ? editingRole.value : role.roleName,
+              ),
+            }
           : dept,
       ),
     );
@@ -2219,7 +2219,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     try {
       for (let dept of updated) {
         await createDepartment({
-          deptName: dept.name.trim(),
+          deptName: dept.name.trim().toLowerCase(),
           deptDisplayName: dept.displayName.trim(),
           deptModerator: dept.departmentModerator.trim(),
           storage: dept.storage.trim(),
@@ -2254,7 +2254,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       // });
       const backendMsg =
         error?.response?.data?.error ||
-        (typeof error?.response?.data === "string" ? error.response.data : null) ||
+        (typeof error?.response?.data === "string"
+          ? error.response.data
+          : null) ||
         "Failed to create Unit";
       setSnackbar({
         open: true,
@@ -2288,12 +2290,12 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         prev.map((dept) =>
           dept.name === selectedDepartment.name
             ? {
-              ...dept,
-              roles: [
-                ...dept.roles,
-                { roleName: newRole.trim(), isAdmin: isAdminRole },
-              ],
-            }
+                ...dept,
+                roles: [
+                  ...dept.roles,
+                  { roleName: newRole.trim(), isAdmin: isAdminRole },
+                ],
+              }
             : dept,
         ),
       );
@@ -2322,7 +2324,10 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         error?.response?.data || "Failed to create role. Please try again.";
       setSnackbar({
         open: true,
-        message: typeof backendMessage === "string" ? backendMessage : "Failed to create role. Please try again.",
+        message:
+          typeof backendMessage === "string"
+            ? backendMessage
+            : "Failed to create role. Please try again.",
         severity: "error",
       });
     }
@@ -2336,8 +2341,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     );
     setSnackbar({
       open: true,
-      message: `Unit "${dept.name}" ${!dept.isActive ? "activated" : "deactivated"
-        }`,
+      message: `Unit "${dept.name}" ${
+        !dept.isActive ? "activated" : "deactivated"
+      }`,
       severity: "success",
     });
   };
@@ -2496,8 +2502,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     if (!val) return "";
     const [num, unit] = val.trim().split(/\s+/); // splits "25.00 GB" → ["25.00", "GB"]
     const rounded = parseFloat(num);
-    return `${Number.isInteger(rounded) ? rounded : Math.floor(rounded)
-      }${unit}`;
+    return `${
+      Number.isInteger(rounded) ? rounded : Math.floor(rounded)
+    }${unit}`;
   };
 
   // Debounce searchQuery → debouncedSearchQuery (500ms delay)
@@ -2983,7 +2990,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                               }
                             } catch (error) {
                               const backendMsg =
-                                error?.response?.data && typeof error.response.data === "string"
+                                error?.response?.data &&
+                                typeof error.response.data === "string"
                                   ? error.response.data
                                   : error.message;
                               setSnackbar({
@@ -3041,7 +3049,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                             } catch (error) {
                               console.error("Failed to add role:", error);
                               const backendMsg =
-                                error?.response?.data && typeof error.response.data === "string"
+                                error?.response?.data &&
+                                typeof error.response.data === "string"
                                   ? error.response.data
                                   : error.message;
                               setSnackbar({
@@ -3551,7 +3560,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                             value={dept.name}
                             onChange={(e) => {
                               const value = e.target.value;
-                              const hasInvalidChar = /[^A-Za-z0-9-_]/.test(
+                              const hasInvalidChar = /[^A-Za-z0-9._-]/.test(
                                 value,
                               );
 
@@ -3577,7 +3586,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                               !dept.name && dept.submitted
                                 ? "Required"
                                 : dept.hasInvalidChar
-                                  ? "Only letters, numbers, - and _ are allowed"
+                                  ? "Only letters, numbers, dots (.), - and _ are allowed"
                                   : duplicateDepartmentError
                                     ? "Already exists"
                                     : dept.name.length > 35
@@ -3719,7 +3728,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                 const listboxNode = event.currentTarget;
                                 if (
                                   listboxNode.scrollTop +
-                                  listboxNode.clientHeight >=
+                                    listboxNode.clientHeight >=
                                   listboxNode.scrollHeight - 1
                                 ) {
                                   loadMoreUsers();
@@ -3998,243 +4007,241 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         PaperProps={{
           sx: {
             borderRadius: "8px",
-
+            boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
             position: "absolute",
-            top: "20%",
-            left: "35%",
-            transform: "translate(-50%, -50%)",
-            m: 0,
-            height: "auto", // dynamic height
-            maxHeight: "95vh", // prevent it from overflowin
-            overflow: "hidden", // avoid extra scrollbars
-            width: "550px",
-            padding: "10px",
-            animation: "slideInFromLeft 0.2s ease-in-out forwards",
-            opacity: 0, // Start with opacity 0
-            transform: "translateX(-50px)", // Start from left
-            "@keyframes slideInFromLeft": {
-              "0%": {
-                opacity: 0,
-                transform: "translateX(-50px)",
-              },
-              "100%": {
-                opacity: 1,
-                transform: "translateX(0)",
-              },
-            },
+            top: "10%",
+            left: "20%",
+            width: "1000px",
+            height: "65vh",
+            maxHeight: "65vh",
+            overflow: "hidden",
           },
         }}
       >
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            p: 1,
-            backgroundColor: "primary.main",
-          }}
-        >
-          <Typography
-            variant="h6"
+        <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
+          <Box
             sx={{
               display: "flex",
+              justifyContent: "space-between",
               alignItems: "center",
-              fontFamily: '"Be Vietnam", sans-serif',
-              color: "#fff",
+              p: 1,
+              backgroundColor: "primary.main",
             }}
           >
-            Edit Unit
-          </Typography>
-
-          <IconButton
-            // onClick={() => setEditDialogOpen(false)}
-            onClick={() => {
-              setEditDialogOpen(false);
-              setSearchModerator("");
-              setFilteredUsers([]);
-              setShowUserDropdown(false);
-              setFilteredPage(0);
-              setHasMoreFilteredUsers(true);
-            }}
-            size="small"
-            sx={{
-              color: "#fff",
-              width: 32,
-              height: 32,
-              border: "1px solid",
-              borderColor: "#fff",
-              bgcolor: "error.lighter",
-              borderRadius: "50%",
-              position: "relative",
-              "&:hover": {
-                transform: "rotate(180deg)",
-              },
-              transition: "transform 0.3s ease",
-            }}
-          >
-            <Close
+            <Typography
+              variant="h6"
               sx={{
-                fontSize: "1rem",
-                transition: "transform 0.2s ease",
+                display: "flex",
+                alignItems: "center",
+                fontFamily: '"Be Vietnam", sans-serif',
+                color: "#fff",
               }}
-            />
-          </IconButton>
-        </Box>
+            >
+              Edit Unit
+            </Typography>
 
-        <Card elevation={1} sx={{ borderRadius: 2 }}>
-          <CardContent>
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              <Tooltip title="Unit Name cannot be edited" arrow>
-                <TextField
-                  fullWidth
-                  size="small"
-                  label="Unit Name"
-                  value={editedDepartment?.name || ""}
-                  disabled
-                  helperText="This field is locked"
-                />
-              </Tooltip>
-
-              <TextField
-                size="small"
-                label="Display Name"
-                fullWidth
-                required
-                value={editedDepartment?.displayName || ""}
-                onChange={(e) =>
-                  setEditedDepartment((prev) => ({
-                    ...prev,
-                    displayName: e.target.value.toUpperCase(),
-                  }))
-                }
+            <IconButton
+              onClick={() => {
+                setEditDialogOpen(false);
+                setSearchModerator("");
+                setFilteredUsers([]);
+                setShowUserDropdown(false);
+                setFilteredPage(0);
+                setHasMoreFilteredUsers(true);
+              }}
+              size="small"
+              sx={{
+                color: "#fff",
+                width: 32,
+                height: 32,
+                border: "1px solid",
+                borderColor: "#fff",
+                bgcolor: "error.lighter",
+                borderRadius: "50%",
+                position: "relative",
+                "&:hover": {
+                  transform: "rotate(180deg)",
+                },
+                transition: "transform 0.3s ease",
+              }}
+            >
+              <Close
+                sx={{
+                  fontSize: "1rem",
+                  transition: "transform 0.2s ease",
+                }}
               />
+            </IconButton>
+          </Box>
 
-              <Box display="flex" alignItems="center" gap={2} mt={2}>
-                <TextField
-                  fullWidth
-                  size="small"
-                  label="Unit Owner"
-                  value={editedDepartment?.departmentModerator || ""}
-                  InputProps={{
-                    readOnly: true,
-                  }}
-                />
+          <Box sx={{ p: 2, flex: 1, overflowY: "auto" }}>
+            <Card elevation={1} sx={{ borderRadius: 2 }}>
+              <CardContent>
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                  <Tooltip title="Unit Name cannot be edited" arrow>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      label="Unit Name"
+                      value={editedDepartment?.name || ""}
+                      disabled
+                      helperText="This field is locked"
+                    />
+                  </Tooltip>
 
-                <TextField
-                  fullWidth
-                  size="small"
-                  label="Search New Owner"
-                  value={searchModerator}
-                  onFocus={() => {
-                    setShowUserDropdown(true);
-                    if (filteredUsers.length === 0) {
-                      loadFilteredUsers(true);
+                  <TextField
+                    size="small"
+                    label="Display Name"
+                    fullWidth
+                    required
+                    value={editedDepartment?.displayName || ""}
+                    onChange={(e) =>
+                      setEditedDepartment((prev) => ({
+                        ...prev,
+                        displayName: e.target.value.toUpperCase(),
+                      }))
                     }
-                  }}
-                  onChange={(e) => {
-                    setSearchModerator(e.target.value);
-                  }}
-                  inputRef={anchorRef}
-                  autoComplete="off"
-                  InputProps={{
-                    endAdornment: (
-                      <React.Fragment>
-                        {loadingFilteredUsers.current ? (
-                          <CircularProgress color="inherit" size={20} />
-                        ) : null}
-                      </React.Fragment>
-                    ),
-                  }}
-                />
+                  />
 
-                <Popper
-                  open={showUserDropdown}
-                  anchorEl={anchorRef.current}
-                  placement="bottom-start"
-                  transition
-                  disablePortal
-                  modifiers={[
-                    {
-                      name: "zIndex",
-                      enabled: true,
-                      phase: "write",
-                      fn({ state }) {
-                        state.styles.popper.zIndex = 1600;
-                      },
-                    },
-                  ]}
-                >
-                  {({ TransitionProps }) => (
-                    <Grow {...TransitionProps}>
-                      <Paper
-                        sx={{
-                          width: 300,
-                          maxHeight: 200, // limit dropdown height ~5 items
-                          overflowY: "auto",
-                          borderRadius: 1,
-                          mt: 1,
-                        }}
-                      >
-                        <Box
-                          sx={{
-                            maxHeight: 200,
-                            overflowY: "auto",
-                          }}
-                          onScroll={(event) => {
-                            const { scrollTop, clientHeight, scrollHeight } =
-                              event.currentTarget;
-                            if (scrollTop + clientHeight >= scrollHeight - 50) {
-                              loadFilteredUsers();
-                            }
-                          }}
-                        >
-                          {filteredUsers.map((user, index) => (
-                            <MenuItem
-                              key={index}
-                              onClick={() => {
-                                setEditedDepartment((prev) => ({
-                                  ...prev,
-                                  departmentModerator: user.name,
-                                }));
-                                setSearchModerator(user.name);
-                                setShowUserDropdown(false);
+                  <Box display="flex" alignItems="center" gap={2} mt={2}>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      label="Unit Owner"
+                      value={editedDepartment?.departmentModerator || ""}
+                      InputProps={{
+                        readOnly: true,
+                      }}
+                    />
+
+                    <TextField
+                      fullWidth
+                      size="small"
+                      label="Search New Owner"
+                      value={searchModerator}
+                      onFocus={() => {
+                        setShowUserDropdown(true);
+                        if (filteredUsers.length === 0) {
+                          loadFilteredUsers(true);
+                        }
+                      }}
+                      onChange={(e) => {
+                        setSearchModerator(e.target.value);
+                      }}
+                      inputRef={anchorRef}
+                      autoComplete="off"
+                      InputProps={{
+                        endAdornment: (
+                          <React.Fragment>
+                            {loadingFilteredUsers.current ? (
+                              <CircularProgress color="inherit" size={20} />
+                            ) : null}
+                          </React.Fragment>
+                        ),
+                      }}
+                    />
+
+                    <Popper
+                      open={showUserDropdown}
+                      anchorEl={anchorRef.current}
+                      placement="bottom-start"
+                      transition
+                      disablePortal
+                      modifiers={[
+                        {
+                          name: "zIndex",
+                          enabled: true,
+                          phase: "write",
+                          fn({ state }) {
+                            state.styles.popper.zIndex = 1600;
+                          },
+                        },
+                      ]}
+                    >
+                      {({ TransitionProps }) => (
+                        <Grow {...TransitionProps}>
+                          <Paper
+                            sx={{
+                              width: 300,
+                              maxHeight: 200, // limit dropdown height ~5 items
+                              overflowY: "auto",
+                              borderRadius: 1,
+                              mt: 1,
+                            }}
+                          >
+                            <Box
+                              sx={{
+                                maxHeight: 200,
+                                overflowY: "auto",
+                              }}
+                              onScroll={(event) => {
+                                const {
+                                  scrollTop,
+                                  clientHeight,
+                                  scrollHeight,
+                                } = event.currentTarget;
+                                if (
+                                  scrollTop + clientHeight >=
+                                  scrollHeight - 50
+                                ) {
+                                  loadFilteredUsers();
+                                }
                               }}
                             >
-                              {user.name}
-                            </MenuItem>
-                          ))}
+                              {filteredUsers.map((user, index) => (
+                                <MenuItem
+                                  key={index}
+                                  onClick={() => {
+                                    setEditedDepartment((prev) => ({
+                                      ...prev,
+                                      departmentModerator: user.name,
+                                    }));
+                                    setSearchModerator(user.name);
+                                    setShowUserDropdown(false);
+                                  }}
+                                >
+                                  {user.name}
+                                </MenuItem>
+                              ))}
 
-                          {filteredUsers.length === 0 &&
-                            !loadingFilteredUsers.current && (
-                              <MenuItem disabled>No users found</MenuItem>
-                            )}
-                        </Box>
-                      </Paper>
-                    </Grow>
-                  )}
-                </Popper>
-              </Box>
-            </Box>
-          </CardContent>
-        </Card>
+                              {filteredUsers.length === 0 &&
+                                !loadingFilteredUsers.current && (
+                                  <MenuItem disabled>No users found</MenuItem>
+                                )}
+                            </Box>
+                          </Paper>
+                        </Grow>
+                      )}
+                    </Popper>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          </Box>
 
-        <Box
-          sx={{ display: "flex", justifyContent: "flex-end", gap: 1, mt: 3 }}
-        >
-          <Button
-            onClick={handleUpdateDepartment}
-            variant="contained"
+          <Box
             sx={{
-              background: "rgb(251, 68, 36)",
-              "&:hover": {
-                background: "rgb(251, 68, 36)",
-              },
-              px: 3,
-              py: 0.7,
+              p: 2,
+              display: "flex",
+              justifyContent: "flex-end",
+              alignItems: "center",
+              borderTop: "1px solid #e0e0e0",
+              bgcolor: "#fff",
             }}
           >
-            Save
-          </Button>
+            <Button
+              variant="contained"
+              onClick={handleUpdateDepartment}
+              sx={{
+                background: "rgb(251, 68, 36)",
+                "&:hover": {
+                  background: "rgb(220, 50, 20)",
+                },
+              }}
+            >
+              Save
+            </Button>
+          </Box>
         </Box>
       </Drawer>
 
@@ -4569,7 +4576,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     size="small"
                     fullWidth
                     options={userOptions}
-                    getOptionLabel={(option) => option.email || option.name || ""}
+                    getOptionLabel={(option) =>
+                      option.email || option.name || ""
+                    }
                     loading={loadingUsers.current}
                     onInputChange={(event, newInputValue) => {
                       setUserSearchQuery(newInputValue);
@@ -4593,10 +4602,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                           endAdornment: (
                             <React.Fragment>
                               {loadingUsers.current ? (
-                                <CircularProgress
-                                  color="inherit"
-                                  size={20}
-                                />
+                                <CircularProgress color="inherit" size={20} />
                               ) : null}
                               {params.InputProps.endAdornment}
                             </React.Fragment>
@@ -4661,23 +4667,23 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     >
                       {`[${(assignment.role === "Admin"
                         ? [
-                          "Read",
-                          "Write",
-                          "Delete",
-                          "Share",
-                          "UserAdmin",
-                          "Comment",
-                          "Upload",
-                        ]
-                        : assignment.role === "Editor"
-                          ? [
                             "Read",
                             "Write",
                             "Delete",
                             "Share",
+                            "UserAdmin",
                             "Comment",
                             "Upload",
                           ]
+                        : assignment.role === "Editor"
+                          ? [
+                              "Read",
+                              "Write",
+                              "Delete",
+                              "Share",
+                              "Comment",
+                              "Upload",
+                            ]
                           : assignment.role === "Viewer"
                             ? ["Read", "Comment"]
                             : assignment.role === "Collaborator"
