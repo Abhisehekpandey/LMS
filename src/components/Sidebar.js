@@ -298,10 +298,10 @@ const Sidebar = () => {
             deptAdmin &&
             !superAdmin &&
             ![
-              "/department",
+              "/unit",
               "/data-dictionary",
               "/feedback-table",
-              "/department-type-setting",
+              // "/department-type-setting",
             ].includes(item.path);
 
           const listItem = (

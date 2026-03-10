@@ -247,8 +247,10 @@ export default function UserTable() {
   const [loading, setLoading] = useState(true);
   const [selectedDepartment, setSelectedDepartment] = useState(null);
   const [userRoleMap, setUserRoleMap] = useState({});
-  const [fullDepartments, setFullDepartments] = useState([]);
   const [regions, setRegions] = useState([]);
+  const [unitSearchQuery, setUnitSearchQuery] = useState("");
+  const [debouncedUnitSearch, setDebouncedUnitSearch] = useState("");
+  const [isSearchingUnits, setIsSearchingUnits] = useState(false);
   // COMMENTED OUT: Section state and fetch
   // const [sections, setSections] = useState([]); // ✅ Added sections state
 
@@ -402,34 +404,22 @@ export default function UserTable() {
     }
   };
 
-  const fetchFullDepartments = async () => {
-    try {
-      // COMMENTED OUT: called with no args → only fetched first 10 departments, missing any beyond page 1
-      // const res = await getDepartments();
-      // NEW: use size=1000 to fetch all departments in one call
-      const res = await getDepartments(0, 1000);
-
-      return res.content || [];
-    } catch (error) {
-      console.error("Failed to fetch full departments:", error);
-      return [];
-    }
-  };
 
   const handleSaveChanges = async () => {
 
 
     try {
-      const fullDepartments = await fetchFullDepartments();
-
       let deptObj = null;
       let roleObj = null;
 
       if (editData.department) {
-        deptObj = fullDepartments.find(
-          (d) =>
-            d.deptName?.toLowerCase() === editData.department?.toLowerCase()
-        );
+        deptObj = selectedDepartment;
+
+        // Fallback: if selectedDepartment doesn't match or is missing, try to fetch it
+        if (!deptObj || deptObj.deptName?.toLowerCase() !== editData.department?.toLowerCase()) {
+          const deptRes = await getDepartments(0, 1, "deptName", editData.department);
+          deptObj = deptRes?.content?.[0] || null;
+        }
 
         if (!deptObj) {
           toast.error("Invalid department selected.");
@@ -451,8 +441,8 @@ export default function UserTable() {
       const userPayload = {
         userId: editData.id,
         userName: editData.name.trim(),
-        deptId: deptObj?.id || null,
-        roleId: roleObj?.id || null,
+        deptId: deptObj?.deptId || deptObj?.id || null,
+        roleId: roleObj?.roleId || roleObj?.id || null,
         region: editData.region?.trim() || "",
         // sections: editData.sections || [], // COMMENTED OUT
       };
@@ -462,7 +452,7 @@ export default function UserTable() {
       if (roleObj) {
         setUserRoleMap((prev) => ({
           ...prev,
-          [editData.id]: roleObj.id,
+          [editData.id]: roleObj.roleId || roleObj.id,
         }));
       }
 
@@ -475,28 +465,56 @@ export default function UserTable() {
     }
   };
 
-  const loadMoreDepartments = async () => {
-    if (loadingDepartments.current || !hasMoreDepartments) return;
+  const loadMoreDepartments = async (isSearch = false, query = "") => {
+    if (loadingDepartments.current || (!hasMoreDepartments && !isSearch)) return;
     loadingDepartments.current = true;
 
     try {
-      const res1 = await getDepartments(departmentPage, 10);
+      const pageToFetch = isSearch ? 0 : departmentPage;
+      const res1 = await getDepartments(
+        pageToFetch,
+        10,
+        isSearch ? "deptName" : "",
+        query,
+      );
       const res = res1?.content || [];
 
       const newDepartments = res.map((dept) => ({
         ...dept,
-        roles: (dept.roles || []).map((role) => role.roleName),
+        roles: dept.roles || [],
       }));
 
-      if (newDepartments.length < 10) setHasMoreDepartments(false);
-      setDepartments((prev) => [...prev, ...newDepartments]);
-      setDepartmentPage((prev) => prev + 1);
+      if (isSearch) {
+        setDepartments(newDepartments);
+        setDepartmentPage(1);
+        setHasMoreDepartments(newDepartments.length === 10);
+      } else {
+        if (newDepartments.length < 10) setHasMoreDepartments(false);
+        setDepartments((prev) => [...prev, ...newDepartments]);
+        setDepartmentPage((prev) => prev + 1);
+      }
     } catch (err) {
       console.error("Failed to load departments:", err);
     } finally {
       loadingDepartments.current = false;
+      setIsSearchingUnits(false);
     }
   };
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedUnitSearch(unitSearchQuery);
+    }, 500);
+
+    return () => clearTimeout(handler);
+  }, [unitSearchQuery]);
+
+  useEffect(() => {
+    if (debouncedUnitSearch !== undefined && editDialogOpen) {
+      setIsSearchingUnits(true);
+      loadMoreDepartments(true, debouncedUnitSearch);
+    }
+  }, [debouncedUnitSearch, editDialogOpen]);
 
   useEffect(() => {
     loadMoreDepartments();
@@ -514,9 +532,6 @@ export default function UserTable() {
 
 
     try {
-      const fullDepartments = await fetchFullDepartments();
-      setFullDepartments(fullDepartments);
-
       const { list, defaultRegion } = await getRegions();
       setRegions(list);
 
@@ -525,14 +540,13 @@ export default function UserTable() {
 
       const savedRoleId = userRoleMap[row.id];
       const currentRole =
-        row.roles?.find((r) => r.id === savedRoleId) || row.roles?.[0];
+        row.roles?.find((r) => (r.roleId || r.id) === savedRoleId) || row.roles?.[0];
 
       const deptName = currentRole?.department?.deptName || "";
       const roleName = currentRole?.roleName || "";
 
-      const deptObj = fullDepartments.find(
-        (d) => d.deptName?.toLowerCase() === deptName?.toLowerCase()
-      );
+      const deptRes = await getDepartments(0, 1, "deptName", deptName);
+      const deptObj = deptRes?.content?.[0] || null;
 
       const matchedRole = deptObj?.roles?.find(
         (r) => r.roleName?.toLowerCase() === roleName?.toLowerCase()
@@ -2199,12 +2213,17 @@ export default function UserTable() {
 
                 <Autocomplete
                   size="small"
-                  options={fullDepartments} // ✅ from state
-                  getOptionLabel={(option) => option.deptName}
+                  options={departments} // ✅ Use paginated departments
+                  getOptionLabel={(option) => option.deptName || ""}
+                  filterOptions={(x) => x} // Server-side search
+                  onInputChange={(event, newInputValue) => {
+                    setUnitSearchQuery(newInputValue);
+                  }}
+                  loading={isSearchingUnits}
                   value={
-                    fullDepartments.find(
+                    departments.find(
                       (d) => d.deptName === editData.department
-                    ) || null
+                    ) || (editData.department ? { deptName: editData.department } : null)
                   }
                   onChange={(e, value) => {
                     setEditData((prev) => ({
@@ -2214,8 +2233,36 @@ export default function UserTable() {
                     }));
                     setSelectedDepartment(value || null); // updates role dropdown
                   }}
+                  ListboxProps={{
+                    style: { maxHeight: 300, overflow: "auto" },
+                    onScroll: (event) => {
+                      const listboxNode = event.currentTarget;
+                      const threshold = 50;
+                      if (
+                        listboxNode.scrollTop + listboxNode.clientHeight >=
+                        listboxNode.scrollHeight - threshold
+                      ) {
+                        loadMoreDepartments(false, unitSearchQuery);
+                      }
+                    },
+                  }}
                   renderInput={(params) => (
-                    <TextField {...params} label="Unit" fullWidth />
+                    <TextField
+                      {...params}
+                      label="Unit"
+                      fullWidth
+                      InputProps={{
+                        ...params.InputProps,
+                        endAdornment: (
+                          <React.Fragment>
+                            {isSearchingUnits ? (
+                              <CircularProgress color="inherit" size={20} />
+                            ) : null}
+                            {params.InputProps.endAdornment}
+                          </React.Fragment>
+                        ),
+                      }}
+                    />
                   )}
                 />
               </Grid>

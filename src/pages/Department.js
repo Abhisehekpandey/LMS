@@ -62,6 +62,8 @@ import SpeedDialAction from "@mui/material/SpeedDialAction";
 import FolderIcon from "@mui/icons-material/Folder";
 import DownloadIcon from "@mui/icons-material/Download";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
+import KeyboardArrowLeft from "@mui/icons-material/KeyboardArrowLeft";
+import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight";
 import * as XLSX from "xlsx";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -462,9 +464,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         allowedStorage: dept.storageGiven || "0 GB",
 
         roles: dept.roles || [],
-        users: dept.users || [], // NEW: needed for DeptUsersDropdown users prop
-
-        userCount: dept.numberOfUsers || 0,
+        users: dept.users?.users || [], // NEW: needed for DeptUsersDropdown users prop
+        userCount: dept.users?.totalElements ?? dept.numberOfUsers ?? 0,
 
         // COMMENTED OUT: permissions object no longer present in API response
         // isActive: dept.permissions?.active || false,
@@ -488,8 +489,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
   const DeptUsersDropdown = ({
     users,
+    totalUserCount,  // NEW: total count from paginated API
     departmentId,
-    departmentRoles = [], // NEW: roles available in this department
+    departmentRoles = [],
     onEditUser,
     onDeleteUser,
     addUsersToDepartment,
@@ -499,26 +501,86 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     const [addDialogOpen, setAddDialogOpen] = useState(false);
     const [allUsers, setAllUsers] = useState([]);
     const [selectedUsers, setSelectedUsers] = useState([]);
-    const [selectedRoles, setSelectedRoles] = useState({}); // NEW: map userId -> role
+    const [selectedRoles, setSelectedRoles] = useState({});
     const [loading, setLoading] = useState(false);
     const anchorRef = useRef(null);
 
-    // NEW: states for dialog server-side search + infinite scroll
+    // States for the Unit Users panel (paginated from new endpoint)
+    const [panelUsers, setPanelUsers] = useState([]);
+    const [panelPage, setPanelPage] = useState(1);
+    const [panelTotalPages, setPanelTotalPages] = useState(1);
+    const [panelHasMore, setPanelHasMore] = useState(true);
+    const [panelLoading, setPanelLoading] = useState(false);
+    const [panelTotal, setPanelTotal] = useState(totalUserCount || 0);
+
+    // States for Add User dialog (server-side search + infinite scroll)
     const [dialogSearch, setDialogSearch] = useState("");
     const [dialogPage, setDialogPage] = useState(0);
     const [dialogHasMore, setDialogHasMore] = useState(true);
     const [dialogLoadingMore, setDialogLoadingMore] = useState(false);
-    const sentinelRef = useRef(null);
-    const dialogScrollRef = useRef(null); // NEW: ref for the scrollable container (IO root)
+    const dialogScrollRef = useRef(null);
 
-    const handleToggle = () => setOpen((prev) => !prev);
-    const handleClose = () => setOpen(false);
+    // Fetch paginated users from /tenants/users/within for the panel
+    const loadPanelUsers = async (page = 1, query = "") => {
+      setPanelLoading(true);
+      try {
+        const params = { deptId: departmentId, page, size: 10 };
+        if (query.trim()) {
+          params.name = query;
+        }
 
-    const filteredUsers = useMemo(() => {
-      return users.filter((user) =>
-        user.name.toLowerCase().includes(search.toLowerCase()),
-      );
-    }, [users, search]);
+        const res = await axios.get(
+          `${window.__ENV__.REACT_APP_ROUTE}/tenants/users/within`,
+          {
+            params,
+            headers: {
+              Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+              username: sessionStorage.getItem("adminEmail"),
+            },
+          },
+        );
+        const data = res.data;
+        const fetchedUsers = (data.users || []).map((u) => ({
+          id: u.objectId,
+          name: u.fullName,
+          roleName: u.role,
+        }));
+
+        setPanelUsers(fetchedUsers);
+        setPanelTotal(data.totalElements ?? totalUserCount ?? 0);
+        setPanelTotalPages(data.totalPages || 1);
+        setPanelHasMore(!data.last);
+        setPanelPage(page);
+      } catch (err) {
+        console.error("Failed to load unit users:", err);
+      } finally {
+        setPanelLoading(false);
+      }
+    };
+
+    const handleToggle = () => {
+      if (!open) {
+        // Load first page fresh when opening the panel
+        loadPanelUsers(1, search);
+      }
+      setOpen((prev) => !prev);
+    };
+
+    // Debounce search input for server-side filtering
+    useEffect(() => {
+      if (!open) return;
+      const t = setTimeout(() => {
+        loadPanelUsers(1, search);
+      }, 500);
+      return () => clearTimeout(t);
+    }, [search, open]); // eslint-disable-line react-hooks/exhaustive-deps
+    const handleClose = () => {
+      setOpen(false);
+      setSearch(""); // Reset search on close
+    };
+
+    // Remove client-side filtering; use server-side results directly
+    const displayUsers = panelUsers;
 
     // COMMENTED OUT: old version loaded 100 users at once with no search
     // const handleOpenAddDialog = async () => {
@@ -637,6 +699,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       return () => clearTimeout(t);
     }, [dialogSearch, addDialogOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
+    // Scroll handler for Add User dialog (uses infinite scroll)
     const handleDialogScroll = (event) => {
       const { scrollTop, clientHeight, scrollHeight } = event.currentTarget;
       const threshold = 50;
@@ -654,7 +717,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
         {/* Count + dropdown */}
         <IconButton ref={anchorRef} size="small" onClick={handleToggle}>
-          {users.length} <ArrowDropDownIcon />
+          {panelTotal} <ArrowDropDownIcon />
         </IconButton>
 
         {/* Add Users button */}
@@ -791,7 +854,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {filteredUsers.length === 0 ? (
+                    {displayUsers.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={3} align="center" sx={{ py: 3 }}>
                           <Typography
@@ -804,7 +867,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      filteredUsers.map((user) => (
+                      displayUsers.map((user) => (
                         <TableRow
                           key={user.id + user.roleName}
                           sx={{
@@ -903,6 +966,40 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                   </TableBody>
                 </Table>
               </TableContainer>
+
+              {/* Pagination Footer for Panel */}
+              <Box
+                sx={{
+                  p: 1,
+                  borderTop: "1px solid #eee",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  backgroundColor: "#f8fafc",
+                }}
+              >
+                <Button
+                  size="small"
+                  onClick={() => loadPanelUsers(panelPage - 1, search)}
+                  disabled={panelPage <= 1 || panelLoading}
+                  startIcon={<KeyboardArrowLeft />}
+                  sx={{ textTransform: "none", fontWeight: 600 }}
+                >
+                  Prev
+                </Button>
+                <Typography variant="caption" sx={{ fontWeight: 600, color: "#475569" }}>
+                  Page {panelPage} of {panelTotalPages}
+                </Typography>
+                <Button
+                  size="small"
+                  onClick={() => loadPanelUsers(panelPage + 1, search)}
+                  disabled={panelPage >= panelTotalPages || panelLoading}
+                  endIcon={<KeyboardArrowRight />}
+                  sx={{ textTransform: "none", fontWeight: 600 }}
+                >
+                  Next
+                </Button>
+              </Box>
             </Paper>
           </ClickAwayListener>
         </Popper>
@@ -1515,11 +1612,11 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         prev.map((dept) =>
           dept.name === editedDepartment.originalName
             ? {
-                ...dept,
-                name: payload.deptName,
-                displayName: payload.deptDisplayName,
-                departmentModerator: payload.deptModerator,
-              }
+              ...dept,
+              name: payload.deptName,
+              displayName: payload.deptDisplayName,
+              departmentModerator: payload.deptModerator,
+            }
             : dept,
         ),
       );
@@ -1588,7 +1685,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         currentPage,
         10,
         debouncedUserSearchQuery ? "email" : "",
-        debouncedUserSearchQuery,
+        debouncedUserSearchQuery
       );
       const users = res?.content || [];
 
@@ -1784,9 +1881,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         prevDepartments.map((dept) =>
           dept.name === deptName
             ? {
-                ...dept,
-                roles: dept.roles.filter((_, i) => i !== roleIndex),
-              }
+              ...dept,
+              roles: dept.roles.filter((_, i) => i !== roleIndex),
+            }
             : dept,
         ),
       );
@@ -1820,11 +1917,11 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       prev.map((dept) =>
         dept.name === editingRole.departmentName
           ? {
-              ...dept,
-              roles: dept.roles.map((role, i) =>
-                i === editingRole.roleIndex ? editingRole.value : role.roleName,
-              ),
-            }
+            ...dept,
+            roles: dept.roles.map((role, i) =>
+              i === editingRole.roleIndex ? editingRole.value : role.roleName,
+            ),
+          }
           : dept,
       ),
     );
@@ -1845,9 +1942,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
   const handleBulkDownload = () => {
     try {
       const exportData = departments.map((dept) => ({
-        Unit: dept.name,
-        "Display Name": dept.displayName,
-        "Department Moderator": dept.departmentModerator,
+        "Unit Name": dept.name,
+        "Unit Short Name": dept.displayName,
+        "Unit Owner": dept.departmentModerator,
         "Storage Allocated":
           dept?.permissions?.allowedStorageInBytesDisplay || "50GB",
         "Storage Consumed": dept?.permissions?.displayStorage || "0KB",
@@ -1857,8 +1954,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       const ws = XLSX.utils.json_to_sheet(exportData);
 
       const wscols = [
-        { wch: 25 }, // Department
-        { wch: 15 }, // Display Name
+        { wch: 25 }, // Unit Name
+        { wch: 20 }, // Unit Short Name
         { wch: 25 }, // Unit Owner
         { wch: 20 }, // Storage Allocated
         { wch: 50 }, // Combined Roles column
@@ -1902,9 +1999,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
           // ✅ Required columns
           const requiredColumns = {
-            Department: false,
-            "Display Name": false,
-            "Department Moderator": false,
+            "Unit Name": false,
+            "Unit Short Name": false,
+            "Unit Owner": false,
             "Storage Allocated": false,
             Role: false,
             Permission: false,
@@ -1949,42 +2046,62 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             const rowNumber = index + 2; // Excel rows start at 2 (row 1 = header)
             const errors = [];
 
-            if (!row.Department) errors.push("Department");
-            if (!row["Display Name"]) errors.push("Display Name");
-            if (!row["Department Moderator"])
-              errors.push("Department Moderator");
+            if (!row["Unit Name"]) {
+              errors.push("Unit Name");
+            } else {
+              if (row["Unit Name"].length > 35) {
+                errors.push("Unit Name exceeds 35 characters");
+              }
+              if (/[^A-Za-z0-9._-]/.test(row["Unit Name"])) {
+                errors.push("Unit Name contains invalid characters (Only A-Za-z0-9._- allowed)");
+              }
+            }
+
+            if (!row["Unit Short Name"]) {
+              errors.push("Unit Short Name");
+            } else {
+              if (row["Unit Short Name"].length > 8) {
+                errors.push("Unit Short Name exceeds 8 characters");
+              }
+              if (/[^A-Z0-9]/.test(row["Unit Short Name"].toUpperCase())) {
+                errors.push("Unit Short Name contains invalid characters (Only A-Z, 0-9 allowed)");
+              }
+            }
+
+            if (!row["Unit Owner"])
+              errors.push("Unit Owner");
             if (!row["Storage Allocated"]) errors.push("Storage Allocated");
             if (!row.Role) errors.push("Role");
             if (!row.Permission) errors.push("Permission");
 
             // ✅ Duplicate check within the file
-            if (row.Department) {
-              if (seenDeptNames.has(row.Department.toLowerCase())) {
-                errors.push("Duplicate Department in file");
+            if (row["Unit Name"]) {
+              if (seenDeptNames.has(row["Unit Name"].toLowerCase())) {
+                errors.push("Duplicate Unit Name in file");
               } else {
-                seenDeptNames.add(row.Department.toLowerCase());
+                seenDeptNames.add(row["Unit Name"].toLowerCase());
               }
             }
 
-            if (row["Display Name"]) {
-              if (seenDisplayNames.has(row["Display Name"].toLowerCase())) {
-                errors.push("Duplicate Display Name in file");
+            if (row["Unit Short Name"]) {
+              if (seenDisplayNames.has(row["Unit Short Name"].toLowerCase())) {
+                errors.push("Duplicate Unit Short Name in file");
               } else {
-                seenDisplayNames.add(row["Display Name"].toLowerCase());
+                seenDisplayNames.add(row["Unit Short Name"].toLowerCase());
               }
             }
 
             if (
-              row.Department &&
-              existingDeptNames.has(row.Department.toLowerCase())
+              row["Unit Name"] &&
+              existingDeptNames.has(row["Unit Name"].toLowerCase())
             ) {
-              errors.push("Department already exists");
+              errors.push("Unit Name already exists");
             }
             if (
-              row["Display Name"] &&
-              existingDisplayNames.has(row["Display Name"].toLowerCase())
+              row["Unit Short Name"] &&
+              existingDisplayNames.has(row["Unit Short Name"].toLowerCase())
             ) {
-              errors.push("Display Name already exists");
+              errors.push("Unit Short Name already exists");
             }
 
             if (errors.length > 0) {
@@ -2005,9 +2122,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
           // ✅ Build API payload
           const apiPayload = jsonData.map((row) => ({
-            deptName: row["Department"],
-            deptDisplayName: row["Display Name"],
-            deptModerator: row["Department Moderator"],
+            deptName: row["Unit Name"] ? row["Unit Name"].toLowerCase() : row["Unit Name"],
+            deptDisplayName: row["Unit Short Name"],
+            deptModerator: row["Unit Owner"],
             storage: row["Storage Allocated"],
             role: row["Role"],
             permission: row["Permission"] || "ADMIN",
@@ -2015,7 +2132,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
           // ✅ Send API request
           try {
-            await axios.post(
+            const response = await axios.post(
               `${window.__ENV__.REACT_APP_ROUTE}/tenants/departments/bulk`,
               apiPayload,
               {
@@ -2029,10 +2146,28 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               },
             );
 
+            // Parse response array
+            const results = response.data;
+            const successCount = results.filter(r => r.status === "Success" || r.status === "Created").length;
+            const failures = results.filter(r => r.status === "Failed" || !!r.error);
+
+            let message = "";
+            let severity = "success";
+
+            if (failures.length === 0) {
+              message = `Successfully uploaded ${successCount} Unit(s).`;
+            } else if (successCount === 0) {
+              severity = "error";
+              message = `All uploads failed:\n${failures.map(f => `- ${f.deptName}: ${f.error?.error || f.error}`).join("\n")}`;
+            } else {
+              severity = "warning";
+              message = `Successfully uploaded ${successCount} Unit(s), but ${failures.length} failed:\n${failures.map(f => `- ${f.deptName}: ${f.error?.error || f.error}`).join("\n")}`;
+            }
+
             setSnackbar({
               open: true,
-              message: "Bulk Unit upload successful",
-              severity: "success",
+              message: message,
+              severity: severity,
             });
             setShowAddDepartment(false);
 
@@ -2254,9 +2389,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       // });
       const backendMsg =
         error?.response?.data?.error ||
-        (typeof error?.response?.data === "string"
-          ? error.response.data
-          : null) ||
+        (typeof error?.response?.data === "string" ? error.response.data : null) ||
         "Failed to create Unit";
       setSnackbar({
         open: true,
@@ -2290,12 +2423,12 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         prev.map((dept) =>
           dept.name === selectedDepartment.name
             ? {
-                ...dept,
-                roles: [
-                  ...dept.roles,
-                  { roleName: newRole.trim(), isAdmin: isAdminRole },
-                ],
-              }
+              ...dept,
+              roles: [
+                ...dept.roles,
+                { roleName: newRole.trim(), isAdmin: isAdminRole },
+              ],
+            }
             : dept,
         ),
       );
@@ -2324,10 +2457,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         error?.response?.data || "Failed to create role. Please try again.";
       setSnackbar({
         open: true,
-        message:
-          typeof backendMessage === "string"
-            ? backendMessage
-            : "Failed to create role. Please try again.",
+        message: typeof backendMessage === "string" ? backendMessage : "Failed to create role. Please try again.",
         severity: "error",
       });
     }
@@ -2341,9 +2471,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     );
     setSnackbar({
       open: true,
-      message: `Unit "${dept.name}" ${
-        !dept.isActive ? "activated" : "deactivated"
-      }`,
+      message: `Unit "${dept.name}" ${!dept.isActive ? "activated" : "deactivated"
+        }`,
       severity: "success",
     });
   };
@@ -2395,9 +2524,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
   };
   const handleTemplateDownload = () => {
     const headers = [
-      "Department", // deptName
-      "Display Name", // deptDisplayName
-      "Department Moderator", // deptModerator
+      "Unit Name", // deptName
+      "Unit Short Name", // deptDisplayName
+      "Unit Owner", // deptModerator
       "Storage Allocated", // storage
       "Role", // role
       "Permission", // permission
@@ -2405,9 +2534,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
     const dummyData = [
       [
-        "IT", // Department
-        "Information Technology", // Display Name
-        "john.doe@example.com", // Department Moderator
+        "IT", // Unit Name
+        "Information Technology", // Unit Short Name
+        "john.doe@example.com", // Unit Owner
         "50 GB", // Storage Allocated
         "Admin", // Role
         "ADMIN", // Permission
@@ -2443,8 +2572,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         if (!dept.roles || dept.roles.length === 0) {
           return [
             {
-              Unit: dept.name,
-              "Display Name": dept.displayName,
+              "Unit Name": dept.name,
+              "Unit Short Name": dept.displayName,
               "Unit Owner": dept.departmentModerator,
               "Storage Allocated": dept.allowedStorage || "N/A",
               "Storage Consumed": dept.storage || "N/A",
@@ -2455,8 +2584,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         }
 
         return dept.roles.map((role) => ({
-          Unit: dept.name,
-          "Display Name": dept.displayName,
+          "Unit Name": dept.name,
+          "Unit Short Name": dept.displayName,
           "Unit Owner": dept.departmentModerator,
           "Storage Allocated": dept.allowedStorage || "N/A",
           "Storage Consumed": dept.storage || "N/A",
@@ -2468,9 +2597,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       const ws = XLSX.utils.json_to_sheet(exportData);
 
       const wscols = [
-        { wch: 25 }, // Department
-        { wch: 15 }, // Display Name
-        { wch: 25 }, // Department Moderator
+        { wch: 25 }, // Unit Name
+        { wch: 20 }, // Unit Short Name
+        { wch: 25 }, // Unit Owner
         { wch: 20 }, // Storage Allocated
         { wch: 20 }, // Storage Consumed
         { wch: 30 }, // Role
@@ -2502,9 +2631,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     if (!val) return "";
     const [num, unit] = val.trim().split(/\s+/); // splits "25.00 GB" → ["25.00", "GB"]
     const rounded = parseFloat(num);
-    return `${
-      Number.isInteger(rounded) ? rounded : Math.floor(rounded)
-    }${unit}`;
+    return `${Number.isInteger(rounded) ? rounded : Math.floor(rounded)
+      }${unit}`;
   };
 
   // Debounce searchQuery → debouncedSearchQuery (500ms delay)
@@ -2916,27 +3044,12 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     {visibleColumns.users && (
                       <TableCell align="center">
                         <DeptUsersDropdown
-                          // COMMENTED OUT: roles don't have a .user array in the API response
-                          // users={dept.roles.flatMap((role) =>
-                          //   (role.user || []).map((u) => ({
-                          //     ...u,
-                          //     roleName: role.roleName,
-                          //     roleId: role.id,   // ← role.id was also wrong (API uses roleId)
-                          //   }))
-                          // )}
-                          // NEW: map from dept.users (API: objectId, fullName, role as displayName)
-                          // look up roleId from dept.roles by matching roleDisplayName
-                          users={(dept.users || []).map((u) => {
-                            const matched = (dept.roles || []).find(
-                              (r) => r.roleDisplayName === u.role,
-                            );
-                            return {
-                              id: u.objectId,
-                              name: u.fullName,
-                              roleName: u.role,
-                              roleId: matched?.roleId || "",
-                            };
-                          })}
+                          users={(dept.users || []).map((u) => ({
+                            id: u.objectId,
+                            name: u.fullName,
+                            roleName: u.role,
+                          }))}
+                          totalUserCount={dept.userCount}
                           departmentId={dept.id}
                           departmentRoles={dept.roles.map((role) => ({
                             // COMMENTED OUT: role.id doesn't exist in API — API uses roleId
@@ -2990,8 +3103,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                               }
                             } catch (error) {
                               const backendMsg =
-                                error?.response?.data &&
-                                typeof error.response.data === "string"
+                                error?.response?.data && typeof error.response.data === "string"
                                   ? error.response.data
                                   : error.message;
                               setSnackbar({
@@ -3049,8 +3161,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                             } catch (error) {
                               console.error("Failed to add role:", error);
                               const backendMsg =
-                                error?.response?.data &&
-                                typeof error.response.data === "string"
+                                error?.response?.data && typeof error.response.data === "string"
                                   ? error.response.data
                                   : error.message;
                               setSnackbar({
@@ -3728,7 +3839,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                 const listboxNode = event.currentTarget;
                                 if (
                                   listboxNode.scrollTop +
-                                    listboxNode.clientHeight >=
+                                  listboxNode.clientHeight >=
                                   listboxNode.scrollHeight - 1
                                 ) {
                                   loadMoreUsers();
@@ -3875,6 +3986,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               Add All
             </Button>
           </Box>
+
         </Box>
       </Drawer>
 
@@ -4075,6 +4187,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           </Box>
 
           <Box sx={{ p: 2, flex: 1, overflowY: "auto" }}>
+
             <Card elevation={1} sx={{ borderRadius: 2 }}>
               <CardContent>
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -4175,15 +4288,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                 overflowY: "auto",
                               }}
                               onScroll={(event) => {
-                                const {
-                                  scrollTop,
-                                  clientHeight,
-                                  scrollHeight,
-                                } = event.currentTarget;
-                                if (
-                                  scrollTop + clientHeight >=
-                                  scrollHeight - 50
-                                ) {
+                                const { scrollTop, clientHeight, scrollHeight } =
+                                  event.currentTarget;
+                                if (scrollTop + clientHeight >= scrollHeight - 50) {
                                   loadFilteredUsers();
                                 }
                               }}
@@ -4576,9 +4683,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     size="small"
                     fullWidth
                     options={userOptions}
-                    getOptionLabel={(option) =>
-                      option.email || option.name || ""
-                    }
+                    getOptionLabel={(option) => option.email || option.name || ""}
                     loading={loadingUsers.current}
                     onInputChange={(event, newInputValue) => {
                       setUserSearchQuery(newInputValue);
@@ -4602,7 +4707,10 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                           endAdornment: (
                             <React.Fragment>
                               {loadingUsers.current ? (
-                                <CircularProgress color="inherit" size={20} />
+                                <CircularProgress
+                                  color="inherit"
+                                  size={20}
+                                />
                               ) : null}
                               {params.InputProps.endAdornment}
                             </React.Fragment>
@@ -4667,23 +4775,23 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     >
                       {`[${(assignment.role === "Admin"
                         ? [
+                          "Read",
+                          "Write",
+                          "Delete",
+                          "Share",
+                          "UserAdmin",
+                          "Comment",
+                          "Upload",
+                        ]
+                        : assignment.role === "Editor"
+                          ? [
                             "Read",
                             "Write",
                             "Delete",
                             "Share",
-                            "UserAdmin",
                             "Comment",
                             "Upload",
                           ]
-                        : assignment.role === "Editor"
-                          ? [
-                              "Read",
-                              "Write",
-                              "Delete",
-                              "Share",
-                              "Comment",
-                              "Upload",
-                            ]
                           : assignment.role === "Viewer"
                             ? ["Read", "Comment"]
                             : assignment.role === "Collaborator"
@@ -4744,7 +4852,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       <Portal>
         <Snackbar
           open={snackbar.open}
-          autoHideDuration={500}
+          autoHideDuration={5000}
           onClose={handleSnackbarClose}
           anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
           sx={{ zIndex: 5000 }} // ✅ Makes Snackbar appear on top of all dialogs/drawers
@@ -4752,7 +4860,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           <Alert
             onClose={handleSnackbarClose}
             severity={snackbar.severity}
-            sx={{ width: "100%" }}
+            sx={{ width: "100%", whiteSpace: "pre-wrap" }}
             elevation={6}
             variant="filled"
           >
@@ -4760,7 +4868,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           </Alert>
         </Snackbar>
       </Portal>
-    </Box>
+    </Box >
   );
 }
 

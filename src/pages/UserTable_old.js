@@ -1,0 +1,2345 @@
+import React, { useState, useEffect, useRef } from "react";
+import * as XLSX from "xlsx"; // Add this at the top of the file
+import axios from "axios";
+
+import {
+    Box,
+    Paper,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TablePagination,
+    TableRow,
+    Checkbox,
+    IconButton,
+    Select,
+    MenuItem,
+    TextField,
+    InputAdornment,
+    Divider,
+    Switch,
+    Tooltip,
+    styled,
+    Dialog,
+    DialogTitle,
+    Button,
+    DialogContent,
+    Grid,
+    DialogActions,
+    Typography,
+    alpha,
+    Autocomplete,
+    FormControl,
+    InputLabel,
+    FormControlLabel,
+    Slide,
+} from "@mui/material";
+import { Menu } from "@mui/material";
+import FilterListIcon from "@mui/icons-material/FilterList";
+import { CheckCircle } from "@mui/icons-material";
+
+import { Snackbar, Alert } from "@mui/material";
+import {
+    Search,
+    Edit,
+    Delete,
+    Add,
+    Settings,
+    Dashboard,
+    People,
+    Storage,
+    FileDownload,
+    WifiProtectedSetup,
+    PowerSettingsNew,
+    Block,
+    Close,
+    Filter,
+    FilterList,
+} from "@mui/icons-material";
+import SearchIcon from "@mui/icons-material/Search";
+
+import styles from "./user.module.css";
+import DeleteUser from "./DeleteUser";
+import Migration from "./Migration";
+import CreateUser from "./CreateUser";
+import Department from "../Department";
+import { toast } from "react-toastify";
+import { CircularProgress, keyframes } from "@mui/material";
+import { activateAll, fetchUsers } from "../../api/userService";
+import { toggleUserStatusByUsername } from "../../api/userService";
+import { getDepartments } from "../../api/departmentService";
+import { updateUser } from "../../api/userService";
+// import { activateAll } from "../../api/userService";
+import { TableSortLabel } from "@mui/material";
+// COMMENTED OUT: searchUsers no longer used ΓÇö fetchUsers handles search params
+// import { searchUsers } from "../../api/userService";
+import { debounce } from "lodash";
+
+const CustomSwitch = styled(Switch)(({ theme, checked }) => ({
+    "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
+        backgroundColor: "blue",
+    },
+    "& .MuiSwitch-switchBase + .MuiSwitch-track": {
+        backgroundColor: "rgba(255, 165, 0, 0.5)",
+    },
+    "& .MuiSwitch-switchBase.Mui-checked .MuiSwitch-thumb": {
+        color: "blue",
+    },
+    "& .MuiSwitch-thumb": {
+        color: "orange",
+    },
+}));
+
+const fadeIn = keyframes`
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+`;
+
+// Styled overlay
+const LoaderWrapper = styled(Box)(({ theme }) => ({
+    position: "fixed",
+    top: 0,
+    left: 0,
+    width: "100vw",
+    height: "100vh",
+    background: "rgba(255, 255, 255, 0.75)",
+    backdropFilter: "blur(5px)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1300,
+    animation: `${fadeIn} 0.5s ease-in-out`,
+}));
+
+// Styled CircularProgress
+const CustomSpinner = styled(CircularProgress)(({ theme }) => ({
+    color: theme.palette.primary.main,
+    width: "60px !important",
+    height: "80px !important",
+    thickness: 2,
+}));
+
+const IOSSwitch = styled((props) => (
+    <Switch focusVisibleClassName=".Mui-focusVisible" disableRipple {...props} />
+))(({ theme }) => ({
+    width: 42,
+    height: 26,
+    padding: 0,
+    "& .MuiSwitch-switchBase": {
+        padding: 0,
+        margin: 2,
+        transitionDuration: "300ms",
+        "&.Mui-checked": {
+            transform: "translateX(16px)",
+            color: "#fff",
+            "& + .MuiSwitch-track": {
+                backgroundColor: "#65C466",
+                opacity: 1,
+                border: 0,
+                ...theme.applyStyles("dark", {
+                    backgroundColor: "#2ECA45",
+                }),
+            },
+            "&.Mui-disabled + .MuiSwitch-track": {
+                opacity: 0.5,
+            },
+        },
+        "&.Mui-focusVisible .MuiSwitch-thumb": {
+            color: "#33cf4d",
+            border: "6px solid #fff",
+        },
+        "&.Mui-disabled .MuiSwitch-thumb": {
+            color: theme.palette.grey[100],
+            ...theme.applyStyles("dark", {
+                color: theme.palette.grey[600],
+            }),
+        },
+        "&.Mui-disabled + .MuiSwitch-track": {
+            opacity: 0.7,
+            ...theme.applyStyles("dark", {
+                opacity: 0.3,
+            }),
+        },
+    },
+    "& .MuiSwitch-thumb": {
+        boxSizing: "border-box",
+        width: 22,
+        height: 22,
+    },
+    "& .MuiSwitch-track": {
+        borderRadius: 26 / 2,
+        backgroundColor: "#E9E9EA",
+        opacity: 1,
+        transition: theme.transitions.create(["background-color"], {
+            duration: 500,
+        }),
+        ...theme.applyStyles("dark", {
+            backgroundColor: "#39393D",
+        }),
+    },
+}));
+
+const Transition = React.forwardRef(function Transition(props, ref) {
+    return <Slide direction="right" ref={ref} {...props} />;
+});
+
+const allColumns = [
+    { id: "name", label: "Name" },
+    { id: "region", label: "Command" },
+    { id: "department", label: "Unit" },
+    // { id: "sections", label: "Section" }, // COMMENTED OUT
+    { id: "role", label: "Role" },
+    { id: "email", label: "Email" },
+    { id: "storageUsed", label: "Storage" },
+    { id: "manageStorage", label: "Manage Storage" },
+    { id: "activeLicense", label: "Status" },
+    { id: "actions", label: "Actions" },
+];
+
+export default function UserTable() {
+    const [statusFilter, setStatusFilter] = useState("");
+    const [filterAnchor, setFilterAnchor] = useState(null);
+    const [searchColumn, setSearchColumn] = useState("name");
+    const [visibleColumns, setVisibleColumns] = useState(
+        allColumns.reduce((acc, col) => ({ ...acc, [col.id]: true }), {})
+    );
+    const [anchorEl, setAnchorEl] = useState(null);
+
+    const [searchQuery, setSearchQuery] = useState("");
+    const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(searchQuery);
+
+    const [showRoleChange, setShowRoleChange] = useState(false);
+
+    const [order, setOrder] = useState("asc");
+    const [orderBy, setOrderBy] = useState(""); // column field
+
+    const [showDeptChange, setShowDeptChange] = useState(false);
+
+    const [departments, setDepartments] = useState([]);
+    const [departmentPage, setDepartmentPage] = useState(0);
+    const [hasMoreDepartments, setHasMoreDepartments] = useState(true);
+    const loadingDepartments = useRef(false);
+
+    const [snackbarOpen, setSnackbarOpen] = useState(false);
+    const [snackbarMessage, setSnackbarMessage] = useState("");
+    const [snackbarSeverity, setSnackbarSeverity] = useState("success");
+
+    const [totalCount, setTotalCount] = useState(0);
+    const adminEmail = sessionStorage.getItem("adminEmail");
+    const [page, setPage] = React.useState(0);
+    const [rowsPerPage, setRowsPerPage] = React.useState(10);
+    const [selected, setSelected] = useState([]);
+    const [createUser, setCreateUser] = useState(false);
+    const [checked, setChecked] = useState(false);
+
+    const [rowsData, setRowsData] = useState([]);
+
+    const [deleteUser, setDeleteUser] = useState(false);
+    const [rowData, setRowData] = useState([]);
+    const [selectAllData, setSelectAllData] = useState(false);
+    const [hoveredRow, setHoveredRow] = useState(null);
+    const [migrationDialog, setMigrationDialog] = useState(false);
+    const [editDialogOpen, setEditDialogOpen] = useState(false);
+    const [editData, setEditData] = useState({});
+    const [Storage, setStorage] = React.useState("");
+    const [loading, setLoading] = useState(true);
+    const [selectedDepartment, setSelectedDepartment] = useState(null);
+    const [userRoleMap, setUserRoleMap] = useState({});
+    const [fullDepartments, setFullDepartments] = useState([]);
+    const [regions, setRegions] = useState([]);
+    // COMMENTED OUT: Section state and fetch
+    // const [sections, setSections] = useState([]); // Γ£à Added sections state
+
+    // // Γ£à Fetch sections when dialog opens or component mounts
+    // const fetchSections = async () => {
+    //   try {
+    //     const response = await axios.get(
+    //       `${window.__ENV__.REACT_APP_ROUTE}/tenants/section/getAll`,
+    //       {
+    //         headers: {
+    //           Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+    //           "Content-Type": "application/json",
+    //           username: sessionStorage.getItem("adminEmail"),
+    //         },
+    //       }
+    //     );
+    //     setSections(response.data.sections || []);
+    //   } catch (err) {
+    //     console.error("Failed to fetch sections:", err);
+    //   }
+    // };
+
+    // useEffect(() => {
+    //   if (editDialogOpen) {
+    //     fetchSections();
+    //   }
+    // }, [editDialogOpen]);
+
+    <Autocomplete
+        options={departments}
+        getOptionLabel={(option) => option.deptName || ""}
+        value={departments.find((d) => d.deptName === editData.department) || null}
+        onChange={(e, value) => {
+            setEditData((prev) => ({
+                ...prev,
+                department: value?.deptName || "",
+            }));
+        }}
+        ListboxProps={{
+            style: { maxHeight: 300, overflow: "auto" },
+            onScroll: (event) => {
+                const listboxNode = event.currentTarget;
+                const threshold = 50;
+                if (
+                    listboxNode.scrollTop + listboxNode.clientHeight >=
+                    listboxNode.scrollHeight - threshold
+                ) {
+                    loadMoreDepartments();
+                }
+            },
+        }}
+        renderInput={(params) => (
+            <TextField
+                {...params}
+                size="small"
+                label="Unit"
+                fullWidth
+                variant="outlined"
+            />
+        )}
+    />;
+
+    const getRegions = async () => {
+        try {
+            const response = await axios.get(
+                `${window.__ENV__.REACT_APP_ROUTE}/tenants/getRegion`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+                        "Content-Type": "application/json",
+                        username: sessionStorage.getItem("adminEmail"), // same as your other APIs
+                    },
+                }
+            );
+
+            const data = response?.data || {};
+            const regionsArray = Array.isArray(data.regions) ? data.regions : [];
+
+            // normalize to array of strings
+            const list = regionsArray
+                .map((r) => (typeof r === "string" ? r : r?.regionName || ""))
+                .filter(Boolean);
+
+            return {
+                list, // Γ£à cleaned-up region strings for Autocomplete
+                defaultRegion: data.defaultRegion || "",
+            };
+        } catch (error) {
+            console.error("Error fetching regions:", error);
+            return { list: [], defaultRegion: "" }; // safe fallback
+        }
+    };
+
+    const handleCloseDialog = () => {
+        setEditDialogOpen(false);
+        setEditData({});
+        setSelectedDepartment(null);
+    };
+
+    const handleRequestSort = (property) => {
+        const isAsc = orderBy === property && order === "asc";
+        setOrder(isAsc ? "desc" : "asc");
+        setOrderBy(property);
+    };
+
+    const getComparator = (order, orderBy) => {
+        return (a, b) => {
+            if (a.email === adminEmail) return -1;
+            if (b.email === adminEmail) return 1;
+
+            const valA = extractValue(a, orderBy);
+            const valB = extractValue(b, orderBy);
+
+            if (order === "desc") {
+                if (valB < valA) return -1;
+                if (valB > valA) return 1;
+            } else {
+                if (valA < valB) return -1;
+                if (valA > valB) return 1;
+            }
+            return 0;
+        };
+    };
+
+    const descendingComparator = (a, b, orderBy) => {
+        const valA = extractValue(a, orderBy);
+        const valB = extractValue(b, orderBy);
+
+        if (valB < valA) return -1;
+        if (valB > valA) return 1;
+        return 0;
+    };
+
+    const extractValue = (row, orderBy) => {
+        switch (orderBy) {
+            case "name":
+            case "email":
+                return row[orderBy]?.toLowerCase() || "";
+            case "department":
+                return row.roles?.[0]?.department?.deptName?.toLowerCase() || "";
+            case "role":
+                return row.roles?.[0]?.roleName?.toLowerCase() || "";
+            case "region": // Γ£à NEW
+                return row.region?.toLowerCase() || "";
+            // case "sections": // COMMENTED OUT - Section sorting
+            //   return (row.sections || []).join(", ").toLowerCase();
+            case "storageUsed":
+                return toBytes(row.permissions?.displayStorage);
+            default:
+                return "";
+        }
+    };
+
+    const fetchFullDepartments = async () => {
+        try {
+            // COMMENTED OUT: called with no args ΓåÆ only fetched first 10 departments, missing any beyond page 1
+            // const res = await getDepartments();
+            // NEW: use size=1000 to fetch all departments in one call
+            const res = await getDepartments(0, 1000);
+
+            return res.content || [];
+        } catch (error) {
+            console.error("Failed to fetch full departments:", error);
+            return [];
+        }
+    };
+
+    const handleSaveChanges = async () => {
+
+
+        try {
+            const fullDepartments = await fetchFullDepartments();
+
+            let deptObj = null;
+            let roleObj = null;
+
+            if (editData.department) {
+                deptObj = fullDepartments.find(
+                    (d) =>
+                        d.deptName?.toLowerCase() === editData.department?.toLowerCase()
+                );
+
+                if (!deptObj) {
+                    toast.error("Invalid department selected.");
+                    return;
+                }
+
+                if (editData.role) {
+                    roleObj = deptObj.roles?.find(
+                        (r) => r.roleName?.toLowerCase() === editData.role?.toLowerCase()
+                    );
+
+                    if (!roleObj) {
+                        toast.error("Invalid role selected.");
+                        return;
+                    }
+                }
+            }
+
+            const userPayload = {
+                userId: editData.id,
+                userName: editData.name.trim(),
+                deptId: deptObj?.id || null,
+                roleId: roleObj?.id || null,
+                region: editData.region?.trim() || "",
+                // sections: editData.sections || [], // COMMENTED OUT
+            };
+
+            await updateUser(userPayload);
+
+            if (roleObj) {
+                setUserRoleMap((prev) => ({
+                    ...prev,
+                    [editData.id]: roleObj.id,
+                }));
+            }
+
+            toast.success("User updated successfully!");
+            setEditDialogOpen(false);
+            refetchUsers();
+        } catch (error) {
+            console.error("Error updating user:", error);
+            toast.error("Failed to update user.");
+        }
+    };
+
+    const loadMoreDepartments = async () => {
+        if (loadingDepartments.current || !hasMoreDepartments) return;
+        loadingDepartments.current = true;
+
+        try {
+            const res1 = await getDepartments(departmentPage, 10);
+            const res = res1?.content || [];
+
+            const newDepartments = res.map((dept) => ({
+                ...dept,
+                roles: (dept.roles || []).map((role) => role.roleName),
+            }));
+
+            if (newDepartments.length < 10) setHasMoreDepartments(false);
+            setDepartments((prev) => [...prev, ...newDepartments]);
+            setDepartmentPage((prev) => prev + 1);
+        } catch (err) {
+            console.error("Failed to load departments:", err);
+        } finally {
+            loadingDepartments.current = false;
+        }
+    };
+
+    useEffect(() => {
+        loadMoreDepartments();
+    }, []);
+
+    const handleMigrationComplete = (updatedRows) => {
+        setRowsData(updatedRows);
+    };
+
+    const handleChangeStorage = (event) => {
+        setStorage(event.target.value);
+    };
+
+    const handleEdit = async (e, row) => {
+
+
+        try {
+            const fullDepartments = await fetchFullDepartments();
+            setFullDepartments(fullDepartments);
+
+            const { list, defaultRegion } = await getRegions();
+            setRegions(list);
+
+            // Prefill region: current row > default from API > first option > ""
+            const prefillRegion = row.region || defaultRegion || list[0] || "";
+
+            const savedRoleId = userRoleMap[row.id];
+            const currentRole =
+                row.roles?.find((r) => r.id === savedRoleId) || row.roles?.[0];
+
+            const deptName = currentRole?.department?.deptName || "";
+            const roleName = currentRole?.roleName || "";
+
+            const deptObj = fullDepartments.find(
+                (d) => d.deptName?.toLowerCase() === deptName?.toLowerCase()
+            );
+
+            const matchedRole = deptObj?.roles?.find(
+                (r) => r.roleName?.toLowerCase() === roleName?.toLowerCase()
+            );
+
+            const newEditData = {
+                id: row.id,
+                name: row.name || "",
+                email: row.email || "",
+                name: row.name || "",
+                email: row.email || "",
+                // phoneNumber: row.phoneNumber || "", // Γ¥î Removed
+                reportingManager: row.reportingManager || "",
+                department: deptName,
+                role: matchedRole?.roleName || roleName,
+                roles: row.roles || [],
+                region: prefillRegion,
+                // sections: row.sections || [], // COMMENTED OUT
+            };
+
+            setEditData(newEditData);
+            setSelectedDepartment(deptObj || null);
+            setEditDialogOpen(true);
+        } catch (error) {
+            console.error("Failed to load departments", error);
+            toast.error("Unable to fetch departments. Please try again.");
+        }
+    };
+
+    const handleMigration = () => {
+        setMigrationDialog(true);
+    };
+
+    const regionOptions = React.useMemo(
+        () => [...new Set([editData.region, ...regions].filter(Boolean))],
+        [regions, editData.region]
+    );
+
+    const handleActivateAll = async () => {
+        if (!rowData || rowData.length === 0) {
+            toast.warn("No users selected for activation.");
+            return;
+        }
+
+        // Build full user objects for payload
+        const usersToActivate = rowData.map((user) => ({
+            ...user, // include entire user object
+            active: true, // ensure active is true
+            permissions: {
+                ...user.permissions,
+                allowedStorageInBytesDisplay: "1GB", // Γ£à override storage
+            },
+        }));
+
+
+
+        try {
+            await toggleUserStatusByUsername(usersToActivate, page); // Γ£à send complete users
+
+            await refetchUsers();
+
+            setSelected([]);
+            setRowData([]);
+
+            toast.success("Selected users have been activated.");
+        } catch (error) {
+            console.error("Error activating users:", error);
+            toast.error("Failed to activate selected users.");
+        }
+    };
+
+    const options = ["10GB", "20GB"];
+
+    const handleBulkDownload = () => {
+
+        if (!rowData || rowData.length === 0) {
+            alert("No data to download");
+            return;
+        }
+
+        const formatStatus = (row) => {
+            if (row.active && !row.enabled) return "Pending";
+            if (row.active && row.enabled) return "Active";
+            return "Inactive";
+        };
+
+        const extractRowData = (row) => ({
+            Name: row.name || "N/A",
+            Unit: row.roles?.[0]?.department?.deptName || "N/A",
+            Role: row.roles?.[0]?.roleName || "N/A",
+            "User Email": row.email || "N/A",
+            Command: row.region || "N/A", // Γ£à NEW COLUMN
+            // Section: (row.sections || []).join(", ") || "N/A", // COMMENTED OUT
+            "Phone Number": row.phoneNumber || "N/A",
+            "Reporting Manager": row.reportingManager || "N/A",
+            "Storage Used": row.permissions?.displayStorage || "N/A",
+            "Manage Storage": row.permissions?.allowedStorageInBytesDisplay || "N/A",
+            "Active License": formatStatus(row),
+        });
+
+        const dataToDownload = rowData.map(extractRowData);
+        const headers = Object.keys(dataToDownload[0]);
+
+        const worksheet = XLSX.utils.json_to_sheet(dataToDownload, {
+            header: headers,
+        });
+
+        worksheet["!cols"] = [
+            { wch: 12 },
+            { wch: 20 },
+            { wch: 20 },
+            { wch: 25 },
+            { wch: 30 },
+            { wch: 18 },
+            { wch: 25 },
+            { wch: 15 },
+            { wch: 18 },
+            { wch: 15 },
+        ];
+
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Selected Users");
+        // XLSX.writeFile(workbook, "selected-users.xlsx");
+        const fileName =
+            rowData.length === 1
+                ? `${rowData[0].name?.replace(/\s+/g, "_")}-user.xlsx`
+                : "selected-users.xlsx";
+
+        XLSX.writeFile(workbook, fileName);
+
+        setSelected([]);
+        setRowData([]);
+
+        // Γ£à Show success message
+        setSnackbarMessage("User data downloaded successfully");
+        setSnackbarSeverity("success");
+        setSnackbarOpen(true);
+    };
+
+    const label = { inputProps: { "aria-label": "Switch demo" } };
+
+    const handleDelete = (e, row) => {
+        if (row) {
+            setDeleteUser(true);
+            setRowData([row]);
+            setSelected([row.id]);
+        } else {
+            if (selected.length === 0) {
+                toast.warning("No users selected for deletion.");
+                return;
+            }
+
+            const selectedFullRows = rowsData.filter((r) => selected.includes(r.id));
+            setDeleteUser(true);
+            setRowData(selectedFullRows); // send all selected users
+        }
+    };
+
+    const toBytes = (display) => {
+        if (!display || typeof display !== "string") return 0;
+
+        const trimmed = display.trim().toUpperCase(); // "1.00 GB" => "1.00 GB"
+        const match = trimmed.match(/^([\d.]+)\s*(KB|MB|GB|TB)$/);
+
+        if (!match) return 0;
+
+        const num = parseFloat(match[1]);
+        const unit = match[2];
+
+        const unitMap = {
+            KB: 1024,
+            MB: 1024 ** 2,
+            GB: 1024 ** 3,
+            TB: 1024 ** 4,
+        };
+
+        return num * unitMap[unit];
+    };
+
+    const handleStatusToggle = async (username) => {
+        const user = rowsData.find((u) => u.name === username);
+        if (!user) return;
+
+        const newStatus = !user.active;
+        const selectedStorage =
+            user.permissions?.allowedStorageInBytesDisplay || "0KB";
+        const selectedStorageBytes = toBytes(selectedStorage);
+
+        // Update only the targeted user in the full list
+        const updatedRows = rowsData.map((u) =>
+            u.name === username
+                ? {
+                    ...u,
+                    active: newStatus,
+                    permissions: {
+                        ...u.permissions,
+                        allowedStorageInBytesDisplay: selectedStorage,
+                        allowedStorageInBytes: selectedStorageBytes,
+                        active: newStatus,
+                    },
+                }
+                : u
+        );
+
+        try {
+            await toggleUserStatusByUsername(updatedRows, page); // send full payload
+            setRowsData(updatedRows); // update state
+
+            let statusMessage = "";
+            if (newStatus && !user.enabled) {
+                statusMessage = `User "${user.name}" is pending email verification`;
+            } else if (newStatus && user.enabled) {
+                statusMessage = `User "${user.name}" has been activated`;
+            } else {
+                statusMessage = `User "${user.name}" has been deactivated`;
+            }
+            toast.success(statusMessage);
+        } catch (error) {
+            console.error("Failed to update users", error);
+            toast.error("Failed to update users.");
+        }
+    };
+
+    const handleCreateUser = () => {
+        setCreateUser(true);
+    };
+
+    const handleChange = (event) => {
+        setChecked(event.target.checked);
+    };
+
+    const handleChangePage = (event, newPage) => {
+        setPage(newPage);
+    };
+
+    const handleChangeRowsPerPage = (event) => {
+        setRowsPerPage(+event.target.value);
+        setPage(0);
+    };
+
+    const handleSelectAllClick = (event) => {
+        if (event.target.checked) {
+            const allIds = rowsData
+                .filter((row) => row.email !== adminEmail) // exclude current admin
+                .map((row) => row.id);
+
+            setSelected(allIds);
+
+            const selectedFullRows = rowsData.filter((r) => allIds.includes(r.id));
+            setRowData(selectedFullRows);
+
+            setSelectAllData(true);
+        } else {
+            setSelected([]);
+
+            const selectedFullRows = rowsData.filter((r) => selected.includes(r.id));
+            setRowData(selectedFullRows);
+
+            setSelectAllData(false);
+        }
+    };
+
+    const handleClick = (row) => {
+        const selectedIndex = selected.indexOf(row.id);
+        let newSelected = [];
+
+        if (selectedIndex === -1) {
+            newSelected = [...selected, row.id];
+        } else if (selectedIndex === 0) {
+            newSelected = selected.slice(1);
+        } else if (selectedIndex === selected.length - 1) {
+            newSelected = selected.slice(0, -1);
+        } else if (selectedIndex > 0) {
+            newSelected = [
+                ...selected.slice(0, selectedIndex),
+                ...selected.slice(selectedIndex + 1),
+            ];
+        }
+
+        setSelected(newSelected);
+
+        const selectedFullRows = rowsData.filter((r) => newSelected.includes(r.id));
+        setRowData(selectedFullRows);
+    };
+
+    const isSelected = (id) => selected.indexOf(id) !== -1;
+
+    const refetchUsers = async () => {
+        setLoading(true);
+        try {
+            const adminEmail = sessionStorage.getItem("adminEmail");
+
+            // COMMENTED OUT: used separate searchUsers API for search queries
+            // if (debouncedSearchQuery.trim()) {
+            //   users = await searchUsers(page, rowsPerPage, searchColumn, debouncedSearchQuery.trim());
+            // } else {
+            //   users = await fetchUsers(page, rowsPerPage);
+            // }
+            // NEW: always use fetchUsers ΓÇö pass searchColumn/searchQuery when search is active
+            const users = await fetchUsers(
+                page,
+                rowsPerPage,
+                searchColumn,
+                debouncedSearchQuery.trim(), // empty string when no search
+            );
+            // Γ£à Normalize storage format like "1.00 GB" ΓåÆ "1GB"
+            const normalizedUsers = (users.content || []).map((user) => {
+                const display = user.permissions?.allowedStorageInBytesDisplay;
+                if (display) {
+                    const fixedDisplay = display
+                        .replace(/\.00\s?([A-Z]+)/, "$1") // remove ".00" before GB/MB/etc.
+                        .replace(/\s+/g, ""); // remove spaces
+                    return {
+                        ...user,
+                        permissions: {
+                            ...user.permissions,
+                            allowedStorageInBytesDisplay: fixedDisplay,
+                        },
+                    };
+                }
+                return user;
+            });
+
+            // Γ£à Put admin email first
+            const sortedUsers = [...normalizedUsers].sort((a, b) => {
+                if (a.email === adminEmail) return -1;
+                if (b.email === adminEmail) return 1;
+                return 0;
+            });
+
+            setRowsData(sortedUsers);
+            setTotalCount(users.totalElements || 0);
+        } catch (error) {
+            console.error("Error loading users", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        const timer = setTimeout(() => setLoading(false), 300);
+        return () => clearTimeout(timer);
+    }, []);
+
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedSearchQuery(searchQuery);
+            setPage(0); // NEW: reset to page 1 (0-based) when search changes
+        }, 500); // wait 500ms after user stops typing
+
+        return () => {
+            clearTimeout(handler); // cleanup if user keeps typing
+        };
+    }, [searchQuery]);
+    useEffect(() => {
+        refetchUsers();
+    }, [page, rowsPerPage, searchColumn, debouncedSearchQuery]);
+
+
+
+    const handleClose = () => {
+        setMigrationDialog(false);
+    };
+
+    const filteredRows = rowsData.filter((row) => {
+        const query = searchQuery.toLowerCase().trim();
+
+        // Γ£à Status filter
+        if (statusFilter) {
+            let status = "Inactive";
+            if (row.active && !row.enabled) status = "Pending";
+            else if (row.active && row.enabled) status = "Active";
+
+            if (status !== statusFilter) return false;
+        }
+
+        // If there's no search query, everything passes the remaining filters
+        if (!query) return true;
+
+        if (searchColumn === "name") {
+            return row.name?.toLowerCase().includes(query);
+        }
+
+        if (searchColumn === "region") {
+            return row.region?.toLowerCase().includes(query);
+        }
+
+        if (searchColumn === "email") {
+            return row.email?.toLowerCase().includes(query);
+        }
+
+        if (searchColumn === "department") {
+            const selectedRoleId = userRoleMap[row.id];
+            const selectedRole = row.roles?.find(
+                (role) => role.id === selectedRoleId
+            );
+
+            // If a specific role is selected, check its department
+            if (selectedRole) {
+                return selectedRole.department?.deptName?.toLowerCase().includes(query);
+            }
+
+            // Fallback: check all departments associated with the user
+            return row.roles?.some(role =>
+                role.department?.deptName?.toLowerCase().includes(query)
+            );
+        }
+
+        if (searchColumn === "role") {
+            const selectedRoleId = userRoleMap[row.id];
+            const selectedRole = row.roles?.find(
+                (role) => role.id === selectedRoleId
+            );
+
+            if (selectedRole) {
+                // If a specific role is selected, check it and potentially others in the same department
+                const deptId = selectedRole.department?.id;
+                const rolesInSameDept = row.roles.filter(
+                    (role) => role.department?.id === deptId
+                );
+                const roleNames = rolesInSameDept.map((role) => role.roleName).join(", ");
+                return roleNames.toLowerCase().includes(query);
+            }
+
+            // Fallback: check all roles associated with the user
+            return row.roles?.some(role =>
+                role.roleName?.toLowerCase().includes(query)
+            );
+        }
+
+        return true;
+    });
+
+    const sortedRows = [...filteredRows].sort(getComparator(order, orderBy));
+
+    return (
+        <Box
+            sx={{
+                marginLeft: "14px",
+                bgcolor: "whitesmoke",
+                overflow: "hidden",
+                height: "calc(100vh - 48px)",
+                padding: "15px",
+            }}
+        >
+            <Paper
+                elevation={24}
+                sx={{
+                    width: "100%",
+                    overflow: "hidden",
+                    borderRadius: "20px",
+                    animation: "slideInFromLeft 0.3s ease-in-out forwards",
+                    opacity: 0, // Start with opacity 0
+                    transform: "translateX(-50px)", // Start from left
+                    "@keyframes slideInFromLeft": {
+                        "0%": {
+                            opacity: 0,
+                            transform: "translateX(-50px)",
+                        },
+                        "100%": {
+                            opacity: 1,
+                            transform: "translateX(0)",
+                        },
+                    },
+                }}
+                className="PaperUI"
+            >
+                <TableContainer sx={{ maxHeight: "83vh", height: "80vh" }}>
+                    <Box
+                        display="flex"
+                        alignItems="center"
+                        gap={2}
+                        sx={{ px: 2, mb: 2, py: 1 }}
+                    >
+                        <FormControl
+                            size="small"
+                            sx={{
+                                minWidth: 160,
+                                height: 30,
+                                "& .MuiInputBase-root": {
+                                    height: 30,
+                                    fontSize: "0.8rem",
+                                },
+                            }}
+                        >
+                            <InputLabel>Filter By</InputLabel>
+                            <Select
+                                value={searchColumn}
+                                onChange={(e) => setSearchColumn(e.target.value)}
+                                label="Filter By"
+                            >
+                                <MenuItem value="name">Name</MenuItem>
+                                <MenuItem value="region">Command</MenuItem>
+                                <MenuItem value="department">Unit</MenuItem>
+                                <MenuItem value="role">Role</MenuItem>
+                                <MenuItem value="email">Email</MenuItem>
+                            </Select>
+                        </FormControl>
+
+                        <TextField
+                            size="small"
+                            placeholder="Search"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            sx={{
+                                width: 250,
+                                height: 30,
+                                "& .MuiInputBase-root": {
+                                    height: 30,
+                                    fontSize: "0.8rem",
+                                },
+                            }}
+                            InputProps={{
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <SearchIcon color="action" fontSize="small" />
+                                    </InputAdornment>
+                                ),
+                            }}
+                        />
+
+                        <Tooltip title="Filter by Status">
+                            <IconButton onClick={(e) => setFilterAnchor(e.currentTarget)}>
+                                <FilterListIcon />
+                            </IconButton>
+                        </Tooltip>
+
+                        <Tooltip title="Show/Hide Columns">
+                            <Button
+                                variant="outlined"
+                                size="small"
+                                onClick={(e) => setAnchorEl(e.currentTarget)}
+                                sx={{ textTransform: "none", fontWeight: 500 }}
+                            >
+                                Columns
+                            </Button>
+                        </Tooltip>
+
+                        <Menu
+                            anchorEl={anchorEl}
+                            open={Boolean(anchorEl)}
+                            onClose={() => setAnchorEl(null)}
+                            PaperProps={{
+                                style: {
+                                    maxHeight: 320,
+                                    width: "200px",
+                                },
+                            }}
+                        >
+                            {allColumns.map((col) => (
+                                <MenuItem key={col.id}>
+                                    <Checkbox
+                                        checked={visibleColumns[col.id]}
+                                        onChange={() =>
+                                            setVisibleColumns((prev) => ({
+                                                ...prev,
+                                                [col.id]: !prev[col.id],
+                                            }))
+                                        }
+                                    />
+                                    {col.label}
+                                </MenuItem>
+                            ))}
+                        </Menu>
+
+                        <Button
+                            variant="outlined"
+                            color="error"
+                            onClick={() => setSearchQuery("")}
+                            disabled={!searchQuery.trim()} // Γ£à disable if input is empty or just spaces
+                            sx={{
+                                height: 30,
+                                padding: "0 12px",
+                                fontSize: "0.75rem",
+                                minWidth: 80,
+                                whiteSpace: "nowrap",
+                            }}
+                        >
+                            Γ£û CLEAR
+                        </Button>
+                    </Box>
+
+                    <Menu
+                        anchorEl={filterAnchor}
+                        open={Boolean(filterAnchor)}
+                        onClose={() => setFilterAnchor(null)}
+                    >
+                        <MenuItem
+                            selected={statusFilter === ""}
+                            onClick={() => {
+                                setStatusFilter("");
+                                setFilterAnchor(null);
+                            }}
+                        >
+                            All
+                        </MenuItem>
+                        <MenuItem
+                            selected={statusFilter === "Active"}
+                            onClick={() => {
+                                setStatusFilter("Active");
+                                setFilterAnchor(null);
+                            }}
+                        >
+                            Active
+                        </MenuItem>
+                        <MenuItem
+                            selected={statusFilter === "Inactive"}
+                            onClick={() => {
+                                setStatusFilter("Inactive");
+                                setFilterAnchor(null);
+                            }}
+                        >
+                            Inactive
+                        </MenuItem>
+                        <MenuItem
+                            selected={statusFilter === "Pending"}
+                            onClick={() => {
+                                setStatusFilter("Pending");
+                                setFilterAnchor(null);
+                            }}
+                        >
+                            Pending
+                        </MenuItem>
+                    </Menu>
+
+                    <Table
+                        sx={{
+                            "& .MuiTableCell-root": { padding: "8px 16px" },
+                            "& .MuiTableCell-head": {
+                                fontWeight: "bold",
+                                backgroundColor: "#f5f5f5",
+                            },
+                        }}
+                    >
+                        <TableHead className={styles.tableHeader}>
+                            <TableRow>
+                                <TableCell padding="checkbox">
+                                    <Checkbox
+                                        sx={{ padding: "1px !important" }}
+                                        checked={selected.length === rowsData.length}
+                                        indeterminate={
+                                            selected.length > 0 && selected.length < rowsData.length
+                                        }
+                                        onChange={handleSelectAllClick}
+                                    />
+                                </TableCell>
+
+                                {visibleColumns.name && (
+                                    <TableCell
+                                        align="left"
+                                        sortDirection={orderBy === "name" ? order : false}
+                                    >
+                                        <TableSortLabel
+                                            active={orderBy === "name"}
+                                            direction={orderBy === "name" ? order : "asc"}
+                                            onClick={() => handleRequestSort("name")}
+                                        >
+                                            Name
+                                        </TableSortLabel>
+                                    </TableCell>
+                                )}
+
+                                {visibleColumns.region && (
+                                    <TableCell
+                                        align="left"
+                                        sortDirection={orderBy === "region" ? order : false}
+                                    >
+                                        <TableSortLabel
+                                            active={orderBy === "region"}
+                                            direction={orderBy === "region" ? order : "asc"}
+                                            onClick={() => handleRequestSort("region")}
+                                        >
+                                            Command
+                                        </TableSortLabel>
+                                    </TableCell>
+                                )}
+
+                                {visibleColumns.department && (
+                                    <TableCell
+                                        align="left"
+                                        sortDirection={orderBy === "department" ? order : false}
+                                    >
+                                        <TableSortLabel
+                                            active={orderBy === "department"}
+                                            direction={orderBy === "department" ? order : "asc"}
+                                            onClick={() => handleRequestSort("department")}
+                                        >
+                                            Unit
+                                        </TableSortLabel>
+                                    </TableCell>
+                                )}
+
+                                {/* COMMENTED OUT: Section column header
+                {visibleColumns.sections && (
+                  <TableCell
+                    align="left"
+                    sortDirection={orderBy === "sections" ? order : false}
+                  >
+                    <TableSortLabel
+                      active={orderBy === "sections"}
+                      direction={orderBy === "sections" ? order : "asc"}
+                      onClick={() => handleRequestSort("sections")}
+                    >
+                      Section
+                    </TableSortLabel>
+                  </TableCell>
+                )}
+                */}
+
+                                {visibleColumns.role && (
+                                    <TableCell
+                                        align="left"
+                                        sortDirection={orderBy === "role" ? order : false}
+                                    >
+                                        <TableSortLabel
+                                            active={orderBy === "role"}
+                                            direction={orderBy === "role" ? order : "asc"}
+                                            onClick={() => handleRequestSort("role")}
+                                        >
+                                            Role
+                                        </TableSortLabel>
+                                    </TableCell>
+                                )}
+
+                                {visibleColumns.email && (
+                                    <TableCell
+                                        align="left"
+                                        sortDirection={orderBy === "email" ? order : false}
+                                    >
+                                        <TableSortLabel
+                                            active={orderBy === "email"}
+                                            direction={orderBy === "email" ? order : "asc"}
+                                            onClick={() => handleRequestSort("email")}
+                                        >
+                                            Email
+                                        </TableSortLabel>
+                                    </TableCell>
+                                )}
+
+                                {visibleColumns.storageUsed && (
+                                    <TableCell
+                                        align="left"
+                                        sortDirection={orderBy === "storageUsed" ? order : false}
+                                    >
+                                        <TableSortLabel
+                                            active={orderBy === "storageUsed"}
+                                            direction={orderBy === "storageUsed" ? order : "asc"}
+                                            onClick={() => handleRequestSort("storageUsed")}
+                                        >
+                                            Storage
+                                        </TableSortLabel>
+                                    </TableCell>
+                                )}
+
+                                {visibleColumns.manageStorage && (
+                                    <TableCell align="left">Manage Storage</TableCell>
+                                )}
+
+                                {visibleColumns.activeLicense && (
+                                    <TableCell align="center">Status</TableCell>
+                                )}
+
+                                {visibleColumns.actions && (
+                                    <TableCell align="center">Actions</TableCell>
+                                )}
+                            </TableRow>
+                        </TableHead>
+
+                        <TableBody>
+                            {sortedRows.map((row) => {
+                                const isItemSelected = isSelected(row.id);
+
+                                return (
+                                    <TableRow
+                                        key={row.id}
+                                        hover
+                                        selected={isItemSelected}
+                                        onMouseEnter={() => setHoveredRow(row.id)}
+                                        onMouseLeave={() => setHoveredRow(null)}
+                                    >
+                                        <TableCell padding="checkbox">
+                                            <Checkbox
+                                                sx={{ padding: "1px !important" }}
+                                                checked={isItemSelected}
+                                                onChange={() => handleClick(row)}
+                                                disabled={row.email === adminEmail}
+                                            />
+                                        </TableCell>
+
+                                        {visibleColumns.name && (
+                                            <TableCell align="left">
+                                                {row.name}
+                                                {row.email === adminEmail && " (admin)"}
+                                            </TableCell>
+                                        )}
+
+                                        {visibleColumns.region && (
+                                            <TableCell align="left">{row.region || "N/A"}</TableCell>
+                                        )}
+
+                                        {visibleColumns.department && (
+                                            <TableCell align="left">
+                                                {(() => {
+                                                    const allDepts = [
+                                                        ...new Set(
+                                                            row.roles
+                                                                ?.map((r) => r.department?.deptName)
+                                                                .filter(Boolean)
+                                                        ),
+                                                    ];
+
+                                                    if (allDepts.length > 1) {
+                                                        return (
+                                                            <FormControl size="small" fullWidth>
+                                                                <Select
+                                                                    value={allDepts[0]}
+                                                                    sx={{
+                                                                        height: 32,
+                                                                        fontSize: "0.875rem",
+                                                                        "& .MuiOutlinedInput-notchedOutline": {
+                                                                            border: "1px solid #e0e0e0",
+                                                                            borderRadius: "6px",
+                                                                        },
+                                                                        "&:hover .MuiOutlinedInput-notchedOutline":
+                                                                        {
+                                                                            border: "1px solid #1976d2",
+                                                                        },
+                                                                        "&.Mui-focused .MuiOutlinedInput-notchedOutline":
+                                                                        {
+                                                                            border: "2px solid #1976d2",
+                                                                        },
+                                                                        "& .MuiSelect-select": {
+                                                                            paddingLeft: "8px",
+                                                                            paddingRight: "32px",
+                                                                        },
+                                                                        "& .MuiSelect-icon": {
+                                                                            color: "#1976d2",
+                                                                        },
+                                                                    }}
+                                                                    MenuProps={{
+                                                                        PaperProps: {
+                                                                            sx: {
+                                                                                maxHeight: 300,
+                                                                                borderRadius: "8px",
+                                                                                boxShadow:
+                                                                                    "0 4px 20px rgba(0,0,0,0.15)",
+                                                                                "& .MuiMenuItem-root": {
+                                                                                    fontSize: "0.875rem",
+                                                                                    padding: "10px 16px",
+                                                                                    "&:hover": {
+                                                                                        backgroundColor: "#e3f2fd",
+                                                                                    },
+                                                                                    "&.Mui-selected": {
+                                                                                        backgroundColor: "#bbdefb",
+                                                                                        "&:hover": {
+                                                                                            backgroundColor: "#90caf9",
+                                                                                        },
+                                                                                    },
+                                                                                },
+                                                                            },
+                                                                        },
+                                                                    }}
+                                                                >
+                                                                    {allDepts.map((dept) => (
+                                                                        <MenuItem key={dept} value={dept}>
+                                                                            {dept}
+                                                                        </MenuItem>
+                                                                    ))}
+                                                                </Select>
+                                                            </FormControl>
+                                                        );
+                                                    }
+
+                                                    return allDepts[0] || "N/A";
+                                                })()}
+                                            </TableCell>
+                                        )}
+
+                                        {/* COMMENTED OUT: Section body cell
+                    {visibleColumns.sections && (
+                      <TableCell align="left">
+                        {(() => {
+                          const allSections = row.sections || [];
+                          if (allSections.length > 1) {
+                            return (
+                              <FormControl size="small" fullWidth>
+                                <Select
+                                  value={allSections[0]}
+                                  sx={{
+                                    height: 32,
+                                    fontSize: "0.875rem",
+                                    "& .MuiOutlinedInput-notchedOutline": {
+                                      border: "1px solid #e0e0e0",
+                                      borderRadius: "6px",
+                                    },
+                                    "&:hover .MuiOutlinedInput-notchedOutline": {
+                                      border: "1px solid #1976d2",
+                                    },
+                                    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                                      border: "2px solid #1976d2",
+                                    },
+                                    "& .MuiSelect-select": {
+                                      paddingLeft: "8px",
+                                      paddingRight: "32px",
+                                    },
+                                    "& .MuiSelect-icon": {
+                                      color: "#1976d2",
+                                    },
+                                  }}
+                                  MenuProps={{
+                                    PaperProps: {
+                                      sx: {
+                                        maxHeight: 300,
+                                        borderRadius: "8px",
+                                        boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+                                        "& .MuiMenuItem-root": {
+                                          fontSize: "0.875rem",
+                                          padding: "10px 16px",
+                                          "&:hover": {
+                                            backgroundColor: "#e3f2fd",
+                                          },
+                                          "&.Mui-selected": {
+                                            backgroundColor: "#bbdefb",
+                                            "&:hover": {
+                                              backgroundColor: "#90caf9",
+                                            },
+                                          },
+                                        },
+                                      },
+                                    },
+                                  }}
+                                >
+                                  {allSections.map((sec) => (
+                                    <MenuItem key={sec} value={sec}>
+                                      {sec}
+                                    </MenuItem>
+                                  ))}
+                                </Select>
+                              </FormControl>
+                            );
+                          }
+                          return allSections[0] || "N/A";
+                        })()}
+                      </TableCell>
+                    )}
+                    */}
+
+                                        {visibleColumns.role && (
+                                            <TableCell align="left">
+                                                {(() => {
+                                                    const allRoles = row.roles
+                                                        ?.map((r) => ({
+                                                            name: r.roleName,
+                                                            dept: r.department?.deptName,
+                                                        }))
+                                                        .filter((r) => r.name);
+
+                                                    // Unique roles representation string
+                                                    const uniqueRoles = [
+                                                        ...new Map(
+                                                            allRoles.map((item) => [
+                                                                item.name + item.dept,
+                                                                item,
+                                                            ])
+                                                        ).values(),
+                                                    ];
+
+                                                    if (uniqueRoles.length > 1) {
+                                                        return (
+                                                            <FormControl size="small" fullWidth>
+                                                                <Select
+                                                                    value={uniqueRoles[0].name}
+                                                                    sx={{
+                                                                        height: 32,
+                                                                        fontSize: "0.875rem",
+                                                                        "& .MuiOutlinedInput-notchedOutline": {
+                                                                            border: "1px solid #e0e0e0",
+                                                                            borderRadius: "6px",
+                                                                        },
+                                                                        "&:hover .MuiOutlinedInput-notchedOutline":
+                                                                        {
+                                                                            border: "1px solid #1976d2",
+                                                                        },
+                                                                        "&.Mui-focused .MuiOutlinedInput-notchedOutline":
+                                                                        {
+                                                                            border: "2px solid #1976d2",
+                                                                        },
+                                                                        "& .MuiSelect-select": {
+                                                                            paddingLeft: "8px",
+                                                                            paddingRight: "32px",
+                                                                        },
+                                                                        "& .MuiSelect-icon": {
+                                                                            color: "#1976d2",
+                                                                        },
+                                                                    }}
+                                                                    MenuProps={{
+                                                                        PaperProps: {
+                                                                            sx: {
+                                                                                maxHeight: 300,
+                                                                                borderRadius: "8px",
+                                                                                boxShadow:
+                                                                                    "0 4px 20px rgba(0,0,0,0.15)",
+                                                                                "& .MuiMenuItem-root": {
+                                                                                    fontSize: "0.875rem",
+                                                                                    padding: "10px 16px",
+                                                                                    "&:hover": {
+                                                                                        backgroundColor: "#e3f2fd",
+                                                                                    },
+                                                                                    "&.Mui-selected": {
+                                                                                        backgroundColor: "#bbdefb",
+                                                                                        "&:hover": {
+                                                                                            backgroundColor: "#90caf9",
+                                                                                        },
+                                                                                    },
+                                                                                },
+                                                                            },
+                                                                        },
+                                                                    }}
+                                                                >
+                                                                    {uniqueRoles.map((roleObj, idx) => (
+                                                                        <MenuItem key={idx} value={roleObj.name}>
+                                                                            {roleObj.name}
+                                                                            <Typography
+                                                                                variant="caption"
+                                                                                color="textSecondary"
+                                                                                sx={{ ml: 1 }}
+                                                                            >
+                                                                                ({roleObj.dept})
+                                                                            </Typography>
+                                                                        </MenuItem>
+                                                                    ))}
+                                                                </Select>
+                                                            </FormControl>
+                                                        );
+                                                    }
+
+                                                    return uniqueRoles[0] ? uniqueRoles[0].name : "N/A";
+                                                })()}
+                                            </TableCell>
+                                        )}
+
+                                        {visibleColumns.email && (
+                                            <TableCell align="left">{row.email}</TableCell>
+                                        )}
+
+                                        {visibleColumns.storageUsed && (
+                                            <TableCell align="left">
+                                                {row.permissions?.displayStorage || "N/A"}
+                                            </TableCell>
+                                        )}
+
+                                        {visibleColumns.manageStorage && (
+                                            <TableCell align="left">
+                                                <FormControl sx={{ m: 0, minWidth: 120 }} size="small">
+                                                    <Select
+                                                        id={`manage-storage-${row.id}`}
+                                                        value={
+                                                            row.permissions?.allowedStorageInBytesDisplay ||
+                                                            ""
+                                                        }
+                                                        onChange={async (e) => {
+                                                            const newDisplayValue = e.target.value;
+                                                            const newByteValue = toBytes(newDisplayValue);
+
+                                                            const updated = rowsData.map((r) =>
+                                                                r.id === row.id
+                                                                    ? {
+                                                                        ...r,
+                                                                        permissions: {
+                                                                            ...r.permissions,
+                                                                            allowedStorageInBytesDisplay:
+                                                                                newDisplayValue,
+                                                                            allowedStorageInBytes: newByteValue,
+                                                                        },
+                                                                    }
+                                                                    : r
+                                                            );
+
+                                                            setRowsData(updated);
+
+                                                            if (row.active) {
+                                                                const updatedRows = rowsData.map((u) =>
+                                                                    u.id === row.id
+                                                                        ? {
+                                                                            ...u,
+                                                                            permissions: {
+                                                                                ...u.permissions,
+                                                                                allowedStorageInBytesDisplay:
+                                                                                    newDisplayValue,
+                                                                                allowedStorageInBytes: newByteValue,
+                                                                            },
+                                                                        }
+                                                                        : u
+                                                                );
+
+                                                                try {
+                                                                    await toggleUserStatusByUsername(
+                                                                        updatedRows,
+                                                                        page
+                                                                    );
+                                                                    setRowsData(updatedRows);
+                                                                    toast.success(
+                                                                        `Storage updated for ${row.name}`
+                                                                    );
+                                                                } catch (error) {
+                                                                    toast.error(
+                                                                        `Failed to update storage for ${row.name}`
+                                                                    );
+                                                                }
+                                                            }
+                                                        }}
+                                                        displayEmpty
+                                                        sx={{
+                                                            width: "100px",
+                                                            height: "30px",
+                                                            borderRadius: "28px",
+                                                        }}
+                                                    >
+                                                        {(() => {
+                                                            const predefinedOptions = [
+                                                                "1GB",
+                                                                "3GB",
+                                                                "5GB",
+                                                                "10GB",
+                                                                "20GB",
+                                                                "40GB",
+                                                                "60GB",
+                                                            ];
+                                                            const currentValue =
+                                                                row.permissions?.allowedStorageInBytesDisplay;
+                                                            const allOptions = predefinedOptions.includes(
+                                                                currentValue
+                                                            )
+                                                                ? predefinedOptions
+                                                                : [currentValue, ...predefinedOptions];
+                                                            return allOptions.map((opt) => (
+                                                                <MenuItem key={opt} value={opt}>
+                                                                    {opt}
+                                                                </MenuItem>
+                                                            ));
+                                                        })()}
+                                                    </Select>
+                                                </FormControl>
+                                            </TableCell>
+                                        )}
+
+                                        {visibleColumns.activeLicense && (
+                                            <TableCell align="center">
+                                                <Tooltip
+                                                    title={
+                                                        row.active && !row.enabled
+                                                            ? "Pending (Email Not Verified)"
+                                                            : !row.active
+                                                                ? "Inactive (Provide Storage"
+                                                                : "Active"
+                                                    }
+                                                >
+                                                    <span>
+                                                        <FormControlLabel
+                                                            control={
+                                                                <IOSSwitch
+                                                                    checked={row.active && row.enabled}
+                                                                    onChange={() => handleStatusToggle(row.name)}
+                                                                    disabled={
+                                                                        row.email === adminEmail ||
+                                                                        (row.active && !row.enabled) ||
+                                                                        (!row.active &&
+                                                                            (!row.permissions
+                                                                                ?.allowedStorageInBytesDisplay ||
+                                                                                row.permissions
+                                                                                    ?.allowedStorageInBytesDisplay ===
+                                                                                "0 KB"))
+                                                                    }
+                                                                />
+                                                            }
+                                                        />
+                                                    </span>
+                                                </Tooltip>
+                                            </TableCell>
+                                        )}
+
+                                        {visibleColumns.actions && (
+                                            <TableCell align="center" sx={{ width: "200px" }}>
+                                                <>
+                                                    <Tooltip
+                                                        title={
+                                                            row.email === adminEmail
+                                                                ? "Admin user cannot be edited"
+                                                                : "Edit User"
+                                                        }
+                                                    >
+                                                        <span>
+                                                            <IconButton
+                                                                size="small"
+                                                                onClick={(e) => handleEdit(e, row)}
+                                                                disabled={row.email === adminEmail}
+                                                            >
+                                                                <Edit />
+                                                            </IconButton>
+                                                        </span>
+                                                    </Tooltip>
+
+                                                    <Tooltip
+                                                        title={
+                                                            row.email === adminEmail
+                                                                ? "Admin user cannot be deleted"
+                                                                : "Delete User"
+                                                        }
+                                                    >
+                                                        <span>
+                                                            <IconButton
+                                                                size="small"
+                                                                color="error"
+                                                                onClick={(e) => handleDelete(e, row)}
+                                                                disabled={row.email === adminEmail}
+                                                            >
+                                                                <Delete />
+                                                            </IconButton>
+                                                        </span>
+                                                    </Tooltip>
+                                                </>
+                                            </TableCell>
+                                        )}
+                                    </TableRow>
+                                );
+                            })}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+                <Divider />
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <TablePagination
+                        // rowsPerPageOptions={[10]}
+                        rowsPerPageOptions={[10, 20, 30, 50, 100]}
+                        component="div"
+                        count={totalCount}
+                        rowsPerPage={rowsPerPage}
+                        page={page}
+                        onPageChange={handleChangePage}
+                        onRowsPerPageChange={handleChangeRowsPerPage}
+                    />
+                    <div
+                        style={{
+                            gap: "5px",
+                            marginRight: "7px",
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                        }}
+                    >
+                        {selected.length >= 1 && (
+                            <Tooltip title="Activate All">
+                                <IconButton
+                                    sx={{
+                                        bgcolor: "#4caf50", // Γ£à Professional green background
+                                        color: "white",
+                                        boxShadow:
+                                            "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.6)",
+                                        "&:hover": {
+                                            backgroundColor: "#43a047", // darker green on hover
+                                            animation: "glowBorderActivate 1.5s ease-in-out infinite",
+                                        },
+                                        "@keyframes glowBorderActivate": {
+                                            "0%": {
+                                                boxShadow: "0 0 0px 2px #4caf50",
+                                                borderColor: "transparent",
+                                            },
+                                            "50%": {
+                                                boxShadow: "0 0 20px 5px #4caf50",
+                                                borderColor: "#4caf50",
+                                            },
+                                            "100%": {
+                                                boxShadow: "0 0 0px 2px #4caf50",
+                                                borderColor: "transparent",
+                                            },
+                                        },
+                                    }}
+                                    onClick={handleActivateAll} // Γ£à Your existing function
+                                >
+                                    <CheckCircle />
+                                </IconButton>
+                            </Tooltip>
+                        )}
+
+                        {selected.length >= 1 && (
+                            <Tooltip title="Delete">
+                                <IconButton
+                                    sx={{
+                                        bgcolor: "#d32f2f", // Solid orange background color
+                                        color: "white",
+                                        boxShadow:
+                                            "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.6)", // Default shadow
+                                        "&:hover": {
+                                            backgroundColor: "#d32f2f", // Keep the background color on hover
+                                            animation: "glowBorderDelete 1.5s ease-in-out infinite", // Apply glowing animation on hover
+                                        },
+                                        "@keyframes glowBorderDelete": {
+                                            "0%": {
+                                                boxShadow: "0 0 0px 2px #d32f2f", // Start with soft glow
+                                                borderColor: "transparent", // Initial transparent border
+                                            },
+                                            "50%": {
+                                                boxShadow: "0 0 20px 5px #d32f2f",
+                                                borderColor: "#d32f2f", // Glowing orange border
+                                            },
+                                            "100%": {
+                                                boxShadow: "0 0 0px 2px #d32f2f", // Glow fades out
+                                                borderColor: "transparent", // Reset to transparent
+                                            },
+                                        },
+                                    }}
+                                    onClick={handleDelete}
+                                >
+                                    <Delete />
+                                </IconButton>
+                            </Tooltip>
+                        )}
+
+                        <div
+                            style={{
+                                gap: "5px",
+                                marginRight: "7px",
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                            }}
+                        >
+                            {selected.length > 0 && (
+                                <Typography
+                                    variant="subtitle2"
+                                    sx={{
+                                        fontWeight: "bold",
+                                        color: "#333",
+                                        marginRight: "10px",
+                                    }}
+                                >
+                                    Total Selected: {selected.length} User
+                                    {selected.length > 1 ? "s" : ""}
+                                </Typography>
+                            )}
+                        </div>
+
+                        {selected.length >= 1 && (
+                            <Tooltip title="Download Selected">
+                                <IconButton
+                                    variant="contained"
+                                    sx={{
+                                        backgroundColor: "rgba(25,118,210,1)",
+                                        color: "white",
+                                        boxShadow:
+                                            "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.6)", // Default shadow
+                                        "&:hover": {
+                                            backgroundColor: "rgba(25,118,210,0.8)", // Keep the background color on hover
+                                            animation: "glowBorderDownload 1.5s ease-in-out infinite", // Apply glowing animation on hover
+                                        },
+                                        "@keyframes glowBorderDownload": {
+                                            "0%": {
+                                                boxShadow: "0 0 0px 2px rgba(25,118,210,0.8)", // Start with soft glow
+                                                borderColor: "transparent", // Initial transparent border
+                                            },
+                                            "50%": {
+                                                boxShadow: "0 0 20px 5px rgba(25,118,210,0.8)",
+                                                borderColor: "rgba(25,118,210,0.8)", // Glowing orange border
+                                            },
+                                            "100%": {
+                                                boxShadow: "0 0 0px 2px rgba(25,118,210,0.8)", // Glow fades out
+                                                borderColor: "transparent", // Reset to transparent
+                                            },
+                                        },
+                                    }}
+                                    onClick={handleBulkDownload}
+                                >
+                                    <FileDownload />
+                                </IconButton>
+                            </Tooltip>
+                        )}
+                        <Tooltip title="Add New User">
+                            <IconButton
+                                sx={{
+                                    bgcolor: "orange", // Solid orange background color
+                                    color: "white",
+                                    boxShadow:
+                                        "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.6)", // Default shadow
+                                    "&:hover": {
+                                        backgroundColor: "orange", // Keep the background color on hover
+                                        animation: "glowBorder 1.5s ease-in-out infinite", // Apply glowing animation on hover
+                                    },
+                                    "@keyframes glowBorder": {
+                                        "0%": {
+                                            boxShadow: "0 0 0px 2px rgba(251, 68, 36, 0.5)", // Start with soft glow
+                                            borderColor: "transparent", // Initial transparent border
+                                        },
+                                        "50%": {
+                                            boxShadow: "0 0 20px 5px rgba(251, 68, 36, 0.8)", // Stronger glow
+                                            borderColor: "rgb(251, 68, 36)", // Glowing orange border
+                                        },
+                                        "100%": {
+                                            boxShadow: "0 0 0px 2px rgba(251, 68, 36, 0.5)", // Glow fades out
+                                            borderColor: "transparent", // Reset to transparent
+                                        },
+                                    },
+                                }}
+                                onClick={handleCreateUser}
+                            >
+                                <Add />
+                            </IconButton>
+                        </Tooltip>
+                    </div>
+                </div>
+
+                <Dialog open={deleteUser} onClose={() => setDeleteUser(false)}>
+                    <DeleteUser
+                        handleClose={() => {
+                            setDeleteUser(false);
+                            setSelected([]); // Γ£à Clear selected IDs
+                            setRowData([]); // Γ£à Clear selected row data
+                            refetchUsers(); // Γ£à Then refresh the table
+                        }}
+                        rowId={selected}
+                    />
+                </Dialog>
+
+                <Dialog
+                    open={selectAllData}
+                    onClose={() => setSelectAllData(false)}
+                    fullWidth
+                >
+                    <DialogTitle sx={{ fontWeight: "13px", padding: "3px 7px" }}>
+                        Select Users
+                    </DialogTitle>
+
+                    <DialogContent dividers>
+                        <Typography>
+                            Do you want to select all users or just the current page
+                        </Typography>
+                    </DialogContent>
+                    <DialogActions
+                        sx={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                        }}
+                    >
+                        <Button
+                            style={{
+                                backgroundColor: "#9e9e9e",
+                                color: "white",
+
+                                border: "none",
+                                cursor: "pointer",
+                                borderRadius: "4px",
+                            }}
+                            onClick={() => {
+                                setSelected([]); // Deselect all rows
+                                setSelectAllData(false); // Close the dialog
+                            }}
+                        >
+                            Cancel
+                        </Button>
+                        <div style={{ gap: "4px" }}>
+                            <Button
+                                style={{
+                                    backgroundColor: "#1976d2",
+                                    color: "white",
+                                    marginRight: "4px",
+                                    border: "none",
+                                    cursor: "pointer",
+                                    borderRadius: "4px",
+                                }}
+                                onClick={() => {
+                                    const filteredPageRows = rowsData.filter(
+                                        (n) => n.email !== adminEmail
+                                    );
+                                    const currentPageIds = filteredPageRows.map((n) => n.id);
+
+                                    setSelected(currentPageIds); // Select only non-admin users
+                                    setRowData(filteredPageRows); // Store current page data without admin
+                                    setSelectAllData(false); // Mark selectAllData as false
+                                }}
+                            >
+                                Select Current Page ({rowsData.length} rows)
+                            </Button>
+
+                            <Button
+                                style={{
+                                    backgroundColor: "#d32f2f",
+                                    color: "white",
+                                    border: "none",
+                                    cursor: "pointer",
+                                    borderRadius: "4px",
+                                }}
+                                onClick={async () => {
+                                    try {
+                                        setSelectAllData(false); // Close dialog
+
+                                        let allUsers = [];
+                                        let page = 0;
+                                        let totalPages = 1;
+
+                                        const firstResponse = await fetchUsers(0);
+                                        totalPages = firstResponse.totalPages;
+                                        allUsers = [...firstResponse.content];
+
+                                        const remainingFetches = [];
+                                        for (let p = 1; p < totalPages; p++) {
+                                            remainingFetches.push(fetchUsers(p));
+                                        }
+
+                                        const results = await Promise.all(remainingFetches);
+                                        results.forEach((res) => {
+                                            allUsers.push(...res.content);
+                                        });
+
+                                        // Γ£à Exclude admin user
+                                        const nonAdminUsers = allUsers.filter(
+                                            (u) => u.email !== adminEmail
+                                        );
+
+                                        const allIds = nonAdminUsers.map((u) => u.id);
+                                        setSelected(allIds);
+                                        setRowData(nonAdminUsers); // Store only non-admin users
+                                    } catch (error) {
+                                        console.error("Failed to fetch all users:", error);
+                                        alert("Something went wrong while selecting all users.");
+                                    }
+                                }}
+                            >
+                                Select All Page Users
+                            </Button>
+                        </div>
+                    </DialogActions>
+                </Dialog>
+
+                <Dialog open={migrationDialog} onClose={handleClose} fullWidth>
+                    <Migration
+                        handleClos={handleClose}
+                        rowData={rowData}
+                        rows={rowsData}
+                        onMigrationComplete={handleMigrationComplete}
+                    />
+                </Dialog>
+
+                <Dialog
+                    open={createUser}
+                    onClose={() => setCreateUser(false)}
+                    fullWidth
+                    keepMounted
+                    TransitionComponent={Transition}
+                    aria-describedby="alert-dialog-slide-description"
+                    maxWidth="md"
+                    sx={{
+                        animation: "slideInFromLeft 0.2s ease-in-out forwards",
+                        opacity: 0, // Start with opacity 0
+                        transform: "translateX(-50px)", // Start from left
+                        "@keyframes slideInFromLeft": {
+                            "0%": {
+                                opacity: 0,
+                                transform: "translateX(-50px)",
+                            },
+                            "100%": {
+                                opacity: 1,
+                                transform: "translateX(0)",
+                            },
+                        },
+                    }}
+                >
+                    <CreateUser
+                        open={createUser} // ≡ƒæê Add this line
+                        handleClose={() => setCreateUser(false)}
+                        onUserCreated={(page, newUserEmails) => {
+                            refetchUsers(page, newUserEmails);
+                        }}
+                        showSnackbar={(message, severity = "success") => {
+                            setSnackbarMessage(message);
+                            setSnackbarSeverity(severity);
+                            setSnackbarOpen(true);
+                        }}
+                        allUsers={rowsData} // <-- pass all users here
+                    />
+                </Dialog>
+
+                <Dialog
+                    open={editDialogOpen}
+                    onClose={() => setEditDialogOpen(false)}
+                    maxWidth="sm"
+                >
+                    <DialogTitle
+                        sx={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            p: 1,
+                            backgroundColor: "primary.main",
+                        }}
+                    >
+                        <Typography
+                            variant="h6"
+                            sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                fontFamily: '"Be Vietnam", sans-serif',
+                                color: "#fff",
+                            }}
+                        >
+                            Edit User
+                        </Typography>
+
+                        <IconButton
+                            onClick={handleCloseDialog} // make sure handleClose closes the dialog
+                            size="small"
+                            sx={{
+                                color: "#fff",
+                                width: 32,
+                                height: 32,
+                                border: "1px solid",
+                                borderColor: "#fff",
+                                bgcolor: "error.lighter",
+                                borderRadius: "50%",
+                                position: "relative",
+                                "&:hover": {
+                                    transform: "rotate(180deg)",
+                                },
+                                transition: "transform 0.3s ease",
+                            }}
+                        >
+                            <Close
+                                sx={{
+                                    fontSize: "1rem",
+                                    transition: "transform 0.2s ease",
+                                }}
+                            />
+                        </IconButton>
+                    </DialogTitle>
+
+                    <DialogContent dividers>
+                        <Grid container spacing={2}>
+                            <Grid item xs={6}>
+                                <TextField
+                                    size="small"
+                                    label="Full Name"
+                                    fullWidth
+                                    value={editData.name || ""}
+                                    onChange={(e) =>
+                                        setEditData((prev) => ({ ...prev, name: e.target.value }))
+                                    }
+                                />
+                            </Grid>
+                            <Grid item xs={6}>
+                                <Tooltip title="Email cannot be edited">
+                                    <span>
+                                        <TextField
+                                            size="small"
+                                            label="Email"
+                                            fullWidth
+                                            value={editData.email || ""}
+                                            disabled
+                                            sx={{ pointerEvents: "none" }} // ensures tooltip still shows
+                                        />
+                                    </span>
+                                </Tooltip>
+                            </Grid>
+                            <Grid item xs={6}>
+                                { }
+
+                                <Autocomplete
+                                    size="small"
+                                    options={fullDepartments} // Γ£à from state
+                                    getOptionLabel={(option) => option.deptName}
+                                    value={
+                                        fullDepartments.find(
+                                            (d) => d.deptName === editData.department
+                                        ) || null
+                                    }
+                                    onChange={(e, value) => {
+                                        setEditData((prev) => ({
+                                            ...prev,
+                                            department: value?.deptName || "",
+                                            role: "",
+                                        }));
+                                        setSelectedDepartment(value || null); // updates role dropdown
+                                    }}
+                                    renderInput={(params) => (
+                                        <TextField {...params} label="Unit" fullWidth />
+                                    )}
+                                />
+                            </Grid>
+                            <Grid item xs={6}>
+
+
+                                <Autocomplete
+                                    size="small"
+                                    options={selectedDepartment?.roles || []}
+                                    getOptionLabel={(option) => option.roleName || ""}
+                                    value={
+                                        selectedDepartment?.roles?.find(
+                                            (r) => r.roleName === editData.role
+                                        ) || null
+                                    }
+                                    onChange={(e, value) => {
+                                        setEditData((prev) => ({
+                                            ...prev,
+                                            role: value?.roleName || "",
+                                        }));
+                                    }}
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            label={
+                                                selectedDepartment?.roles?.length > 0
+                                                    ? "Role"
+                                                    : "No roles available"
+                                            }
+                                            fullWidth
+                                            disabled={selectedDepartment?.roles?.length === 0}
+                                        />
+                                    )}
+                                />
+                            </Grid>
+
+                            {/* COMMENTED OUT: Section field in Edit dialog
+              <Grid item xs={6}>
+                <Autocomplete
+                  multiple
+                  size="small"
+                  options={sections}
+                  freeSolo
+                  value={editData.sections || []}
+                  onChange={(e, newValue) => {
+                    setEditData((prev) => ({
+                      ...prev,
+                      sections: newValue,
+                    }));
+                  }}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      variant="outlined"
+                      label="Section"
+                      placeholder="Select Sections"
+                    />
+                  )}
+                />
+              </Grid>
+              */}
+
+                            <Grid item xs={6}>
+                                <TextField
+                                    size="small"
+                                    label="Reporting Manager"
+                                    fullWidth
+                                    value={editData.reportingManager || ""}
+                                    onChange={(e) =>
+                                        setEditData((prev) => ({
+                                            ...prev,
+                                            reportingManager: e.target.value,
+                                        }))
+                                    }
+                                />
+                            </Grid>
+
+                            <Grid item xs={6}>
+                                <Autocomplete
+                                    size="small"
+                                    options={regionOptions} // array of strings
+                                    value={editData.region || null} // current value
+                                    onChange={(e, value) =>
+                                        setEditData((prev) => ({ ...prev, region: value || "" }))
+                                    }
+                                    renderInput={(params) => (
+                                        <TextField {...params} label="Command" fullWidth />
+                                    )}
+                                />
+                            </Grid>
+                        </Grid>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button
+                            onClick={handleSaveChanges}
+                            color="secondary"
+                            variant="contained"
+                            sx={{
+                                backgroundColor: "rgb(251, 68, 36)",
+                                color: "white",
+                                borderRadius: "8px",
+                            }}
+                        >
+                            Save
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+
+                <Snackbar
+                    open={snackbarOpen}
+                    autoHideDuration={3000}
+                    onClose={() => setSnackbarOpen(false)}
+                    anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+                >
+                    <Alert
+                        onClose={() => setSnackbarOpen(false)}
+                        severity={snackbarSeverity}
+                        variant="filled"
+                        sx={{ width: "100%" }}
+                    >
+                        {snackbarMessage}
+                    </Alert>
+                </Snackbar>
+            </Paper>
+        </Box>
+    );
+}

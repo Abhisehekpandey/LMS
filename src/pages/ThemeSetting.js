@@ -33,6 +33,8 @@ const ThemeSetting = () => {
     loginBackground: useRef(),
     feviconLogo: useRef(),
     mainAppHeaderLogo: useRef(),
+    chatbot1Logo: useRef(),
+    chatbot2Logo: useRef(),
   };
 
   const [form, setForm] = useState({
@@ -42,6 +44,10 @@ const ThemeSetting = () => {
     loginBackground: "",
     mainAppHeaderLogo: "",
     feviconLogo: "",
+    chatbot1Name: "",
+    chatbot1Logo: "",
+    chatbot2Name: "",
+    chatbot2Logo: "",
   });
 
   const [snackbar, setSnackbar] = useState({
@@ -96,6 +102,10 @@ const ThemeSetting = () => {
         bgImage: form.loginBackground,
         slogan: form.loginSlogan,
         mainApplogo: form.mainAppHeaderLogo,
+        chatbot1Name: form.chatbot1Name,
+        chatbot1Logo: form.chatbot1Logo,
+        chatbot2Name: form.chatbot2Name,
+        chatbot2Logo: form.chatbot2Logo,
       };
 
       const response = await axios.post(
@@ -117,6 +127,10 @@ const ThemeSetting = () => {
         loginBackground: "",
         mainAppHeaderLogo: "",
         feviconLogo: "",
+        chatbot1Name: "",
+        chatbot1Logo: "",
+        chatbot2Name: "",
+        chatbot2Logo: "",
       });
 
       Object.values(fileInputRefs).forEach((ref) => {
@@ -421,6 +435,8 @@ const ThemeSetting = () => {
             { key: "loginBackground", label: "Login Background" },
             { key: "feviconLogo", label: "Favicon Logo" },
             { key: "mainAppHeaderLogo", label: "Header Logo" },
+            { key: "chatbot1Logo", label: "DocuTalk Logo" },
+            { key: "chatbot2Logo", label: "DBTalk Logo" },
           ].map(({ key, label }) =>
             form[key] ? (
               <Grid item xs={12} sm={6} key={key}>
@@ -543,6 +559,52 @@ const ThemeSetting = () => {
         <Grid container spacing={3}>
           <Grid item xs={12} md={6}>
             {renderImageUploader("mainAppHeaderLogo", "Header Logo")}
+          </Grid>
+        </Grid>
+      </Paper>
+
+      <Paper
+        elevation={3}
+        sx={{
+          p: 3,
+          borderRadius: 3,
+          mt: 4,
+          background: (theme) =>
+            theme.palette.mode === "dark" ? "#1e1e1e" : "#fafafa",
+        }}
+      >
+        <Typography variant="h6" fontWeight="bold" gutterBottom color="primary">
+          Chatbot Settings
+        </Typography>
+        <Divider sx={{ mb: 2 }} />
+
+        <Grid container spacing={3}>
+          {/* DocuTalk */}
+          <Grid item xs={12} sm={6}>
+            <TextField
+              fullWidth
+              label="DocuTalk Name"
+              value={form.chatbot1Name}
+              onChange={handleChange("chatbot1Name")}
+              variant="outlined"
+            />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            {renderImageUploader("chatbot1Logo", "DocuTalk Logo")}
+          </Grid>
+
+          {/* DBTalk */}
+          <Grid item xs={12} sm={6}>
+            <TextField
+              fullWidth
+              label="DBTalk Name"
+              value={form.chatbot2Name}
+              onChange={handleChange("chatbot2Name")}
+              variant="outlined"
+            />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            {renderImageUploader("chatbot2Logo", "DBTalk Logo")}
           </Grid>
         </Grid>
       </Paper>

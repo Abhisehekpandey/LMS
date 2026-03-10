@@ -31,6 +31,7 @@ import {
   TextField,
   Tooltip,
   Typography,
+  CircularProgress,
 } from "@mui/material";
 import { Formik, FieldArray, Form } from "formik";
 import React, { useState, useRef, useEffect } from "react";
@@ -113,6 +114,10 @@ const CreateUser = ({
   const [hasMoreUsers, setHasMoreUsers] = useState(true);
   const [formKey, setFormKey] = useState(Date.now());
   const loadingUsers = useRef(false);
+
+  const [unitSearchQuery, setUnitSearchQuery] = useState("");
+  const [debouncedUnitSearch, setDebouncedUnitSearch] = useState("");
+  const [isSearchingUnits, setIsSearchingUnits] = useState(false);
 
   const lastFieldRef = useRef(null);
   const dispatch = useDispatch();
@@ -256,7 +261,7 @@ const CreateUser = ({
 
         department: yup.mixed().required("Unit is required"),
 
-        role: yup.string().required("Role is required"),
+        role: yup.mixed().required("Role is required"),
 
         // COMMENTED OUT: sections validation
         // sections: yup
@@ -382,31 +387,60 @@ const CreateUser = ({
     }
   };
 
-  const loadMoreDepartments = async () => {
-    if (loadingDepartments.current || !hasMoreDepartments) return;
+  const loadMoreDepartments = async (isSearch = false, query = "") => {
+    if (loadingDepartments.current || (!hasMoreDepartments && !isSearch)) return;
     loadingDepartments.current = true;
 
     try {
-      const res1 = await getDepartments(departmentPage, 10);
+      const pageToFetch = isSearch ? 0 : departmentPage;
+      const res1 = await getDepartments(
+        pageToFetch,
+        10,
+        isSearch ? "deptName" : "",
+        query,
+      );
       const res = res1?.content || [];
       const newDepartments = res.map((dept) => ({
         ...dept,
-        roles: (dept.roles || []).map((role) => role.roleName),
+        roles: dept.roles || [],
       }));
 
-      if (newDepartments.length < 10) setHasMoreDepartments(false);
-      setDepartments((prev) => [...prev, ...newDepartments]);
-      setDepartmentPage((prev) => prev + 1);
+      if (isSearch) {
+        setDepartments(newDepartments);
+        setDepartmentPage(1);
+        setHasMoreDepartments(newDepartments.length === 10);
+      } else {
+        if (newDepartments.length < 10) setHasMoreDepartments(false);
+        setDepartments((prev) => [...prev, ...newDepartments]);
+        setDepartmentPage((prev) => prev + 1);
+      }
     } catch (err) {
       console.error("Failed to load departments:", err);
     } finally {
       loadingDepartments.current = false;
+      setIsSearchingUnits(false);
     }
   };
 
   useEffect(() => {
-    loadMoreDepartments();
-  }, []);
+    const handler = setTimeout(() => {
+      setDebouncedUnitSearch(unitSearchQuery);
+    }, 500);
+
+    return () => clearTimeout(handler);
+  }, [unitSearchQuery]);
+
+  useEffect(() => {
+    if (debouncedUnitSearch !== undefined && open) {
+      setIsSearchingUnits(true);
+      loadMoreDepartments(true, debouncedUnitSearch);
+    }
+  }, [debouncedUnitSearch, open]);
+
+  // No longer needed here as the search effect handles initial load
+  // useEffect(() => {
+  //   loadMoreDepartments();
+  // }, []);
 
   useEffect(() => {
     loadMoreUsers(); // Load first 10 users initially
@@ -689,6 +723,8 @@ const CreateUser = ({
                   typeof user.role === "object"
                     ? user.role.roleName
                     : user.role,
+                deptId: user.department?.deptId || user.department?.id || null,
+                roleId: user.role?.roleId || user.role?.id || null,
                 storage: user.storage?.trim() ? user.storage : null,
                 reportingManager: user.reportingManager,
                 region: user.region || defaultRegion, // ✅ include region
@@ -946,6 +982,11 @@ const CreateUser = ({
                                   getOptionLabel={(option) =>
                                     option.deptName || ""
                                   }
+                                  filterOptions={(x) => x} // Disable built-in filtering to use server-side search
+                                  onInputChange={(event, newInputValue) => {
+                                    setUnitSearchQuery(newInputValue);
+                                  }}
+                                  loading={isSearchingUnits}
                                   ListboxProps={{
                                     style: { maxHeight: 300, overflow: "auto" },
                                     onScroll: (event) => {
@@ -956,7 +997,10 @@ const CreateUser = ({
                                         listboxNode.clientHeight >=
                                         listboxNode.scrollHeight - threshold
                                       ) {
-                                        loadMoreDepartments();
+                                        loadMoreDepartments(
+                                          false,
+                                          unitSearchQuery,
+                                        );
                                       }
                                     },
                                   }}
@@ -994,6 +1038,20 @@ const CreateUser = ({
                                       fullWidth
                                       size="small"
                                       autoComplete="off"
+                                      InputProps={{
+                                        ...params.InputProps,
+                                        endAdornment: (
+                                          <React.Fragment>
+                                            {isSearchingUnits ? (
+                                              <CircularProgress
+                                                color="inherit"
+                                                size={20}
+                                              />
+                                            ) : null}
+                                            {params.InputProps.endAdornment}
+                                          </React.Fragment>
+                                        ),
+                                      }}
                                       error={Boolean(
                                         formik.touched.users?.[index]
                                           ?.department &&
@@ -1003,7 +1061,8 @@ const CreateUser = ({
                                       helperText={
                                         formik.touched.users?.[index]
                                           ?.department &&
-                                        formik.errors.users?.[index]?.department
+                                        formik.errors.users?.[index]
+                                          ?.department
                                       }
                                     />
                                   )}
@@ -1083,7 +1142,7 @@ const CreateUser = ({
                                       getOptionLabel={(option) =>
                                         option.isAddOption
                                           ? "Add New Role"
-                                          : option
+                                          : option.roleName || option
                                       }
                                       renderOption={(props, option) => (
                                         <li
@@ -1109,7 +1168,7 @@ const CreateUser = ({
                                         >
                                           {option.isAddOption
                                             ? "➕ Add New Role"
-                                            : option}
+                                            : option.roleName || option}
                                         </li>
                                       )}
                                       value={user.role || ""}
