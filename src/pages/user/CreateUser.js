@@ -1139,11 +1139,13 @@ const CreateUser = ({
                                         { isAddOption: true },
                                         ...roleOptions,
                                       ]}
-                                      getOptionLabel={(option) =>
-                                        option.isAddOption
-                                          ? "Add New Role"
-                                          : option.roleName || option
-                                      }
+                                      // FIXED: always return a string — `option.roleName || option` would
+                                      // render the full role object as a React child if roleName is falsy
+                                      getOptionLabel={(option) => {
+                                        if (typeof option === "string") return option;
+                                        if (option.isAddOption) return "Add New Role";
+                                        return option.roleName || "";
+                                      }}
                                       renderOption={(props, option) => (
                                         <li
                                           {...props}
@@ -1166,9 +1168,10 @@ const CreateUser = ({
                                               : "inherit",
                                           }}
                                         >
+                                          {/* FIXED: was `option.roleName || option` — returned full object when roleName falsy */}
                                           {option.isAddOption
                                             ? "➕ Add New Role"
-                                            : option.roleName || option}
+                                            : option.roleName || ""}
                                         </li>
                                       )}
                                       value={user.role || ""}
