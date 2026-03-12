@@ -736,23 +736,39 @@ export default function UserTable() {
     const selectedStorageBytes = toBytes(selectedStorage);
 
     // Update only the targeted user in the full list
+    // COMMENTED OUT: was sending all users, now only send the changed user
+    // const updatedRows = rowsData.map((u) =>
+    //   u.name === username
+    //     ? {
+    //       ...u,
+    //       active: newStatus,
+    //       permissions: {
+    //         ...u.permissions,
+    //         allowedStorageInBytesDisplay: selectedStorage,
+    //         allowedStorageInBytes: selectedStorageBytes,
+    //         active: newStatus,
+    //       },
+    //     }
+    //     : u
+    // );
+
+    const updatedUser = {
+      ...user,
+      active: newStatus,
+      permissions: {
+        ...user.permissions,
+        allowedStorageInBytesDisplay: selectedStorage,
+        allowedStorageInBytes: selectedStorageBytes,
+        active: newStatus,
+      },
+    };
+
     const updatedRows = rowsData.map((u) =>
-      u.name === username
-        ? {
-          ...u,
-          active: newStatus,
-          permissions: {
-            ...u.permissions,
-            allowedStorageInBytesDisplay: selectedStorage,
-            allowedStorageInBytes: selectedStorageBytes,
-            active: newStatus,
-          },
-        }
-        : u
+      u.name === username ? updatedUser : u
     );
 
     try {
-      await toggleUserStatusByUsername(updatedRows, page); // send full payload
+      await toggleUserStatusByUsername([updatedUser], page); // send only changed user
       setRowsData(updatedRows); // update state
 
       let statusMessage = "";
@@ -850,7 +866,8 @@ export default function UserTable() {
         page,
         rowsPerPage,
         searchColumn,
-        debouncedSearchQuery.trim(), // empty string when no search
+        debouncedSearchQuery.trim(),
+        statusFilter, // backend filter: "Active" | "Inactive" | "Pending" | ""
       );
       // ✅ Normalize storage format like "1.00 GB" → "1GB"
       const normalizedUsers = (users.content || []).map((user) => {
@@ -887,11 +904,6 @@ export default function UserTable() {
   };
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 300);
-    return () => clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearchQuery(searchQuery);
       setPage(0); // NEW: reset to page 1 (0-based) when search changes
@@ -903,7 +915,7 @@ export default function UserTable() {
   }, [searchQuery]);
   useEffect(() => {
     refetchUsers();
-  }, [page, rowsPerPage, searchColumn, debouncedSearchQuery]);
+  }, [page, rowsPerPage, searchColumn, debouncedSearchQuery, statusFilter]);
 
 
 
@@ -914,14 +926,13 @@ export default function UserTable() {
   const filteredRows = rowsData.filter((row) => {
     const query = searchQuery.toLowerCase().trim();
 
-    // ✅ Status filter
-    if (statusFilter) {
-      let status = "Inactive";
-      if (row.active && !row.enabled) status = "Pending";
-      else if (row.active && row.enabled) status = "Active";
-
-      if (status !== statusFilter) return false;
-    }
+    // COMMENTED OUT: status filter now handled by backend via filter= param
+    // if (statusFilter) {
+    //   let status = "Inactive";
+    //   if (row.active && !row.enabled) status = "Pending";
+    //   else if (row.active && row.enabled) status = "Active";
+    //   if (status !== statusFilter) return false;
+    // }
 
     // If there's no search query, everything passes the remaining filters
     if (!query) return true;
@@ -1138,6 +1149,7 @@ export default function UserTable() {
               selected={statusFilter === ""}
               onClick={() => {
                 setStatusFilter("");
+                setPage(0);
                 setFilterAnchor(null);
               }}
             >
@@ -1147,6 +1159,7 @@ export default function UserTable() {
               selected={statusFilter === "Active"}
               onClick={() => {
                 setStatusFilter("Active");
+                setPage(0);
                 setFilterAnchor(null);
               }}
             >
@@ -1156,6 +1169,7 @@ export default function UserTable() {
               selected={statusFilter === "Inactive"}
               onClick={() => {
                 setStatusFilter("Inactive");
+                setPage(0);
                 setFilterAnchor(null);
               }}
             >
@@ -1165,6 +1179,7 @@ export default function UserTable() {
               selected={statusFilter === "Pending"}
               onClick={() => {
                 setStatusFilter("Pending");
+                setPage(0);
                 setFilterAnchor(null);
               }}
             >
@@ -1316,7 +1331,17 @@ export default function UserTable() {
             </TableHead>
 
             <TableBody>
-              {sortedRows.map((row) => {
+              {loading ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={allColumns.length + 1}
+                    align="center"
+                    sx={{ py: 6, border: 0 }}
+                  >
+                    <CircularProgress size={36} />
+                  </TableCell>
+                </TableRow>
+              ) : sortedRows.map((row) => {
                 const isItemSelected = isSelected(row.id);
 
                 return (

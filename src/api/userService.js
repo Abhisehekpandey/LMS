@@ -38,17 +38,17 @@ export const createUsers = async (users) => {
 // };
 
 // NEW: page/size as query params (1-based); also accepts optional searchColumn/searchQuery
-export const fetchUsers = async (page = 0, size = 10, searchColumn = "", searchQuery = "") => {
+export const fetchUsers = async (page = 0, size = 10, searchColumn = "", searchQuery = "", filter = "") => {
   try {
     const params = {
       page: page + 1, // convert 0-based (MUI) → 1-based (API)
       size,
+      searchColumn: searchColumn,
+      searchQuery: searchQuery,
     };
 
-    // include search params only when a search is active
-    if (searchColumn && searchQuery) {
-      params.searchColumn = searchColumn;
-      params.searchQuery = searchQuery;
+    if (filter) {
+      params.filter = filter.toLowerCase();
     }
 
     const response = await axios.get(
