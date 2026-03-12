@@ -529,9 +529,11 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           params.name = query;
         }
 
-        const endpoint = query.trim()
-          ? `${window.__ENV__.REACT_APP_ROUTE}/tenants/users/within/search`
-          : `${window.__ENV__.REACT_APP_ROUTE}/tenants/users/within`;
+        // COMMENTED OUT: search used separate /within/search endpoint — now always use /within
+        // const endpoint = query.trim()
+        //   ? `${window.__ENV__.REACT_APP_ROUTE}/tenants/users/within/search`
+        //   : `${window.__ENV__.REACT_APP_ROUTE}/tenants/users/within`;
+        const endpoint = `${window.__ENV__.REACT_APP_ROUTE}/tenants/users/within`;
 
         const res = await axios.get(
           endpoint,
