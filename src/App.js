@@ -1,4 +1,3 @@
- 
 import React, { useState } from "react";
 import {
   BrowserRouter as Router,
@@ -32,22 +31,22 @@ import ThemeSetting from "./pages/ThemeSetting";
 import FeedbackDashboard from "./pages/FeedBackDashboard";
 import FeedbackTable from "./pages/FeedbackTable";
 import { LogoProvider } from "./context/LogoContext";
- 
+
 function App() {
   const [dictionarySearchResults, setDictionarySearchResults] = useState([]);
   const [darkMode, setDarkMode] = useState(false);
   const [departments, setDepartments] = useState([]);
- 
+
   const theme = createTheme({
     palette: {
       mode: darkMode ? "dark" : "light",
     },
   });
- 
+
   const toggleTheme = () => {
     setDarkMode((prevMode) => !prevMode);
   };
- 
+
   return (
     <ThemeProvider theme={theme}>
       <LogoProvider>
@@ -57,15 +56,29 @@ function App() {
             {/* OLD: no guard — logged-in users could visit /login and then freely navigate to protected routes */}
             {/* <Route path="/login" element={<Login />} /> */}
             {/* <Route path="/signup" element={<Signup />} /> */}
-            <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-            <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
+            <Route
+              path="/login"
+              element={
+                <PublicRoute>
+                  <Login />
+                </PublicRoute>
+              }
+            />
+            <Route
+              path="/signup"
+              element={
+                <PublicRoute>
+                  <Signup />
+                </PublicRoute>
+              }
+            />
             <Route path="/set-password" element={<ResetPassword />} />
             <Route path="/forget-password" element={<ForgetPassword />} />
             <Route
               path="/reset-password/:token"
               element={<ResetAdminPassword />}
             />
- 
+
             {/* Protected routes — wrapped in Layout and ProtectedRoute */}
             <Route
               path="/user"
@@ -96,7 +109,7 @@ function App() {
               }
             />
             <Route
-              path="/angelbot"
+              path="/imir"
               element={
                 <Layout onThemeToggle={toggleTheme}>
                   <ProtectedRoute>
@@ -198,7 +211,7 @@ function App() {
                 </Layout>
               }
             />
- 
+
             {/* Redirect root to signup */}
             <Route path="/" element={<Navigate to="/signup" />} />
           </Routes>
@@ -207,8 +220,5 @@ function App() {
     </ThemeProvider>
   );
 }
- 
+
 export default App;
- 
- 
- 

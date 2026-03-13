@@ -203,7 +203,7 @@ export default function UserTable() {
   const [filterAnchor, setFilterAnchor] = useState(null);
   const [searchColumn, setSearchColumn] = useState("name");
   const [visibleColumns, setVisibleColumns] = useState(
-    allColumns.reduce((acc, col) => ({ ...acc, [col.id]: true }), {})
+    allColumns.reduce((acc, col) => ({ ...acc, [col.id]: true }), {}),
   );
   const [anchorEl, setAnchorEl] = useState(null);
 
@@ -323,7 +323,7 @@ export default function UserTable() {
             "Content-Type": "application/json",
             username: sessionStorage.getItem("adminEmail"), // same as your other APIs
           },
-        }
+        },
       );
 
       const data = response?.data || {};
@@ -404,10 +404,7 @@ export default function UserTable() {
     }
   };
 
-
   const handleSaveChanges = async () => {
-
-
     try {
       let deptObj = null;
       let roleObj = null;
@@ -416,8 +413,16 @@ export default function UserTable() {
         deptObj = selectedDepartment;
 
         // Fallback: if selectedDepartment doesn't match or is missing, try to fetch it
-        if (!deptObj || deptObj.deptName?.toLowerCase() !== editData.department?.toLowerCase()) {
-          const deptRes = await getDepartments(0, 1, "deptName", editData.department);
+        if (
+          !deptObj ||
+          deptObj.deptName?.toLowerCase() !== editData.department?.toLowerCase()
+        ) {
+          const deptRes = await getDepartments(
+            0,
+            1,
+            "deptName",
+            editData.department,
+          );
           deptObj = deptRes?.content?.[0] || null;
         }
 
@@ -428,7 +433,7 @@ export default function UserTable() {
 
         if (editData.role) {
           roleObj = deptObj.roles?.find(
-            (r) => r.roleName?.toLowerCase() === editData.role?.toLowerCase()
+            (r) => r.roleName?.toLowerCase() === editData.role?.toLowerCase(),
           );
 
           if (!roleObj) {
@@ -466,7 +471,8 @@ export default function UserTable() {
   };
 
   const loadMoreDepartments = async (isSearch = false, query = "") => {
-    if (loadingDepartments.current || (!hasMoreDepartments && !isSearch)) return;
+    if (loadingDepartments.current || (!hasMoreDepartments && !isSearch))
+      return;
     loadingDepartments.current = true;
 
     try {
@@ -529,8 +535,6 @@ export default function UserTable() {
   };
 
   const handleEdit = async (e, row) => {
-
-
     try {
       const { list, defaultRegion } = await getRegions();
       setRegions(list);
@@ -540,7 +544,8 @@ export default function UserTable() {
 
       const savedRoleId = userRoleMap[row.id];
       const currentRole =
-        row.roles?.find((r) => (r.roleId || r.id) === savedRoleId) || row.roles?.[0];
+        row.roles?.find((r) => (r.roleId || r.id) === savedRoleId) ||
+        row.roles?.[0];
 
       const deptName = currentRole?.department?.deptName || "";
       const roleName = currentRole?.roleName || "";
@@ -549,7 +554,7 @@ export default function UserTable() {
       const deptObj = deptRes?.content?.[0] || null;
 
       const matchedRole = deptObj?.roles?.find(
-        (r) => r.roleName?.toLowerCase() === roleName?.toLowerCase()
+        (r) => r.roleName?.toLowerCase() === roleName?.toLowerCase(),
       );
 
       const newEditData = {
@@ -582,7 +587,7 @@ export default function UserTable() {
 
   const regionOptions = React.useMemo(
     () => [...new Set([editData.region, ...regions].filter(Boolean))],
-    [regions, editData.region]
+    [regions, editData.region],
   );
 
   const handleActivateAll = async () => {
@@ -600,8 +605,6 @@ export default function UserTable() {
         allowedStorageInBytesDisplay: "1GB", // ✅ override storage
       },
     }));
-
-
 
     try {
       await toggleUserStatusByUsername(usersToActivate, page); // ✅ send complete users
@@ -621,7 +624,6 @@ export default function UserTable() {
   const options = ["10GB", "20GB"];
 
   const handleBulkDownload = () => {
-
     if (!rowData || rowData.length === 0) {
       alert("No data to download");
       return;
@@ -764,7 +766,7 @@ export default function UserTable() {
     };
 
     const updatedRows = rowsData.map((u) =>
-      u.name === username ? updatedUser : u
+      u.name === username ? updatedUser : u,
     );
 
     try {
@@ -782,7 +784,13 @@ export default function UserTable() {
       toast.success(statusMessage);
     } catch (error) {
       console.error("Failed to update users", error);
-      toast.error("Failed to update users.");
+      const backendMsg =
+        error?.response?.data?.error ||
+        (typeof error?.response?.data === "string"
+          ? error.response.data
+          : "Failed to update users.");
+
+      toast.error(backendMsg);
     }
   };
 
@@ -917,8 +925,6 @@ export default function UserTable() {
     refetchUsers();
   }, [page, rowsPerPage, searchColumn, debouncedSearchQuery, statusFilter]);
 
-
-
   const handleClose = () => {
     setMigrationDialog(false);
   };
@@ -952,7 +958,7 @@ export default function UserTable() {
     if (searchColumn === "department") {
       const selectedRoleId = userRoleMap[row.id];
       const selectedRole = row.roles?.find(
-        (role) => role.id === selectedRoleId
+        (role) => role.id === selectedRoleId,
       );
 
       // If a specific role is selected, check its department
@@ -961,30 +967,32 @@ export default function UserTable() {
       }
 
       // Fallback: check all departments associated with the user
-      return row.roles?.some(role =>
-        role.department?.deptName?.toLowerCase().includes(query)
+      return row.roles?.some((role) =>
+        role.department?.deptName?.toLowerCase().includes(query),
       );
     }
 
     if (searchColumn === "role") {
       const selectedRoleId = userRoleMap[row.id];
       const selectedRole = row.roles?.find(
-        (role) => role.id === selectedRoleId
+        (role) => role.id === selectedRoleId,
       );
 
       if (selectedRole) {
         // If a specific role is selected, check it and potentially others in the same department
         const deptId = selectedRole.department?.id;
         const rolesInSameDept = row.roles.filter(
-          (role) => role.department?.id === deptId
+          (role) => role.department?.id === deptId,
         );
-        const roleNames = rolesInSameDept.map((role) => role.roleName).join(", ");
+        const roleNames = rolesInSameDept
+          .map((role) => role.roleName)
+          .join(", ");
         return roleNames.toLowerCase().includes(query);
       }
 
       // Fallback: check all roles associated with the user
-      return row.roles?.some(role =>
-        role.roleName?.toLowerCase().includes(query)
+      return row.roles?.some((role) =>
+        role.roleName?.toLowerCase().includes(query),
       );
     }
 
@@ -1341,116 +1349,119 @@ export default function UserTable() {
                     <CircularProgress size={36} />
                   </TableCell>
                 </TableRow>
-              ) : sortedRows.map((row) => {
-                const isItemSelected = isSelected(row.id);
+              ) : (
+                sortedRows.map((row) => {
+                  const isItemSelected = isSelected(row.id);
 
-                return (
-                  <TableRow
-                    key={row.id}
-                    hover
-                    selected={isItemSelected}
-                    onMouseEnter={() => setHoveredRow(row.id)}
-                    onMouseLeave={() => setHoveredRow(null)}
-                  >
-                    <TableCell padding="checkbox">
-                      <Checkbox
-                        sx={{ padding: "1px !important" }}
-                        checked={isItemSelected}
-                        onChange={() => handleClick(row)}
-                        disabled={row.email === adminEmail}
-                      />
-                    </TableCell>
-
-                    {visibleColumns.name && (
-                      <TableCell align="left">
-                        {row.name}
-                        {row.email === adminEmail && " (admin)"}
+                  return (
+                    <TableRow
+                      key={row.id}
+                      hover
+                      selected={isItemSelected}
+                      onMouseEnter={() => setHoveredRow(row.id)}
+                      onMouseLeave={() => setHoveredRow(null)}
+                    >
+                      <TableCell padding="checkbox">
+                        <Checkbox
+                          sx={{ padding: "1px !important" }}
+                          checked={isItemSelected}
+                          onChange={() => handleClick(row)}
+                          disabled={row.email === adminEmail}
+                        />
                       </TableCell>
-                    )}
 
-                    {visibleColumns.region && (
-                      <TableCell align="left">{row.region || "N/A"}</TableCell>
-                    )}
+                      {visibleColumns.name && (
+                        <TableCell align="left">
+                          {row.name}
+                          {row.email === adminEmail && " (admin)"}
+                        </TableCell>
+                      )}
 
-                    {visibleColumns.department && (
-                      <TableCell align="left">
-                        {(() => {
-                          const allDepts = [
-                            ...new Set(
-                              row.roles
-                                ?.map((r) => r.department?.deptName)
-                                .filter(Boolean)
-                            ),
-                          ];
+                      {visibleColumns.region && (
+                        <TableCell align="left">
+                          {row.region || "N/A"}
+                        </TableCell>
+                      )}
 
-                          if (allDepts.length > 1) {
-                            return (
-                              <FormControl size="small" fullWidth>
-                                <Select
-                                  value={allDepts[0]}
-                                  sx={{
-                                    height: 32,
-                                    fontSize: "0.875rem",
-                                    "& .MuiOutlinedInput-notchedOutline": {
-                                      border: "1px solid #e0e0e0",
-                                      borderRadius: "6px",
-                                    },
-                                    "&:hover .MuiOutlinedInput-notchedOutline":
-                                    {
-                                      border: "1px solid #1976d2",
-                                    },
-                                    "&.Mui-focused .MuiOutlinedInput-notchedOutline":
-                                    {
-                                      border: "2px solid #1976d2",
-                                    },
-                                    "& .MuiSelect-select": {
-                                      paddingLeft: "8px",
-                                      paddingRight: "32px",
-                                    },
-                                    "& .MuiSelect-icon": {
-                                      color: "#1976d2",
-                                    },
-                                  }}
-                                  MenuProps={{
-                                    PaperProps: {
-                                      sx: {
-                                        maxHeight: 300,
-                                        borderRadius: "8px",
-                                        boxShadow:
-                                          "0 4px 20px rgba(0,0,0,0.15)",
-                                        "& .MuiMenuItem-root": {
-                                          fontSize: "0.875rem",
-                                          padding: "10px 16px",
-                                          "&:hover": {
-                                            backgroundColor: "#e3f2fd",
-                                          },
-                                          "&.Mui-selected": {
-                                            backgroundColor: "#bbdefb",
+                      {visibleColumns.department && (
+                        <TableCell align="left">
+                          {(() => {
+                            const allDepts = [
+                              ...new Set(
+                                row.roles
+                                  ?.map((r) => r.department?.deptName)
+                                  .filter(Boolean),
+                              ),
+                            ];
+
+                            if (allDepts.length > 1) {
+                              return (
+                                <FormControl size="small" fullWidth>
+                                  <Select
+                                    value={allDepts[0]}
+                                    sx={{
+                                      height: 32,
+                                      fontSize: "0.875rem",
+                                      "& .MuiOutlinedInput-notchedOutline": {
+                                        border: "1px solid #e0e0e0",
+                                        borderRadius: "6px",
+                                      },
+                                      "&:hover .MuiOutlinedInput-notchedOutline":
+                                        {
+                                          border: "1px solid #1976d2",
+                                        },
+                                      "&.Mui-focused .MuiOutlinedInput-notchedOutline":
+                                        {
+                                          border: "2px solid #1976d2",
+                                        },
+                                      "& .MuiSelect-select": {
+                                        paddingLeft: "8px",
+                                        paddingRight: "32px",
+                                      },
+                                      "& .MuiSelect-icon": {
+                                        color: "#1976d2",
+                                      },
+                                    }}
+                                    MenuProps={{
+                                      PaperProps: {
+                                        sx: {
+                                          maxHeight: 300,
+                                          borderRadius: "8px",
+                                          boxShadow:
+                                            "0 4px 20px rgba(0,0,0,0.15)",
+                                          "& .MuiMenuItem-root": {
+                                            fontSize: "0.875rem",
+                                            padding: "10px 16px",
                                             "&:hover": {
-                                              backgroundColor: "#90caf9",
+                                              backgroundColor: "#e3f2fd",
+                                            },
+                                            "&.Mui-selected": {
+                                              backgroundColor: "#bbdefb",
+                                              "&:hover": {
+                                                backgroundColor: "#90caf9",
+                                              },
                                             },
                                           },
                                         },
                                       },
-                                    },
-                                  }}
-                                >
-                                  {allDepts.map((dept) => (
-                                    <MenuItem key={dept} value={dept}>
-                                      {dept}
-                                    </MenuItem>
-                                  ))}
-                                </Select>
-                              </FormControl>
-                            );
-                          }
+                                    }}
+                                  >
+                                    {allDepts.map((dept) => (
+                                      <MenuItem key={dept} value={dept}>
+                                        {dept}
+                                      </MenuItem>
+                                    ))}
+                                  </Select>
+                                </FormControl>
+                              );
+                            }
 
-                          return allDepts[0] || "N/A";
-                        })()}
-                      </TableCell>
-                    )}
+                            return allDepts[0] || "N/A";
+                          })()}
+                        </TableCell>
+                      )}
 
-                    {/* COMMENTED OUT: Section body cell
+                      {/* COMMENTED OUT: Section body cell
                     {visibleColumns.sections && (
                       <TableCell align="left">
                         {(() => {
@@ -1519,285 +1530,295 @@ export default function UserTable() {
                     )}
                     */}
 
-                    {visibleColumns.role && (
-                      <TableCell align="left">
-                        {(() => {
-                          const allRoles = row.roles
-                            ?.map((r) => ({
-                              name: r.roleName,
-                              dept: r.department?.deptName,
-                            }))
-                            .filter((r) => r.name);
+                      {visibleColumns.role && (
+                        <TableCell align="left">
+                          {(() => {
+                            const allRoles = row.roles
+                              ?.map((r) => ({
+                                name: r.roleName,
+                                dept: r.department?.deptName,
+                              }))
+                              .filter((r) => r.name);
 
-                          // Unique roles representation string
-                          const uniqueRoles = [
-                            ...new Map(
-                              allRoles.map((item) => [
-                                item.name + item.dept,
-                                item,
-                              ])
-                            ).values(),
-                          ];
+                            // Unique roles representation string
+                            const uniqueRoles = [
+                              ...new Map(
+                                allRoles.map((item) => [
+                                  item.name + item.dept,
+                                  item,
+                                ]),
+                              ).values(),
+                            ];
 
-                          if (uniqueRoles.length > 1) {
-                            return (
-                              <FormControl size="small" fullWidth>
-                                <Select
-                                  value={uniqueRoles[0].name}
-                                  sx={{
-                                    height: 32,
-                                    fontSize: "0.875rem",
-                                    "& .MuiOutlinedInput-notchedOutline": {
-                                      border: "1px solid #e0e0e0",
-                                      borderRadius: "6px",
-                                    },
-                                    "&:hover .MuiOutlinedInput-notchedOutline":
-                                    {
-                                      border: "1px solid #1976d2",
-                                    },
-                                    "&.Mui-focused .MuiOutlinedInput-notchedOutline":
-                                    {
-                                      border: "2px solid #1976d2",
-                                    },
-                                    "& .MuiSelect-select": {
-                                      paddingLeft: "8px",
-                                      paddingRight: "32px",
-                                    },
-                                    "& .MuiSelect-icon": {
-                                      color: "#1976d2",
-                                    },
-                                  }}
-                                  MenuProps={{
-                                    PaperProps: {
-                                      sx: {
-                                        maxHeight: 300,
-                                        borderRadius: "8px",
-                                        boxShadow:
-                                          "0 4px 20px rgba(0,0,0,0.15)",
-                                        "& .MuiMenuItem-root": {
-                                          fontSize: "0.875rem",
-                                          padding: "10px 16px",
-                                          "&:hover": {
-                                            backgroundColor: "#e3f2fd",
-                                          },
-                                          "&.Mui-selected": {
-                                            backgroundColor: "#bbdefb",
+                            if (uniqueRoles.length > 1) {
+                              return (
+                                <FormControl size="small" fullWidth>
+                                  <Select
+                                    value={uniqueRoles[0].name}
+                                    sx={{
+                                      height: 32,
+                                      fontSize: "0.875rem",
+                                      "& .MuiOutlinedInput-notchedOutline": {
+                                        border: "1px solid #e0e0e0",
+                                        borderRadius: "6px",
+                                      },
+                                      "&:hover .MuiOutlinedInput-notchedOutline":
+                                        {
+                                          border: "1px solid #1976d2",
+                                        },
+                                      "&.Mui-focused .MuiOutlinedInput-notchedOutline":
+                                        {
+                                          border: "2px solid #1976d2",
+                                        },
+                                      "& .MuiSelect-select": {
+                                        paddingLeft: "8px",
+                                        paddingRight: "32px",
+                                      },
+                                      "& .MuiSelect-icon": {
+                                        color: "#1976d2",
+                                      },
+                                    }}
+                                    MenuProps={{
+                                      PaperProps: {
+                                        sx: {
+                                          maxHeight: 300,
+                                          borderRadius: "8px",
+                                          boxShadow:
+                                            "0 4px 20px rgba(0,0,0,0.15)",
+                                          "& .MuiMenuItem-root": {
+                                            fontSize: "0.875rem",
+                                            padding: "10px 16px",
                                             "&:hover": {
-                                              backgroundColor: "#90caf9",
+                                              backgroundColor: "#e3f2fd",
+                                            },
+                                            "&.Mui-selected": {
+                                              backgroundColor: "#bbdefb",
+                                              "&:hover": {
+                                                backgroundColor: "#90caf9",
+                                              },
                                             },
                                           },
                                         },
                                       },
-                                    },
-                                  }}
-                                >
-                                  {uniqueRoles.map((roleObj, idx) => (
-                                    <MenuItem key={idx} value={roleObj.name}>
-                                      {roleObj.name}
-                                      <Typography
-                                        variant="caption"
-                                        color="textSecondary"
-                                        sx={{ ml: 1 }}
-                                      >
-                                        ({roleObj.dept})
-                                      </Typography>
-                                    </MenuItem>
-                                  ))}
-                                </Select>
-                              </FormControl>
-                            );
-                          }
-
-                          return uniqueRoles[0] ? uniqueRoles[0].name : "N/A";
-                        })()}
-                      </TableCell>
-                    )}
-
-                    {visibleColumns.email && (
-                      <TableCell align="left">{row.email}</TableCell>
-                    )}
-
-                    {visibleColumns.storageUsed && (
-                      <TableCell align="left">
-                        {row.permissions?.displayStorage || "N/A"}
-                      </TableCell>
-                    )}
-
-                    {visibleColumns.manageStorage && (
-                      <TableCell align="left">
-                        <FormControl sx={{ m: 0, minWidth: 120 }} size="small">
-                          <Select
-                            id={`manage-storage-${row.id}`}
-                            value={
-                              row.permissions?.allowedStorageInBytesDisplay ||
-                              ""
-                            }
-                            onChange={async (e) => {
-                              const newDisplayValue = e.target.value;
-                              const newByteValue = toBytes(newDisplayValue);
-
-                              const updated = rowsData.map((r) =>
-                                r.id === row.id
-                                  ? {
-                                    ...r,
-                                    permissions: {
-                                      ...r.permissions,
-                                      allowedStorageInBytesDisplay:
-                                        newDisplayValue,
-                                      allowedStorageInBytes: newByteValue,
-                                    },
-                                  }
-                                  : r
+                                    }}
+                                  >
+                                    {uniqueRoles.map((roleObj, idx) => (
+                                      <MenuItem key={idx} value={roleObj.name}>
+                                        {roleObj.name}
+                                        <Typography
+                                          variant="caption"
+                                          color="textSecondary"
+                                          sx={{ ml: 1 }}
+                                        >
+                                          ({roleObj.dept})
+                                        </Typography>
+                                      </MenuItem>
+                                    ))}
+                                  </Select>
+                                </FormControl>
                               );
+                            }
 
-                              setRowsData(updated);
+                            return uniqueRoles[0] ? uniqueRoles[0].name : "N/A";
+                          })()}
+                        </TableCell>
+                      )}
 
-                              if (row.active) {
-                                const updatedRows = rowsData.map((u) =>
-                                  u.id === row.id
+                      {visibleColumns.email && (
+                        <TableCell align="left">{row.email}</TableCell>
+                      )}
+
+                      {visibleColumns.storageUsed && (
+                        <TableCell align="left">
+                          {row.permissions?.displayStorage || "N/A"}
+                        </TableCell>
+                      )}
+
+                      {visibleColumns.manageStorage && (
+                        <TableCell align="left">
+                          <FormControl
+                            sx={{ m: 0, minWidth: 120 }}
+                            size="small"
+                          >
+                            <Select
+                              id={`manage-storage-${row.id}`}
+                              value={
+                                row.permissions?.allowedStorageInBytesDisplay ||
+                                ""
+                              }
+                              onChange={async (e) => {
+                                const newDisplayValue = e.target.value;
+                                const newByteValue = toBytes(newDisplayValue);
+
+                                const updated = rowsData.map((r) =>
+                                  r.id === row.id
                                     ? {
-                                      ...u,
-                                      permissions: {
-                                        ...u.permissions,
-                                        allowedStorageInBytesDisplay:
-                                          newDisplayValue,
-                                        allowedStorageInBytes: newByteValue,
-                                      },
-                                    }
-                                    : u
+                                        ...r,
+                                        permissions: {
+                                          ...r.permissions,
+                                          allowedStorageInBytesDisplay:
+                                            newDisplayValue,
+                                          allowedStorageInBytes: newByteValue,
+                                        },
+                                      }
+                                    : r,
                                 );
 
-                                try {
-                                  await toggleUserStatusByUsername(
-                                    updatedRows,
-                                    page
-                                  );
-                                  setRowsData(updatedRows);
-                                  toast.success(
-                                    `Storage updated for ${row.name}`
-                                  );
-                                } catch (error) {
-                                  toast.error(
-                                    `Failed to update storage for ${row.name}`
-                                  );
-                                }
-                              }
-                            }}
-                            displayEmpty
-                            sx={{
-                              width: "100px",
-                              height: "30px",
-                              borderRadius: "28px",
-                            }}
-                          >
-                            {(() => {
-                              const predefinedOptions = [
-                                "1GB",
-                                "3GB",
-                                "5GB",
-                                "10GB",
-                                "20GB",
-                                "40GB",
-                                "60GB",
-                              ];
-                              const currentValue =
-                                row.permissions?.allowedStorageInBytesDisplay;
-                              const allOptions = predefinedOptions.includes(
-                                currentValue
-                              )
-                                ? predefinedOptions
-                                : [currentValue, ...predefinedOptions];
-                              return allOptions.map((opt) => (
-                                <MenuItem key={opt} value={opt}>
-                                  {opt}
-                                </MenuItem>
-                              ));
-                            })()}
-                          </Select>
-                        </FormControl>
-                      </TableCell>
-                    )}
+                                setRowsData(updated);
 
-                    {visibleColumns.activeLicense && (
-                      <TableCell align="center">
-                        <Tooltip
-                          title={
-                            row.active && !row.enabled
-                              ? "Pending (Email Not Verified)"
-                              : !row.active
-                                ? "Inactive (Provide Storage"
-                                : "Active"
-                          }
-                        >
-                          <span>
-                            <FormControlLabel
-                              control={
-                                <IOSSwitch
-                                  checked={row.active && row.enabled}
-                                  onChange={() => handleStatusToggle(row.name)}
-                                  disabled={
-                                    row.email === adminEmail ||
-                                    (row.active && !row.enabled) ||
-                                    (!row.active &&
-                                      (!row.permissions
-                                        ?.allowedStorageInBytesDisplay ||
-                                        row.permissions
-                                          ?.allowedStorageInBytesDisplay ===
-                                        "0 KB"))
+                                if (row.active) {
+                                  const updatedRows = rowsData.map((u) =>
+                                    u.id === row.id
+                                      ? {
+                                          ...u,
+                                          permissions: {
+                                            ...u.permissions,
+                                            allowedStorageInBytesDisplay:
+                                              newDisplayValue,
+                                            allowedStorageInBytes: newByteValue,
+                                          },
+                                        }
+                                      : u,
+                                  );
+
+                                  try {
+                                    await toggleUserStatusByUsername(
+                                      updatedRows,
+                                      page,
+                                    );
+                                    setRowsData(updatedRows);
+                                    toast.success(
+                                      `Storage updated for ${row.name}`,
+                                    );
+                                  } catch (error) {
+                                    const backendMsg =
+                                      error?.response?.data?.error ||
+                                      (typeof error?.response?.data === "string"
+                                        ? error.response.data
+                                        : `Failed to update storage for ${row.name}`);
+
+                                    toast.error(backendMsg);
                                   }
-                                />
+                                }
+                              }}
+                              displayEmpty
+                              sx={{
+                                width: "100px",
+                                height: "30px",
+                                borderRadius: "28px",
+                              }}
+                            >
+                              {(() => {
+                                const predefinedOptions = [
+                                  "1GB",
+                                  "3GB",
+                                  "5GB",
+                                  "10GB",
+                                  "20GB",
+                                  "40GB",
+                                  "60GB",
+                                ];
+                                const currentValue =
+                                  row.permissions?.allowedStorageInBytesDisplay;
+                                const allOptions = predefinedOptions.includes(
+                                  currentValue,
+                                )
+                                  ? predefinedOptions
+                                  : [currentValue, ...predefinedOptions];
+                                return allOptions.map((opt) => (
+                                  <MenuItem key={opt} value={opt}>
+                                    {opt}
+                                  </MenuItem>
+                                ));
+                              })()}
+                            </Select>
+                          </FormControl>
+                        </TableCell>
+                      )}
+
+                      {visibleColumns.activeLicense && (
+                        <TableCell align="center">
+                          <Tooltip
+                            title={
+                              row.active && !row.enabled
+                                ? "Pending (Email Not Verified)"
+                                : !row.active
+                                  ? "Inactive (Provide Storage"
+                                  : "Active"
+                            }
+                          >
+                            <span>
+                              <FormControlLabel
+                                control={
+                                  <IOSSwitch
+                                    checked={row.active && row.enabled}
+                                    onChange={() =>
+                                      handleStatusToggle(row.name)
+                                    }
+                                    disabled={
+                                      row.email === adminEmail ||
+                                      (row.active && !row.enabled) ||
+                                      (!row.active &&
+                                        (!row.permissions
+                                          ?.allowedStorageInBytesDisplay ||
+                                          row.permissions
+                                            ?.allowedStorageInBytesDisplay ===
+                                            "0 KB"))
+                                    }
+                                  />
+                                }
+                              />
+                            </span>
+                          </Tooltip>
+                        </TableCell>
+                      )}
+
+                      {visibleColumns.actions && (
+                        <TableCell align="center" sx={{ width: "200px" }}>
+                          <>
+                            <Tooltip
+                              title={
+                                row.email === adminEmail
+                                  ? "Admin user cannot be edited"
+                                  : "Edit User"
                               }
-                            />
-                          </span>
-                        </Tooltip>
-                      </TableCell>
-                    )}
+                            >
+                              <span>
+                                <IconButton
+                                  size="small"
+                                  onClick={(e) => handleEdit(e, row)}
+                                  disabled={row.email === adminEmail}
+                                >
+                                  <Edit />
+                                </IconButton>
+                              </span>
+                            </Tooltip>
 
-                    {visibleColumns.actions && (
-                      <TableCell align="center" sx={{ width: "200px" }}>
-                        <>
-                          <Tooltip
-                            title={
-                              row.email === adminEmail
-                                ? "Admin user cannot be edited"
-                                : "Edit User"
-                            }
-                          >
-                            <span>
-                              <IconButton
-                                size="small"
-                                onClick={(e) => handleEdit(e, row)}
-                                disabled={row.email === adminEmail}
-                              >
-                                <Edit />
-                              </IconButton>
-                            </span>
-                          </Tooltip>
-
-                          <Tooltip
-                            title={
-                              row.email === adminEmail
-                                ? "Admin user cannot be deleted"
-                                : "Delete User"
-                            }
-                          >
-                            <span>
-                              <IconButton
-                                size="small"
-                                color="error"
-                                onClick={(e) => handleDelete(e, row)}
-                                disabled={row.email === adminEmail}
-                              >
-                                <Delete />
-                              </IconButton>
-                            </span>
-                          </Tooltip>
-                        </>
-                      </TableCell>
-                    )}
-                  </TableRow>
-                );
-              })}
+                            <Tooltip
+                              title={
+                                row.email === adminEmail
+                                  ? "Admin user cannot be deleted"
+                                  : "Delete User"
+                              }
+                            >
+                              <span>
+                                <IconButton
+                                  size="small"
+                                  color="error"
+                                  onClick={(e) => handleDelete(e, row)}
+                                  disabled={row.email === adminEmail}
+                                >
+                                  <Delete />
+                                </IconButton>
+                              </span>
+                            </Tooltip>
+                          </>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  );
+                })
+              )}
             </TableBody>
           </Table>
         </TableContainer>
@@ -2043,7 +2064,7 @@ export default function UserTable() {
                 }}
                 onClick={() => {
                   const filteredPageRows = rowsData.filter(
-                    (n) => n.email !== adminEmail
+                    (n) => n.email !== adminEmail,
                   );
                   const currentPageIds = filteredPageRows.map((n) => n.id);
 
@@ -2087,7 +2108,7 @@ export default function UserTable() {
 
                     // ✅ Exclude admin user
                     const nonAdminUsers = allUsers.filter(
-                      (u) => u.email !== adminEmail
+                      (u) => u.email !== adminEmail,
                     );
 
                     const allIds = nonAdminUsers.map((u) => u.id);
@@ -2234,7 +2255,7 @@ export default function UserTable() {
                 </Tooltip>
               </Grid>
               <Grid item xs={6}>
-                { }
+                {}
 
                 <Autocomplete
                   size="small"
@@ -2247,8 +2268,11 @@ export default function UserTable() {
                   loading={isSearchingUnits}
                   value={
                     departments.find(
-                      (d) => d.deptName === editData.department
-                    ) || (editData.department ? { deptName: editData.department } : null)
+                      (d) => d.deptName === editData.department,
+                    ) ||
+                    (editData.department
+                      ? { deptName: editData.department }
+                      : null)
                   }
                   onChange={(e, value) => {
                     setEditData((prev) => ({
@@ -2292,15 +2316,13 @@ export default function UserTable() {
                 />
               </Grid>
               <Grid item xs={6}>
-
-
                 <Autocomplete
                   size="small"
                   options={selectedDepartment?.roles || []}
                   getOptionLabel={(option) => option.roleName || ""}
                   value={
                     selectedDepartment?.roles?.find(
-                      (r) => r.roleName === editData.role
+                      (r) => r.roleName === editData.role,
                     ) || null
                   }
                   onChange={(e, value) => {

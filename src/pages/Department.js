@@ -489,7 +489,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
   const DeptUsersDropdown = ({
     users,
-    totalUserCount,  // NEW: total count from paginated API
+    totalUserCount, // NEW: total count from paginated API
     departmentId,
     departmentRoles = [],
     onEditUser,
@@ -535,21 +535,19 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         //   : `${window.__ENV__.REACT_APP_ROUTE}/tenants/users/within`;
         const endpoint = `${window.__ENV__.REACT_APP_ROUTE}/tenants/users/within`;
 
-        const res = await axios.get(
-          endpoint,
-          {
-            params,
-            headers: {
-              Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
-              username: sessionStorage.getItem("adminEmail"),
-            },
+        const res = await axios.get(endpoint, {
+          params,
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+            username: sessionStorage.getItem("adminEmail"),
           },
-        );
+        });
         const data = res.data;
         const fetchedUsers = (data.users || []).map((u) => ({
           id: u.objectId,
           name: u.fullName,
           roleName: u.role,
+          roleId: u.roleId, // NEW: Include roleId for unassignment
         }));
 
         setPanelUsers(fetchedUsers);
@@ -993,7 +991,10 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 >
                   Prev
                 </Button>
-                <Typography variant="caption" sx={{ fontWeight: 600, color: "#475569" }}>
+                <Typography
+                  variant="caption"
+                  sx={{ fontWeight: 600, color: "#475569" }}
+                >
                   Page {panelPage} of {panelTotalPages}
                 </Typography>
                 <Button
@@ -1618,11 +1619,11 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         prev.map((dept) =>
           dept.name === editedDepartment.originalName
             ? {
-              ...dept,
-              name: payload.deptName,
-              displayName: payload.deptDisplayName,
-              departmentModerator: payload.deptModerator,
-            }
+                ...dept,
+                name: payload.deptName,
+                displayName: payload.deptDisplayName,
+                departmentModerator: payload.deptModerator,
+              }
             : dept,
         ),
       );
@@ -1691,7 +1692,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         currentPage,
         10,
         debouncedUserSearchQuery ? "email" : "",
-        debouncedUserSearchQuery
+        debouncedUserSearchQuery,
       );
       const users = res?.content || [];
 
@@ -1740,15 +1741,14 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       const payload = [
         {
           permissions: {
-            id: targetDept.permissions?.id || "",
+            id: targetDept.permissionId || "",
             userId: targetDept.deptName,
             deptName: targetDept.deptName,
             accessLevel: "EDITOR",
             accessCode: 111000,
             allowedStorageInBytes: toBytes(newStorageDisplay), // ✅ convert string to bytes
             allowedStorageInBytesDisplay: newStorageDisplay,
-            currentStorageInBytes:
-              targetDept.permissions?.currentStorageInBytes || 0,
+            currentStorageInBytes: toBytes(targetDept.storageUsed || "0 bytes"),
             isDMS_CreateType: false,
             licenseTier: "PREMIUM",
             tenantId: targetDept.tenantId,
@@ -1773,9 +1773,15 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       });
     } catch (error) {
       console.error("Storage update failed:", error);
+      const backendMsg =
+        error?.response?.data?.error ||
+        (typeof error?.response?.data === "string"
+          ? error.response.data
+          : error.message);
+
       setSnackbar({
         open: true,
-        message: `Failed to update storage for ${deptName}`,
+        message: backendMsg,
         severity: "error",
       });
     }
@@ -1887,9 +1893,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         prevDepartments.map((dept) =>
           dept.name === deptName
             ? {
-              ...dept,
-              roles: dept.roles.filter((_, i) => i !== roleIndex),
-            }
+                ...dept,
+                roles: dept.roles.filter((_, i) => i !== roleIndex),
+              }
             : dept,
         ),
       );
@@ -1923,11 +1929,11 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       prev.map((dept) =>
         dept.name === editingRole.departmentName
           ? {
-            ...dept,
-            roles: dept.roles.map((role, i) =>
-              i === editingRole.roleIndex ? editingRole.value : role.roleName,
-            ),
-          }
+              ...dept,
+              roles: dept.roles.map((role, i) =>
+                i === editingRole.roleIndex ? editingRole.value : role.roleName,
+              ),
+            }
           : dept,
       ),
     );
@@ -2059,7 +2065,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 errors.push("Unit Name exceeds 35 characters");
               }
               if (/[^A-Za-z0-9._-]/.test(row["Unit Name"])) {
-                errors.push("Unit Name contains invalid characters (Only A-Za-z0-9._- allowed)");
+                errors.push(
+                  "Unit Name contains invalid characters (Only A-Za-z0-9._- allowed)",
+                );
               }
             }
 
@@ -2070,12 +2078,13 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 errors.push("Unit Short Name exceeds 8 characters");
               }
               if (/[^A-Z0-9]/.test(row["Unit Short Name"].toUpperCase())) {
-                errors.push("Unit Short Name contains invalid characters (Only A-Z, 0-9 allowed)");
+                errors.push(
+                  "Unit Short Name contains invalid characters (Only A-Z, 0-9 allowed)",
+                );
               }
             }
 
-            if (!row["Unit Owner"])
-              errors.push("Unit Owner");
+            if (!row["Unit Owner"]) errors.push("Unit Owner");
             if (!row["Storage Allocated"]) errors.push("Storage Allocated");
             if (!row.Role) errors.push("Role");
             if (!row.Permission) errors.push("Permission");
@@ -2128,7 +2137,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
           // ✅ Build API payload
           const apiPayload = jsonData.map((row) => ({
-            deptName: row["Unit Name"] ? row["Unit Name"].toLowerCase() : row["Unit Name"],
+            deptName: row["Unit Name"]
+              ? row["Unit Name"].toLowerCase()
+              : row["Unit Name"],
             deptDisplayName: row["Unit Short Name"],
             deptModerator: row["Unit Owner"],
             storage: row["Storage Allocated"],
@@ -2154,8 +2165,12 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
             // Parse response array
             const results = response.data;
-            const successCount = results.filter(r => r.status === "Success" || r.status === "Created").length;
-            const failures = results.filter(r => r.status === "Failed" || !!r.error);
+            const successCount = results.filter(
+              (r) => r.status === "Success" || r.status === "Created",
+            ).length;
+            const failures = results.filter(
+              (r) => r.status === "Failed" || !!r.error,
+            );
 
             let message = "";
             let severity = "success";
@@ -2164,10 +2179,10 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               message = `Successfully uploaded ${successCount} Unit(s).`;
             } else if (successCount === 0) {
               severity = "error";
-              message = `All uploads failed:\n${failures.map(f => `- ${f.deptName}: ${f.error?.error || f.error}`).join("\n")}`;
+              message = `All uploads failed:\n${failures.map((f) => `- ${f.deptName}: ${f.error?.error || f.error}`).join("\n")}`;
             } else {
               severity = "warning";
-              message = `Successfully uploaded ${successCount} Unit(s), but ${failures.length} failed:\n${failures.map(f => `- ${f.deptName}: ${f.error?.error || f.error}`).join("\n")}`;
+              message = `Successfully uploaded ${successCount} Unit(s), but ${failures.length} failed:\n${failures.map((f) => `- ${f.deptName}: ${f.error?.error || f.error}`).join("\n")}`;
             }
 
             setSnackbar({
@@ -2395,7 +2410,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       // });
       const backendMsg =
         error?.response?.data?.error ||
-        (typeof error?.response?.data === "string" ? error.response.data : null) ||
+        (typeof error?.response?.data === "string"
+          ? error.response.data
+          : null) ||
         "Failed to create Unit";
       setSnackbar({
         open: true,
@@ -2429,12 +2446,12 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         prev.map((dept) =>
           dept.name === selectedDepartment.name
             ? {
-              ...dept,
-              roles: [
-                ...dept.roles,
-                { roleName: newRole.trim(), isAdmin: isAdminRole },
-              ],
-            }
+                ...dept,
+                roles: [
+                  ...dept.roles,
+                  { roleName: newRole.trim(), isAdmin: isAdminRole },
+                ],
+              }
             : dept,
         ),
       );
@@ -2463,7 +2480,10 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         error?.response?.data || "Failed to create role. Please try again.";
       setSnackbar({
         open: true,
-        message: typeof backendMessage === "string" ? backendMessage : "Failed to create role. Please try again.",
+        message:
+          typeof backendMessage === "string"
+            ? backendMessage
+            : "Failed to create role. Please try again.",
         severity: "error",
       });
     }
@@ -2477,8 +2497,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     );
     setSnackbar({
       open: true,
-      message: `Unit "${dept.name}" ${!dept.isActive ? "activated" : "deactivated"
-        }`,
+      message: `Unit "${dept.name}" ${
+        !dept.isActive ? "activated" : "deactivated"
+      }`,
       severity: "success",
     });
   };
@@ -2637,8 +2658,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     if (!val) return "";
     const [num, unit] = val.trim().split(/\s+/); // splits "25.00 GB" → ["25.00", "GB"]
     const rounded = parseFloat(num);
-    return `${Number.isInteger(rounded) ? rounded : Math.floor(rounded)
-      }${unit}`;
+    return `${
+      Number.isInteger(rounded) ? rounded : Math.floor(rounded)
+    }${unit}`;
   };
 
   // Debounce searchQuery → debouncedSearchQuery (500ms delay)
@@ -3109,7 +3131,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                               }
                             } catch (error) {
                               const backendMsg =
-                                error?.response?.data && typeof error.response.data === "string"
+                                error?.response?.data &&
+                                typeof error.response.data === "string"
                                   ? error.response.data
                                   : error.message;
                               setSnackbar({
@@ -3167,7 +3190,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                             } catch (error) {
                               console.error("Failed to add role:", error);
                               const backendMsg =
-                                error?.response?.data && typeof error.response.data === "string"
+                                error?.response?.data &&
+                                typeof error.response.data === "string"
                                   ? error.response.data
                                   : error.message;
                               setSnackbar({
@@ -3845,7 +3869,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                 const listboxNode = event.currentTarget;
                                 if (
                                   listboxNode.scrollTop +
-                                  listboxNode.clientHeight >=
+                                    listboxNode.clientHeight >=
                                   listboxNode.scrollHeight - 1
                                 ) {
                                   loadMoreUsers();
@@ -3992,7 +4016,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               Add All
             </Button>
           </Box>
-
         </Box>
       </Drawer>
 
@@ -4193,7 +4216,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           </Box>
 
           <Box sx={{ p: 2, flex: 1, overflowY: "auto" }}>
-
             <Card elevation={1} sx={{ borderRadius: 2 }}>
               <CardContent>
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -4294,9 +4316,15 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                 overflowY: "auto",
                               }}
                               onScroll={(event) => {
-                                const { scrollTop, clientHeight, scrollHeight } =
-                                  event.currentTarget;
-                                if (scrollTop + clientHeight >= scrollHeight - 50) {
+                                const {
+                                  scrollTop,
+                                  clientHeight,
+                                  scrollHeight,
+                                } = event.currentTarget;
+                                if (
+                                  scrollTop + clientHeight >=
+                                  scrollHeight - 50
+                                ) {
                                   loadFilteredUsers();
                                 }
                               }}
@@ -4689,7 +4717,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     size="small"
                     fullWidth
                     options={userOptions}
-                    getOptionLabel={(option) => option.email || option.name || ""}
+                    getOptionLabel={(option) =>
+                      option.email || option.name || ""
+                    }
                     loading={loadingUsers.current}
                     onInputChange={(event, newInputValue) => {
                       setUserSearchQuery(newInputValue);
@@ -4713,10 +4743,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                           endAdornment: (
                             <React.Fragment>
                               {loadingUsers.current ? (
-                                <CircularProgress
-                                  color="inherit"
-                                  size={20}
-                                />
+                                <CircularProgress color="inherit" size={20} />
                               ) : null}
                               {params.InputProps.endAdornment}
                             </React.Fragment>
@@ -4781,23 +4808,23 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     >
                       {`[${(assignment.role === "Admin"
                         ? [
-                          "Read",
-                          "Write",
-                          "Delete",
-                          "Share",
-                          "UserAdmin",
-                          "Comment",
-                          "Upload",
-                        ]
-                        : assignment.role === "Editor"
-                          ? [
                             "Read",
                             "Write",
                             "Delete",
                             "Share",
+                            "UserAdmin",
                             "Comment",
                             "Upload",
                           ]
+                        : assignment.role === "Editor"
+                          ? [
+                              "Read",
+                              "Write",
+                              "Delete",
+                              "Share",
+                              "Comment",
+                              "Upload",
+                            ]
                           : assignment.role === "Viewer"
                             ? ["Read", "Comment"]
                             : assignment.role === "Collaborator"
@@ -4858,7 +4885,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       <Portal>
         <Snackbar
           open={snackbar.open}
-          autoHideDuration={5000}
+          autoHideDuration={1000}
           onClose={handleSnackbarClose}
           anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
           sx={{ zIndex: 5000 }} // ✅ Makes Snackbar appear on top of all dialogs/drawers
@@ -4874,7 +4901,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           </Alert>
         </Snackbar>
       </Portal>
-    </Box >
+    </Box>
   );
 }
 

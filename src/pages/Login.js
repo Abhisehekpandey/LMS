@@ -180,7 +180,7 @@ const Login = () => {
         if (deptAdmin && !superAdmin) {
           navigate("/unit");
         } else {
-          navigate("/angelbot");
+          navigate("/imir");
         }
       }, 1000);
     } catch (error) {

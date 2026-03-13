@@ -138,7 +138,7 @@ const Sidebar = () => {
 
   const menuItems = React.useMemo(
     () => [
-      { path: "/angelbot", icon: <TimelineIcon />, text: "TeamSync" },
+      { path: "/imir", icon: <TimelineIcon />, text: "Dashboard" },
       { path: "/user", icon: <UserIcon />, text: "User" },
       {
         path: "/unit",
@@ -173,7 +173,7 @@ const Sidebar = () => {
         text: "Theme and Slogan Setting",
       },
     ],
-    []
+    [],
   );
 
   const handleMouseEnter = () => {
@@ -332,7 +332,8 @@ const Sidebar = () => {
                       color: isActive ? "white" : "inherit",
                       transition: "font-weight 0.2s ease, color 0.2s ease",
                       whiteSpace: "nowrap",
-                      letterSpacing: item.text === "TeamSync" ? "-0.02em" : "normal",
+                      letterSpacing:
+                        item.text === "TeamSync" ? "-0.02em" : "normal",
                     },
                   }}
                 />
