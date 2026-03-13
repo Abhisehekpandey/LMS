@@ -499,9 +499,9 @@ export default function UserTable() {
       if (isInitial) {
         setDepartments(newDepartments);
         setDepartmentPage(page);
-        setHasMoreDepartments(newDepartments.length === 10);
+        setHasMoreDepartments(!res1.last);
       } else {
-        if (newDepartments.length < 10) setHasMoreDepartments(false);
+        setHasMoreDepartments(!res1.last);
         setDepartments((prev) => [...prev, ...newDepartments]);
         setDepartmentPage(page);
       }
@@ -2349,7 +2349,7 @@ export default function UserTable() {
                       const listboxNode = event.currentTarget;
                       const threshold = 50;
                       if (
-                        listboxNode.scrollTop + listboxNode.clientHeight >=
+                        Math.round(listboxNode.scrollTop + listboxNode.clientHeight) >=
                         listboxNode.scrollHeight - threshold &&
                         hasMoreDepartments &&
                         !loadingDepartments.current
@@ -2407,7 +2407,7 @@ export default function UserTable() {
                       const listboxNode = event.currentTarget;
                       const threshold = 50;
                       if (
-                        listboxNode.scrollTop + listboxNode.clientHeight >=
+                        Math.round(listboxNode.scrollTop + listboxNode.clientHeight) >=
                         listboxNode.scrollHeight - threshold &&
                         editRoleHasMore &&
                         !editRoleLoading

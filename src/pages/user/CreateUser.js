@@ -416,9 +416,9 @@ const CreateUser = ({
       if (isInitial) {
         setDepartments(newDepartments);
         setDepartmentPage(page);
-        setHasMoreDepartments(newDepartments.length === 10);
+        setHasMoreDepartments(!res1.last);
       } else {
-        if (newDepartments.length < 10) setHasMoreDepartments(false);
+        setHasMoreDepartments(!res1.last);
         setDepartments((prev) => [...prev, ...newDepartments]);
         setDepartmentPage(page);
       }
@@ -1058,8 +1058,8 @@ const CreateUser = ({
                                       const listboxNode = event.currentTarget;
                                       const threshold = 50;
                                       if (
-                                        listboxNode.scrollTop +
-                                        listboxNode.clientHeight >=
+                                        Math.round(listboxNode.scrollTop +
+                                          listboxNode.clientHeight) >=
                                         listboxNode.scrollHeight - threshold &&
                                         hasMoreDepartments &&
                                         !loadingDepartments.current
@@ -1235,8 +1235,8 @@ const CreateUser = ({
                                           const threshold = 50;
                                           const deptName = typeof user.department === "string" ? user.department : user.department?.deptName;
                                           if (
-                                            listboxNode.scrollTop +
-                                            listboxNode.clientHeight >=
+                                            Math.round(listboxNode.scrollTop +
+                                              listboxNode.clientHeight) >=
                                             listboxNode.scrollHeight - threshold &&
                                             roleHasMore &&
                                             !roleLoading &&
