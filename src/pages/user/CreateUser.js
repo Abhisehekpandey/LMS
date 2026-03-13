@@ -119,6 +119,15 @@ const CreateUser = ({
   const [debouncedUnitSearch, setDebouncedUnitSearch] = useState("");
   const [isSearchingUnits, setIsSearchingUnits] = useState(false);
 
+  // Role field states (shared across all user rows as only one dropdown opens at a time)
+  const [roleOptions, setRoleOptions] = useState([]);
+  const [rolePage, setRolePage] = useState(1);
+  const [roleHasMore, setRoleHasMore] = useState(true);
+  const [roleLoading, setRoleLoading] = useState(false);
+  const [roleSearchQuery, setRoleSearchQuery] = useState("");
+  const [debouncedRoleSearch, setDebouncedRoleSearch] = useState("");
+  const [activeDeptForRoles, setActiveDeptForRoles] = useState("");
+
   const lastFieldRef = useRef(null);
   const dispatch = useDispatch();
 
@@ -387,38 +396,71 @@ const CreateUser = ({
     }
   };
 
-  const loadMoreDepartments = async (isSearch = false, query = "") => {
-    if (loadingDepartments.current || (!hasMoreDepartments && !isSearch)) return;
+  const loadMoreDepartments = async (page, query = "", isInitial = false) => {
+    if (loadingDepartments.current || (!hasMoreDepartments && !isInitial)) return;
     loadingDepartments.current = true;
 
     try {
-      const pageToFetch = isSearch ? 0 : departmentPage;
       const res1 = await getDepartments(
-        pageToFetch,
+        page,
         10,
-        isSearch ? "deptName" : "",
+        query ? "deptName" : "",
         query,
       );
       const res = res1?.content || [];
       const newDepartments = res.map((dept) => ({
         ...dept,
-        roles: dept.roles || [],
+        roles: dept.roles?.roles || [],
       }));
 
-      if (isSearch) {
+      if (isInitial) {
         setDepartments(newDepartments);
-        setDepartmentPage(1);
+        setDepartmentPage(page);
         setHasMoreDepartments(newDepartments.length === 10);
       } else {
         if (newDepartments.length < 10) setHasMoreDepartments(false);
         setDepartments((prev) => [...prev, ...newDepartments]);
-        setDepartmentPage((prev) => prev + 1);
+        setDepartmentPage(page);
       }
     } catch (err) {
       console.error("Failed to load departments:", err);
     } finally {
       loadingDepartments.current = false;
       setIsSearchingUnits(false);
+    }
+  };
+
+  const loadMoreRoles = async (page, query = "", deptName = "", isInitial = false) => {
+    if (!deptName || roleLoading || (!roleHasMore && !isInitial)) return;
+    setRoleLoading(true);
+    try {
+      const res = await axios.get(
+        `${window.__ENV__.REACT_APP_ROUTE}/tenants/departments/${deptName}/roles`,
+        {
+          params: {
+            page,
+            size: 10,
+            search: query || undefined,
+          },
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+            username: sessionStorage.getItem("adminEmail"),
+          },
+        }
+      );
+      const fetchedRoles = res.data?.roles || [];
+      if (isInitial) {
+        setRoleOptions(fetchedRoles);
+        setRolePage(page);
+      } else {
+        setRoleOptions((prev) => [...prev, ...fetchedRoles]);
+        setRolePage(page);
+      }
+      setRoleHasMore(!res.data?.last);
+    } catch (err) {
+      console.error("Failed to load roles:", err);
+    } finally {
+      setRoleLoading(false);
     }
   };
 
@@ -433,9 +475,32 @@ const CreateUser = ({
   useEffect(() => {
     if (debouncedUnitSearch !== undefined && open) {
       setIsSearchingUnits(true);
-      loadMoreDepartments(true, debouncedUnitSearch);
+      loadMoreDepartments(0, debouncedUnitSearch, true); // Search/Initial always page 0
     }
   }, [debouncedUnitSearch, open]);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedRoleSearch(roleSearchQuery);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [roleSearchQuery]);
+
+  useEffect(() => {
+    if (debouncedRoleSearch !== undefined && open && activeDeptForRoles) {
+      loadMoreRoles(1, debouncedRoleSearch, activeDeptForRoles, true); // Search/Initial always page 1
+    }
+  }, [debouncedRoleSearch, open, activeDeptForRoles]);
+
+  // Reset department list when dialog opens
+  useEffect(() => {
+    if (open) {
+      setDepartments([]);
+      setDepartmentPage(0);
+      setHasMoreDepartments(true);
+      loadMoreDepartments(0, "", true);
+    }
+  }, [open]);
 
   // No longer needed here as the search effect handles initial load
   // useEffect(() => {
@@ -982,7 +1047,7 @@ const CreateUser = ({
                                   getOptionLabel={(option) =>
                                     option.deptName || ""
                                   }
-                                  filterOptions={(x) => x} // Disable built-in filtering to use server-side search
+                                  filterOptions={(x) => x}
                                   onInputChange={(event, newInputValue) => {
                                     setUnitSearchQuery(newInputValue);
                                   }}
@@ -995,11 +1060,14 @@ const CreateUser = ({
                                       if (
                                         listboxNode.scrollTop +
                                         listboxNode.clientHeight >=
-                                        listboxNode.scrollHeight - threshold
+                                        listboxNode.scrollHeight - threshold &&
+                                        hasMoreDepartments &&
+                                        !loadingDepartments.current
                                       ) {
                                         loadMoreDepartments(
-                                          false,
+                                          departmentPage + 1,
                                           unitSearchQuery,
+                                          false
                                         );
                                       }
                                     },
@@ -1020,7 +1088,7 @@ const CreateUser = ({
                                     );
                                     formik.setFieldValue(
                                       `users[${index}].role`,
-                                      value?.role || "",
+                                      "",
                                     );
                                   }}
                                   renderInput={(params) => (
@@ -1139,20 +1207,54 @@ const CreateUser = ({
                                         { isAddOption: true },
                                         ...roleOptions,
                                       ]}
-                                      // FIXED: always return a string — `option.roleName || option` would
-                                      // render the full role object as a React child if roleName is falsy
+                                      loading={roleLoading}
+                                      filterOptions={(x) => x}
+                                      onOpen={() => {
+                                        const deptName = typeof user.department === "string" ? user.department : user.department?.deptName;
+                                        if (deptName) {
+                                          setActiveDeptForRoles(deptName);
+                                          setRoleOptions([]);
+                                          setRolePage(1);
+                                          setRoleHasMore(true);
+                                          setRoleSearchQuery("");
+                                          loadMoreRoles(1, "", deptName, true);
+                                        }
+                                      }}
+                                      onInputChange={(event, newInputValue) => {
+                                        setRoleSearchQuery(newInputValue);
+                                      }}
                                       getOptionLabel={(option) => {
                                         if (typeof option === "string") return option;
                                         if (option.isAddOption) return "Add New Role";
                                         return option.roleName || "";
                                       }}
+                                      ListboxProps={{
+                                        style: { maxHeight: 300, overflow: "auto" },
+                                        onScroll: (event) => {
+                                          const listboxNode = event.currentTarget;
+                                          const threshold = 50;
+                                          const deptName = typeof user.department === "string" ? user.department : user.department?.deptName;
+                                          if (
+                                            listboxNode.scrollTop +
+                                            listboxNode.clientHeight >=
+                                            listboxNode.scrollHeight - threshold &&
+                                            roleHasMore &&
+                                            !roleLoading &&
+                                            deptName
+                                          ) {
+                                            loadMoreRoles(
+                                              rolePage + 1,
+                                              roleSearchQuery,
+                                              deptName,
+                                              false
+                                            );
+                                          }
+                                        },
+                                      }}
                                       renderOption={(props, option) => (
                                         <li
                                           {...props}
                                           style={{
-                                            fontStyle: option.isAddOption
-                                              ? "normal"
-                                              : "normal",
                                             color: option.isAddOption
                                               ? "#1976d2"
                                               : "inherit",
@@ -1168,7 +1270,6 @@ const CreateUser = ({
                                               : "inherit",
                                           }}
                                         >
-                                          {/* FIXED: was `option.roleName || option` — returned full object when roleName falsy */}
                                           {option.isAddOption
                                             ? "➕ Add New Role"
                                             : option.roleName || ""}
