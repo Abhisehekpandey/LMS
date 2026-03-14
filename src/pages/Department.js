@@ -46,7 +46,7 @@ import { Fab } from "@mui/material";
 import { Autocomplete } from "@mui/material";
 import { Card, CardContent } from "@mui/material";
 import { CircularProgress, keyframes } from "@mui/material";
-// COMMENTED OUT: searchDepartments no longer used — getDepartments handles search params
+// COMMENTED OUT: searchDepartments no longer used  getDepartments handles search params
 // import { getDepartments, searchDepartments } from "../api/departmentService";
 import { getDepartments } from "../api/departmentService";
 import { createDepartment } from "../api/departmentService";
@@ -104,7 +104,7 @@ import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import { Checkbox } from "@mui/material";
 import styles from "./department.module.css";
-import { fetchUsers, searchUsers } from "../api/userService";
+import { fetchUsers } from "../api/userService";
 import { fetchUsersByDepartment } from "../api/userService";
 import { updateDepartment } from "../api/departmentService";
 import { deleteDepartment } from "../api/departmentService";
@@ -209,7 +209,7 @@ const allColumns = [
   { id: "owner", label: "Owner" },
   { id: "storage", label: "Storage" },
   // { id: "storage", label: "Manage Storage" },
-  { id: "manageStorage", label: "Manage Storage" }, // ✅ unique id
+  { id: "manageStorage", label: "Manage Storage" }, //  unique id
   { id: "users", label: "Users" },
   { id: "roles", label: "Roles" },
   { id: "actions", label: "Actions" },
@@ -300,7 +300,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     initialRole: "",
     storage: "1 GB", //  default
     departmentModerator: "",
-    userAssignments: [{ user: null, role: "" }], // 👈 start with one empty row
+    userAssignments: [{ user: null, role: "" }], // =H start with one empty row
     submitted: false,
   });
 
@@ -427,7 +427,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       // } else {
       //   departmentData = await getDepartments(page, rowsPerPage);
       // }
-      // NEW: always use getDepartments — pass searchColumn/searchQuery when search is active
+      // NEW: always use getDepartments  pass searchColumn/searchQuery when search is active
       const departmentData = await getDepartments(
         page,
         rowsPerPage,
@@ -439,7 +439,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       setTotalDepartments(departmentData.totalElements || 0);
 
       const mapped = apiDepartments.map((dept) => ({
-        // COMMENTED OUT: dept.id doesn't exist in API — API returns deptId
+        // COMMENTED OUT: dept.id doesn't exist in API  API returns deptId
         // id: dept.id,
         id: dept.deptId,
 
@@ -492,6 +492,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     users,
     totalUserCount,  // NEW: total count from paginated API
     departmentId,
+    departmentName,
     departmentRoles = [],
     onEditUser,
     onDeleteUser,
@@ -505,6 +506,14 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     const [selectedRoles, setSelectedRoles] = useState({});
     const [loading, setLoading] = useState(false);
     const anchorRef = useRef(null);
+
+    // States for paginated roles autocomplete
+    const [roleOptions, setRoleOptions] = useState([]);
+    const [roleSearchQuery, setRoleSearchQuery] = useState("");
+    const [debouncedRoleSearchQuery, setDebouncedRoleSearchQuery] = useState("");
+    const [rolePage, setRolePage] = useState(1);
+    const [roleHasMore, setRoleHasMore] = useState(true);
+    const [roleLoading, setRoleLoading] = useState(false);
 
     // States for the Unit Users panel (paginated from new endpoint)
     const [panelUsers, setPanelUsers] = useState([]);
@@ -530,7 +539,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           params.name = query;
         }
 
-        // COMMENTED OUT: search used separate /within/search endpoint — now always use /within
+        // COMMENTED OUT: search used separate /within/search endpoint  now always use /within
         // const endpoint = query.trim()
         //   ? `${window.__ENV__.REACT_APP_ROUTE}/tenants/users/within/search`
         //   : `${window.__ENV__.REACT_APP_ROUTE}/tenants/users/within`;
@@ -606,7 +615,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
     // NEW: load a page of users (server-side search + infinite scroll)
     const loadDialogUsers = async (page = 0, query = "", replace = false) => {
-      if (loading.current || (replace && loading)) return;
+      if (loading || (replace && loading)) return;
       if (!replace && (!dialogHasMore || dialogLoadingMore)) return;
 
       if (replace) setLoading(true);
@@ -616,7 +625,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         let res;
         // API wants page starting from 0 (or 1 depending on service, fetchUsers handles 0->1)
         if (query.trim()) {
-          res = await searchUsers(page, 20, "name", query);
+          res = await fetchUsers(page, 20, "name", query);
         } else {
           res = await fetchUsers(page, 20);
         }
@@ -629,7 +638,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           setAllUsers((prev) => [...prev, ...newUsers]);
           setDialogPage(page + 1);
         }
-        setDialogHasMore(newUsers.length === 20);
+        setDialogHasMore(!res.last);
       } catch (err) {
         console.error("Failed to load dialog users:", err);
       } finally {
@@ -657,7 +666,58 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       setAllUsers([]);
       setDialogPage(0);
       setDialogHasMore(true);
+
+      setRoleSearchQuery("");
+      setRoleOptions([]);
+      setRolePage(1);
+      setRoleHasMore(true);
     };
+
+    const loadMoreRoles = async (page = 1, query = "", isInitial = false) => {
+      if (!departmentName || roleLoading || (!roleHasMore && !isInitial)) return;
+      setRoleLoading(true);
+      try {
+        const res = await axios.get(
+          `${window.__ENV__.REACT_APP_ROUTE}/tenants/departments/${departmentName}/roles`,
+          {
+            params: { page, size: 10, search: query || undefined },
+            headers: {
+              Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+              username: sessionStorage.getItem("adminEmail"),
+            },
+          }
+        );
+        const fetchedRoles = (res.data?.roles || []).map(r => ({
+          id: r.roleId,
+          name: r.roleName
+        }));
+        if (isInitial) {
+          setRoleOptions(fetchedRoles);
+          setRolePage(page);
+        } else {
+          setRoleOptions((prev) => [...prev, ...fetchedRoles]);
+          setRolePage(page);
+        }
+        setRoleHasMore(!res.data?.last);
+      } catch (err) {
+        console.error("Failed to load roles:", err);
+      } finally {
+        setRoleLoading(false);
+      }
+    };
+
+    useEffect(() => {
+      const handler = setTimeout(() => {
+        setDebouncedRoleSearchQuery(roleSearchQuery);
+      }, 500);
+      return () => clearTimeout(handler);
+    }, [roleSearchQuery]);
+
+    useEffect(() => {
+      if (addDialogOpen && debouncedRoleSearchQuery !== undefined) {
+        loadMoreRoles(1, debouncedRoleSearchQuery, true);
+      }
+    }, [debouncedRoleSearchQuery, addDialogOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const handleToggleSelectUser = (user) => {
       setSelectedUsers((prev) =>
@@ -698,7 +758,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     //   );
     // }, [allUsers, search]);
 
-    // NEW: debounce dialogSearch → reload from page 0
+    // NEW: debounce dialogSearch � reload from page 0
     useEffect(() => {
       if (!addDialogOpen) return;
       const t = setTimeout(() => {
@@ -712,7 +772,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       const { scrollTop, clientHeight, scrollHeight } = event.currentTarget;
       const threshold = 50;
       if (
-        scrollTop + clientHeight >= scrollHeight - threshold &&
+        Math.round(scrollTop + clientHeight) >= scrollHeight - threshold &&
         dialogHasMore &&
         !dialogLoadingMore &&
         !loading
@@ -1107,24 +1167,58 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                       <TableRow key={user.id}>
                         <TableCell>{user.name}</TableCell>
                         <TableCell>
-                          <TextField
-                            select
-                            size="small"
-                            fullWidth
-                            value={selectedRoles[user.id] || ""}
-                            onChange={(e) =>
-                              handleRoleChange(user.id, e.target.value)
-                            }
-                          >
-                            <MenuItem value="">
-                              <em>None</em>
-                            </MenuItem>
-                            {departmentRoles.map((role) => (
-                              <MenuItem key={role} value={role}>
-                                {role.name}
-                              </MenuItem>
-                            ))}
-                          </TextField>
+                          <Autocomplete
+                            options={roleOptions}
+                            getOptionLabel={(option) => option.name || ""}
+                            filterOptions={(x) => x}
+                            loading={roleLoading}
+                            onInputChange={(event, newInputValue) => {
+                              setRoleSearchQuery(newInputValue);
+                            }}
+                            ListboxProps={{
+                              style: { maxHeight: 200, overflow: "auto" },
+                              onScroll: (event) => {
+                                const listboxNode = event.currentTarget;
+                                const threshold = 50;
+                                if (
+                                  Math.round(listboxNode.scrollTop + listboxNode.clientHeight) >=
+                                  listboxNode.scrollHeight - threshold &&
+                                  roleHasMore &&
+                                  !roleLoading
+                                ) {
+                                  loadMoreRoles(rolePage + 1, roleSearchQuery, false);
+                                }
+                              },
+                            }}
+                            renderOption={(props, option) => (
+                              <li {...props} style={{ padding: "10px 16px" }}>
+                                {option.name}
+                              </li>
+                            )}
+                            value={selectedRoles[user.id] || null}
+                            onChange={(e, value) => {
+                              handleRoleChange(user.id, value);
+                            }}
+                            renderInput={(params) => (
+                              <TextField
+                                {...params}
+                                size="small"
+                                fullWidth
+                                placeholder="Select Role"
+                                InputProps={{
+                                  ...params.InputProps,
+                                  endAdornment: (
+                                    <React.Fragment>
+                                      {roleLoading ? (
+                                        <CircularProgress color="inherit" size={20} />
+                                      ) : null}
+                                      {params.InputProps.endAdornment}
+                                    </React.Fragment>
+                                  ),
+                                }}
+                              />
+                            )}
+                          />
                         </TableCell>
                         <TableCell>
                           <Checkbox
@@ -1197,7 +1291,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     const [panelTotal, setPanelTotal] = useState(totalRoleCount || 0);
     const [search, setSearch] = useState("");
 
-    // NEW: sessionStorage key helper — scoped to dept so roles from different depts don't clash
+    // NEW: sessionStorage key helper  scoped to dept so roles from different depts don't clash
     const ssKey = (roleName) =>
       `appRole__${selectedDepartment?.name}__${roleName}`;
 
@@ -1650,7 +1744,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               {isEditMode ? "Update" : "Add"}
             </Button> */}
             {/* NEW: also save appRole to session cache so edit dialog can pre-fill it */}
-            {/* OLD: single handler for both add and edit — now split by isEditMode
+            {/* OLD: single handler for both add and edit  now split by isEditMode
             <Button
               onClick={async () => {
                 await handleAddRole(newRole, appRole, selectedDepartment);
@@ -1876,7 +1970,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             deptName: targetDept.deptName,
             accessLevel: "EDITOR",
             accessCode: 111000,
-            allowedStorageInBytes: toBytes(newStorageDisplay), // ✅ convert string to bytes
+            allowedStorageInBytes: toBytes(newStorageDisplay), //  convert string to bytes
             allowedStorageInBytesDisplay: newStorageDisplay,
             currentStorageInBytes: toBytes(targetDept.storageUsed || "0 bytes"),
             isDMS_CreateType: false,
@@ -2017,7 +2111,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     }
 
     try {
-      await deleteRole(roleToDelete.id); // ✅ pass role ID
+      await deleteRole(roleToDelete.id); //  pass role ID
 
       setDepartments((prevDepartments) =>
         prevDepartments.map((dept) =>
@@ -2139,7 +2233,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           const worksheet = workbook.Sheets[workbook.SheetNames[0]];
           const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-          // ✅ Required columns
+          //  Required columns
           const requiredColumns = {
             "Unit Name": false,
             "Unit Short Name": false,
@@ -2216,7 +2310,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             if (!row.Role) errors.push("Role");
             if (!row.Permission) errors.push("Permission");
 
-            // ✅ Duplicate check within the file
+            //  Duplicate check within the file
             if (row["Unit Name"]) {
               if (seenDeptNames.has(row["Unit Name"].toLowerCase())) {
                 errors.push("Duplicate Unit Name in file");
@@ -2262,7 +2356,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             return;
           }
 
-          // ✅ Build API payload
+          //  Build API payload
           const apiPayload = jsonData.map((row) => ({
             deptName: row["Unit Name"] ? row["Unit Name"].toLowerCase() : row["Unit Name"],
             deptDisplayName: row["Unit Short Name"],
@@ -2272,7 +2366,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             permission: row["Permission"] || "ADMIN",
           }));
 
-          // ✅ Send API request
+          //  Send API request
           try {
             const response = await axios.post(
               `${window.__ENV__.REACT_APP_ROUTE}/tenants/departments/bulk`,
@@ -2558,9 +2652,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         isAdmin: isAdminRole,
       };
 
-      await createRole(payload); // ✅ API call
+      await createRole(payload); //  API call
 
-      // ✅ Update departments list
+      //  Update departments list
       setDepartments((prev) =>
         prev.map((dept) =>
           dept.name === selectedDepartment.name
@@ -2589,7 +2683,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         severity: "success",
       });
 
-      // ✅ Reset form
+      //  Reset form
       setNewRole("");
       setShowAddRoleDialog(false);
       setIsAdminRole(false);
@@ -2623,13 +2717,13 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     setEditedDepartment({
       ...dept,
       originalName: dept.name,
-      departmentModerator: dept.departmentModerator || "", // ✅ add this
+      departmentModerator: dept.departmentModerator || "", //  add this
     });
-    setFilteredUsers([]); // ✅ reset previous list
-    setFilteredPage(0); // ✅ reset pagination
-    setHasMoreFilteredUsers(true); // ✅ allow loading again
+    setFilteredUsers([]); //  reset previous list
+    setFilteredPage(0); //  reset pagination
+    setHasMoreFilteredUsers(true); //  allow loading again
 
-    setSearchModerator(""); // ✅ Clear the moderator field
+    setSearchModerator(""); //  Clear the moderator field
     setEditDialogOpen(true);
     setTimeout(() => {
       loadFilteredUsers();
@@ -2706,7 +2800,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       );
 
       const exportData = selectedDepartments.flatMap((dept) => {
-        // ✅ Collect all users across roles
+        //  Collect all users across roles
         const users = dept.roles?.flatMap((role) => role.user || []) || [];
         const userNames = users.map((u) => u.name).join(", ");
         const userCount = users.length;
@@ -2771,14 +2865,14 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
   const cleanDisplay = (val) => {
     if (!val) return "";
-    const [num, unit] = val.trim().split(/\s+/); // splits "25.00 GB" → ["25.00", "GB"]
+    const [num, unit] = val.trim().split(/\s+/); // splits "25.00 GB" � ["25.00", "GB"]
     const rounded = parseFloat(num);
     return `${Number.isInteger(rounded) ? rounded : Math.floor(rounded)
       }${unit}`;
   };
 
-  // Debounce searchQuery → debouncedSearchQuery (500ms delay)
-  // NEW: also reset page to 0 (MUI 0-based → API page=1) when search changes
+  // Debounce searchQuery � debouncedSearchQuery (500ms delay)
+  // NEW: also reset page to 0 (MUI 0-based � API page=1) when search changes
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchQuery(searchQuery);
@@ -3002,7 +3096,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 padding: "0 12px",
               }}
             >
-              ✖ CLEAR
+               CLEAR
             </Button>
           </Box>
         </Box>
@@ -3011,7 +3105,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           sx={{
             border: "0px solid #e2e8f0 !important",
             "& .MuiTableCell-root": {
-              padding: "8px 12px", // ✅ consistent default padding
+              padding: "8px 12px", //  consistent default padding
               height: "40px",
               fontSize: "14px",
             },
@@ -3019,7 +3113,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               fontWeight: "bold",
               color: "#444",
               backgroundColor: "#f8fafc",
-              whiteSpace: "nowrap", // ✅ prevent header text wrapping
+              whiteSpace: "nowrap", //  prevent header text wrapping
             },
           }}
         >
@@ -3193,8 +3287,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                           }))}
                           totalUserCount={dept.userCount}
                           departmentId={dept.id}
+                          departmentName={dept.name}
                           departmentRoles={dept.roles.map((role) => ({
-                            // COMMENTED OUT: role.id doesn't exist in API — API uses roleId
+                            // COMMENTED OUT: role.id doesn't exist in API  API uses roleId
                             // id: role.id,
                             id: role.roleId,
                             name: role.roleName,
@@ -3211,7 +3306,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                               const payload = selectedUsers.map((u) => [
                                 u.id,
                                 u.role.id,
-                              ]); // ✅ backend expects [userId, roleId]
+                              ]); //  backend expects [userId, roleId]
 
                               const response = await axios.post(
                                 `${window.__ENV__.REACT_APP_ROUTE}/tenants/department/addInExisting/${deptId}`,
@@ -3314,7 +3409,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                               });
                             }
                           }}
-                          // NEW: PUT /tenants/roles — update existing role
+                          // NEW: PUT /tenants/roles  update existing role
                           handleUpdateRole={async (
                             roleId,
                             newRoleName,
@@ -3969,7 +4064,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                             //     newValue?.email || ""
                             //   )
                             // }
-                            // NEW: owner is always ADMIN — auto-set permission when owner is selected/cleared
+                            // NEW: owner is always ADMIN  auto-set permission when owner is selected/cleared
                             onChange={(event, newValue) => {
                               updateDepartmentField(
                                 index,
@@ -4048,7 +4143,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                         </Grid>
 
                         <Grid item xs={6}>
-                          {/* COMMENTED OUT: permission was user-editable — owner must always be ADMIN */}
+                          {/* COMMENTED OUT: permission was user-editable  owner must always be ADMIN */}
                           {/* <FormControl fullWidth size="small">
                             <InputLabel>Permission</InputLabel>
                             <Select
@@ -4070,7 +4165,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                               <MenuItem value="NO_ROLE">NO_ROLE</MenuItem>
                             </Select>
                           </FormControl> */}
-                          {/* NEW: disabled — always ADMIN, auto-set when owner is selected */}
+                          {/* NEW: disabled  always ADMIN, auto-set when owner is selected */}
                           <FormControl fullWidth size="small">
                             <InputLabel>Permission</InputLabel>
                             <Select
@@ -4601,7 +4696,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               px: 2.5,
               fontSize: "0.9rem",
               fontWeight: "bold",
-              background: "rgb(251, 68, 36)", // ✅ custom background
+              background: "rgb(251, 68, 36)", //  custom background
               "&:hover": {
                 background: "rgb(220, 50, 20)", // darker shade on hover
               },
@@ -4792,7 +4887,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 });
 
                 const mapped = allDepartments.map((dept) => ({
-                  id: dept.id, // 👈 add this
+                  id: dept.id, // =H add this
                   name: dept.deptName,
                   displayName: dept.deptDisplayName,
                   departmentModerator:
@@ -5021,7 +5116,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           autoHideDuration={1000}
           onClose={handleSnackbarClose}
           anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-          sx={{ zIndex: 5000 }} // ✅ Makes Snackbar appear on top of all dialogs/drawers
+          sx={{ zIndex: 5000 }} //  Makes Snackbar appear on top of all dialogs/drawers
         >
           <Alert
             onClose={handleSnackbarClose}
