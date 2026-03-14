@@ -185,7 +185,7 @@ const CreateUser = ({
     const blob = new Blob([csvOutput], { type: "text/csv;charset=utf-8;" });
     saveAs(blob, "USER_TEMPLATE.csv");
 
-    //  Show success snackbar
+    // ✅ Show success snackbar
     showSnackbar("Template downloaded successfully!", "success");
   };
 
@@ -297,7 +297,7 @@ const CreateUser = ({
     const fileExt = file.name.split(".").pop().toLowerCase();
 
     if (fileExt === "csv") {
-      //  CSV parsing
+      // ✅ CSV parsing
       Papa.parse(file, {
         header: true,
         skipEmptyLines: true,
@@ -312,7 +312,7 @@ const CreateUser = ({
         },
       });
     } else if (fileExt === "xlsx" || fileExt === "xls") {
-      //  Excel parsing
+      // ✅ Excel parsing
       const reader = new FileReader();
       reader.onload = (e) => {
         const data = new Uint8Array(e.target.result);
@@ -334,7 +334,7 @@ const CreateUser = ({
     }
   };
 
-  //  Shared data processing
+  // ✅ Shared data processing
   const processParsedData = (data) => {
     const headers = Object.keys(data[0] || {}).map((h) =>
       h.trim().toUpperCase(),
@@ -542,9 +542,9 @@ const CreateUser = ({
 
   useEffect(() => {
     if (open) {
-      setFormKey(Date.now()); // =H Force reinit Formik
-      setExpandedIndex(0); // =H Expand first user
-      setCsvUsers([]); // =H Clear uploaded CSV
+      setFormKey(Date.now()); // 👈 Force reinit Formik
+      setExpandedIndex(0); // 👈 Expand first user
+      setCsvUsers([]); // 👈 Clear uploaded CSV
       setFileName("");
       setBulkFile(null);
     }
@@ -565,8 +565,19 @@ const CreateUser = ({
             },
           );
           setRegions(response.data.regions || []);
-          setDefaultRegion(response.data.defaultRegion || "");
-          setSelectedRegion(response.data.defaultRegion || "");
+          const defReg = response.data.defaultRegion || "";
+          setDefaultRegion(defReg);
+          setSelectedRegion(defReg);
+
+          // NEW: Sync defaultRegion with Formik state for existing rows if empty
+          if (defReg && formikRef.current) {
+            const currentUsers = formikRef.current.values.users || [];
+            currentUsers.forEach((u, i) => {
+              if (!u.region) {
+                formikRef.current.setFieldValue(`users[${i}].region`, defReg);
+              }
+            });
+          }
         } catch (err) {
           console.error("Failed to fetch regions:", err);
         }
@@ -747,7 +758,7 @@ const CreateUser = ({
                   setFileName("");
                   setBulkFile(null);
 
-                  // � Delay closing until snackbars are shown
+                  // ⏳ Delay closing until snackbars are shown
                   if (closeAfter > 0) {
                     setTimeout(() => {
                       handleClose();
@@ -770,7 +781,7 @@ const CreateUser = ({
             type="file"
             style={{ display: "none" }}
             accept=".csv"
-            ref={fileInputRef} //  attach ref
+            ref={fileInputRef} // ✅ attach ref
             onChange={handleFileChange}
           />
 
@@ -785,7 +796,7 @@ const CreateUser = ({
                   setBulkFile(null);
                   setCsvUsers([]);
                   if (fileInputRef.current) {
-                    fileInputRef.current.value = ""; //  reset file input
+                    fileInputRef.current.value = ""; // ✅ reset file input
                   }
                 }}
               >
@@ -795,16 +806,16 @@ const CreateUser = ({
           )}
         </div>
         <Formik
-          innerRef={formikRef} //  attach ref
-          key={formKey} // =H This line forces Formik to re-initialize
+          innerRef={formikRef} // ✅ attach ref
+          key={formKey} // 👈 This line forces Formik to re-initialize
           initialValues={initialValues}
           validationSchema={validationSchema}
           onSubmit={async (values, actions) => {
             try {
-              //  Validate form with all fields
+              // ✅ Validate form with all fields
               await validationSchema.validate(values, { abortEarly: false });
 
-              //  Transform data for backend
+              // ✅ Transform data for backend
               const transformedUsers = values.users.map((user) => ({
                 name: user.name,
                 email: user.email.toLowerCase(),
@@ -820,7 +831,7 @@ const CreateUser = ({
                 roleId: user.role?.roleId || user.role?.id || null,
                 storage: user.storage?.trim() ? user.storage : null,
                 reportingManager: user.reportingManager,
-                region: user.region, //  include region from validated values
+                region: user.region, // ✅ include region from validated values
                 // sections: user.sections || [], // COMMENTED OUT
               }));
 
@@ -840,7 +851,7 @@ const CreateUser = ({
                       `users[${index}].email`,
                       "Email already exists",
                     );
-                    setExpandedIndex(index); // =H Expand duplicate email user
+                    setExpandedIndex(index); // 👈 Expand duplicate email user
                   }
                 });
 
@@ -858,11 +869,11 @@ const CreateUser = ({
                 if (firstError) {
                   const match = firstError.path.match(/^users\[(\d+)\]/);
                   if (match) {
-                    setExpandedIndex(Number(match[1])); //  Expand first invalid form
+                    setExpandedIndex(Number(match[1])); // ✅ Expand first invalid form
                   }
                 }
 
-                //  Show individual field errors
+                // ✅ Show individual field errors
                 error.inner.forEach((err) => {
                   actions.setFieldError(err.path, err.message);
                 });
@@ -871,7 +882,7 @@ const CreateUser = ({
                 setSnackbarSeverity("error");
                 setSnackbarOpen(true);
               } else {
-                // � Fallback for non-validation errors
+                // ⚠️ Fallback for non-validation errors
                 setSnackbarMessage("Failed to create users. Please try again.");
                 setSnackbarSeverity("error");
                 setSnackbarOpen(true);
@@ -1047,7 +1058,7 @@ const CreateUser = ({
                                     </>
                                   }
                                   name={`users[${index}].region`}
-                                  value={user.region || defaultRegion}
+                                  value={user.region || ""}
                                   onChange={formik.handleChange}
                                   fullWidth
                                   size="small"
@@ -1299,7 +1310,7 @@ const CreateUser = ({
                                           }}
                                         >
                                           {option.isAddOption
-                                            ? "� Add New Role"
+                                            ? "➕ Add New Role"
                                             : option.roleName || (typeof option === "string" ? option : "")}
                                         </li>
                                       )}
@@ -1370,7 +1381,7 @@ const CreateUser = ({
                             </Grid>
                           ) : (
                             <Typography variant="body2">
-                              <strong>{user.name || "Unnamed User"}</strong> {" "}
+                              <strong>{user.name || "Unnamed User"}</strong> —{" "}
                               {user.email || "No Email"} |{" "}
                               <strong>{user.storage || "No Storage"}</strong> |{" "}
                               {typeof user.department === "object"
@@ -1508,11 +1519,11 @@ const CreateUser = ({
                     ...newDepartment,
                     deptName: e.target.value,
                   });
-                  setDuplicateDeptError(false); // =H Clear error on change
+                  setDuplicateDeptError(false); // 👈 Clear error on change
                 }}
                 error={
                   (departmentSubmitted && !newDepartment.deptName) ||
-                  /\s/.test(newDepartment.deptName) || // L check for whitespace
+                  /\s/.test(newDepartment.deptName) || // ❌ check for whitespace
                   duplicateDeptError
                 }
                 helperText={
@@ -1751,7 +1762,7 @@ const CreateUser = ({
                     newDepartment.role.trim() === ""
                       ? null
                       : newDepartment.role,
-                  selectedUsers: newDepartment.selectedUsers || [], //  optional
+                  selectedUsers: newDepartment.selectedUsers || [], // ✅ optional
                 };
 
                 const createdDept = await createDepartment(payload);
@@ -1776,7 +1787,7 @@ const CreateUser = ({
                 );
                 setSnackbarSeverity("error");
                 setSnackbarOpen(true);
-                setDuplicateDeptError(true); // =H Trigger field-level error
+                setDuplicateDeptError(true); // 👈 Trigger field-level error
               }
             }}
             variant="contained"
