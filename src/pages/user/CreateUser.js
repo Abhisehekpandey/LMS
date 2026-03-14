@@ -74,6 +74,7 @@ const CreateUser = ({
   const [formInitialValues, setFormInitialValues] = useState({
     users: [emptyUser],
   });
+  const formikRef = useRef(null); // NEW: Ref to access formik outside render props
   const [bulkSuccessMessage, setBulkSuccessMessage] = useState("");
   const [bulkWarningMessage, setBulkWarningMessage] = useState("");
   const [isAdminRole, setIsAdminRole] = useState(false);
@@ -91,6 +92,8 @@ const CreateUser = ({
   const [newRoleName, setNewRoleName] = useState("");
   const [newAppRole, setNewAppRole] = useState(""); // NEW: App Role for role creation
   const [expandedIndex, setExpandedIndex] = useState(0);
+  const [activeUserIndexForRole, setActiveUserIndexForRole] = useState(null); // NEW: Track which user added a role
+  const [locallyCreatedRoles, setLocallyCreatedRoles] = useState({}); // NEW: Track roles created locally per department
   const [newDepartment, setNewDepartment] = useState({
     deptName: "",
     deptModerator: "",
@@ -182,7 +185,7 @@ const CreateUser = ({
     const blob = new Blob([csvOutput], { type: "text/csv;charset=utf-8;" });
     saveAs(blob, "USER_TEMPLATE.csv");
 
-    // ✅ Show success snackbar
+    //  Show success snackbar
     showSnackbar("Template downloaded successfully!", "success");
   };
 
@@ -253,6 +256,7 @@ const CreateUser = ({
         role: "",
         department: "",
         reportingManager: "",
+        region: defaultRegion || "",
         // sections: [], // COMMENTED OUT
       },
     ],
@@ -271,6 +275,8 @@ const CreateUser = ({
         department: yup.mixed().required("Unit is required"),
 
         role: yup.mixed().required("Role is required"),
+
+        region: yup.string().required("Command is required"),
 
         // COMMENTED OUT: sections validation
         // sections: yup
@@ -291,7 +297,7 @@ const CreateUser = ({
     const fileExt = file.name.split(".").pop().toLowerCase();
 
     if (fileExt === "csv") {
-      // ✅ CSV parsing
+      //  CSV parsing
       Papa.parse(file, {
         header: true,
         skipEmptyLines: true,
@@ -306,7 +312,7 @@ const CreateUser = ({
         },
       });
     } else if (fileExt === "xlsx" || fileExt === "xls") {
-      // ✅ Excel parsing
+      //  Excel parsing
       const reader = new FileReader();
       reader.onload = (e) => {
         const data = new Uint8Array(e.target.result);
@@ -328,7 +334,7 @@ const CreateUser = ({
     }
   };
 
-  // ✅ Shared data processing
+  //  Shared data processing
   const processParsedData = (data) => {
     const headers = Object.keys(data[0] || {}).map((h) =>
       h.trim().toUpperCase(),
@@ -449,11 +455,32 @@ const CreateUser = ({
         }
       );
       const fetchedRoles = res.data?.roles || [];
+      const localRoles = locallyCreatedRoles[deptName] || [];
+
+      // Helper to normalize roles
+      const normalize = (r) => (typeof r === "string" ? { roleName: r } : r);
+
       if (isInitial) {
-        setRoleOptions(fetchedRoles);
+        // Prepend local roles to the initial fetch results
+        const combined = [
+          ...localRoles,
+          ...fetchedRoles.filter((f) => !localRoles.some((l) => l.roleName === f.roleName)),
+        ];
+        setRoleOptions(combined);
         setRolePage(page);
       } else {
-        setRoleOptions((prev) => [...prev, ...fetchedRoles]);
+        setRoleOptions((prev) => {
+          const newList = [...prev, ...fetchedRoles];
+          // Deduplicate based on roleName
+          const uniqueNames = new Set();
+          return newList
+            .map((r) => normalize(r))
+            .filter((r) => {
+              if (uniqueNames.has(r.roleName)) return false;
+              uniqueNames.add(r.roleName);
+              return true;
+            });
+        });
         setRolePage(page);
       }
       setRoleHasMore(!res.data?.last);
@@ -515,9 +542,9 @@ const CreateUser = ({
 
   useEffect(() => {
     if (open) {
-      setFormKey(Date.now()); // 👈 Force reinit Formik
-      setExpandedIndex(0); // 👈 Expand first user
-      setCsvUsers([]); // 👈 Clear uploaded CSV
+      setFormKey(Date.now()); // =H Force reinit Formik
+      setExpandedIndex(0); // =H Expand first user
+      setCsvUsers([]); // =H Clear uploaded CSV
       setFileName("");
       setBulkFile(null);
     }
@@ -720,7 +747,7 @@ const CreateUser = ({
                   setFileName("");
                   setBulkFile(null);
 
-                  // ⏳ Delay closing until snackbars are shown
+                  // � Delay closing until snackbars are shown
                   if (closeAfter > 0) {
                     setTimeout(() => {
                       handleClose();
@@ -743,7 +770,7 @@ const CreateUser = ({
             type="file"
             style={{ display: "none" }}
             accept=".csv"
-            ref={fileInputRef} // ✅ attach ref
+            ref={fileInputRef} //  attach ref
             onChange={handleFileChange}
           />
 
@@ -758,7 +785,7 @@ const CreateUser = ({
                   setBulkFile(null);
                   setCsvUsers([]);
                   if (fileInputRef.current) {
-                    fileInputRef.current.value = ""; // ✅ reset file input
+                    fileInputRef.current.value = ""; //  reset file input
                   }
                 }}
               >
@@ -768,15 +795,16 @@ const CreateUser = ({
           )}
         </div>
         <Formik
-          key={formKey} // 👈 This line forces Formik to re-initialize
+          innerRef={formikRef} //  attach ref
+          key={formKey} // =H This line forces Formik to re-initialize
           initialValues={initialValues}
           validationSchema={validationSchema}
           onSubmit={async (values, actions) => {
             try {
-              // ✅ Validate form with all fields
+              //  Validate form with all fields
               await validationSchema.validate(values, { abortEarly: false });
 
-              // ✅ Transform data for backend
+              //  Transform data for backend
               const transformedUsers = values.users.map((user) => ({
                 name: user.name,
                 email: user.email.toLowerCase(),
@@ -792,7 +820,7 @@ const CreateUser = ({
                 roleId: user.role?.roleId || user.role?.id || null,
                 storage: user.storage?.trim() ? user.storage : null,
                 reportingManager: user.reportingManager,
-                region: user.region || defaultRegion, // ✅ include region
+                region: user.region, //  include region from validated values
                 // sections: user.sections || [], // COMMENTED OUT
               }));
 
@@ -812,7 +840,7 @@ const CreateUser = ({
                       `users[${index}].email`,
                       "Email already exists",
                     );
-                    setExpandedIndex(index); // 👈 Expand duplicate email user
+                    setExpandedIndex(index); // =H Expand duplicate email user
                   }
                 });
 
@@ -830,11 +858,11 @@ const CreateUser = ({
                 if (firstError) {
                   const match = firstError.path.match(/^users\[(\d+)\]/);
                   if (match) {
-                    setExpandedIndex(Number(match[1])); // ✅ Expand first invalid form
+                    setExpandedIndex(Number(match[1])); //  Expand first invalid form
                   }
                 }
 
-                // ✅ Show individual field errors
+                //  Show individual field errors
                 error.inner.forEach((err) => {
                   actions.setFieldError(err.path, err.message);
                 });
@@ -843,7 +871,7 @@ const CreateUser = ({
                 setSnackbarSeverity("error");
                 setSnackbarOpen(true);
               } else {
-                // ⚠️ Fallback for non-validation errors
+                // � Fallback for non-validation errors
                 setSnackbarMessage("Failed to create users. Please try again.");
                 setSnackbarSeverity("error");
                 setSnackbarOpen(true);
@@ -1271,23 +1299,19 @@ const CreateUser = ({
                                           }}
                                         >
                                           {option.isAddOption
-                                            ? "➕ Add New Role"
-                                            : option.roleName || ""}
+                                            ? "� Add New Role"
+                                            : option.roleName || (typeof option === "string" ? option : "")}
                                         </li>
                                       )}
                                       value={user.role || ""}
                                       onChange={(e, value) => {
                                         if (value?.isAddOption) {
-                                          setSelectedDepartmentForRole(
-                                            user.department,
-                                          );
+                                          setSelectedDepartmentForRole(user.department);
+                                          setActiveUserIndexForRole(index);
                                           setAddRole(true);
                                           return;
                                         }
-                                        formik.setFieldValue(
-                                          `users[${index}].role`,
-                                          value,
-                                        );
+                                        formik.setFieldValue(`users[${index}].role`, value);
                                       }}
                                       renderInput={(params) => (
                                         <TextField
@@ -1346,7 +1370,7 @@ const CreateUser = ({
                             </Grid>
                           ) : (
                             <Typography variant="body2">
-                              <strong>{user.name || "Unnamed User"}</strong> —{" "}
+                              <strong>{user.name || "Unnamed User"}</strong> {" "}
                               {user.email || "No Email"} |{" "}
                               <strong>{user.storage || "No Storage"}</strong> |{" "}
                               {typeof user.department === "object"
@@ -1484,11 +1508,11 @@ const CreateUser = ({
                     ...newDepartment,
                     deptName: e.target.value,
                   });
-                  setDuplicateDeptError(false); // 👈 Clear error on change
+                  setDuplicateDeptError(false); // =H Clear error on change
                 }}
                 error={
                   (departmentSubmitted && !newDepartment.deptName) ||
-                  /\s/.test(newDepartment.deptName) || // ❌ check for whitespace
+                  /\s/.test(newDepartment.deptName) || // L check for whitespace
                   duplicateDeptError
                 }
                 helperText={
@@ -1727,7 +1751,7 @@ const CreateUser = ({
                     newDepartment.role.trim() === ""
                       ? null
                       : newDepartment.role,
-                  selectedUsers: newDepartment.selectedUsers || [], // ✅ optional
+                  selectedUsers: newDepartment.selectedUsers || [], //  optional
                 };
 
                 const createdDept = await createDepartment(payload);
@@ -1752,7 +1776,7 @@ const CreateUser = ({
                 );
                 setSnackbarSeverity("error");
                 setSnackbarOpen(true);
-                setDuplicateDeptError(true); // 👈 Trigger field-level error
+                setDuplicateDeptError(true); // =H Trigger field-level error
               }
             }}
             variant="contained"
@@ -1927,6 +1951,26 @@ const CreateUser = ({
                   ),
                 );
 
+                const normalizedRole = typeof addedRole[0] === "string" ? { roleName: addedRole[0] } : addedRole[0];
+
+                // NEW: Prepend to roleOptions and auto-select for the triggering user
+                setRoleOptions((prev) => [normalizedRole, ...(prev || [])]);
+                if (activeUserIndexForRole !== null && formikRef.current) {
+                  formikRef.current.setFieldValue(
+                    `users[${activeUserIndexForRole}].role`,
+                    normalizedRole,
+                  );
+                }
+
+                // NEW: Persist to locallyCreatedRoles to survive dropdown refreshes
+                setLocallyCreatedRoles((prev) => ({
+                  ...prev,
+                  [selectedDepartmentForRole.deptName]: [
+                    normalizedRole,
+                    ...(prev[selectedDepartmentForRole.deptName] || []),
+                  ],
+                }));
+
                 setSnackbarMessage("Role added successfully!");
                 setSnackbarSeverity("success");
                 setSnackbarOpen(true);
@@ -1936,6 +1980,7 @@ const CreateUser = ({
                 setAddRole(false);
                 setRoleSubmitted(false);
                 setIsAdminRole(false);
+                setActiveUserIndexForRole(null); // NEW: reset triggering index
               } catch (error) {
                 console.error("Add role error:", error);
                 setSnackbarMessage(
