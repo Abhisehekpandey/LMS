@@ -58,6 +58,7 @@ const emptyUser = {
   email: "",
   storage: "0GB",
   role: "",
+  roleId: "",
   department: "",
   reportingManager: "",
   // sections: [], // COMMENTED OUT
@@ -130,6 +131,7 @@ const CreateUser = ({
   const [roleSearchQuery, setRoleSearchQuery] = useState("");
   const [debouncedRoleSearch, setDebouncedRoleSearch] = useState("");
   const [activeDeptForRoles, setActiveDeptForRoles] = useState("");
+  const [openStates, setOpenStates] = useState({});
 
   const lastFieldRef = useRef(null);
   const dispatch = useDispatch();
@@ -437,53 +439,51 @@ const CreateUser = ({
   };
 
   const loadMoreRoles = async (page, query = "", deptName = "", isInitial = false) => {
-    if (!deptName || roleLoading || (!roleHasMore && !isInitial)) return;
+    if (!deptName || (!isInitial && roleLoading) || (!roleHasMore && !isInitial)) return;
     setRoleLoading(true);
     try {
+      const params = { page, size: 10 };
+      if (query && query.trim()) params.search = query.trim();
+
       const res = await axios.get(
         `${window.__ENV__.REACT_APP_ROUTE}/tenants/departments/${deptName}/roles`,
         {
-          params: {
-            page,
-            size: 10,
-            search: query || undefined,
-          },
+          params,
           headers: {
             Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
             username: sessionStorage.getItem("adminEmail"),
           },
         }
       );
-      const fetchedRoles = res.data?.roles || [];
+      const data = res.data;
+      const fetchedRoles = data.roles || [];
       const localRoles = locallyCreatedRoles[deptName] || [];
 
-      // Helper to normalize roles
-      const normalize = (r) => (typeof r === "string" ? { roleName: r } : r);
+      const normalize = (r) => {
+        const obj = typeof r === "string" ? { roleName: r } : r;
+        const name = obj.roleName || "";
+        return {
+          ...obj,
+          roleName: name,
+          _uKey: obj.roleId || obj.id || `${name}-${obj.roleDisplayName}`
+        };
+      };
+
+      const combined = (isInitial ? [...localRoles, ...fetchedRoles] : fetchedRoles).map(normalize);
 
       if (isInitial) {
-        // Prepend local roles to the initial fetch results
-        const combined = [
-          ...localRoles,
-          ...fetchedRoles.filter((f) => !localRoles.some((l) => l.roleName === f.roleName)),
-        ];
         setRoleOptions(combined);
-        setRolePage(page);
       } else {
         setRoleOptions((prev) => {
-          const newList = [...prev, ...fetchedRoles];
-          // Deduplicate based on roleName
-          const uniqueNames = new Set();
-          return newList
-            .map((r) => normalize(r))
-            .filter((r) => {
-              if (uniqueNames.has(r.roleName)) return false;
-              uniqueNames.add(r.roleName);
-              return true;
-            });
+          const newOptions = [...prev, ...combined];
+          // Deduplicate by _uKey
+          return newOptions.filter(
+            (v, i, a) => a.findIndex((t) => t._uKey === v._uKey) === i
+          );
         });
-        setRolePage(page);
       }
-      setRoleHasMore(!res.data?.last);
+      setRolePage(page);
+      setRoleHasMore(!data.last);
     } catch (err) {
       console.error("Failed to load roles:", err);
     } finally {
@@ -514,10 +514,12 @@ const CreateUser = ({
   }, [roleSearchQuery]);
 
   useEffect(() => {
-    if (debouncedRoleSearch !== undefined && open && activeDeptForRoles) {
-      loadMoreRoles(1, debouncedRoleSearch, activeDeptForRoles, true); // Search/Initial always page 1
+    const isAnyOpen = Object.values(openStates).some(o => o);
+    if (isAnyOpen && activeDeptForRoles) {
+      // When opening or searching, reload from page 1
+      loadMoreRoles(1, debouncedRoleSearch || "", activeDeptForRoles, true);
     }
-  }, [debouncedRoleSearch, open, activeDeptForRoles]);
+  }, [debouncedRoleSearch, openStates, activeDeptForRoles]);
 
   // Reset department list when dialog opens
   useEffect(() => {
@@ -914,8 +916,6 @@ const CreateUser = ({
                         (dept) => dept.deptName === selectedDeptName,
                       );
 
-                      const roleOptions = selectedDept?.roles || [];
-
                       const isExpanded = index === expandedIndex;
 
                       return (
@@ -1121,14 +1121,17 @@ const CreateUser = ({
                                   )}
                                   value={user.department || ""}
                                   onChange={(e, value) => {
-                                    formik.setFieldValue(
-                                      `users[${index}].department`,
-                                      value,
-                                    );
-                                    formik.setFieldValue(
-                                      `users[${index}].role`,
-                                      "",
-                                    );
+                                    formik.setFieldValue(`users[${index}].department`, value);
+                                    formik.setFieldValue(`users[${index}].role`, "");
+                                    const deptName = value?.deptName || "";
+                                    if (deptName) {
+                                      setActiveDeptForRoles(deptName);
+                                      setRoleOptions([]);
+                                      setRolePage(1);
+                                      setRoleHasMore(true);
+                                      setRoleSearchQuery("");
+                                      loadMoreRoles(1, "", deptName, true);
+                                    }
                                   }}
                                   renderInput={(params) => (
                                     <TextField
@@ -1249,15 +1252,31 @@ const CreateUser = ({
                                       loading={roleLoading}
                                       filterOptions={(x) => x}
                                       onOpen={() => {
-                                        const deptName = typeof user.department === "string" ? user.department : user.department?.deptName;
+                                        const deptName =
+                                          typeof user.department === "string"
+                                            ? user.department
+                                            : user.department?.deptName;
                                         if (deptName) {
                                           setActiveDeptForRoles(deptName);
-                                          setRoleOptions([]);
-                                          setRolePage(1);
-                                          setRoleHasMore(true);
-                                          setRoleSearchQuery("");
-                                          loadMoreRoles(1, "", deptName, true);
+                                          // Don't clear options here to avoid flicker if already pre-fetched
+                                          setOpenStates((prev) => ({
+                                            ...prev,
+                                            [index]: true,
+                                          }));
                                         }
+                                      }}
+                                      onClose={() => {
+                                        setOpenStates((prev) => ({
+                                          ...prev,
+                                          [index]: false,
+                                        }));
+                                      }}
+                                      isOptionEqualToValue={(option, value) => {
+                                        if (value?.isAddOption || option?.isAddOption) return false;
+                                        return (
+                                          (option.roleId && option.roleId === value.roleId) ||
+                                          (option.roleName && option.roleName === value.roleName)
+                                        );
                                       }}
                                       onInputChange={(event, newInputValue) => {
                                         setRoleSearchQuery(newInputValue);
@@ -1314,7 +1333,12 @@ const CreateUser = ({
                                             : option.roleName || (typeof option === "string" ? option : "")}
                                         </li>
                                       )}
-                                      value={user.role || ""}
+                                      value={
+                                        roleOptions.find((r) =>
+                                          (r.roleId && r.roleId === user.roleId) ||
+                                          (r.roleName && r.roleName === user.role)
+                                        ) || (user.role ? { roleName: user.role, roleDisplayName: user.role } : null)
+                                      }
                                       onChange={(e, value) => {
                                         if (value?.isAddOption) {
                                           setSelectedDepartmentForRole(user.department);
@@ -1322,7 +1346,8 @@ const CreateUser = ({
                                           setAddRole(true);
                                           return;
                                         }
-                                        formik.setFieldValue(`users[${index}].role`, value);
+                                        formik.setFieldValue(`users[${index}].role`, value?.roleName || "");
+                                        formik.setFieldValue(`users[${index}].roleId`, value?.roleId || value?.id || "");
                                       }}
                                       renderInput={(params) => (
                                         <TextField
@@ -1969,7 +1994,11 @@ const CreateUser = ({
                 if (activeUserIndexForRole !== null && formikRef.current) {
                   formikRef.current.setFieldValue(
                     `users[${activeUserIndexForRole}].role`,
-                    normalizedRole,
+                    normalizedRole.roleName || "",
+                  );
+                  formikRef.current.setFieldValue(
+                    `users[${activeUserIndexForRole}].roleId`,
+                    normalizedRole.roleId || "",
                   );
                 }
 

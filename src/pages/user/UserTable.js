@@ -802,9 +802,8 @@ export default function UserTable() {
     return num * unitMap[unit];
   };
 
-  const handleStatusToggle = async (username) => {
-    const user = rowsData.find((u) => u.name === username);
-    if (!user) return;
+  const handleStatusToggle = async (userId) => {
+    const user = rowsData.find((u) => u.id === userId);
 
     const newStatus = !user.active;
     const selectedStorage =
@@ -840,7 +839,7 @@ export default function UserTable() {
     };
 
     const updatedRows = rowsData.map((u) =>
-      u.name === username ? updatedUser : u
+      u.id === userId ? updatedUser : u
     );
 
     try {
@@ -1820,7 +1819,7 @@ export default function UserTable() {
                               control={
                                 <IOSSwitch
                                   checked={row.active && row.enabled}
-                                  onChange={() => handleStatusToggle(row.name)}
+                                  onChange={() => handleStatusToggle(row.id)}
                                   disabled={
                                     row.email === adminEmail ||
                                     (row.active && !row.enabled) ||
