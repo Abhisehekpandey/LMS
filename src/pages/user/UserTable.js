@@ -1256,7 +1256,7 @@ export default function UserTable() {
             >
               Inactive
             </MenuItem>
-            <MenuItem
+            {/* <MenuItem
               selected={statusFilter === "Pending"}
               onClick={() => {
                 setStatusFilter("Pending");
@@ -1265,7 +1265,7 @@ export default function UserTable() {
               }}
             >
               Pending
-            </MenuItem>
+            </MenuItem> */}
           </Menu>
 
           <Table

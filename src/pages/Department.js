@@ -38,6 +38,7 @@ import {
   MenuItem,
   Tooltip,
   FormControlLabel,
+  LinearProgress,
 } from "@mui/material";
 import { FormHelperText } from "@mui/material";
 import { Delete } from "@mui/icons-material";
@@ -310,8 +311,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       displayName: "",
       storage: "1 GB",
       departmentModerator: "",
-      role: "",
-      permission: "VIEWER", // default
+      role: "",        // ✅ standardized
+      permission: "ADMIN", // ✅ standardized
       submitted: false,
     },
   ]);
@@ -1311,19 +1312,16 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     };
 
     const handleToggle = () => {
-      if (!open) {
-        // Load first page fresh when opening the panel
-        loadPanelRoles(1, search);
-      }
       setOpen((prev) => !prev);
     };
 
-    // Debounce search input for server-side filtering
+    // Debounce search input for server-side filtering; immediate load on open if search is empty
     useEffect(() => {
       if (!open) return;
+      const delay = search.trim() === "" ? 0 : 500;
       const t = setTimeout(() => {
         loadPanelRoles(1, search);
-      }, 500);
+      }, delay);
       return () => clearTimeout(t);
     }, [search, open]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -2512,6 +2510,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         displayName: "",
         storage: "1 GB",
         departmentModerator: "",
+        role: "",        // ✅ standardized
+        permission: "ADMIN", // ✅ standardized
         submitted: false,
       },
     ]);
@@ -2530,26 +2530,34 @@ function Department({ departments, setDepartments, onThemeToggle }) {
   const handleAddDepartment = async () => {
     let hasError = false;
     const updated = newDepartments.map((dept) => {
+      // Check for duplicates within existing departments
+      const isDuplicate = Array.isArray(departments) && departments.some(
+        (existing) =>
+          (existing.name || "").toLowerCase() === (dept.name || "").trim().toLowerCase(),
+      );
+
       const invalid =
-        !dept.name ||
-        !dept.displayName ||
-        !dept.storage ||
-        !dept.departmentModerator ||
-        dept.name.length > 35 ||
-        dept.displayName.length > 8 ||
-        /\s/.test(dept.name);
+        !(dept.name || "").trim() ||
+        !(dept.displayName || "").trim() ||
+        !(dept.storage || "").trim() ||
+        !(dept.departmentModerator || "").trim() ||
+        (dept.name || "").length > 35 ||
+        (dept.displayName || "").length > 8 ||
+        /\s/.test(dept.name || "") ||
+        isDuplicate;
+
       if (invalid) {
         hasError = true;
-        return { ...dept, submitted: true };
+        return { ...dept, submitted: true, isDuplicate };
       }
-      return dept;
+      return { ...dept, isDuplicate: false, submitted: false };
     });
     setNewDepartments(updated);
 
     if (hasError) {
       setSnackbar({
         open: true,
-        message: "Please fill all required fields correctly",
+        message: "Please fix the errors before submitting",
         severity: "error",
       });
       return;
@@ -2558,12 +2566,12 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     try {
       for (let dept of updated) {
         await createDepartment({
-          deptName: dept.name.trim().toLowerCase(),
-          deptDisplayName: dept.displayName.trim(),
-          deptModerator: dept.departmentModerator.trim(),
-          storage: dept.storage.trim(),
-          role: dept.role.trim(),
-          permission: dept.permission,
+          deptName: (dept.name || "").trim().toLowerCase(),
+          deptDisplayName: (dept.displayName || "").trim(),
+          deptModerator: (dept.departmentModerator || "").trim(),
+          storage: (dept.storage || "").trim(),
+          role: (dept.role || "").trim(),
+          permission: dept.permission || "ADMIN",
         });
       }
       fetchDepartments();
@@ -2579,21 +2587,20 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           displayName: "",
           storage: "1 GB",
           departmentModerator: "",
+          role: "",        // ✅ standardized
+          permission: "ADMIN", // ✅ standardized
           submitted: false,
         },
       ]);
       setExpandedIndices([0]);
+      setDuplicateDepartmentError(false);
+      setDuplicateShortNameError(false);
     } catch (error) {
-      console.error(error);
-      // OLD: hardcoded message, did not show backend reason
-      // setSnackbar({
-      //   open: true,
-      //   message: "Failed to create Unit",
-      //   severity: "error",
-      // });
+      console.error("handleAddDepartment error:", error);
       const backendMsg =
         error?.response?.data?.error ||
         (typeof error?.response?.data === "string" ? error.response.data : null) ||
+        error.message ||
         "Failed to create Unit";
       setSnackbar({
         open: true,
@@ -3895,6 +3902,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                             }}
                             error={
                               (!dept.name && dept.submitted) ||
+                              dept.isDuplicate ||
                               duplicateDepartmentError ||
                               dept.name.length > 35 ||
                               dept.hasInvalidChar
@@ -3904,7 +3912,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                 ? "Required"
                                 : dept.hasInvalidChar
                                   ? "Only letters, numbers, dots (.), - and _ are allowed"
-                                  : duplicateDepartmentError
+                                  : (dept.isDuplicate || duplicateDepartmentError)
                                     ? "Already exists"
                                     : dept.name.length > 35
                                       ? "Max 35 characters"

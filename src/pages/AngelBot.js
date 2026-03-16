@@ -571,7 +571,7 @@ const AngelBot = () => {
   const [userStatsData, setUserStatsData] = useState([
     { name: "Active", value: 0, color: "#91CC75" },
     { name: "Inactive", value: 0, color: "#EE6666" },
-    { name: "Pending", value: 0, color: "#5470C6" },
+    // { name: "Pending", value: 0, color: "#5470C6" },
   ]);
 
   // Helper function to format value as MB or GB
@@ -886,7 +886,7 @@ const AngelBot = () => {
             value: stats.userStats.inactive,
             color: "#EE6666",
           },
-          { name: "Pending", value: stats.userStats.pending, color: "#5470C6" },
+          // { name: "Pending", value: stats.userStats.pending, color: "#5470C6" },
         ]);
 
         setStorageStatusData([
