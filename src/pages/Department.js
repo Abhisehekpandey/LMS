@@ -1260,6 +1260,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     const [showAddRoleDialog, setShowAddRoleDialog] = useState(false);
     const [newRole, setNewRole] = useState("");
     const [appRole, setAppRole] = useState("");
+    const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
     const [editingRoleId, setEditingRoleId] = useState(null); // NEW: store role.id for PUT call
     const anchorRef = useRef(null);
@@ -1344,6 +1345,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     const handleAddClick = () => {
       setNewRole("");
       setAppRole("");
+      setHasAttemptedSubmit(false);
       setIsEditMode(false);
       setShowAddRoleDialog(true);
     };
@@ -1654,17 +1656,32 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                   autoFocus
                   fullWidth
                   size="small"
-                  label="Role Name"
+                  label={
+                    <>
+                      Role Name <span style={{ color: "red" }}>*</span>
+                    </>
+                  }
                   value={newRole}
                   onChange={(e) => setNewRole(e.target.value)}
+                  error={hasAttemptedSubmit && !newRole.trim()}
+                  helperText={
+                    hasAttemptedSubmit && !newRole.trim() ? "Required" : ""
+                  }
                   sx={{ mb: 2 }}
                 />
-                <FormControl fullWidth size="small" sx={{ mb: 2 }}>
-                  <InputLabel id="role-select-label">App Role</InputLabel>
+                <FormControl
+                  fullWidth
+                  size="small"
+                  sx={{ mb: 2 }}
+                  error={hasAttemptedSubmit && !appRole}
+                >
+                  <InputLabel id="role-select-label">
+                    App Role <span style={{ color: "red" }}>*</span>
+                  </InputLabel>
                   <Select
                     labelId="role-select-label"
                     value={appRole}
-                    label="App Role"
+                    label="App Role *"
                     onChange={(e) => setAppRole(e.target.value)}
                   >
                     <MenuItem value="ADMIN">ADMIN</MenuItem>
@@ -1674,6 +1691,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     <MenuItem value="CONTRIBUTOR">CONTRIBUTOR</MenuItem>
                     <MenuItem value="NO_ROLE">NO_ROLE</MenuItem>
                   </Select>
+                  {hasAttemptedSubmit && !appRole && (
+                    <FormHelperText>Required</FormHelperText>
+                  )}
                 </FormControl>
               </CardContent>
             </Card>
@@ -1693,6 +1713,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 setShowAddRoleDialog(false);
                 setNewRole("");
                 setAppRole("");
+                setHasAttemptedSubmit(false);
                 setIsEditMode(false);
               }}
             >
@@ -1727,6 +1748,10 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             {/* NEW: call handleUpdateRole (PUT) on edit, handleAddRole (POST) on add */}
             <Button
               onClick={async () => {
+                setHasAttemptedSubmit(true);
+                if (!newRole.trim() || !appRole) {
+                  return;
+                }
                 if (isEditMode) {
                   await handleUpdateRole(
                     editingRoleId,
@@ -2541,6 +2566,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         !(dept.displayName || "").trim() ||
         !(dept.storage || "").trim() ||
         !(dept.departmentModerator || "").trim() ||
+        !(dept.role || "").trim() ||
         (dept.name || "").length > 35 ||
         (dept.displayName || "").length > 8 ||
         /\s/.test(dept.name || "") ||
@@ -3193,7 +3219,17 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           </TableHead>
 
           <TableBody>
-            {filteredDepartments1?.map((dept, index) => {
+            {loading ? (
+              <TableRow>
+                <TableCell
+                  colSpan={allColumns.length + 1}
+                  align="center"
+                  sx={{ py: 6, border: 0 }}
+                >
+                  <CircularProgress size={36} />
+                </TableCell>
+              </TableRow>
+            ) : filteredDepartments1?.map((dept, index) => {
               const isItemSelected = isSelected(dept.name);
               return (
                 <React.Fragment key={index}>
@@ -3884,7 +3920,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                             value={dept.name}
                             onChange={(e) => {
                               const value = e.target.value;
-                              const hasInvalidChar = /[^A-Za-z0-9._-]/.test(
+                              const hasInvalidChar = /[^A-Za-z0-9.-]/.test(
                                 value,
                               );
 
@@ -3911,7 +3947,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                               !dept.name && dept.submitted
                                 ? "Required"
                                 : dept.hasInvalidChar
-                                  ? "Only letters, numbers, dots (.), - and _ are allowed"
+                                  ? "Only letters, numbers, dots (.), and - are allowed"
                                   : (dept.isDuplicate || duplicateDepartmentError)
                                     ? "Already exists"
                                     : dept.name.length > 35
@@ -4104,7 +4140,12 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
                         <Grid item xs={6}>
                           <TextField
-                            label="Role"
+                            label={
+                              <>
+                                Role{" "}
+                                <span style={{ color: "red" }}>*</span>
+                              </>
+                            }
                             value={dept.role || ""}
                             onChange={(e) =>
                               updateDepartmentField(
@@ -4115,6 +4156,12 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                             }
                             fullWidth
                             size="small"
+                            error={!dept.role?.trim() && dept.submitted}
+                            helperText={
+                              !dept.role?.trim() && dept.submitted
+                                ? "Required"
+                                : ""
+                            }
                           />
                         </Grid>
 
