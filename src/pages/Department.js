@@ -472,8 +472,12 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         // COMMENTED OUT: permissions object no longer present in API response
         // isActive: dept.permissions?.active || false,
         isActive: dept.active ?? false,
-
         createdAt: dept.createdOn,
+
+        // NEW: preserve metadata needed for storage update payload
+        permissionId: dept.permissionId || "",
+        tenantId: dept.tenantId || "",
+        currentStorageInBytes: dept.currentStorageInBytes || 0,
       }));
 
       setDepartments(mapped);
@@ -1263,6 +1267,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
     const [editingRoleId, setEditingRoleId] = useState(null); // NEW: store role.id for PUT call
+    const [showReloginWarning, setShowReloginWarning] = useState(false); // confirmation modal before update
     const anchorRef = useRef(null);
 
     // States for the Unit Roles panel (paginated from new endpoint)
@@ -1753,20 +1758,14 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                   return;
                 }
                 if (isEditMode) {
-                  await handleUpdateRole(
-                    editingRoleId,
-                    newRole,
-                    appRole,
-                    selectedDepartment,
-                  );
+                  // Show re-login warning before proceeding with update
+                  setShowReloginWarning(true);
                 } else {
                   await handleAddRole(newRole, appRole, selectedDepartment);
-                }
-                // Save appRole to sessionStorage so edit dialog can pre-fill it
-                if (newRole) {
-                  // COMMENTED OUT: was in-memory cache (lost on refresh)
-                  // setRoleAppRoleCache((prev) => ({ ...prev, [newRole]: appRole }));
-                  sessionStorage.setItem(ssKey(newRole), appRole);
+                  // Save appRole to sessionStorage so edit dialog can pre-fill it
+                  if (newRole) {
+                    sessionStorage.setItem(ssKey(newRole), appRole);
+                  }
                 }
               }}
               variant="contained"
@@ -1777,6 +1776,151 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             </Button>
           </Box>
         </Drawer>
+
+        {/* ── Re-login Confirmation Dialog ── */}
+        <Dialog
+          open={showReloginWarning}
+          onClose={() => setShowReloginWarning(false)}
+          PaperProps={{
+            sx: {
+              borderRadius: 3,
+              minWidth: 380,
+              overflow: "hidden",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.18)",
+            },
+          }}
+        >
+          {/* Header */}
+          <Box
+            sx={{
+              background: "linear-gradient(135deg, #1565c0 0%, #1976d2 100%)",
+              px: 3,
+              py: 2,
+              display: "flex",
+              alignItems: "center",
+              gap: 1.5,
+            }}
+          >
+            <Box
+              sx={{
+                width: 36,
+                height: 36,
+                borderRadius: "50%",
+                background: "rgba(255,255,255,0.2)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "1.2rem",
+              }}
+            >
+              ⚠️
+            </Box>
+            <Typography
+              variant="h6"
+              sx={{ color: "#fff", fontWeight: 700, fontSize: "1rem" }}
+            >
+              Confirm Role Update
+            </Typography>
+          </Box>
+
+          {/* Body */}
+          <DialogContent sx={{ pt: 3, pb: 1, px: 3 }}>
+            <Typography
+              variant="body1"
+              sx={{ fontWeight: 600, color: "text.primary", mb: 1 }}
+            >
+              You are about to change the App Role for:
+            </Typography>
+            <Box
+              sx={{
+                background: "rgba(25, 118, 210, 0.06)",
+                border: "1px solid rgba(25, 118, 210, 0.2)",
+                borderRadius: 2,
+                px: 2,
+                py: 1.5,
+                mb: 2,
+              }}
+            >
+              <Typography variant="body2" color="text.secondary">
+                Role Name
+              </Typography>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                {newRole}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                New App Role
+              </Typography>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#1976d2" }}>
+                {appRole}
+              </Typography>
+            </Box>
+            <Box
+              sx={{
+                background: "rgba(255, 152, 0, 0.08)",
+                border: "1px solid rgba(255, 152, 0, 0.3)",
+                borderRadius: 2,
+                px: 2,
+                py: 1.5,
+                display: "flex",
+                alignItems: "flex-start",
+                gap: 1.5,
+              }}
+            >
+              <Typography sx={{ fontSize: "1.1rem", mt: 0.1 }}>🔐</Typography>
+              <Box>
+                <Typography
+                  variant="body2"
+                  sx={{ fontWeight: 700, color: "#e65100" }}
+                >
+                  Re-login Required
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                  After this update, you will need to log out and log back in
+                  for the new role to take effect.
+                </Typography>
+              </Box>
+            </Box>
+          </DialogContent>
+
+          {/* Actions */}
+          <DialogActions sx={{ px: 3, py: 2, gap: 1 }}>
+            <Button
+              variant="outlined"
+              onClick={() => setShowReloginWarning(false)}
+              sx={{ textTransform: "none", borderRadius: 2, fontWeight: 600 }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              sx={{
+                background: "linear-gradient(135deg, #1565c0 0%, #1976d2 100%)",
+                textTransform: "none",
+                borderRadius: 2,
+                fontWeight: 600,
+                px: 3,
+                "&:hover": {
+                  background: "linear-gradient(135deg, #0d47a1 0%, #1565c0 100%)",
+                  boxShadow: "0 4px 12px rgba(25,118,210,0.4)",
+                },
+              }}
+              onClick={async () => {
+                setShowReloginWarning(false);
+                await handleUpdateRole(
+                  editingRoleId,
+                  newRole,
+                  appRole,
+                  selectedDepartment,
+                );
+                if (newRole) {
+                  sessionStorage.setItem(ssKey(newRole), appRole);
+                }
+              }}
+            >
+              Apply
+            </Button>
+          </DialogActions>
+        </Dialog>
       </div>
     );
   };
@@ -1947,23 +2091,22 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
   const handleStorageChange = async (deptName, newStorageDisplay) => {
     try {
-      const res = await getDepartments(page, rowsPerPage);
-      const allDepts = res.content;
-
-      const targetDept = allDepts.find((d) => d.deptName === deptName);
+      // FIX: Instead of re-fetching departments (which fails if a filter is active),
+      // we use the data already available in the 'departments' state.
+      const targetDept = departments.find((d) => d.name === deptName);
       if (!targetDept) throw new Error("Target Unit not found");
 
       const payload = [
         {
           permissions: {
             id: targetDept.permissionId || "",
-            userId: targetDept.deptName,
-            deptName: targetDept.deptName,
+            userId: targetDept.name,
+            deptName: targetDept.name,
             accessLevel: "EDITOR",
             accessCode: 111000,
             allowedStorageInBytes: toBytes(newStorageDisplay), // ✅ convert string to bytes
             allowedStorageInBytesDisplay: newStorageDisplay,
-            currentStorageInBytes: toBytes(targetDept.storageUsed || "0 bytes"),
+            currentStorageInBytes: targetDept.currentStorageInBytes || 0,
             isDMS_CreateType: false,
             licenseTier: "PREMIUM",
             tenantId: targetDept.tenantId,

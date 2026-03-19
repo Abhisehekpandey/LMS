@@ -1432,7 +1432,7 @@ const AngelBot = () => {
                         </Typography>
                       )}
 
-                      {selectedChart && (
+                      {/* {selectedChart && (
                         <Button
                           size="small"
                           onClick={handleBack}
@@ -1448,7 +1448,7 @@ const AngelBot = () => {
                         >
                           ← Back to Overview
                         </Button>
-                      )}
+                      )} */}
                     </CardContent>
                   </Card>
                 </Grid>
@@ -2206,7 +2206,7 @@ const AngelBot = () => {
                         onPageChange={handleUserPageChange}
                         rowsPerPage={userRowsPerPage}
                         onRowsPerPageChange={handleUserRowsPerPageChange}
-                        rowsPerPageOptions={[5, 10, 15]}
+                        rowsPerPageOptions={[7, 10, 15, 20]}
                         sx={{
                           mt: 1,
                           ".MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows":
@@ -2387,7 +2387,7 @@ const AngelBot = () => {
                         onPageChange={handleDeptPageChange}
                         rowsPerPage={deptRowsPerPage}
                         onRowsPerPageChange={handleDeptRowsPerPageChange}
-                        rowsPerPageOptions={[5, 10, 15]}
+                        rowsPerPageOptions={[7, 10, 15, 20]}
                         sx={{
                           mt: 1,
                           ".MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows":
