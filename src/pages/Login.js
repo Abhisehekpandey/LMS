@@ -126,12 +126,22 @@ const Login = () => {
     setSnackbar((prev) => ({ ...prev, open: false }));
   };
 
+  // const validateForm = () => {
+  //   const newErrors = {};
+  //   if (!formData.email.trim()) {
+  //     newErrors.email = "Email is required";
+  //   } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+  //     newErrors.email = "Invalid email address";
+  //   }
+  //   if (!formData.password) {
+  //     newErrors.password = "Password is required";
+  //   }
+  //   return newErrors;
+  // };
   const validateForm = () => {
     const newErrors = {};
     if (!formData.email.trim()) {
       newErrors.email = "Email is required";
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "Invalid email address";
     }
     if (!formData.password) {
       newErrors.password = "Password is required";

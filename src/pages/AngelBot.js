@@ -1274,7 +1274,7 @@ const AngelBot = () => {
                         mt: 1,
                       }}
                     >
-                      <Tooltip title="Add User" arrow>
+                      {/* <Tooltip title="Add User" arrow>
                         <IconButton
                           color="primary"
                           size="small"
@@ -1295,7 +1295,7 @@ const AngelBot = () => {
                         >
                           <Add />
                         </IconButton>
-                      </Tooltip>
+                      </Tooltip> */}
                     </Box>
                   </Card>
                 </Grid>
@@ -1924,14 +1924,14 @@ const AngelBot = () => {
                           borderRadius: "6px",
                           backgroundColor: isDark ? "#121212" : "#fafafa",
                           "&::-webkit-scrollbar": {
-                            width: "6px",
+                            width: "5px",
                           },
                           "&::-webkit-scrollbar-thumb": {
-                            backgroundColor: isDark ? "#666" : "#888",
-                            borderRadius: "4px",
+                            backgroundColor: alpha(chartColors.primary, 0.2),
+                            borderRadius: "10px",
                           },
                           "&::-webkit-scrollbar-thumb:hover": {
-                            backgroundColor: isDark ? "#888" : "#555",
+                            backgroundColor: alpha(chartColors.primary, 0.5),
                           },
                         }}
                       >
@@ -2107,7 +2107,23 @@ const AngelBot = () => {
                       </FormControl>
                     </Box>
 
-                    <Box>
+                    <Box
+                      sx={{
+                        maxHeight: 350,
+                        overflowY: "auto",
+                        pr: 1,
+                        "&::-webkit-scrollbar": {
+                          width: "5px",
+                        },
+                        "&::-webkit-scrollbar-thumb": {
+                          backgroundColor: alpha(chartColors.primary, 0.2),
+                          borderRadius: "10px",
+                        },
+                        "&::-webkit-scrollbar-thumb:hover": {
+                          backgroundColor: alpha(chartColors.primary, 0.5),
+                        },
+                      }}
+                    >
                       {getSortedStorageUsers.map((user, index) => (
                         <Box
                           key={index}
@@ -2199,23 +2215,23 @@ const AngelBot = () => {
                           </Typography>
                         </Box>
                       ))}
-                      <TablePagination
-                        component="div"
-                        count={userStorageTotalElements}
-                        page={userPage}
-                        onPageChange={handleUserPageChange}
-                        rowsPerPage={userRowsPerPage}
-                        onRowsPerPageChange={handleUserRowsPerPageChange}
-                        rowsPerPageOptions={[7, 10, 15, 20]}
-                        sx={{
-                          mt: 1,
-                          ".MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows":
-                          {
-                            margin: 0,
-                          },
-                        }}
-                      />
                     </Box>
+                    <TablePagination
+                      component="div"
+                      count={userStorageTotalElements}
+                      page={userPage}
+                      onPageChange={handleUserPageChange}
+                      rowsPerPage={userRowsPerPage}
+                      onRowsPerPageChange={handleUserRowsPerPageChange}
+                      rowsPerPageOptions={[7, 10, 15, 20]}
+                      sx={{
+                        mt: 1,
+                        ".MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows":
+                        {
+                          margin: 0,
+                        },
+                      }}
+                    />
                   </Paper>
                 </Grid>
                 <Grid item xs={12} md={6} sx={{ marginTop: "20px" }}>
@@ -2288,7 +2304,24 @@ const AngelBot = () => {
                         </Select>
                       </FormControl>
                     </Box>
-                    <Box>
+
+                    <Box
+                      sx={{
+                        maxHeight: 350,
+                        overflowY: "auto",
+                        pr: 1,
+                        "&::-webkit-scrollbar": {
+                          width: "5px",
+                        },
+                        "&::-webkit-scrollbar-thumb": {
+                          backgroundColor: alpha(chartColors.primary, 0.2),
+                          borderRadius: "10px",
+                        },
+                        "&::-webkit-scrollbar-thumb:hover": {
+                          backgroundColor: alpha(chartColors.primary, 0.5),
+                        },
+                      }}
+                    >
                       {getSortedDepartments.map((dept, index) => (
                         <Box
                           key={index}
@@ -2380,107 +2413,107 @@ const AngelBot = () => {
                           </Typography>
                         </Box>
                       ))}
-                      <TablePagination
-                        component="div"
-                        count={deptStorageTotalElements}
-                        page={deptPage}
-                        onPageChange={handleDeptPageChange}
-                        rowsPerPage={deptRowsPerPage}
-                        onRowsPerPageChange={handleDeptRowsPerPageChange}
-                        rowsPerPageOptions={[7, 10, 15, 20]}
-                        sx={{
-                          mt: 1,
-                          ".MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows":
-                          {
-                            margin: 0,
-                          },
-                        }}
-                      />
                     </Box>
+                    <TablePagination
+                      component="div"
+                      count={deptStorageTotalElements}
+                      page={deptPage}
+                      onPageChange={handleDeptPageChange}
+                      rowsPerPage={deptRowsPerPage}
+                      onRowsPerPageChange={handleDeptRowsPerPageChange}
+                      rowsPerPageOptions={[7, 10, 15, 20]}
+                      sx={{
+                        mt: 1,
+                        ".MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows":
+                        {
+                          margin: 0,
+                        },
+                      }}
+                    />
                   </Paper>
                 </Grid>
               </Grid>
             </Box>
-          </div>
-          <Dialog
-            open={addLicenseDialogOpen}
-            onClose={() => setAddLicenseDialogOpen(false)}
-            sx={{
-              animation: "slideInFromLeft 0.2s ease-in-out forwards",
-              opacity: 0, // Start with opacity 0
-              transform: "translateX(-50px)", // Start from left
-              "@keyframes slideInFromLeft": {
-                "0%": {
-                  opacity: 0,
-                  transform: "translateX(-50px)",
+            <Dialog
+              open={addLicenseDialogOpen}
+              onClose={() => setAddLicenseDialogOpen(false)}
+              sx={{
+                animation: "slideInFromLeft 0.2s ease-in-out forwards",
+                opacity: 0, // Start with opacity 0
+                transform: "translateX(-50px)", // Start from left
+                "@keyframes slideInFromLeft": {
+                  "0%": {
+                    opacity: 0,
+                    transform: "translateX(-50px)",
+                  },
+                  "100%": {
+                    opacity: 1,
+                    transform: "translateX(0)",
+                  },
                 },
-                "100%": {
-                  opacity: 1,
-                  transform: "translateX(0)",
-                },
-              },
-            }}
-          >
-            <DialogTitle
-              sx={{ backgroundColor: "primary.main", color: "#ffff" }}
+              }}
             >
-              Add New License
-            </DialogTitle>
-            <DialogContent
-              sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}
-            >
-              <TextField
-                label="License Name"
-                fullWidth
-                value={newLicense.name}
-                onChange={(e) =>
-                  setNewLicense({ ...newLicense, name: e.target.value })
-                }
-              />
-              <TextField
-                label="Expiry Date"
-                type="date"
-                fullWidth
-                InputLabelProps={{ shrink: true }}
-                value={newLicense.expiryDate}
-                onChange={(e) =>
-                  setNewLicense({ ...newLicense, expiryDate: e.target.value })
-                }
-              />
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={() => setAddLicenseDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button
-                onClick={() => {
-                  if (newLicense.name && newLicense.expiryDate) {
-                    licenses.push({ ...newLicense, id: licenses.length + 1 });
-                    setAddLicenseDialogOpen(false);
-                    setNewLicense({ name: "", expiryDate: "" });
-                  }
-                }}
-                sx={{ background: "rgb(251, 68, 36)" }}
-                variant="contained"
+              <DialogTitle
+                sx={{ backgroundColor: "primary.main", color: "#ffff" }}
               >
-                Add
-              </Button>
-            </DialogActions>
-          </Dialog>
-          <Snackbar
-            open={snackbar.open}
-            autoHideDuration={4000}
-            onClose={() => setSnackbar({ ...snackbar, open: false })}
-            anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-          >
-            <Alert
+                Add New License
+              </DialogTitle>
+              <DialogContent
+                sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}
+              >
+                <TextField
+                  label="License Name"
+                  fullWidth
+                  value={newLicense.name}
+                  onChange={(e) =>
+                    setNewLicense({ ...newLicense, name: e.target.value })
+                  }
+                />
+                <TextField
+                  label="Expiry Date"
+                  type="date"
+                  fullWidth
+                  InputLabelProps={{ shrink: true }}
+                  value={newLicense.expiryDate}
+                  onChange={(e) =>
+                    setNewLicense({ ...newLicense, expiryDate: e.target.value })
+                  }
+                />
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={() => setAddLicenseDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (newLicense.name && newLicense.expiryDate) {
+                      licenses.push({ ...newLicense, id: licenses.length + 1 });
+                      setAddLicenseDialogOpen(false);
+                      setNewLicense({ name: "", expiryDate: "" });
+                    }
+                  }}
+                  sx={{ background: "rgb(251, 68, 36)" }}
+                  variant="contained"
+                >
+                  Add
+                </Button>
+              </DialogActions>
+            </Dialog>
+            <Snackbar
+              open={snackbar.open}
+              autoHideDuration={4000}
               onClose={() => setSnackbar({ ...snackbar, open: false })}
-              severity={snackbar.severity}
-              sx={{ width: "100%" }}
+              anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
             >
-              {snackbar.message}
-            </Alert>
-          </Snackbar>
+              <Alert
+                onClose={() => setSnackbar({ ...snackbar, open: false })}
+                severity={snackbar.severity}
+                sx={{ width: "100%" }}
+              >
+                {snackbar.message}
+              </Alert>
+            </Snackbar>
+          </div>
         </Box>
       )}
 
@@ -2613,14 +2646,14 @@ const AngelBot = () => {
               overflowY: "auto",
               pr: 1, // add space for scrollbar
               "&::-webkit-scrollbar": {
-                width: "6px",
+                width: "5px",
               },
               "&::-webkit-scrollbar-thumb": {
-                backgroundColor: "#aaa",
-                borderRadius: "4px",
+                backgroundColor: alpha(chartColors.primary, 0.2),
+                borderRadius: "10px",
               },
               "&::-webkit-scrollbar-thumb:hover": {
-                backgroundColor: "#888",
+                backgroundColor: alpha(chartColors.primary, 0.5),
               },
             }}
           >

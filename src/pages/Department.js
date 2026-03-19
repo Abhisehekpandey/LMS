@@ -526,7 +526,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     const [panelTotalPages, setPanelTotalPages] = useState(1);
     const [panelHasMore, setPanelHasMore] = useState(true);
     const [panelLoading, setPanelLoading] = useState(false);
-    const [panelTotal, setPanelTotal] = useState(totalUserCount || 0);
 
     // States for Add User dialog (server-side search + infinite scroll)
     const [dialogSearch, setDialogSearch] = useState("");
@@ -569,7 +568,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         }));
 
         setPanelUsers(fetchedUsers);
-        setPanelTotal(data.totalElements ?? totalUserCount ?? 0);
         setPanelTotalPages(data.totalPages || 1);
         setPanelHasMore(!data.last);
         setPanelPage(page);
@@ -640,7 +638,13 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           setAllUsers(newUsers);
           setDialogPage(1);
         } else {
-          setAllUsers((prev) => [...prev, ...newUsers]);
+          setAllUsers((prev) => {
+            const existingIds = new Set(prev.map((u) => u.id));
+            const uniqueNewUsers = newUsers.filter(
+              (u) => !existingIds.has(u.id),
+            );
+            return [...prev, ...uniqueNewUsers];
+          });
           setDialogPage(page + 1);
         }
         setDialogHasMore(!res.last);
@@ -700,7 +704,13 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           setRoleOptions(fetchedRoles);
           setRolePage(page);
         } else {
-          setRoleOptions((prev) => [...prev, ...fetchedRoles]);
+          setRoleOptions((prev) => {
+            const existingIds = new Set(prev.map((r) => r.id));
+            const uniqueNewRoles = fetchedRoles.filter(
+              (r) => !existingIds.has(r.id),
+            );
+            return [...prev, ...uniqueNewRoles];
+          });
           setRolePage(page);
         }
         setRoleHasMore(!res.data?.last);
@@ -790,7 +800,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
         {/* Count + dropdown */}
         <IconButton ref={anchorRef} size="small" onClick={handleToggle}>
-          {panelTotal} <ArrowDropDownIcon />
+          {totalUserCount} <ArrowDropDownIcon />
         </IconButton>
 
         {/* Add Users button */}
@@ -1276,7 +1286,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     const [panelTotalPages, setPanelTotalPages] = useState(1);
     const [panelHasMore, setPanelHasMore] = useState(true);
     const [panelLoading, setPanelLoading] = useState(false);
-    const [panelTotal, setPanelTotal] = useState(totalRoleCount || 0);
     const [search, setSearch] = useState("");
 
     // NEW: sessionStorage key helper — scoped to dept so roles from different depts don't clash
@@ -1306,7 +1315,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         const fetchedRoles = data.roles || [];
 
         setPanelRoles(fetchedRoles);
-        setPanelTotal(data.totalElements ?? totalRoleCount ?? 0);
         setPanelTotalPages(data.totalPages || 1);
         setPanelHasMore(!data.last);
         setPanelPage(page);
@@ -1358,7 +1366,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     return (
       <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
         <IconButton ref={anchorRef} size="small" onClick={handleToggle}>
-          {panelTotal} <ArrowDropDownIcon />
+          {totalRoleCount} <ArrowDropDownIcon />
         </IconButton>
 
         <Tooltip title="Add Role">
@@ -2026,7 +2034,13 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         setFilteredPage(1); // Page 1 fetched, next page is 1 (MUI 0-indexed)
         setHasMoreFilteredUsers(!res.last);
       } else {
-        setFilteredUsers((prev) => [...prev, ...simplifiedUsers]);
+        setFilteredUsers((prev) => {
+          const existingIds = new Set(prev.map((u) => u.id));
+          const uniqueNewUsers = simplifiedUsers.filter(
+            (u) => !existingIds.has(u.id),
+          );
+          return [...prev, ...uniqueNewUsers];
+        });
         setFilteredPage((prev) => prev + 1);
         setHasMoreFilteredUsers(!res.last);
       }
@@ -2060,7 +2074,13 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         setUserPage(1); // Page 1 fetched, next page is 1 (MUI 0-indexed)
         setHasMoreUsers(!res.last);
       } else {
-        setUserOptions((prev) => [...prev, ...users]);
+        setUserOptions((prev) => {
+          const existingIds = new Set(prev.map((u) => u.objectId || u.id));
+          const uniqueNewUsers = users.filter(
+            (u) => !existingIds.has(u.objectId || u.id),
+          );
+          return [...prev, ...uniqueNewUsers];
+        });
         setUserPage((prev) => prev + 1);
         setHasMoreUsers(!res.last);
       }
@@ -2694,6 +2714,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
   const toggleExpand = (index) => {
     setExpandedIndices((prev) => (prev.includes(index) ? [] : [index]));
   };
+
 
   const handleAddDepartment = async () => {
     let hasError = false;
@@ -4691,58 +4712,70 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                               mt: 1,
                             }}
                           >
-                            <Box
-                              sx={{
-                                maxHeight: 200,
-                                overflowY: "auto",
-                              }}
-                              onScroll={(event) => {
-                                const {
-                                  scrollTop,
-                                  clientHeight,
-                                  scrollHeight,
-                                } = event.currentTarget;
+                            <ClickAwayListener
+                              onClickAway={(event) => {
                                 if (
-                                  scrollTop + clientHeight >=
-                                  scrollHeight - 50
+                                  anchorRef.current &&
+                                  anchorRef.current.contains(event.target)
                                 ) {
-                                  loadFilteredUsers();
+                                  return;
                                 }
+                                setShowUserDropdown(false);
                               }}
                             >
-                              {/* {isSearchingFilteredUsers && filteredUsers.length === 0 && (
+                              <Box
+                                sx={{
+                                  maxHeight: 200,
+                                  overflowY: "auto",
+                                }}
+                                onScroll={(event) => {
+                                  const {
+                                    scrollTop,
+                                    clientHeight,
+                                    scrollHeight,
+                                  } = event.currentTarget;
+                                  if (
+                                    scrollTop + clientHeight >=
+                                    scrollHeight - 50
+                                  ) {
+                                    loadFilteredUsers();
+                                  }
+                                }}
+                              >
+                                {/* {isSearchingFilteredUsers && filteredUsers.length === 0 && (
                                 <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100px' }}>
                                   <CircularProgress size={24} />
                                 </Box>
                               )} */}
 
-                              {filteredUsers.map((user, index) => (
-                                <MenuItem
-                                  key={index}
-                                  onClick={() => {
-                                    setEditedDepartment((prev) => ({
-                                      ...prev,
-                                      departmentModerator: user.name,
-                                    }));
-                                    setSearchModerator(user.name);
-                                    setShowUserDropdown(false);
-                                  }}
-                                >
-                                  {user.name}
-                                </MenuItem>
-                              ))}
+                                {filteredUsers.map((user, index) => (
+                                  <MenuItem
+                                    key={index}
+                                    onClick={() => {
+                                      setEditedDepartment((prev) => ({
+                                        ...prev,
+                                        departmentModerator: user.name,
+                                      }));
+                                      setSearchModerator(user.name);
+                                      setShowUserDropdown(false);
+                                    }}
+                                  >
+                                    {user.name}
+                                  </MenuItem>
+                                ))}
 
-                              {isSearchingFilteredUsers && filteredUsers.length > 0 && (
-                                <Box sx={{ display: 'flex', justifyContent: 'center', p: 1 }}>
-                                  <CircularProgress size={20} />
-                                </Box>
-                              )}
-
-                              {filteredUsers.length === 0 &&
-                                !isSearchingFilteredUsers && (
-                                  <MenuItem disabled>No users found</MenuItem>
+                                {isSearchingFilteredUsers && filteredUsers.length > 0 && (
+                                  <Box sx={{ display: 'flex', justifyContent: 'center', p: 1 }}>
+                                    <CircularProgress size={20} />
+                                  </Box>
                                 )}
-                            </Box>
+
+                                {filteredUsers.length === 0 &&
+                                  !isSearchingFilteredUsers && (
+                                    <MenuItem disabled>No users found</MenuItem>
+                                  )}
+                              </Box>
+                            </ClickAwayListener>
                           </Paper>
                         </Grow>
                       )}

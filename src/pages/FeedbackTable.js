@@ -903,214 +903,249 @@ export default function FeedbackTable() {
             </TableHead>
 
             <TableBody>
-              {filteredRows
-                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                .map((row, index) => (
-                  <TableRow
-                    key={row.id}
-                    hover
-                    sx={{
-                      height: 28,
-                      backgroundColor: index % 2 === 0 ? "#f9f9f9" : "#ffffff",
-                    }}
+              {loading ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length + 2}
+                    align="center"
+                    sx={{ py: 3 }}
                   >
-                    <TableCell padding="checkbox" sx={{ py: 0.5 }}>
-                      <Checkbox
-                        checked={isSelected(row.id)}
-                        onChange={() => handleClick(row.id)}
-                        size="small"
-                      />
-                    </TableCell>
-                    <TableCell
+                    <CircularProgress size={24} />
+                  </TableCell>
+                </TableRow>
+              ) : filteredRows.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length + 2}
+                    align="center"
+                    sx={{ py: 3 }}
+                  >
+                    <Typography variant="body1" color="textSecondary">
+                      No Records Found
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredRows
+                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                  .map((row, index) => (
+                    <TableRow
+                      key={row.id}
+                      hover
                       sx={{
-                        py: 0.5,
-                        fontSize: "0.8rem",
-                        color: "blue",
-                        cursor: "pointer",
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        maxWidth: 200,
+                        height: 28,
+                        backgroundColor: index % 2 === 0 ? "#f9f9f9" : "#ffffff",
                       }}
                     >
-                      {row.document}
-                    </TableCell>
-                    <TableCell
-                      sx={{
-                        py: 0.5,
-                        fontSize: "0.8rem",
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        maxWidth: 180,
-                      }}
-                    >
-                      {row.department}
-                    </TableCell>
-                    <TableCell
-                      sx={{
-                        py: 0.5,
-                        fontSize: "0.8rem",
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        maxWidth: 160,
-                      }}
-                    >
-                      {row.user}
-                    </TableCell>
-                    <TableCell sx={{ py: 0.5, fontSize: "0.8rem" }}>
-                      {row.role}
-                    </TableCell>
-                    <TableCell sx={{ py: 0.5, fontSize: "0.8rem" }}>
-                      {row.source}
-                    </TableCell>
-                    <TableCell sx={{ py: 0.5, width: 50, maxWidth: 50 }}>
-                      {row.feedback === "like" ? (
-                        <ThumbUpIcon color="success" fontSize="small" />
-                      ) : (
-                        <ThumbDownIcon color="error" fontSize="small" />
-                      )}
-                    </TableCell>
+                      <TableCell padding="checkbox" sx={{ py: 0.5 }}>
+                        <Checkbox
+                          checked={isSelected(row.id)}
+                          onChange={() => handleClick(row.id)}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          py: 0.5,
+                          fontSize: "0.8rem",
+                          color: "blue",
+                          cursor: "pointer",
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          maxWidth: 200,
+                        }}
+                      >
+                        {row.document}
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          py: 0.5,
+                          fontSize: "0.8rem",
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          maxWidth: 180,
+                        }}
+                      >
+                        {row.department}
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          py: 0.5,
+                          fontSize: "0.8rem",
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          maxWidth: 160,
+                        }}
+                      >
+                        {row.user}
+                      </TableCell>
+                      <TableCell sx={{ py: 0.5, fontSize: "0.8rem" }}>
+                        {row.role}
+                      </TableCell>
+                      <TableCell sx={{ py: 0.5, fontSize: "0.8rem" }}>
+                        {row.source}
+                      </TableCell>
+                      <TableCell sx={{ py: 0.5, width: 50, maxWidth: 50 }}>
+                        {row.feedback === "like" ? (
+                          <ThumbUpIcon color="success" fontSize="small" />
+                        ) : (
+                          <ThumbDownIcon color="error" fontSize="small" />
+                        )}
+                      </TableCell>
 
-                    <TableCell sx={{ py: 0.5, maxWidth: 240 }}>
-                      <Tooltip
-                        arrow
-                        title={
-                          <Box sx={{ maxWidth: 400, whiteSpace: "normal" }}>
+                      <TableCell sx={{ py: 0.5, maxWidth: 240 }}>
+                        <Tooltip
+                          arrow
+                          title={
+                            <Box sx={{ maxWidth: 400, whiteSpace: "normal" }}>
+                              <Typography
+                                fontWeight="bold"
+                                sx={{ fontSize: "0.85rem" }}
+                              >
+                                {row.latestFBC}
+                              </Typography>
+                              <Typography
+                                sx={{ fontSize: "0.8rem" }}
+                                dangerouslySetInnerHTML={{ __html: row.latestFBA }}
+                              />
+                            </Box>
+                          }
+                        >
+                          <Box>
                             <Typography
                               fontWeight="bold"
-                              sx={{ fontSize: "0.85rem" }}
+                              sx={{ fontSize: "0.85rem", lineHeight: 1.2 }}
                             >
                               {row.latestFBC}
                             </Typography>
                             <Typography
-                              sx={{ fontSize: "0.8rem" }}
+                              sx={{
+                                fontSize: "0.80rem",
+                                lineHeight: 1.2,
+                                display: "-webkit-box",
+                                WebkitLineClamp: 2,
+                                WebkitBoxOrient: "vertical",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "normal"
+                              }}
                               dangerouslySetInnerHTML={{ __html: row.latestFBA }}
                             />
                           </Box>
-                        }
-                      >
-                        <Box>
+                        </Tooltip>
+                      </TableCell>
+
+                      <TableCell sx={{ py: 0.5 }}>
+                        <Box display="flex" flexDirection="column">
                           <Typography
                             fontWeight="bold"
-                            sx={{ fontSize: "0.85rem", lineHeight: 1.2 }}
+                            sx={{ fontSize: "0.85rem" }}
                           >
-                            {row.latestFBC}
+                            {row.date}
                           </Typography>
-                          <Typography
-                            sx={{
-                              fontSize: "0.80rem",
-                              lineHeight: 1.2,
-                              display: "-webkit-box",
-                              WebkitLineClamp: 2,
-                              WebkitBoxOrient: "vertical",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              whiteSpace: "normal"
-                            }}
-                            dangerouslySetInnerHTML={{ __html: row.latestFBA }}
-                          />
+                          <Typography variant="caption" color="text.secondary">
+                            {row.time}
+                          </Typography>
                         </Box>
-                      </Tooltip>
-                    </TableCell>
+                      </TableCell>
 
-                    <TableCell sx={{ py: 0.5 }}>
-                      <Box display="flex" flexDirection="column">
-                        <Typography
-                          fontWeight="bold"
-                          sx={{ fontSize: "0.85rem" }}
+                      <TableCell sx={{ py: 0.5, textAlign: "left" }}>
+                        <Tooltip title={row.status} arrow>
+                          <ButtonBase
+                            onClick={async (e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+
+                              const fullHistory = await fetchChatHistory(
+                                row.conversationId
+                              );
+                              setSelectedRow({
+                                ...row,
+                                feedResponses: fullHistory,
+                              });
+                              setHistoryOpen(true);
+                            }}
+                            sx={{
+                              "& img": {
+                                width: 120,
+                                height: 42,
+                                cursor: "pointer",
+                                transition: "transform 0.2s",
+                                "&:hover": { transform: "scale(1.2)" },
+                              },
+                            }}
+                          >
+                            <Box
+                              component="img"
+                              src={
+                                row.status === "Approved"
+                                  ? "/images/approved_logo.png"
+                                  : row.status === "rejected"
+                                    ? "/images/rejected_logo.png"
+                                    : "/images/view_logo.png"
+                              }
+                              alt={row.status}
+                            />
+                          </ButtonBase>
+                        </Tooltip>
+                      </TableCell>
+
+                      <TableCell sx={{ py: 0.5 }}>
+                        <Box
+                          display="flex"
+                          flexDirection="row"
+                          justifyContent="center"
+                          gap={0.5}
                         >
-                          {row.date}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {row.time}
-                        </Typography>
-                      </Box>
-                    </TableCell>
+                          {row.status === "VIEW" ? (
+                            <>
+                              <Tooltip title="Approve" arrow>
+                                <IconButton
+                                  color="success"
+                                  size="small"
+                                  onClick={() =>
+                                    handleUpdateAction(
+                                      row.conversationId,
+                                      row.responseId,
+                                      "Approved"
+                                    )
+                                  }
+                                >
+                                  <CheckIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
 
-                    <TableCell sx={{ py: 0.5, textAlign: "left" }}>
-                      <Tooltip title={row.status} arrow>
-                        <ButtonBase
-                          onClick={async (e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
+                              <Tooltip title="Reject" arrow>
+                                <IconButton
+                                  color="error"
+                                  size="small"
+                                  onClick={() =>
+                                    handleUpdateAction(
+                                      row.conversationId,
+                                      row.responseId,
+                                      "rejected"
+                                    )
+                                  }
+                                >
+                                  <CloseIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
 
-                            const fullHistory = await fetchChatHistory(
-                              row.conversationId
-                            );
-                            setSelectedRow({
-                              ...row,
-                              feedResponses: fullHistory,
-                            });
-                            setHistoryOpen(true);
-                          }}
-                          sx={{
-                            "& img": {
-                              width: 120,
-                              height: 42,
-                              cursor: "pointer",
-                              transition: "transform 0.2s",
-                              "&:hover": { transform: "scale(1.2)" },
-                            },
-                          }}
-                        >
-                          <Box
-                            component="img"
-                            src={
-                              row.status === "Approved"
-                                ? "/images/approved_logo.png"
-                                : row.status === "rejected"
-                                  ? "/images/rejected_logo.png"
-                                  : "/images/view_logo.png"
-                            }
-                            alt={row.status}
-                          />
-                        </ButtonBase>
-                      </Tooltip>
-                    </TableCell>
-
-                    <TableCell sx={{ py: 0.5 }}>
-                      <Box
-                        display="flex"
-                        flexDirection="row"
-                        justifyContent="center"
-                        gap={0.5}
-                      >
-                        {row.status === "VIEW" ? (
-                          <>
-                            <Tooltip title="Approve" arrow>
-                              <IconButton
-                                color="success"
-                                size="small"
-                                onClick={() =>
-                                  handleUpdateAction(
-                                    row.conversationId,
-                                    row.responseId,
-                                    "Approved"
-                                  )
-                                }
-                              >
-                                <CheckIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-
-                            <Tooltip title="Reject" arrow>
-                              <IconButton
-                                color="error"
-                                size="small"
-                                onClick={() =>
-                                  handleUpdateAction(
-                                    row.conversationId,
-                                    row.responseId,
-                                    "rejected"
-                                  )
-                                }
-                              >
-                                <CloseIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-
+                              <Tooltip title="Delete" arrow>
+                                <IconButton
+                                  color="error"
+                                  size="small"
+                                  sx={{ p: 0.3 }}
+                                  onClick={() => handleDelete(row.conversationId)}
+                                >
+                                  <DeleteIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            </>
+                          ) : (
                             <Tooltip title="Delete" arrow>
                               <IconButton
                                 color="error"
@@ -1121,23 +1156,12 @@ export default function FeedbackTable() {
                                 <DeleteIcon fontSize="small" />
                               </IconButton>
                             </Tooltip>
-                          </>
-                        ) : (
-                          <Tooltip title="Delete" arrow>
-                            <IconButton
-                              color="error"
-                              size="small"
-                              sx={{ p: 0.3 }}
-                              onClick={() => handleDelete(row.conversationId)}
-                            >
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        )}
-                      </Box>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                          )}
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  ))
+              )}
             </TableBody>
           </Table>
         </TableContainer>

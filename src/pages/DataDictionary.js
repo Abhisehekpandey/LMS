@@ -25,6 +25,7 @@ import {
   Button,
   Chip,
   Autocomplete,
+  CircularProgress,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
@@ -533,69 +534,93 @@ export default function DataDictionary() {
             </TableHead>
 
             <TableBody>
-              {filteredRows
-                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                .map((row, index) => (
-                  <TableRow
-                    key={row.id}
-                    hover
-                    sx={{
-                      height: 40,
-                      backgroundColor: index % 2 === 0 ? "#f9f9f9" : "#ffffff",
-                    }}
+              {loading ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length + 1}
+                    align="center"
+                    sx={{ py: 3 }}
                   >
-                    <TableCell padding="checkbox" sx={{ py: 0.5 }}>
-                      <Checkbox
-                        checked={isSelected(row.id)}
-                        onChange={() => handleClick(row.id)}
-                        size="small"
-                      />
-                    </TableCell>
+                    <CircularProgress size={24} />
+                  </TableCell>
+                </TableRow>
+              ) : filteredRows.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length + 1}
+                    align="center"
+                    sx={{ py: 3 }}
+                  >
+                    <Typography variant="body1" color="textSecondary">
+                      No Records Found
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredRows
+                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                  .map((row, index) => (
+                    <TableRow
+                      key={row.id}
+                      hover
+                      sx={{
+                        height: 40,
+                        backgroundColor: index % 2 === 0 ? "#f9f9f9" : "#ffffff",
+                      }}
+                    >
+                      <TableCell padding="checkbox" sx={{ py: 0.5 }}>
+                        <Checkbox
+                          checked={isSelected(row.id)}
+                          onChange={() => handleClick(row.id)}
+                          size="small"
+                        />
+                      </TableCell>
 
-                    {columns.map((col) =>
-                      col.key === "actions" ? (
-                        <TableCell
-                          key={col.key}
-                          sx={{ py: 0.5, width: col.width }}
-                        >
-                          <IconButton
-                            color="primary"
-                            onClick={() => handleOpenEditDialog(row)}
+                      {columns.map((col) =>
+                        col.key === "actions" ? (
+                          <TableCell
+                            key={col.key}
+                            sx={{ py: 0.5, width: col.width }}
                           >
-                            <EditIcon fontSize="small" />
-                          </IconButton>
+                            <IconButton
+                              color="primary"
+                              onClick={() => handleOpenEditDialog(row)}
+                            >
+                              <EditIcon fontSize="small" />
+                            </IconButton>
 
-                          <IconButton
-                            color="error"
-                            onClick={() => handleDeleteWords([row.id])}
+                            <IconButton
+                              color="error"
+                              onClick={() => handleDeleteWords([row.id])}
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </TableCell>
+                        ) : (
+                          <TableCell
+                            key={col.key}
+                            sx={{
+                              py: 0.5,
+                              width: col.width,
+                              maxWidth: col.key === "description" ? 200 : "auto", // limit width
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                            }}
                           >
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
-                        </TableCell>
-                      ) : (
-                        <TableCell
-                          key={col.key}
-                          sx={{
-                            py: 0.5,
-                            width: col.width,
-                            maxWidth: col.key === "description" ? 200 : "auto", // limit width
-                            whiteSpace: "nowrap",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                          }}
-                        >
-                          {col.key === "description" ? (
-                            <Tooltip title={row.description || ""} arrow>
-                              <span>{row.description}</span>
-                            </Tooltip>
-                          ) : (
-                            row[col.key]
-                          )}
-                        </TableCell>
-                      )
-                    )}
-                  </TableRow>
-                ))}
+                            {col.key === "description" ? (
+                              <Tooltip title={row.description || ""} arrow>
+                                <span>{row.description}</span>
+                              </Tooltip>
+                            ) : (
+                              row[col.key]
+                            )}
+                          </TableCell>
+                        )
+                      )}
+                    </TableRow>
+                  ))
+              )}
             </TableBody>
           </Table>
         </TableContainer>
