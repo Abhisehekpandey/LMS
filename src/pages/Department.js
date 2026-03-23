@@ -261,7 +261,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [filteredPage, setFilteredPage] = useState(0);
   const [hasMoreFilteredUsers, setHasMoreFilteredUsers] = useState(true);
-  const [isSearchingFilteredUsers, setIsSearchingFilteredUsers] = useState(false);
+  const [isSearchingFilteredUsers, setIsSearchingFilteredUsers] =
+    useState(false);
 
   const [userOptions, setUserOptions] = useState([]);
   const [userPage, setUserPage] = useState(0);
@@ -311,7 +312,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       displayName: "",
       storage: "1 GB",
       departmentModerator: "",
-      role: "",        // ✅ standardized
+      role: "", // ✅ standardized
       permission: "ADMIN", // ✅ standardized
       submitted: false,
     },
@@ -495,7 +496,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
   const DeptUsersDropdown = ({
     users,
-    totalUserCount,  // NEW: total count from paginated API
+    totalUserCount, // NEW: total count from paginated API
     departmentId,
     departmentName,
     departmentRoles = [],
@@ -515,7 +516,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     // States for paginated roles autocomplete
     const [roleOptions, setRoleOptions] = useState([]);
     const [roleSearchQuery, setRoleSearchQuery] = useState("");
-    const [debouncedRoleSearchQuery, setDebouncedRoleSearchQuery] = useState("");
+    const [debouncedRoleSearchQuery, setDebouncedRoleSearchQuery] =
+      useState("");
     const [rolePage, setRolePage] = useState(1);
     const [roleHasMore, setRoleHasMore] = useState(true);
     const [roleLoading, setRoleLoading] = useState(false);
@@ -549,16 +551,13 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         //   : `${window.__ENV__.REACT_APP_ROUTE}/tenants/users/within`;
         const endpoint = `${window.__ENV__.REACT_APP_ROUTE}/tenants/users/within`;
 
-        const res = await axios.get(
-          endpoint,
-          {
-            params,
-            headers: {
-              Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
-              username: sessionStorage.getItem("adminEmail"),
-            },
+        const res = await axios.get(endpoint, {
+          params,
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+            username: sessionStorage.getItem("adminEmail"),
           },
-        );
+        });
         const data = res.data;
         const fetchedUsers = (data.users || []).map((u) => ({
           id: u.objectId,
@@ -579,19 +578,16 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     };
 
     const handleToggle = () => {
-      if (!open) {
-        // Load first page fresh when opening the panel
-        loadPanelUsers(1, search);
-      }
       setOpen((prev) => !prev);
     };
 
-    // Debounce search input for server-side filtering
+    // Debounce search input for server-side filtering; immediate load on open if search is empty
     useEffect(() => {
       if (!open) return;
+      const delay = search.trim() === "" ? 0 : 500;
       const t = setTimeout(() => {
         loadPanelUsers(1, search);
-      }, 500);
+      }, delay);
       return () => clearTimeout(t);
     }, [search, open]); // eslint-disable-line react-hooks/exhaustive-deps
     const handleClose = () => {
@@ -683,7 +679,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     };
 
     const loadMoreRoles = async (page = 1, query = "", isInitial = false) => {
-      if (!departmentName || roleLoading || (!roleHasMore && !isInitial)) return;
+      if (!departmentName || roleLoading || (!roleHasMore && !isInitial))
+        return;
       setRoleLoading(true);
       try {
         const res = await axios.get(
@@ -694,11 +691,11 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
               username: sessionStorage.getItem("adminEmail"),
             },
-          }
+          },
         );
-        const fetchedRoles = (res.data?.roles || []).map(r => ({
+        const fetchedRoles = (res.data?.roles || []).map((r) => ({
           id: r.roleId,
-          name: r.roleName
+          name: r.roleName,
         }));
         if (isInitial) {
           setRoleOptions(fetchedRoles);
@@ -861,7 +858,14 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             </IconButton>
           </Box>
 
-          <DialogContent sx={{ p: 0, display: "flex", flexDirection: "column", maxHeight: "70vh" }}>
+          <DialogContent
+            sx={{
+              p: 0,
+              display: "flex",
+              flexDirection: "column",
+              maxHeight: "70vh",
+            }}
+          >
             {/* Search Bar */}
             <Box sx={{ p: 2 }}>
               <TextField
@@ -924,7 +928,13 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {displayUsers.length === 0 ? (
+                  {panelLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={3} align="center" sx={{ py: 3 }}>
+                        <CircularProgress size={24} />
+                      </TableCell>
+                    </TableRow>
+                  ) : displayUsers.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={3} align="center" sx={{ py: 3 }}>
                         <Typography
@@ -973,10 +983,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                             }}
                           />
                         </TableCell>
-                        <TableCell
-                          sx={{ padding: "4px 16px" }}
-                          align="center"
-                        >
+                        <TableCell sx={{ padding: "4px 16px" }} align="center">
                           <Tooltip title="Unassign User">
                             <IconButton
                               size="small"
@@ -989,7 +996,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                         Authorization: `Bearer ${sessionStorage.getItem(
                                           "authToken",
                                         )}`,
-                                        username: sessionStorage.getItem("adminEmail"),
+                                        username:
+                                          sessionStorage.getItem("adminEmail"),
                                       },
                                     },
                                   );
@@ -1048,11 +1056,18 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 onClick={() => loadPanelUsers(panelPage - 1, search)}
                 disabled={panelPage <= 1 || panelLoading}
                 startIcon={<KeyboardArrowLeft />}
-                sx={{ textTransform: "none", fontWeight: 600, color: "#64748b" }}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: 600,
+                  color: "#64748b",
+                }}
               >
                 Prev
               </Button>
-              <Typography variant="caption" sx={{ fontWeight: 600, color: "#475569" }}>
+              <Typography
+                variant="caption"
+                sx={{ fontWeight: 600, color: "#475569" }}
+              >
                 Page {panelPage} of {panelTotalPages}
               </Typography>
               <Button
@@ -1060,7 +1075,11 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 onClick={() => loadPanelUsers(panelPage + 1, search)}
                 disabled={panelPage >= panelTotalPages || panelLoading}
                 endIcon={<KeyboardArrowRight />}
-                sx={{ textTransform: "none", fontWeight: 600, color: "#64748b" }}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: 600,
+                  color: "#64748b",
+                }}
               >
                 Next
               </Button>
@@ -1177,12 +1196,19 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                 const listboxNode = event.currentTarget;
                                 const threshold = 50;
                                 if (
-                                  Math.round(listboxNode.scrollTop + listboxNode.clientHeight) >=
-                                  listboxNode.scrollHeight - threshold &&
+                                  Math.round(
+                                    listboxNode.scrollTop +
+                                      listboxNode.clientHeight,
+                                  ) >=
+                                    listboxNode.scrollHeight - threshold &&
                                   roleHasMore &&
                                   !roleLoading
                                 ) {
-                                  loadMoreRoles(rolePage + 1, roleSearchQuery, false);
+                                  loadMoreRoles(
+                                    rolePage + 1,
+                                    roleSearchQuery,
+                                    false,
+                                  );
                                 }
                               },
                             }}
@@ -1206,7 +1232,10 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                   endAdornment: (
                                     <React.Fragment>
                                       {roleLoading ? (
-                                        <CircularProgress color="inherit" size={20} />
+                                        <CircularProgress
+                                          color="inherit"
+                                          size={20}
+                                        />
                                       ) : null}
                                       {params.InputProps.endAdornment}
                                     </React.Fragment>
@@ -1427,7 +1456,14 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             </IconButton>
           </Box>
 
-          <DialogContent sx={{ p: 0, display: "flex", flexDirection: "column", maxHeight: "70vh" }}>
+          <DialogContent
+            sx={{
+              p: 0,
+              display: "flex",
+              flexDirection: "column",
+              maxHeight: "70vh",
+            }}
+          >
             {/* Search Bar */}
             <Box sx={{ p: 2 }}>
               <TextField
@@ -1453,7 +1489,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             </Box>
 
             {/* Table */}
-            <TableContainer sx={{ flexGrow: 1, minHeight: 150, overflowY: "auto" }}>
+            <TableContainer
+              sx={{ flexGrow: 1, minHeight: 150, overflowY: "auto" }}
+            >
               <Table stickyHeader size="small">
                 <TableHead>
                   <TableRow>
@@ -1527,10 +1565,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                             }}
                           />
                         </TableCell>
-                        <TableCell
-                          sx={{ padding: "4px 16px" }}
-                          align="center"
-                        >
+                        <TableCell sx={{ padding: "4px 16px" }} align="center">
                           <Tooltip title="Edit Role">
                             <IconButton
                               size="small"
@@ -1569,19 +1604,31 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 onClick={() => loadPanelRoles(panelPage - 1, search)}
                 disabled={panelPage <= 1 || panelLoading}
                 startIcon={<KeyboardArrowLeft />}
-                sx={{ textTransform: "none", fontWeight: 600, color: "#64748b" }}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: 600,
+                  color: "#64748b",
+                }}
               >
                 Prev
               </Button>
-              <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 500 }}>
-                Page {panelTotalPages === 0 ? 0 : panelPage} of {panelTotalPages}
+              <Typography
+                variant="caption"
+                sx={{ color: "#64748b", fontWeight: 500 }}
+              >
+                Page {panelTotalPages === 0 ? 0 : panelPage} of{" "}
+                {panelTotalPages}
               </Typography>
               <Button
                 size="small"
                 onClick={() => loadPanelRoles(panelPage + 1, search)}
                 disabled={panelPage >= panelTotalPages || panelLoading}
                 endIcon={<KeyboardArrowRight />}
-                sx={{ textTransform: "none", fontWeight: 600, color: "#64748b" }}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: 600,
+                  color: "#64748b",
+                }}
               >
                 Next
               </Button>
@@ -1858,7 +1905,10 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                 New App Role
               </Typography>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#1976d2" }}>
+              <Typography
+                variant="subtitle2"
+                sx={{ fontWeight: 700, color: "#1976d2" }}
+              >
                 {appRole}
               </Typography>
             </Box>
@@ -1882,7 +1932,11 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 >
                   Re-login Required
                 </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mt: 0.5 }}
+                >
                   After this update, you will need to log out and log back in
                   for the new role to take effect.
                 </Typography>
@@ -1908,7 +1962,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 fontWeight: 600,
                 px: 3,
                 "&:hover": {
-                  background: "linear-gradient(135deg, #0d47a1 0%, #1565c0 100%)",
+                  background:
+                    "linear-gradient(135deg, #0d47a1 0%, #1565c0 100%)",
                   boxShadow: "0 4px 12px rgba(25,118,210,0.4)",
                 },
               }}
@@ -1978,11 +2033,11 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         prev.map((dept) =>
           dept.name === editedDepartment.originalName
             ? {
-              ...dept,
-              name: payload.deptName,
-              displayName: payload.deptDisplayName,
-              departmentModerator: payload.deptModerator,
-            }
+                ...dept,
+                name: payload.deptName,
+                displayName: payload.deptDisplayName,
+                departmentModerator: payload.deptModerator,
+              }
             : dept,
         ),
       );
@@ -2063,7 +2118,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           currentPage,
           10,
           debouncedUserSearchQuery ? "email" : "",
-          debouncedUserSearchQuery
+          debouncedUserSearchQuery,
         ),
         new Promise((resolve) => setTimeout(resolve, 800)), // Minimum delay to see the loader
       ]);
@@ -2271,9 +2326,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         prevDepartments.map((dept) =>
           dept.name === deptName
             ? {
-              ...dept,
-              roles: dept.roles.filter((_, i) => i !== roleIndex),
-            }
+                ...dept,
+                roles: dept.roles.filter((_, i) => i !== roleIndex),
+              }
             : dept,
         ),
       );
@@ -2307,11 +2362,11 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       prev.map((dept) =>
         dept.name === editingRole.departmentName
           ? {
-            ...dept,
-            roles: dept.roles.map((role, i) =>
-              i === editingRole.roleIndex ? editingRole.value : role.roleName,
-            ),
-          }
+              ...dept,
+              roles: dept.roles.map((role, i) =>
+                i === editingRole.roleIndex ? editingRole.value : role.roleName,
+              ),
+            }
           : dept,
       ),
     );
@@ -2443,7 +2498,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 errors.push("Unit Name exceeds 35 characters");
               }
               if (/[^A-Za-z0-9._-]/.test(row["Unit Name"])) {
-                errors.push("Unit Name contains invalid characters (Only A-Za-z0-9._- allowed)");
+                errors.push(
+                  "Unit Name contains invalid characters (Only A-Za-z0-9._- allowed)",
+                );
               }
             }
 
@@ -2454,12 +2511,13 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 errors.push("Unit Short Name exceeds 8 characters");
               }
               if (/[^A-Z0-9]/.test(row["Unit Short Name"].toUpperCase())) {
-                errors.push("Unit Short Name contains invalid characters (Only A-Z, 0-9 allowed)");
+                errors.push(
+                  "Unit Short Name contains invalid characters (Only A-Z, 0-9 allowed)",
+                );
               }
             }
 
-            if (!row["Unit Owner"])
-              errors.push("Unit Owner");
+            if (!row["Unit Owner"]) errors.push("Unit Owner");
             if (!row["Storage Allocated"]) errors.push("Storage Allocated");
             if (!row.Role) errors.push("Role");
             if (!row.Permission) errors.push("Permission");
@@ -2512,7 +2570,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
           // ✅ Build API payload
           const apiPayload = jsonData.map((row) => ({
-            deptName: row["Unit Name"] ? row["Unit Name"].toLowerCase() : row["Unit Name"],
+            deptName: row["Unit Name"]
+              ? row["Unit Name"].toLowerCase()
+              : row["Unit Name"],
             deptDisplayName: row["Unit Short Name"],
             deptModerator: row["Unit Owner"],
             storage: row["Storage Allocated"],
@@ -2538,8 +2598,12 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
             // Parse response array
             const results = response.data;
-            const successCount = results.filter(r => r.status === "Success" || r.status === "Created").length;
-            const failures = results.filter(r => r.status === "Failed" || !!r.error);
+            const successCount = results.filter(
+              (r) => r.status === "Success" || r.status === "Created",
+            ).length;
+            const failures = results.filter(
+              (r) => r.status === "Failed" || !!r.error,
+            );
 
             let message = "";
             let severity = "success";
@@ -2548,10 +2612,10 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               message = `Successfully uploaded ${successCount} Unit(s).`;
             } else if (successCount === 0) {
               severity = "error";
-              message = `All uploads failed:\n${failures.map(f => `- ${f.deptName}: ${f.error?.error || f.error}`).join("\n")}`;
+              message = `All uploads failed:\n${failures.map((f) => `- ${f.deptName}: ${f.error?.error || f.error}`).join("\n")}`;
             } else {
               severity = "warning";
-              message = `Successfully uploaded ${successCount} Unit(s), but ${failures.length} failed:\n${failures.map(f => `- ${f.deptName}: ${f.error?.error || f.error}`).join("\n")}`;
+              message = `Successfully uploaded ${successCount} Unit(s), but ${failures.length} failed:\n${failures.map((f) => `- ${f.deptName}: ${f.error?.error || f.error}`).join("\n")}`;
             }
 
             setSnackbar({
@@ -2698,7 +2762,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         displayName: "",
         storage: "1 GB",
         departmentModerator: "",
-        role: "",        // ✅ standardized
+        role: "", // ✅ standardized
         permission: "ADMIN", // ✅ standardized
         submitted: false,
       },
@@ -2715,15 +2779,17 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     setExpandedIndices((prev) => (prev.includes(index) ? [] : [index]));
   };
 
-
   const handleAddDepartment = async () => {
     let hasError = false;
     const updated = newDepartments.map((dept) => {
       // Check for duplicates within existing departments
-      const isDuplicate = Array.isArray(departments) && departments.some(
-        (existing) =>
-          (existing.name || "").toLowerCase() === (dept.name || "").trim().toLowerCase(),
-      );
+      const isDuplicate =
+        Array.isArray(departments) &&
+        departments.some(
+          (existing) =>
+            (existing.name || "").toLowerCase() ===
+            (dept.name || "").trim().toLowerCase(),
+        );
 
       const invalid =
         !(dept.name || "").trim() ||
@@ -2777,7 +2843,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           displayName: "",
           storage: "1 GB",
           departmentModerator: "",
-          role: "",        // ✅ standardized
+          role: "", // ✅ standardized
           permission: "ADMIN", // ✅ standardized
           submitted: false,
         },
@@ -2789,7 +2855,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       console.error("handleAddDepartment error:", error);
       const backendMsg =
         error?.response?.data?.error ||
-        (typeof error?.response?.data === "string" ? error.response.data : null) ||
+        (typeof error?.response?.data === "string"
+          ? error.response.data
+          : null) ||
         error.message ||
         "Failed to create Unit";
       setSnackbar({
@@ -2824,12 +2892,12 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         prev.map((dept) =>
           dept.name === selectedDepartment.name
             ? {
-              ...dept,
-              roles: [
-                ...dept.roles,
-                { roleName: newRole.trim(), isAdmin: isAdminRole },
-              ],
-            }
+                ...dept,
+                roles: [
+                  ...dept.roles,
+                  { roleName: newRole.trim(), isAdmin: isAdminRole },
+                ],
+              }
             : dept,
         ),
       );
@@ -2858,7 +2926,10 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         error?.response?.data || "Failed to create role. Please try again.";
       setSnackbar({
         open: true,
-        message: typeof backendMessage === "string" ? backendMessage : "Failed to create role. Please try again.",
+        message:
+          typeof backendMessage === "string"
+            ? backendMessage
+            : "Failed to create role. Please try again.",
         severity: "error",
       });
     }
@@ -2872,8 +2943,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     );
     setSnackbar({
       open: true,
-      message: `Unit "${dept.name}" ${!dept.isActive ? "activated" : "deactivated"
-        }`,
+      message: `Unit "${dept.name}" ${
+        !dept.isActive ? "activated" : "deactivated"
+      }`,
       severity: "success",
     });
   };
@@ -3032,8 +3104,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     if (!val) return "";
     const [num, unit] = val.trim().split(/\s+/); // splits "25.00 GB" → ["25.00", "GB"]
     const rounded = parseFloat(num);
-    return `${Number.isInteger(rounded) ? rounded : Math.floor(rounded)
-      }${unit}`;
+    return `${
+      Number.isInteger(rounded) ? rounded : Math.floor(rounded)
+    }${unit}`;
   };
 
   // Debounce searchQuery → debouncedSearchQuery (500ms delay)
@@ -3393,448 +3466,463 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                   <CircularProgress size={36} />
                 </TableCell>
               </TableRow>
-            ) : filteredDepartments1?.map((dept, index) => {
-              const isItemSelected = isSelected(dept.name);
-              return (
-                <React.Fragment key={index}>
-                  <StyledTableRow
-                    hover
-                    role="checkbox"
-                    aria-checked={isItemSelected}
-                    tabIndex={-1}
-                    selected={isItemSelected}
-                    sx={{ cursor: "default" }}
-                  >
-                    <TableCell padding="checkbox" sx={{ textAlign: "center" }}>
-                      <Checkbox
-                        color="primary"
-                        checked={isItemSelected}
-                        size="small"
-                        onChange={(event) => handleClick(event, dept.name)}
-                      />
-                    </TableCell>
-
-                    {visibleColumns.name && <TableCell>{dept.name}</TableCell>}
-
-                    {visibleColumns.displayName && (
-                      <TableCell>{dept.displayName}</TableCell>
-                    )}
-
-                    {visibleColumns.owner && (
-                      <TableCell>{dept.departmentModerator}</TableCell>
-                    )}
-
-                    {visibleColumns.storage && (
-                      <TableCell>{dept.storage}</TableCell>
-                    )}
-
-                    {visibleColumns.manageStorage && (
-                      <TableCell>
-                        <Select
-                          value={dept.allowedStorage}
-                          onChange={(e) =>
-                            handleStorageChange(dept.name, e.target.value)
-                          }
-                          sx={{
-                            width: "100px",
-                            height: "30px",
-                            borderRadius: "28px",
-                          }}
-                        >
-                          {getStorageOptions(dept.allowedStorage).map(
-                            (option) => (
-                              <MenuItem key={option} value={option}>
-                                {option}
-                              </MenuItem>
-                            ),
-                          )}
-                        </Select>
-                      </TableCell>
-                    )}
-
-                    {visibleColumns.users && (
-                      <TableCell align="center">
-                        <DeptUsersDropdown
-                          users={(dept.users || []).map((u) => ({
-                            id: u.objectId,
-                            name: u.fullName,
-                            roleName: u.role,
-                          }))}
-                          totalUserCount={dept.userCount}
-                          departmentId={dept.id}
-                          departmentName={dept.name}
-                          departmentRoles={dept.roles.map((role) => ({
-                            // COMMENTED OUT: role.id doesn't exist in API — API uses roleId
-                            // id: role.id,
-                            id: role.roleId,
-                            name: role.roleName,
-                          }))}
-                          // onEditUser={(user) =>}
-                          // onDeleteUser={(user) =>
-
-                          // }
-                          addUsersToDepartment={async (
-                            deptId,
-                            selectedUsers,
-                          ) => {
-                            try {
-                              const payload = selectedUsers.map((u) => [
-                                u.id,
-                                u.role.id,
-                              ]); // ✅ backend expects [userId, roleId]
-
-                              const response = await axios.post(
-                                `${window.__ENV__.REACT_APP_ROUTE}/tenants/department/addInExisting/${deptId}`,
-                                payload,
-                                {
-                                  headers: {
-                                    "Content-Type": "application/json",
-                                    Authorization: `Bearer ${sessionStorage.getItem(
-                                      "authToken",
-                                    )}`,
-                                    username:
-                                      sessionStorage.getItem("adminEmail"),
-                                  },
-                                },
-                              );
-
-                              if (response.status === 200) {
-                                setSnackbar({
-                                  open: true,
-                                  message: "Users added successfully!",
-                                  severity: "success",
-                                });
-
-                                if (fetchDepartments) await fetchDepartments();
-                              } else {
-                                setSnackbar({
-                                  open: true,
-                                  message: `Failed to add users: ${response.statusText}`,
-                                  severity: "error",
-                                });
-                              }
-                            } catch (error) {
-                              const backendMsg =
-                                error?.response?.data && typeof error.response.data === "string"
-                                  ? error.response.data
-                                  : error.message;
-                              setSnackbar({
-                                open: true,
-                                message: backendMsg,
-                                severity: "error",
-                              });
-                            }
-                          }}
-                        />
-                      </TableCell>
-                    )}
-
-                    {visibleColumns.roles && (
-                      <TableCell align="center">
-                        <DeptRolesDropdown
-                          roles={dept.roles || []}
-                          totalRoleCount={dept.rolesCount ?? 0}
-                          selectedDepartment={dept}
-                          handleAddRole={async (
-                            newRole,
-                            appRole,
-                            department,
-                          ) => {
-                            try {
-                              const response = await axios.post(
-                                `${window.__ENV__.REACT_APP_ROUTE}/tenants/departments/${department.name}/roles`,
-                                [{ roleName: newRole, appRole: appRole }],
-                                {
-                                  headers: {
-                                    "Content-Type": "application/json",
-                                    Authorization: `Bearer ${sessionStorage.getItem(
-                                      "authToken",
-                                    )}`,
-                                    username:
-                                      sessionStorage.getItem("adminEmail"),
-                                  },
-                                },
-                              );
-
-                              if (response.status === 200) {
-                                setSnackbar({
-                                  open: true,
-                                  message: `Role "${newRole}" added successfully!`,
-                                  severity: "success",
-                                });
-
-                                if (fetchDepartments) await fetchDepartments();
-                              } else {
-                                setSnackbar({
-                                  open: true,
-                                  message: `Failed to add role: ${response.statusText}`,
-                                  severity: "error",
-                                });
-                              }
-                            } catch (error) {
-                              console.error("Failed to add role:", error);
-                              const backendMsg =
-                                error?.response?.data && typeof error.response.data === "string"
-                                  ? error.response.data
-                                  : error.message;
-                              setSnackbar({
-                                open: true,
-                                message: backendMsg,
-                                severity: "error",
-                              });
-                            }
-                          }}
-                          // NEW: PUT /tenants/roles — update existing role
-                          handleUpdateRole={async (
-                            roleId,
-                            newRoleName,
-                            appRole,
-                            department,
-                          ) => {
-                            try {
-                              const response = await axios.put(
-                                `${window.__ENV__.REACT_APP_ROUTE}/tenants/roles`,
-                                {
-                                  roleId: roleId,
-                                  roleName: newRoleName,
-                                  departmentId: department.id || "",
-                                  appRole: appRole,
-                                },
-                                {
-                                  headers: {
-                                    "Content-Type": "application/json",
-                                    Authorization: `Bearer ${sessionStorage.getItem(
-                                      "authToken",
-                                    )}`,
-                                    username:
-                                      sessionStorage.getItem("adminEmail"),
-                                  },
-                                },
-                              );
-
-                              if (response.status === 200) {
-                                setSnackbar({
-                                  open: true,
-                                  message: `Role "${newRoleName}" updated successfully!`,
-                                  severity: "success",
-                                });
-                                if (fetchDepartments) await fetchDepartments();
-                              } else {
-                                setSnackbar({
-                                  open: true,
-                                  message: `Failed to update role: ${response.statusText}`,
-                                  severity: "error",
-                                });
-                              }
-                            } catch (error) {
-                              console.error("Failed to update role:", error);
-                              setSnackbar({
-                                open: true,
-                                message: `Error: ${error.message}`,
-                                severity: "error",
-                              });
-                            }
-                          }}
-                        />
-                      </TableCell>
-                    )}
-
-                    {visibleColumns.actions && (
-                      <TableCell sx={{ textAlign: "center" }}>
-                        <Box
-                          sx={{
-                            display: "flex",
-                            justifyContent: "center",
-                            gap: 0.5,
-                          }}
-                        >
-                          {deptAdmin && !superAdmin ? (
-                            <>
-                              <Tooltip title="Only Super Admin can perform action">
-                                <span>
-                                  <IconButton size="small" disabled>
-                                    <EditIcon fontSize="small" />
-                                  </IconButton>
-                                </span>
-                              </Tooltip>
-                              <Tooltip title="Only Super Admin can perform action">
-                                <span>
-                                  <IconButton size="small" disabled>
-                                    <DeleteIcon fontSize="small" />
-                                  </IconButton>
-                                </span>
-                              </Tooltip>
-                            </>
-                          ) : (
-                            <>
-                              <IconButton
-                                size="small"
-                                onClick={() => handleEditDepartment(dept)}
-                                sx={{
-                                  color: "#1976d2",
-                                  "&:hover": {
-                                    backgroundColor: "#e3f2fd",
-                                    color: "#1565c0",
-                                  },
-                                }}
-                                title="Edit Unit"
-                              >
-                                <EditIcon fontSize="small" />
-                              </IconButton>
-                              <IconButton
-                                size="small"
-                                onClick={() => {
-                                  setDepartmentToDelete(dept);
-                                  setDeleteDialogOpen(true);
-                                }}
-                                sx={{
-                                  color: "#d32f2f",
-                                  "&:hover": {
-                                    backgroundColor: "#ffebee",
-                                    color: "#c62828",
-                                  },
-                                }}
-                                title="Delete Department"
-                              >
-                                <DeleteIcon fontSize="small" />
-                              </IconButton>
-                            </>
-                          )}
-                        </Box>
-                      </TableCell>
-                    )}
-                  </StyledTableRow>
-
-                  <StyledTableRow>
-                    <TableCell
-                      style={{
-                        paddingBottom: 0,
-                        paddingTop: 0,
-                        borderBottom: "none",
-                        height: "auto",
-                      }}
-                      colSpan={7}
+            ) : (
+              filteredDepartments1?.map((dept, index) => {
+                const isItemSelected = isSelected(dept.name);
+                return (
+                  <React.Fragment key={index}>
+                    <StyledTableRow
+                      hover
+                      role="checkbox"
+                      aria-checked={isItemSelected}
+                      tabIndex={-1}
+                      selected={isItemSelected}
+                      sx={{ cursor: "default" }}
                     >
-                      <ClickAwayListener
-                        onClickAway={() =>
-                          setOpenRows((prev) => ({ ...prev, [index]: false }))
-                        }
+                      <TableCell
+                        padding="checkbox"
+                        sx={{ textAlign: "center" }}
                       >
-                        <Collapse
-                          in={openRows[index]}
-                          timeout="auto"
-                          unmountOnExit
-                        >
-                          <Box
+                        <Checkbox
+                          color="primary"
+                          checked={isItemSelected}
+                          size="small"
+                          onChange={(event) => handleClick(event, dept.name)}
+                        />
+                      </TableCell>
+
+                      {visibleColumns.name && (
+                        <TableCell>{dept.name}</TableCell>
+                      )}
+
+                      {visibleColumns.displayName && (
+                        <TableCell>{dept.displayName}</TableCell>
+                      )}
+
+                      {visibleColumns.owner && (
+                        <TableCell>{dept.departmentModerator}</TableCell>
+                      )}
+
+                      {visibleColumns.storage && (
+                        <TableCell>{dept.storage}</TableCell>
+                      )}
+
+                      {visibleColumns.manageStorage && (
+                        <TableCell>
+                          <Select
+                            value={dept.allowedStorage}
+                            onChange={(e) =>
+                              handleStorageChange(dept.name, e.target.value)
+                            }
                             sx={{
-                              position: "absolute",
-                              left: "75%",
-                              transform: "translateX(-50%)",
-                              width: "250px",
-                              backgroundColor: "#fff",
-                              borderRadius: "8px",
-                              border: "1px solid #e2e8f0",
-                              boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-                              zIndex: 3,
-                              marginTop: "4px",
-                              maxHeight: "240px",
-                              overflowY: "auto",
-                              "&::-webkit-scrollbar": { width: "6px" },
-                              "&::-webkit-scrollbar-thumb": {
-                                backgroundColor: "#cbd5e1",
-                                borderRadius: "4px",
-                              },
+                              width: "100px",
+                              height: "30px",
+                              borderRadius: "28px",
                             }}
                           >
-                            <Table size="small" aria-label="roles">
-                              <TableHead>
-                                <TableRow>
-                                  <TableCell
-                                    sx={{
-                                      backgroundColor: "#f1f5f9",
-                                      fontWeight: 600,
-                                      color: "#475569",
-                                      fontSize: "0.75rem",
-                                      borderBottom: "1px solid #e2e8f0",
-                                    }}
-                                  >
-                                    Role Name
-                                  </TableCell>
-                                  <TableCell
-                                    align="right"
-                                    sx={{
-                                      backgroundColor: "#f1f5f9",
-                                      fontWeight: 600,
-                                      color: "#475569",
-                                      fontSize: "0.75rem",
-                                      borderBottom: "1px solid #e2e8f0",
-                                      width: "60px",
-                                    }}
-                                  >
-                                    Actions
-                                  </TableCell>
-                                </TableRow>
-                              </TableHead>
-                              <TableBody>
-                                {dept.roles.map((role, roleIndex) => (
-                                  <TableRow
-                                    key={roleIndex}
-                                    sx={{
-                                      "&:hover": {
-                                        backgroundColor: "rgba(0,0,0,0.02)",
-                                      },
-                                      "& td": {
-                                        borderBottom:
-                                          roleIndex === dept.roles.length - 1
-                                            ? "none"
-                                            : "1px solid #e2e8f0",
-                                      },
-                                    }}
-                                  >
+                            {getStorageOptions(dept.allowedStorage).map(
+                              (option) => (
+                                <MenuItem key={option} value={option}>
+                                  {option}
+                                </MenuItem>
+                              ),
+                            )}
+                          </Select>
+                        </TableCell>
+                      )}
+
+                      {visibleColumns.users && (
+                        <TableCell align="center">
+                          <DeptUsersDropdown
+                            users={(dept.users || []).map((u) => ({
+                              id: u.objectId,
+                              name: u.fullName,
+                              roleName: u.role,
+                            }))}
+                            totalUserCount={dept.userCount}
+                            departmentId={dept.id}
+                            departmentName={dept.name}
+                            departmentRoles={dept.roles.map((role) => ({
+                              // COMMENTED OUT: role.id doesn't exist in API — API uses roleId
+                              // id: role.id,
+                              id: role.roleId,
+                              name: role.roleName,
+                            }))}
+                            // onEditUser={(user) =>}
+                            // onDeleteUser={(user) =>
+
+                            // }
+                            addUsersToDepartment={async (
+                              deptId,
+                              selectedUsers,
+                            ) => {
+                              try {
+                                const payload = selectedUsers.map((u) => [
+                                  u.id,
+                                  u.role.id,
+                                ]); // ✅ backend expects [userId, roleId]
+
+                                const response = await axios.post(
+                                  `${window.__ENV__.REACT_APP_ROUTE}/tenants/department/addInExisting/${deptId}`,
+                                  payload,
+                                  {
+                                    headers: {
+                                      "Content-Type": "application/json",
+                                      Authorization: `Bearer ${sessionStorage.getItem(
+                                        "authToken",
+                                      )}`,
+                                      username:
+                                        sessionStorage.getItem("adminEmail"),
+                                    },
+                                  },
+                                );
+
+                                if (response.status === 200) {
+                                  setSnackbar({
+                                    open: true,
+                                    message: "Users added successfully!",
+                                    severity: "success",
+                                  });
+
+                                  if (fetchDepartments)
+                                    await fetchDepartments();
+                                } else {
+                                  setSnackbar({
+                                    open: true,
+                                    message: `Failed to add users: ${response.statusText}`,
+                                    severity: "error",
+                                  });
+                                }
+                              } catch (error) {
+                                const backendMsg =
+                                  error?.response?.data &&
+                                  typeof error.response.data === "string"
+                                    ? error.response.data
+                                    : error.message;
+                                setSnackbar({
+                                  open: true,
+                                  message: backendMsg,
+                                  severity: "error",
+                                });
+                              }
+                            }}
+                          />
+                        </TableCell>
+                      )}
+
+                      {visibleColumns.roles && (
+                        <TableCell align="center">
+                          <DeptRolesDropdown
+                            roles={dept.roles || []}
+                            totalRoleCount={dept.rolesCount ?? 0}
+                            selectedDepartment={dept}
+                            handleAddRole={async (
+                              newRole,
+                              appRole,
+                              department,
+                            ) => {
+                              try {
+                                const response = await axios.post(
+                                  `${window.__ENV__.REACT_APP_ROUTE}/tenants/departments/${department.name}/roles`,
+                                  [{ roleName: newRole, appRole: appRole }],
+                                  {
+                                    headers: {
+                                      "Content-Type": "application/json",
+                                      Authorization: `Bearer ${sessionStorage.getItem(
+                                        "authToken",
+                                      )}`,
+                                      username:
+                                        sessionStorage.getItem("adminEmail"),
+                                    },
+                                  },
+                                );
+
+                                if (response.status === 200) {
+                                  setSnackbar({
+                                    open: true,
+                                    message: `Role "${newRole}" added successfully!`,
+                                    severity: "success",
+                                  });
+
+                                  if (fetchDepartments)
+                                    await fetchDepartments();
+                                } else {
+                                  setSnackbar({
+                                    open: true,
+                                    message: `Failed to add role: ${response.statusText}`,
+                                    severity: "error",
+                                  });
+                                }
+                              } catch (error) {
+                                console.error("Failed to add role:", error);
+                                const backendMsg =
+                                  error?.response?.data &&
+                                  typeof error.response.data === "string"
+                                    ? error.response.data
+                                    : error.message;
+                                setSnackbar({
+                                  open: true,
+                                  message: backendMsg,
+                                  severity: "error",
+                                });
+                              }
+                            }}
+                            // NEW: PUT /tenants/roles — update existing role
+                            handleUpdateRole={async (
+                              roleId,
+                              newRoleName,
+                              appRole,
+                              department,
+                            ) => {
+                              try {
+                                const response = await axios.put(
+                                  `${window.__ENV__.REACT_APP_ROUTE}/tenants/roles`,
+                                  {
+                                    roleId: roleId,
+                                    roleName: newRoleName,
+                                    departmentId: department.id || "",
+                                    appRole: appRole,
+                                  },
+                                  {
+                                    headers: {
+                                      "Content-Type": "application/json",
+                                      Authorization: `Bearer ${sessionStorage.getItem(
+                                        "authToken",
+                                      )}`,
+                                      username:
+                                        sessionStorage.getItem("adminEmail"),
+                                    },
+                                  },
+                                );
+
+                                if (response.status === 200) {
+                                  setSnackbar({
+                                    open: true,
+                                    message: `Role "${newRoleName}" updated successfully!`,
+                                    severity: "success",
+                                  });
+                                  if (fetchDepartments)
+                                    await fetchDepartments();
+                                } else {
+                                  setSnackbar({
+                                    open: true,
+                                    message: `Failed to update role: ${response.statusText}`,
+                                    severity: "error",
+                                  });
+                                }
+                              } catch (error) {
+                                console.error("Failed to update role:", error);
+                                setSnackbar({
+                                  open: true,
+                                  message: `Error: ${error.message}`,
+                                  severity: "error",
+                                });
+                              }
+                            }}
+                          />
+                        </TableCell>
+                      )}
+
+                      {visibleColumns.actions && (
+                        <TableCell sx={{ textAlign: "center" }}>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              justifyContent: "center",
+                              gap: 0.5,
+                            }}
+                          >
+                            {deptAdmin && !superAdmin ? (
+                              <>
+                                <Tooltip title="Only Super Admin can perform action">
+                                  <span>
+                                    <IconButton size="small" disabled>
+                                      <EditIcon fontSize="small" />
+                                    </IconButton>
+                                  </span>
+                                </Tooltip>
+                                <Tooltip title="Only Super Admin can perform action">
+                                  <span>
+                                    <IconButton size="small" disabled>
+                                      <DeleteIcon fontSize="small" />
+                                    </IconButton>
+                                  </span>
+                                </Tooltip>
+                              </>
+                            ) : (
+                              <>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleEditDepartment(dept)}
+                                  sx={{
+                                    color: "#1976d2",
+                                    "&:hover": {
+                                      backgroundColor: "#e3f2fd",
+                                      color: "#1565c0",
+                                    },
+                                  }}
+                                  title="Edit Unit"
+                                >
+                                  <EditIcon fontSize="small" />
+                                </IconButton>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => {
+                                    setDepartmentToDelete(dept);
+                                    setDeleteDialogOpen(true);
+                                  }}
+                                  sx={{
+                                    color: "#d32f2f",
+                                    "&:hover": {
+                                      backgroundColor: "#ffebee",
+                                      color: "#c62828",
+                                    },
+                                  }}
+                                  title="Delete Department"
+                                >
+                                  <DeleteIcon fontSize="small" />
+                                </IconButton>
+                              </>
+                            )}
+                          </Box>
+                        </TableCell>
+                      )}
+                    </StyledTableRow>
+
+                    <StyledTableRow>
+                      <TableCell
+                        style={{
+                          paddingBottom: 0,
+                          paddingTop: 0,
+                          borderBottom: "none",
+                          height: "auto",
+                        }}
+                        colSpan={7}
+                      >
+                        <ClickAwayListener
+                          onClickAway={() =>
+                            setOpenRows((prev) => ({ ...prev, [index]: false }))
+                          }
+                        >
+                          <Collapse
+                            in={openRows[index]}
+                            timeout="auto"
+                            unmountOnExit
+                          >
+                            <Box
+                              sx={{
+                                position: "absolute",
+                                left: "75%",
+                                transform: "translateX(-50%)",
+                                width: "250px",
+                                backgroundColor: "#fff",
+                                borderRadius: "8px",
+                                border: "1px solid #e2e8f0",
+                                boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                                zIndex: 3,
+                                marginTop: "4px",
+                                maxHeight: "240px",
+                                overflowY: "auto",
+                                "&::-webkit-scrollbar": { width: "6px" },
+                                "&::-webkit-scrollbar-thumb": {
+                                  backgroundColor: "#cbd5e1",
+                                  borderRadius: "4px",
+                                },
+                              }}
+                            >
+                              <Table size="small" aria-label="roles">
+                                <TableHead>
+                                  <TableRow>
                                     <TableCell
                                       sx={{
-                                        padding: "6px 12px",
+                                        backgroundColor: "#f1f5f9",
+                                        fontWeight: 600,
+                                        color: "#475569",
                                         fontSize: "0.75rem",
-                                        color: "#334155",
+                                        borderBottom: "1px solid #e2e8f0",
                                       }}
                                     >
-                                      {role.roleName}
+                                      Role Name
                                     </TableCell>
                                     <TableCell
                                       align="right"
-                                      sx={{ padding: "4px 8px" }}
+                                      sx={{
+                                        backgroundColor: "#f1f5f9",
+                                        fontWeight: 600,
+                                        color: "#475569",
+                                        fontSize: "0.75rem",
+                                        borderBottom: "1px solid #e2e8f0",
+                                        width: "60px",
+                                      }}
                                     >
-                                      <IconButton
-                                        size="small"
-                                        onClick={() =>
-                                          handleDeleteRole(dept.name, roleIndex)
-                                        }
-                                        sx={{
-                                          padding: "2px",
-                                          color: "error.main",
-                                          "&:hover": {
-                                            backgroundColor: "error.lighter",
-                                          },
-                                        }}
-                                        title="Delete Role"
-                                      >
-                                        <DeleteIcon
-                                          sx={{ fontSize: "0.875rem" }}
-                                        />
-                                      </IconButton>
+                                      Actions
                                     </TableCell>
                                   </TableRow>
-                                ))}
-                              </TableBody>
-                            </Table>
-                          </Box>
-                        </Collapse>
-                      </ClickAwayListener>
-                    </TableCell>
-                  </StyledTableRow>
-                </React.Fragment>
-              );
-            })}
+                                </TableHead>
+                                <TableBody>
+                                  {dept.roles.map((role, roleIndex) => (
+                                    <TableRow
+                                      key={roleIndex}
+                                      sx={{
+                                        "&:hover": {
+                                          backgroundColor: "rgba(0,0,0,0.02)",
+                                        },
+                                        "& td": {
+                                          borderBottom:
+                                            roleIndex === dept.roles.length - 1
+                                              ? "none"
+                                              : "1px solid #e2e8f0",
+                                        },
+                                      }}
+                                    >
+                                      <TableCell
+                                        sx={{
+                                          padding: "6px 12px",
+                                          fontSize: "0.75rem",
+                                          color: "#334155",
+                                        }}
+                                      >
+                                        {role.roleName}
+                                      </TableCell>
+                                      <TableCell
+                                        align="right"
+                                        sx={{ padding: "4px 8px" }}
+                                      >
+                                        <IconButton
+                                          size="small"
+                                          onClick={() =>
+                                            handleDeleteRole(
+                                              dept.name,
+                                              roleIndex,
+                                            )
+                                          }
+                                          sx={{
+                                            padding: "2px",
+                                            color: "error.main",
+                                            "&:hover": {
+                                              backgroundColor: "error.lighter",
+                                            },
+                                          }}
+                                          title="Delete Role"
+                                        >
+                                          <DeleteIcon
+                                            sx={{ fontSize: "0.875rem" }}
+                                          />
+                                        </IconButton>
+                                      </TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </Box>
+                          </Collapse>
+                        </ClickAwayListener>
+                      </TableCell>
+                    </StyledTableRow>
+                  </React.Fragment>
+                );
+              })
+            )}
           </TableBody>
         </Table>
       </TableContainer>
@@ -4112,7 +4200,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                 ? "Required"
                                 : dept.hasInvalidChar
                                   ? "Only letters, numbers, dots (.), and - are allowed"
-                                  : (dept.isDuplicate || duplicateDepartmentError)
+                                  : dept.isDuplicate || duplicateDepartmentError
                                     ? "Already exists"
                                     : dept.name.length > 35
                                       ? "Max 35 characters"
@@ -4219,9 +4307,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                             filterOptions={(x) => x}
                             options={userOptions}
                             getOptionLabel={(option) => option.email || ""}
-
                             loading={isSearchingUsers}
-
                             onInputChange={(event, newInputValue, reason) => {
                               if (reason === "input" || reason === "clear") {
                                 setUserSearchQuery(newInputValue);
@@ -4258,7 +4344,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                 const listboxNode = event.currentTarget;
                                 if (
                                   listboxNode.scrollTop +
-                                  listboxNode.clientHeight >=
+                                    listboxNode.clientHeight >=
                                   listboxNode.scrollHeight - 50
                                 ) {
                                   loadMoreUsers();
@@ -4306,8 +4392,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                           <TextField
                             label={
                               <>
-                                Role{" "}
-                                <span style={{ color: "red" }}>*</span>
+                                Role <span style={{ color: "red" }}>*</span>
                               </>
                             }
                             value={dept.role || ""}
@@ -4416,7 +4501,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               Add All
             </Button>
           </Box>
-
         </Box>
       </Drawer>
 
@@ -4617,7 +4701,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           </Box>
 
           <Box sx={{ p: 2, flex: 1, overflowY: "auto" }}>
-
             <Card elevation={1} sx={{ borderRadius: 2 }}>
               <CardContent>
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -4764,11 +4847,18 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                   </MenuItem>
                                 ))}
 
-                                {isSearchingFilteredUsers && filteredUsers.length > 0 && (
-                                  <Box sx={{ display: 'flex', justifyContent: 'center', p: 1 }}>
-                                    <CircularProgress size={20} />
-                                  </Box>
-                                )}
+                                {isSearchingFilteredUsers &&
+                                  filteredUsers.length > 0 && (
+                                    <Box
+                                      sx={{
+                                        display: "flex",
+                                        justifyContent: "center",
+                                        p: 1,
+                                      }}
+                                    >
+                                      <CircularProgress size={20} />
+                                    </Box>
+                                  )}
 
                                 {filteredUsers.length === 0 &&
                                   !isSearchingFilteredUsers && (
@@ -5143,7 +5233,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     size="small"
                     fullWidth
                     options={userOptions}
-                    getOptionLabel={(option) => option.email || option.name || ""}
+                    getOptionLabel={(option) =>
+                      option.email || option.name || ""
+                    }
                     loading={isSearchingUsers}
                     onInputChange={(event, newInputValue) => {
                       setUserSearchQuery(newInputValue);
@@ -5167,10 +5259,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                           endAdornment: (
                             <React.Fragment>
                               {isSearchingUsers ? (
-                                <CircularProgress
-                                  color="inherit"
-                                  size={20}
-                                />
+                                <CircularProgress color="inherit" size={20} />
                               ) : null}
                               {params.InputProps.endAdornment}
                             </React.Fragment>
@@ -5235,23 +5324,23 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     >
                       {`[${(assignment.role === "Admin"
                         ? [
-                          "Read",
-                          "Write",
-                          "Delete",
-                          "Share",
-                          "UserAdmin",
-                          "Comment",
-                          "Upload",
-                        ]
-                        : assignment.role === "Editor"
-                          ? [
                             "Read",
                             "Write",
                             "Delete",
                             "Share",
+                            "UserAdmin",
                             "Comment",
                             "Upload",
                           ]
+                        : assignment.role === "Editor"
+                          ? [
+                              "Read",
+                              "Write",
+                              "Delete",
+                              "Share",
+                              "Comment",
+                              "Upload",
+                            ]
                           : assignment.role === "Viewer"
                             ? ["Read", "Comment"]
                             : assignment.role === "Collaborator"
@@ -5328,7 +5417,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           </Alert>
         </Snackbar>
       </Portal>
-    </Box >
+    </Box>
   );
 }
 

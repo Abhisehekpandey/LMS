@@ -2,6 +2,7 @@ import React, { useState, useCallback, useRef, useContext } from "react";
 import axios from "axios";
 import { useLocation, useNavigate } from "react-router-dom";
 import Slide from "@mui/material/Slide";
+import { LogoContext, NAVBAR_LOGO_STYLE } from "../context/LogoContext";
 import {
   AppBar,
   Toolbar,
@@ -42,7 +43,7 @@ import debounce from "lodash/debounce";
 import { fetchUsers } from "../api/userService";
 import { getDepartments } from "../api/departmentService";
 import { saveApmSettings } from "../api/apm"; // ✅ your API call here
-import { LogoContext } from "../context/LogoContext";
+// import { LogoContext } from "../context/LogoContext";
 
 const Transition = React.forwardRef(function Transition(props, ref) {
   return <Slide direction="left" ref={ref} {...props} timeout={200} />;
@@ -169,7 +170,7 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
             "Content-Type": "application/json",
             username: sessionStorage.getItem("adminEmail"),
           },
-        }
+        },
       );
       return response.data;
     } catch (error) {
@@ -192,7 +193,7 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
             "Content-Type": "application/json",
             username: sessionStorage.getItem("adminEmail"),
           },
-        }
+        },
       );
       return response.data;
     } catch (error) {
@@ -205,7 +206,7 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
     try {
       const response = await axios.delete(
         `${window.__ENV__.REACT_APP_ROUTE}/tenants/deleteIn?value=${encodeURIComponent(
-          regionName
+          regionName,
         )}`,
         {
           headers: {
@@ -213,7 +214,7 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
             "Content-Type": "application/json",
             username: sessionStorage.getItem("adminEmail"),
           },
-        }
+        },
       );
       return response.data;
     } catch (error) {
@@ -232,7 +233,7 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
             username: sessionStorage.getItem("adminEmail"), // User provided curl only has username, but keeping consistency with others for auth
             Authorization: `Bearer ${sessionStorage.getItem("authToken")}`, // Keeping auth token as standard practice
           },
-        }
+        },
       );
       return response.data;
     } catch (error) {
@@ -252,7 +253,7 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
             username: sessionStorage.getItem("adminEmail"),
             Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
           },
-        }
+        },
       );
       return response.data;
     } catch (error) {
@@ -265,14 +266,14 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
     try {
       const response = await axios.delete(
         `${window.__ENV__.REACT_APP_ROUTE}/tenants/section/remove?toDelete=${encodeURIComponent(
-          sectionName
+          sectionName,
         )}`,
         {
           headers: {
             username: sessionStorage.getItem("adminEmail"),
             Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
           },
-        }
+        },
       );
       return response.data;
     } catch (error) {
@@ -285,7 +286,7 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
     try {
       const response = await axios.patch(
         `${window.__ENV__.REACT_APP_ROUTE}/tenants/section/update?previousValue=${encodeURIComponent(
-          oldName
+          oldName,
         )}&newValue=${encodeURIComponent(newName)}`,
         {},
         {
@@ -293,7 +294,7 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
             username: sessionStorage.getItem("adminEmail"),
             Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
           },
-        }
+        },
       );
       return response.data;
     } catch (error) {
@@ -320,7 +321,7 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
           const totalPages = firstPage.totalPages || 1;
 
           const morePages = await Promise.all(
-            Array.from({ length: totalPages - 1 }, (_, i) => fetchUsers(i + 1))
+            Array.from({ length: totalPages - 1 }, (_, i) => fetchUsers(i + 1)),
           );
           morePages.forEach((res) => allUsers.push(...res.content));
 
@@ -333,14 +334,14 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
                 .includes(lowercaseQuery) ||
               user.roles?.[0]?.department?.deptName
                 ?.toLowerCase()
-                .includes(lowercaseQuery)
+                .includes(lowercaseQuery),
           );
         } else if (location.pathname === "/department") {
           const res = await getDepartments(0, 100, query);
           results = (res.content || []).filter(
             (dept) =>
               dept.deptName?.toLowerCase().includes(lowercaseQuery) ||
-              dept.deptDisplayName?.toLowerCase().includes(lowercaseQuery)
+              dept.deptDisplayName?.toLowerCase().includes(lowercaseQuery),
           );
         } else if (location.pathname === "/data-dictionary") {
           const response = await fetch(
@@ -350,7 +351,7 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
                 Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
                 username: `${sessionStorage.getItem("adminEmail")}`,
               },
-            }
+            },
           );
 
           const dictData = await response.json();
@@ -358,8 +359,8 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
 
           results = items.filter((item) =>
             [item.key, item.value, item.applicatbleTo].some((val) =>
-              val?.toLowerCase().includes(lowercaseQuery)
-            )
+              val?.toLowerCase().includes(lowercaseQuery),
+            ),
           );
         }
 
@@ -369,7 +370,7 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
         console.error("Search error:", error);
         setSearchResults([]);
       }
-    }, 300)
+    }, 300),
   ).current;
 
   const handleSearchChange = (e) => {
@@ -405,7 +406,7 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
             Accept: "application/json",
           },
           body: formData,
-        }
+        },
       );
 
       if (!response.ok) {
@@ -435,19 +436,11 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
               alignItems: "center",
             }}
           >
-            <img
+            <Box
+              component="img"
               src={logoData.mainApplogo}
               alt="AngelBot Logo"
-              style={{
-                height: "50px", // slightly less than 56px to avoid clipping issues
-                width: "auto",
-                objectFit: "contain",
-                transform: "scale(2.8)", // Zoom it even more
-                transformOrigin: "left center",
-                imageRendering: "auto", // Browsers handle scaling better with auto for logos
-                backfaceVisibility: "hidden",
-                WebkitFontSmoothing: "antialiased",
-              }}
+              sx={NAVBAR_LOGO_STYLE}
             />
           </Box>
         </Box>
@@ -459,8 +452,9 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
               <SearchIcon sx={{ fontSize: "1.2rem", color: "inherit" }} />
             </SearchIconWrapper>
             <StyledInputBase
-              placeholder={`Search ${location.pathname === "/user" ? "users" : "departments"
-                }...`}
+              placeholder={`Search ${
+                location.pathname === "/user" ? "users" : "departments"
+              }...`}
               value={searchTerm}
               onChange={handleSearchChange}
               inputProps={{ "aria-label": "search" }}
@@ -1131,7 +1125,7 @@ const Navbar = ({ onThemeToggle, onSearch }) => {
                 const regex = /^[A-Za-z0-9\-_ ]{1,12}$/;
                 if (!regex.test(newRegion)) {
                   setRegionError(
-                    "Command must be 1-12 chars, only letters, numbers, spaces, - or _"
+                    "Command must be 1-12 chars, only letters, numbers, spaces, - or _",
                   );
                   return;
                 }

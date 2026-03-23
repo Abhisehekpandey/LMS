@@ -19,6 +19,7 @@ import {
   ToggleButton,
   ToggleButtonGroup,
 } from "@mui/material";
+import { NAVBAR_LOGO_STYLE } from "../context/LogoContext";
 import {
   Upload,
   Delete,
@@ -117,7 +118,7 @@ const ThemeSetting = () => {
             Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
             username: sessionStorage.getItem("adminEmail"),
           },
-        }
+        },
       );
 
       setForm({
@@ -283,17 +284,23 @@ const ThemeSetting = () => {
                 component="img"
                 src={form.mainAppHeaderLogo}
                 alt="Header Logo"
-                sx={{ height: 52, maxWidth: "70%", objectFit: "contain", objectPosition: "left" }}
+                sx={NAVBAR_LOGO_STYLE}
               />
             ) : (
               <Box
                 sx={{
-                  width: 36, height: 36, borderRadius: "50%",
+                  width: 36,
+                  height: 36,
+                  borderRadius: "50%",
                   bgcolor: "rgba(255,255,255,0.25)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
               >
-                <Typography sx={{ color: "white", fontSize: 18 }}>☰</Typography>
+                <Typography sx={{ color: "white", fontSize: 18 }}>
+                  ☰
+                </Typography>
               </Box>
             )}
             {/* OLD: showed application name in header — removed from preview per user request */}
@@ -348,8 +355,14 @@ const ThemeSetting = () => {
                   alignItems: "center",
                   justifyContent: "center",
                   background: "rgba(255,255,255,0.12)",
-                  borderRight: deviceView === "mobile" ? "none" : "1px solid rgba(255,255,255,0.15)",
-                  borderBottom: deviceView === "mobile" ? "1px solid rgba(255,255,255,0.15)" : "none",
+                  borderRight:
+                    deviceView === "mobile"
+                      ? "none"
+                      : "1px solid rgba(255,255,255,0.15)",
+                  borderBottom:
+                    deviceView === "mobile"
+                      ? "1px solid rgba(255,255,255,0.15)"
+                      : "none",
                   gap: 1,
                 }}
               >
@@ -359,25 +372,38 @@ const ThemeSetting = () => {
                       component="img"
                       src={form.loginLogo}
                       alt="Login Logo"
-                      sx={{ width: "100%", height: "100%", objectFit: "contain" }}
+                      sx={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "contain",
+                      }}
                     />
                   </Box>
                 ) : (
                   <Box
                     sx={{
-                      width: 60, height: 60, borderRadius: "50%",
+                      width: 60,
+                      height: 60,
+                      borderRadius: "50%",
                       bgcolor: "rgba(255,255,255,0.2)",
-                      display: "flex", alignItems: "center", justifyContent: "center",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
                     }}
                   >
-                    <Typography sx={{ color: "white", fontSize: 26 }}>🏛</Typography>
+                    <Typography sx={{ color: "white", fontSize: 26 }}>
+                      🏛
+                    </Typography>
                   </Box>
                 )}
                 {form.loginSlogan && (
                   <Typography
                     sx={{
-                      color: "white", fontWeight: 600, fontSize: 11,
-                      textAlign: "center", mt: 0.5,
+                      color: "white",
+                      fontWeight: 600,
+                      fontSize: 11,
+                      textAlign: "center",
+                      mt: 0.5,
                     }}
                   >
                     {form.loginSlogan}
@@ -398,17 +424,60 @@ const ThemeSetting = () => {
                   gap: 1,
                 }}
               >
-                <Typography sx={{ fontWeight: 700, fontSize: 15, mb: 0.5, color: "#222" }}>
+                <Typography
+                  sx={{ fontWeight: 700, fontSize: 15, mb: 0.5, color: "#222" }}
+                >
                   Login
                 </Typography>
-                <Box sx={{ width: "100%", height: 28, borderRadius: 1, border: "1px solid #ccc", bgcolor: "#f9f9f9", display: "flex", alignItems: "center", px: 1 }}>
-                  <Typography sx={{ fontSize: 10, color: "#aaa" }}>Email</Typography>
+                <Box
+                  sx={{
+                    width: "100%",
+                    height: 28,
+                    borderRadius: 1,
+                    border: "1px solid #ccc",
+                    bgcolor: "#f9f9f9",
+                    display: "flex",
+                    alignItems: "center",
+                    px: 1,
+                  }}
+                >
+                  <Typography sx={{ fontSize: 10, color: "#aaa" }}>
+                    Email
+                  </Typography>
                 </Box>
-                <Box sx={{ width: "100%", height: 28, borderRadius: 1, border: "1px solid #ccc", bgcolor: "#f9f9f9", display: "flex", alignItems: "center", px: 1 }}>
-                  <Typography sx={{ fontSize: 10, color: "#aaa" }}>Password</Typography>
+                <Box
+                  sx={{
+                    width: "100%",
+                    height: 28,
+                    borderRadius: 1,
+                    border: "1px solid #ccc",
+                    bgcolor: "#f9f9f9",
+                    display: "flex",
+                    alignItems: "center",
+                    px: 1,
+                  }}
+                >
+                  <Typography sx={{ fontSize: 10, color: "#aaa" }}>
+                    Password
+                  </Typography>
                 </Box>
-                <Box sx={{ width: "100%", height: 28, borderRadius: 1, bgcolor: "#3b82f6", display: "flex", alignItems: "center", justifyContent: "center", mt: 0.5 }}>
-                  <Typography sx={{ fontSize: 11, color: "white", fontWeight: 600 }}>Login</Typography>
+                <Box
+                  sx={{
+                    width: "100%",
+                    height: 28,
+                    borderRadius: 1,
+                    bgcolor: "#3b82f6",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    mt: 0.5,
+                  }}
+                >
+                  <Typography
+                    sx={{ fontSize: 11, color: "white", fontWeight: 600 }}
+                  >
+                    Login
+                  </Typography>
                 </Box>
               </Box>
             </Box>
@@ -469,7 +538,7 @@ const ThemeSetting = () => {
                   />
                 </Paper>
               </Grid>
-            ) : null
+            ) : null,
           )}
         </Grid>
 
@@ -563,7 +632,7 @@ const ThemeSetting = () => {
         </Grid>
       </Paper>
 
-      <Paper
+      {/* <Paper
         elevation={3}
         sx={{
           p: 3,
@@ -579,7 +648,7 @@ const ThemeSetting = () => {
         <Divider sx={{ mb: 2 }} />
 
         <Grid container spacing={3}>
-          {/* DocuTalk */}
+         
           <Grid item xs={12} sm={6}>
             <TextField
               fullWidth
@@ -593,7 +662,7 @@ const ThemeSetting = () => {
             {renderImageUploader("chatbot1Logo", "DocuTalk Logo")}
           </Grid>
 
-          {/* DBTalk */}
+         
           <Grid item xs={12} sm={6}>
             <TextField
               fullWidth
@@ -607,7 +676,7 @@ const ThemeSetting = () => {
             {renderImageUploader("chatbot2Logo", "DBTalk Logo")}
           </Grid>
         </Grid>
-      </Paper>
+      </Paper> */}
 
       <Box
         display="flex"

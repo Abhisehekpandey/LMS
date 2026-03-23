@@ -202,6 +202,7 @@ const AngelBot = () => {
   const [nextExpiringLicense, setNextExpiringLicense] = useState("");
   const [currentLicenseIndex, setCurrentLicenseIndex] = useState(0);
   const [openCreateUser, setOpenCreateUser] = useState(false);
+  const initializationRef = React.useRef(false);
 
   // 🔹 Region Management States
   const [openRegionDialog, setOpenRegionDialog] = useState(false);
@@ -302,7 +303,8 @@ const AngelBot = () => {
   const deleteRegion = async (regionName) => {
     try {
       const response = await axios.delete(
-        `${window.__ENV__.REACT_APP_ROUTE
+        `${
+          window.__ENV__.REACT_APP_ROUTE
         }/tenants/deleteIn?value=${encodeURIComponent(regionName)}`,
         {
           headers: {
@@ -718,8 +720,9 @@ const AngelBot = () => {
       trigger: "item",
 
       formatter: function (params) {
-        return `${params.name}: ${formatSizeGB(params.value)} (${params.percent
-          }%)`;
+        return `${params.name}: ${formatSizeGB(params.value)} (${
+          params.percent
+        }%)`;
       },
     },
 
@@ -872,6 +875,9 @@ const AngelBot = () => {
   };
 
   useEffect(() => {
+    if (initializationRef.current) return;
+    initializationRef.current = true;
+
     const loadUserStats = async () => {
       try {
         setLoading(true);
@@ -1794,8 +1800,9 @@ const AngelBot = () => {
                                     }
                                   }}
                                   style={{
-                                    borderBottom: `1px solid ${isDark ? "#333" : "#eee"
-                                      }`,
+                                    borderBottom: `1px solid ${
+                                      isDark ? "#333" : "#eee"
+                                    }`,
                                     cursor: "pointer",
                                     backgroundColor: isSelected
                                       ? isDark
@@ -1977,8 +1984,9 @@ const AngelBot = () => {
                                 <tr
                                   key={index}
                                   style={{
-                                    borderBottom: `1px solid ${isDark ? "#333" : "#f0f0f0"
-                                      }`,
+                                    borderBottom: `1px solid ${
+                                      isDark ? "#333" : "#f0f0f0"
+                                    }`,
                                     backgroundColor: isDark
                                       ? index % 2 === 0
                                         ? "#1c1c1c"
@@ -2171,7 +2179,7 @@ const AngelBot = () => {
                               value={
                                 user.storageAllocated
                                   ? (user.storageUsed / user.storageAllocated) *
-                                  100
+                                    100
                                   : 0
                               }
                               sx={{
@@ -2188,8 +2196,8 @@ const AngelBot = () => {
                                   backgroundColor: getProgressBarColor(
                                     user.storageAllocated
                                       ? (user.storageUsed /
-                                        user.storageAllocated) *
-                                      100
+                                          user.storageAllocated) *
+                                          100
                                       : 0,
                                   ),
                                 },
@@ -2209,7 +2217,7 @@ const AngelBot = () => {
                             {`${Math.round(
                               user.storageAllocated
                                 ? (user.storageUsed / user.storageAllocated) *
-                                100
+                                    100
                                 : 0,
                             )}%`}
                           </Typography>
@@ -2227,9 +2235,9 @@ const AngelBot = () => {
                       sx={{
                         mt: 1,
                         ".MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows":
-                        {
-                          margin: 0,
-                        },
+                          {
+                            margin: 0,
+                          },
                       }}
                     />
                   </Paper>
@@ -2369,7 +2377,7 @@ const AngelBot = () => {
                               value={
                                 dept.storageAllocated
                                   ? (dept.storageUsed / dept.storageAllocated) *
-                                  100
+                                    100
                                   : 0
                               }
                               sx={{
@@ -2386,8 +2394,8 @@ const AngelBot = () => {
                                   backgroundColor: getProgressBarColor(
                                     dept.storageAllocated
                                       ? (dept.storageUsed /
-                                        dept.storageAllocated) *
-                                      100
+                                          dept.storageAllocated) *
+                                          100
                                       : 0,
                                   ),
                                 },
@@ -2407,7 +2415,7 @@ const AngelBot = () => {
                             {`${Math.round(
                               dept.storageAllocated
                                 ? (dept.storageUsed / dept.storageAllocated) *
-                                100
+                                    100
                                 : 0,
                             )}%`}
                           </Typography>
@@ -2425,9 +2433,9 @@ const AngelBot = () => {
                       sx={{
                         mt: 1,
                         ".MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows":
-                        {
-                          margin: 0,
-                        },
+                          {
+                            margin: 0,
+                          },
                       }}
                     />
                   </Paper>
