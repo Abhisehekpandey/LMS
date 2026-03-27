@@ -5,7 +5,7 @@ import {
   DialogContentText,
   DialogTitle,
   Typography,
-  IconButton
+  IconButton,
 } from "@mui/material";
 import Close from "@mui/icons-material/Close";
 import React from "react";
@@ -24,6 +24,15 @@ const DeleteUser = ({ handleClose, rowId }) => {
       toast.success("User(s) deleted successfully.");
       handleClose();
     } catch (error) {
+      if (error.response?.status === 401) {
+        window.dispatchEvent(
+          new CustomEvent("session-expired", {
+            detail: { message: "Session expired. Please login again." },
+          }),
+        );
+        handleClose();
+        return;
+      }
       console.error("Deletion failed", error);
       toast.error("Failed to delete user(s).");
     }
@@ -31,7 +40,6 @@ const DeleteUser = ({ handleClose, rowId }) => {
 
   return (
     <>
-     
       <DialogTitle
         sx={{
           display: "flex",
@@ -87,7 +95,6 @@ const DeleteUser = ({ handleClose, rowId }) => {
         </DialogContentText>
       </DialogContent>
       <DialogActions>
-       
         <Button
           onClick={handleDelete}
           sx={{
@@ -107,5 +114,3 @@ const DeleteUser = ({ handleClose, rowId }) => {
 };
 
 export default DeleteUser;
-
-

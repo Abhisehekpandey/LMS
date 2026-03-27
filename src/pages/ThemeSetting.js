@@ -144,6 +144,14 @@ const ThemeSetting = () => {
         severity: "success",
       });
     } catch (error) {
+      if (error.response?.status === 401) {
+        window.dispatchEvent(
+          new CustomEvent("session-expired", {
+            detail: { message: "Session expired. Please login again." },
+          }),
+        );
+        return;
+      }
       setSnackbar({
         open: true,
         message:

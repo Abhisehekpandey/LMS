@@ -223,6 +223,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
   const [openPopper, setOpenPopper] = useState(false);
   const [selectedDeptUsers, setSelectedDeptUsers] = useState([]);
   const anchorRef = useRef(null);
+  const isFirstRender = useRef(true);
+  const isFetchingDepts = useRef(false);
+  const isFetchingMoreUsers = useRef(false);
   const [visibleColumns, setVisibleColumns] = useState(
     allColumns.reduce((acc, col) => {
       acc[col.id] = true; // all visible by default
@@ -415,7 +418,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
   };
 
   const fetchDepartments = async () => {
+    if (isFetchingDepts.current) return;
     try {
+      isFetchingDepts.current = true;
       setLoading(true);
 
       // COMMENTED OUT: used separate searchDepartments API for search queries
@@ -484,6 +489,17 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       setDepartments(mapped);
     } catch (error) {
       console.error("Error fetching departments:", error);
+      if (error.response && error.response.status === 401) {
+        window.dispatchEvent(
+          new CustomEvent("session-expired", {
+            detail: {
+              message:
+                "Your session has expired. Please login again to continue.",
+            },
+          }),
+        );
+        return;
+      }
       setSnackbar({
         open: true,
         message: "Failed to fetch departments",
@@ -491,6 +507,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       });
     } finally {
       setLoading(false);
+      isFetchingDepts.current = false;
     }
   };
 
@@ -572,6 +589,17 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         setPanelPage(page);
       } catch (err) {
         console.error("Failed to load unit users:", err);
+        if (err.response && err.response.status === 401) {
+          window.dispatchEvent(
+            new CustomEvent("session-expired", {
+              detail: {
+                message:
+                  "Your session has expired. Please login again to continue.",
+              },
+            }),
+          );
+          return;
+        }
       } finally {
         setPanelLoading(false);
       }
@@ -646,6 +674,17 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         setDialogHasMore(!res.last);
       } catch (err) {
         console.error("Failed to load dialog users:", err);
+        if (err.response && err.response.status === 401) {
+          window.dispatchEvent(
+            new CustomEvent("session-expired", {
+              detail: {
+                message:
+                  "Your session has expired. Please login again to continue.",
+              },
+            }),
+          );
+          return;
+        }
       } finally {
         setLoading(false);
         setDialogLoadingMore(false);
@@ -683,8 +722,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         return;
       setRoleLoading(true);
       try {
+        const encodedDeptName = encodeURIComponent(departmentName);
         const res = await axios.get(
-          `${window.__ENV__.REACT_APP_ROUTE}/tenants/departments/${departmentName}/roles`,
+          `${window.__ENV__.REACT_APP_ROUTE}/tenants/departments/${encodedDeptName}/roles`,
           {
             params: { page, size: 10, search: query || undefined },
             headers: {
@@ -713,6 +753,17 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         setRoleHasMore(!res.data?.last);
       } catch (err) {
         console.error("Failed to load roles:", err);
+        if (err.response && err.response.status === 401) {
+          window.dispatchEvent(
+            new CustomEvent("session-expired", {
+              detail: {
+                message:
+                  "Your session has expired. Please login again to continue.",
+              },
+            }),
+          );
+          return;
+        }
       } finally {
         setRoleLoading(false);
       }
@@ -1017,6 +1068,20 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                     "Failed to unassign user:",
                                     error,
                                   );
+                                  if (
+                                    error.response &&
+                                    error.response.status === 401
+                                  ) {
+                                    window.dispatchEvent(
+                                      new CustomEvent("session-expired", {
+                                        detail: {
+                                          message:
+                                            "Your session has expired. Please login again to continue.",
+                                        },
+                                      }),
+                                    );
+                                    return;
+                                  }
                                   setSnackbar({
                                     open: true,
                                     message: `Failed to unassign user "${user.name}"`,
@@ -1187,8 +1252,10 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                             getOptionLabel={(option) => option.name || ""}
                             filterOptions={(x) => x}
                             loading={roleLoading}
-                            onInputChange={(event, newInputValue) => {
-                              setRoleSearchQuery(newInputValue);
+                            onInputChange={(event, newInputValue, reason) => {
+                              if (reason === "input" || reason === "clear") {
+                                setRoleSearchQuery(newInputValue);
+                              }
                             }}
                             ListboxProps={{
                               style: { maxHeight: 200, overflow: "auto" },
@@ -1231,12 +1298,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                   ...params.InputProps,
                                   endAdornment: (
                                     <React.Fragment>
-                                      {roleLoading ? (
-                                        <CircularProgress
-                                          color="inherit"
-                                          size={20}
-                                        />
-                                      ) : null}
                                       {params.InputProps.endAdornment}
                                     </React.Fragment>
                                   ),
@@ -1306,7 +1367,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
     const [editingRoleId, setEditingRoleId] = useState(null); // NEW: store role.id for PUT call
-    const [showReloginWarning, setShowReloginWarning] = useState(false); // confirmation modal before update
     const anchorRef = useRef(null);
 
     // States for the Unit Roles panel (paginated from new endpoint)
@@ -1349,6 +1409,16 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         setPanelPage(page);
       } catch (err) {
         console.error("Failed to load unit roles:", err);
+        if (err.response && err.response.status === 401) {
+          window.dispatchEvent(
+            new CustomEvent("session-expired", {
+              detail: {
+                message:
+                  "Your session has expired. Please login again to continue.",
+              },
+            }),
+          );
+        }
       } finally {
         setPanelLoading(false);
       }
@@ -1813,8 +1883,16 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                   return;
                 }
                 if (isEditMode) {
-                  // Show re-login warning before proceeding with update
-                  setShowReloginWarning(true);
+                  // Direct update without warning
+                  await handleUpdateRole(
+                    editingRoleId,
+                    newRole,
+                    appRole,
+                    selectedDepartment,
+                  );
+                  if (newRole) {
+                    sessionStorage.setItem(ssKey(newRole), appRole);
+                  }
                 } else {
                   await handleAddRole(newRole, appRole, selectedDepartment);
                   // Save appRole to sessionStorage so edit dialog can pre-fill it
@@ -1831,159 +1909,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             </Button>
           </Box>
         </Drawer>
-
-        {/* ── Re-login Confirmation Dialog ── */}
-        <Dialog
-          open={showReloginWarning}
-          onClose={() => setShowReloginWarning(false)}
-          PaperProps={{
-            sx: {
-              borderRadius: 3,
-              minWidth: 380,
-              overflow: "hidden",
-              boxShadow: "0 20px 60px rgba(0,0,0,0.18)",
-            },
-          }}
-        >
-          {/* Header */}
-          <Box
-            sx={{
-              background: "linear-gradient(135deg, #1565c0 0%, #1976d2 100%)",
-              px: 3,
-              py: 2,
-              display: "flex",
-              alignItems: "center",
-              gap: 1.5,
-            }}
-          >
-            <Box
-              sx={{
-                width: 36,
-                height: 36,
-                borderRadius: "50%",
-                background: "rgba(255,255,255,0.2)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: "1.2rem",
-              }}
-            >
-              ⚠️
-            </Box>
-            <Typography
-              variant="h6"
-              sx={{ color: "#fff", fontWeight: 700, fontSize: "1rem" }}
-            >
-              Confirm Role Update
-            </Typography>
-          </Box>
-
-          {/* Body */}
-          <DialogContent sx={{ pt: 3, pb: 1, px: 3 }}>
-            <Typography
-              variant="body1"
-              sx={{ fontWeight: 600, color: "text.primary", mb: 1 }}
-            >
-              You are about to change the App Role for:
-            </Typography>
-            <Box
-              sx={{
-                background: "rgba(25, 118, 210, 0.06)",
-                border: "1px solid rgba(25, 118, 210, 0.2)",
-                borderRadius: 2,
-                px: 2,
-                py: 1.5,
-                mb: 2,
-              }}
-            >
-              <Typography variant="body2" color="text.secondary">
-                Role Name
-              </Typography>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                {newRole}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                New App Role
-              </Typography>
-              <Typography
-                variant="subtitle2"
-                sx={{ fontWeight: 700, color: "#1976d2" }}
-              >
-                {appRole}
-              </Typography>
-            </Box>
-            <Box
-              sx={{
-                background: "rgba(255, 152, 0, 0.08)",
-                border: "1px solid rgba(255, 152, 0, 0.3)",
-                borderRadius: 2,
-                px: 2,
-                py: 1.5,
-                display: "flex",
-                alignItems: "flex-start",
-                gap: 1.5,
-              }}
-            >
-              <Typography sx={{ fontSize: "1.1rem", mt: 0.1 }}>🔐</Typography>
-              <Box>
-                <Typography
-                  variant="body2"
-                  sx={{ fontWeight: 700, color: "#e65100" }}
-                >
-                  Re-login Required
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ mt: 0.5 }}
-                >
-                  After this update, you will need to log out and log back in
-                  for the new role to take effect.
-                </Typography>
-              </Box>
-            </Box>
-          </DialogContent>
-
-          {/* Actions */}
-          <DialogActions sx={{ px: 3, py: 2, gap: 1 }}>
-            <Button
-              variant="outlined"
-              onClick={() => setShowReloginWarning(false)}
-              sx={{ textTransform: "none", borderRadius: 2, fontWeight: 600 }}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="contained"
-              sx={{
-                background: "linear-gradient(135deg, #1565c0 0%, #1976d2 100%)",
-                textTransform: "none",
-                borderRadius: 2,
-                fontWeight: 600,
-                px: 3,
-                "&:hover": {
-                  background:
-                    "linear-gradient(135deg, #0d47a1 0%, #1565c0 100%)",
-                  boxShadow: "0 4px 12px rgba(25,118,210,0.4)",
-                },
-              }}
-              onClick={async () => {
-                setShowReloginWarning(false);
-                await handleUpdateRole(
-                  editingRoleId,
-                  newRole,
-                  appRole,
-                  selectedDepartment,
-                );
-                if (newRole) {
-                  sessionStorage.setItem(ssKey(newRole), appRole);
-                }
-              }}
-            >
-              Apply
-            </Button>
-          </DialogActions>
-        </Dialog>
       </div>
     );
   };
@@ -2052,6 +1977,17 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       setEditedDepartment(null);
     } catch (error) {
       console.error("Failed to update department:", error);
+      if (error.response && error.response.status === 401) {
+        window.dispatchEvent(
+          new CustomEvent("session-expired", {
+            detail: {
+              message:
+                "Your session has expired. Please login again to continue.",
+            },
+          }),
+        );
+        return;
+      }
       setSnackbar({
         open: true,
         message: "Failed to update Unit. Please try again.",
@@ -2101,13 +2037,25 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       }
     } catch (error) {
       console.error("Failed to load users:", error);
+      if (error.response && error.response.status === 401) {
+        window.dispatchEvent(
+          new CustomEvent("session-expired", {
+            detail: {
+              message:
+                "Your session has expired. Please login again to continue.",
+            },
+          }),
+        );
+        return;
+      }
     } finally {
       setIsSearchingFilteredUsers(false);
     }
   };
 
   const loadMoreUsers = async (isSearch = false) => {
-    if (isSearchingUsers || (!hasMoreUsers && !isSearch)) return;
+    if (isFetchingMoreUsers.current || (!hasMoreUsers && !isSearch)) return;
+    isFetchingMoreUsers.current = true;
     setIsSearchingUsers(true);
     if (isSearch) setUserOptions([]); // Clear previous options to trigger centered loader
 
@@ -2141,8 +2089,20 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       }
     } catch (error) {
       console.error("Failed to load users:", error);
+      if (error.response && error.response.status === 401) {
+        window.dispatchEvent(
+          new CustomEvent("session-expired", {
+            detail: {
+              message:
+                "Your session has expired. Please login again to continue.",
+            },
+          }),
+        );
+        return;
+      }
     } finally {
       setIsSearchingUsers(false);
+      isFetchingMoreUsers.current = false;
     }
   };
 
@@ -2206,6 +2166,17 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       });
     } catch (error) {
       console.error("Storage update failed:", error);
+      if (error.response && error.response.status === 401) {
+        window.dispatchEvent(
+          new CustomEvent("session-expired", {
+            detail: {
+              message:
+                "Your session has expired. Please login again to continue.",
+            },
+          }),
+        );
+        return;
+      }
       const backendMsg =
         error?.response?.data?.error ||
         (typeof error?.response?.data === "string"
@@ -2340,6 +2311,17 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       });
     } catch (error) {
       console.error("Failed to delete role:", error);
+      if (error.response && error.response.status === 401) {
+        window.dispatchEvent(
+          new CustomEvent("session-expired", {
+            detail: {
+              message:
+                "Your session has expired. Please login again to continue.",
+            },
+          }),
+        );
+        return;
+      }
       setSnackbar({
         open: true,
         message: `Failed to delete role "${roleToDelete.roleName}"`,
@@ -2629,6 +2611,17 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             setBulkUploadDialogOpen(false);
           } catch (apiError) {
             console.error("API error:", apiError);
+            if (apiError.response && apiError.response.status === 401) {
+              window.dispatchEvent(
+                new CustomEvent("session-expired", {
+                  detail: {
+                    message:
+                      "Your session has expired. Please login again to continue.",
+                  },
+                }),
+              );
+              return;
+            }
             setSnackbar({
               open: true,
               message: "Bulk upload failed. Please try again.",
@@ -2853,6 +2846,17 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       setDuplicateShortNameError(false);
     } catch (error) {
       console.error("handleAddDepartment error:", error);
+      if (error.response && error.response.status === 401) {
+        window.dispatchEvent(
+          new CustomEvent("session-expired", {
+            detail: {
+              message:
+                "Your session has expired. Please login again to continue.",
+            },
+          }),
+        );
+        return;
+      }
       const backendMsg =
         error?.response?.data?.error ||
         (typeof error?.response?.data === "string"
@@ -2922,6 +2926,17 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       setIsAdminRole(false);
     } catch (error) {
       console.error("Failed to create role:", error);
+      if (error.response && error.response.status === 401) {
+        window.dispatchEvent(
+          new CustomEvent("session-expired", {
+            detail: {
+              message:
+                "Your session has expired. Please login again to continue.",
+            },
+          }),
+        );
+        return;
+      }
       const backendMessage =
         error?.response?.data || "Failed to create role. Please try again.";
       setSnackbar({
@@ -2962,9 +2977,6 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
     setSearchModerator(""); // ✅ Clear the moderator field
     setEditDialogOpen(true);
-    setTimeout(() => {
-      loadFilteredUsers();
-    }, 0);
   };
 
   const handleDeleteDepartment = async () => {
@@ -2985,6 +2997,17 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       fetchDepartments();
     } catch (error) {
       console.error("Error deleting department:", error);
+      if (error.response && error.response.status === 401) {
+        window.dispatchEvent(
+          new CustomEvent("session-expired", {
+            detail: {
+              message:
+                "Your session has expired. Please login again to continue.",
+            },
+          }),
+        );
+        return;
+      }
       setSnackbar({
         open: true,
         message: `Failed to delete Unit "${departmentToDelete.name}"`,
@@ -3109,9 +3132,13 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     }${unit}`;
   };
 
-  // Debounce searchQuery → debouncedSearchQuery (500ms delay)
+  // Debounce searchQuery → debouncedSearchQuery (300ms delay)
   // NEW: also reset page to 0 (MUI 0-based → API page=1) when search changes
   useEffect(() => {
+    if (isFirstRender.current) {
+      // Skip the first update to avoid double-firing on mount
+      return;
+    }
     const timer = setTimeout(() => {
       setDebouncedSearchQuery(searchQuery);
       setPage(0); // reset to first page on new search
@@ -3120,10 +3147,12 @@ function Department({ departments, setDepartments, onThemeToggle }) {
   }, [searchQuery]);
 
   useEffect(() => {
+    if (isFirstRender.current) return;
     fetchDepartments();
   }, [page, rowsPerPage, debouncedSearchQuery, searchColumn]);
 
   useEffect(() => {
+    if (isFirstRender.current) return;
     const timer = setTimeout(() => {
       setDebouncedUserSearchQuery(userSearchQuery);
     }, 300);
@@ -3131,14 +3160,20 @@ function Department({ departments, setDepartments, onThemeToggle }) {
   }, [userSearchQuery]);
 
   useEffect(() => {
+    if (!showAddDepartment) return; // Only fetch if drawer is open
     loadMoreUsers(true);
-  }, [debouncedUserSearchQuery]);
+  }, [debouncedUserSearchQuery, showAddDepartment]);
 
   useEffect(() => {
-    loadMoreUsers();
+    // Initial data fetch - ONLY departments on mount
+    fetchDepartments();
+
+    // Set first render to false AFTER initiating fetches
+    isFirstRender.current = false;
   }, []);
 
   useEffect(() => {
+    if (isFirstRender.current) return;
     const timer = setTimeout(() => {
       setDebouncedSearchModerator(searchModerator);
     }, 300);
@@ -3594,6 +3629,21 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                   });
                                 }
                               } catch (error) {
+                                console.error("Failed to add users:", error);
+                                if (
+                                  error.response &&
+                                  error.response.status === 401
+                                ) {
+                                  window.dispatchEvent(
+                                    new CustomEvent("session-expired", {
+                                      detail: {
+                                        message:
+                                          "Your session has expired. Please login again to continue.",
+                                      },
+                                    }),
+                                  );
+                                  return;
+                                }
                                 const backendMsg =
                                   error?.response?.data &&
                                   typeof error.response.data === "string"
@@ -3655,6 +3705,20 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                 }
                               } catch (error) {
                                 console.error("Failed to add role:", error);
+                                if (
+                                  error.response &&
+                                  error.response.status === 401
+                                ) {
+                                  window.dispatchEvent(
+                                    new CustomEvent("session-expired", {
+                                      detail: {
+                                        message:
+                                          "Your session has expired. Please login again to continue.",
+                                      },
+                                    }),
+                                  );
+                                  return;
+                                }
                                 const backendMsg =
                                   error?.response?.data &&
                                   typeof error.response.data === "string"
@@ -3712,6 +3776,20 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                 }
                               } catch (error) {
                                 console.error("Failed to update role:", error);
+                                if (
+                                  error.response &&
+                                  error.response.status === 401
+                                ) {
+                                  window.dispatchEvent(
+                                    new CustomEvent("session-expired", {
+                                      detail: {
+                                        message:
+                                          "Your session has expired. Please login again to continue.",
+                                      },
+                                    }),
+                                  );
+                                  return;
+                                }
                                 setSnackbar({
                                   open: true,
                                   message: `Error: ${error.message}`,

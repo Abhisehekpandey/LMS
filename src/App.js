@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   BrowserRouter as Router,
   Route,
@@ -6,7 +6,18 @@ import {
   Navigate,
 } from "react-router-dom";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
-import Login from "./pages/Login";
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Button,
+  Typography,
+  Box,
+  DialogContent as MuiDialogContent,
+} from "@mui/material";
+import Login, { clearSessionAndRedirect } from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import ProtectedRoute from "./ProtectedRoute";
@@ -36,6 +47,30 @@ function App() {
   const [dictionarySearchResults, setDictionarySearchResults] = useState([]);
   const [darkMode, setDarkMode] = useState(false);
   const [departments, setDepartments] = useState([]);
+  const [sessionModal, setSessionModal] = useState({
+    open: false,
+    message: "",
+  });
+
+  useEffect(() => {
+    const handleSessionExpired = (e) => {
+      setSessionModal({
+        open: true,
+        message:
+          e.detail?.message ||
+          "Your session has expired. Please login again to continue.",
+      });
+    };
+
+    window.addEventListener("session-expired", handleSessionExpired);
+    return () =>
+      window.removeEventListener("session-expired", handleSessionExpired);
+  }, []);
+
+  const handleLogout = () => {
+    setSessionModal({ open: false, message: "" });
+    clearSessionAndRedirect();
+  };
 
   const theme = createTheme({
     palette: {
@@ -216,6 +251,50 @@ function App() {
             <Route path="/" element={<Navigate to="/signup" />} />
           </Routes>
         </Router>
+
+        {/* Global Session Expiry Modal */}
+        <Dialog
+          open={sessionModal.open}
+          onClose={(e, reason) => {
+            if (reason !== "backdropClick") {
+              setSessionModal({ open: false, message: "" });
+            }
+          }}
+          disableEscapeKeyDown
+          PaperProps={{
+            sx: {
+              borderRadius: 3,
+              p: 1,
+              minWidth: 320,
+              boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
+            },
+          }}
+        >
+          <DialogTitle sx={{ fontWeight: 700, color: "error.main", pb: 1 }}>
+            Session Expired
+          </DialogTitle>
+          <DialogContent>
+            <DialogContentText sx={{ color: "text.primary", fontSize: "1rem" }}>
+              {sessionModal.message}
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions sx={{ p: 2, pt: 0 }}>
+            <Button
+              onClick={handleLogout}
+              variant="contained"
+              color="primary"
+              fullWidth
+              sx={{
+                borderRadius: 2,
+                textTransform: "none",
+                fontWeight: 600,
+                py: 1,
+              }}
+            >
+              Login Again
+            </Button>
+          </DialogActions>
+        </Dialog>
       </LogoProvider>
     </ThemeProvider>
   );

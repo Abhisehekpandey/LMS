@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import axios from "axios";
 import {
   Box,
@@ -43,7 +43,6 @@ import ThumbDownIcon from "@mui/icons-material/ThumbDown";
 import CloseIcon from "@mui/icons-material/Close";
 import SimCardDownloadIcon from "@mui/icons-material/SimCardDownload";
 
-
 const columns = [
   { key: "document", label: "Document" },
   { key: "department", label: "Department" },
@@ -73,7 +72,7 @@ const ChatHistoryDialog = ({
   const sortedHistory = useMemo(() => {
     if (!row || !row.feedResponses) return [];
     return [...row.feedResponses].sort(
-      (a, b) => new Date(a.date) - new Date(b.date)
+      (a, b) => new Date(a.date) - new Date(b.date),
     );
   }, [row]);
 
@@ -83,7 +82,7 @@ const ChatHistoryDialog = ({
 
   const toggleChatSelection = (index) => {
     setSelectedChats((prev) =>
-      prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]
+      prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index],
     );
   };
 
@@ -95,7 +94,7 @@ const ChatHistoryDialog = ({
           await handleUpdateAction(
             row.conversationId,
             chat.responseId,
-            actionType
+            actionType,
           );
         }
       }
@@ -128,8 +127,9 @@ const ChatHistoryDialog = ({
       headers.join(","),
       ...dataToDownload.map(
         (chat) =>
-          `"${chat.questionText}","${chat.answerText}","${chat.date}","${chat.time || ""
-          }"`
+          `"${chat.questionText}","${chat.answerText}","${chat.date}","${
+            chat.time || ""
+          }"`,
       ),
     ];
 
@@ -141,7 +141,7 @@ const ChatHistoryDialog = ({
     link.href = url;
     link.setAttribute(
       "download",
-      `${rowData?.user || "chat_history"}_${Date.now()}.csv`
+      `${rowData?.user || "chat_history"}_${Date.now()}.csv`,
     );
     document.body.appendChild(link);
     link.click();
@@ -379,7 +379,6 @@ const ChatHistoryDialog = ({
 };
 
 export default function FeedbackTable() {
-
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbar, setSnackbar] = useState({
     message: "",
@@ -399,12 +398,16 @@ export default function FeedbackTable() {
   const [selected, setSelected] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
 
+  const isFetching = useRef(false);
+
   const [activeTab, setActiveTab] = useState(0); // 0 = ALL, 1 = APPROVED, 2 = REJECTED
 
   const stats = useMemo(() => {
     const totalFeedbackCount = feedbackRows.length;
     const likesCount = feedbackRows.filter((r) => r.feedback === "like").length;
-    const dislikesCount = feedbackRows.filter((r) => r.feedback === "dislike").length;
+    const dislikesCount = feedbackRows.filter(
+      (r) => r.feedback === "dislike",
+    ).length;
 
     return [
       {
@@ -438,6 +441,8 @@ export default function FeedbackTable() {
 
   useEffect(() => {
     const fetchFeedback = async () => {
+      if (isFetching.current) return;
+      isFetching.current = true;
       setLoading(true);
       try {
         const res = await fetch(
@@ -447,8 +452,16 @@ export default function FeedbackTable() {
               Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
               username: `${sessionStorage.getItem("adminEmail")}`,
             },
-          }
+          },
         );
+        if (res.status === 401) {
+          window.dispatchEvent(
+            new CustomEvent("session-expired", {
+              detail: { message: "Session expired. Please login again." },
+            }),
+          );
+          return;
+        }
         if (!res.ok) throw new Error("Failed to fetch feedback");
         const data = await res.json();
 
@@ -485,6 +498,7 @@ export default function FeedbackTable() {
         console.error(err);
         setError(err.message || "Something went wrong");
       } finally {
+        isFetching.current = false;
         setLoading(false);
       }
     };
@@ -501,8 +515,16 @@ export default function FeedbackTable() {
             Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
             username: `${sessionStorage.getItem("adminEmail")}`,
           },
-        }
+        },
       );
+      if (res.status === 401) {
+        window.dispatchEvent(
+          new CustomEvent("session-expired", {
+            detail: { message: "Session expired. Please login again." },
+          }),
+        );
+        return [];
+      }
       if (!res.ok) throw new Error("Failed to fetch chat history");
       const data = await res.json();
       return data.history || [];
@@ -524,13 +546,22 @@ export default function FeedbackTable() {
             Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
             username: sessionStorage.getItem("adminEmail"),
           },
-        }
+        },
       );
+
+      if (res.status === 401) {
+        window.dispatchEvent(
+          new CustomEvent("session-expired", {
+            detail: { message: "Session expired. Please login again." },
+          }),
+        );
+        return;
+      }
 
       if (!res.ok) throw new Error("Failed to delete feedback");
 
       setFeedbackRows((prev) =>
-        prev.filter((row) => row.conversationId !== conversationId)
+        prev.filter((row) => row.conversationId !== conversationId),
       );
 
       setSnackbar({
@@ -556,9 +587,17 @@ export default function FeedbackTable() {
             Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
             username: `${sessionStorage.getItem("adminEmail")}`,
           },
-        }
+        },
       );
 
+      if (res.status === 401) {
+        window.dispatchEvent(
+          new CustomEvent("session-expired", {
+            detail: { message: "Session expired. Please login again." },
+          }),
+        );
+        return;
+      }
       if (!res.ok) throw new Error(`Failed to ${actionType}`);
       const data = await res.json();
       return data;
@@ -581,7 +620,7 @@ export default function FeedbackTable() {
             return { ...row, status: actionType }; // update status
           }
           return row;
-        })
+        }),
       );
 
       setSnackbar({
@@ -657,7 +696,7 @@ export default function FeedbackTable() {
         Object.values(row).some(
           (val) =>
             typeof val === "string" &&
-            val.toLowerCase().includes(searchTerm.toLowerCase())
+            val.toLowerCase().includes(searchTerm.toLowerCase()),
         );
 
       return passesFilters && passesSearch;
@@ -668,7 +707,7 @@ export default function FeedbackTable() {
     if (colKey === "latestChat")
       return [
         ...new Set(
-          feedbackRows.map((row) => `${row.latestFBC} ${row.latestFBA}`)
+          feedbackRows.map((row) => `${row.latestFBC} ${row.latestFBA}`),
         ),
       ];
     if (colKey === "dateTime")
@@ -683,7 +722,7 @@ export default function FeedbackTable() {
   };
   const handleClick = (id) => {
     setSelected((prev) =>
-      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id],
     );
   };
 
@@ -695,7 +734,7 @@ export default function FeedbackTable() {
     const csvRows = [
       headers.join(","),
       ...rows.map((row) =>
-        columns.map((c) => `"${row[c.key] ?? ""}"`).join(",")
+        columns.map((c) => `"${row[c.key] ?? ""}"`).join(","),
       ),
     ];
 
@@ -934,7 +973,8 @@ export default function FeedbackTable() {
                       hover
                       sx={{
                         height: 28,
-                        backgroundColor: index % 2 === 0 ? "#f9f9f9" : "#ffffff",
+                        backgroundColor:
+                          index % 2 === 0 ? "#f9f9f9" : "#ffffff",
                       }}
                     >
                       <TableCell padding="checkbox" sx={{ py: 0.5 }}>
@@ -1009,7 +1049,9 @@ export default function FeedbackTable() {
                               </Typography>
                               <Typography
                                 sx={{ fontSize: "0.8rem" }}
-                                dangerouslySetInnerHTML={{ __html: row.latestFBA }}
+                                dangerouslySetInnerHTML={{
+                                  __html: row.latestFBA,
+                                }}
                               />
                             </Box>
                           }
@@ -1030,9 +1072,11 @@ export default function FeedbackTable() {
                                 WebkitBoxOrient: "vertical",
                                 overflow: "hidden",
                                 textOverflow: "ellipsis",
-                                whiteSpace: "normal"
+                                whiteSpace: "normal",
                               }}
-                              dangerouslySetInnerHTML={{ __html: row.latestFBA }}
+                              dangerouslySetInnerHTML={{
+                                __html: row.latestFBA,
+                              }}
                             />
                           </Box>
                         </Tooltip>
@@ -1060,7 +1104,7 @@ export default function FeedbackTable() {
                               e.stopPropagation();
 
                               const fullHistory = await fetchChatHistory(
-                                row.conversationId
+                                row.conversationId,
                               );
                               setSelectedRow({
                                 ...row,
@@ -1110,7 +1154,7 @@ export default function FeedbackTable() {
                                     handleUpdateAction(
                                       row.conversationId,
                                       row.responseId,
-                                      "Approved"
+                                      "Approved",
                                     )
                                   }
                                 >
@@ -1126,7 +1170,7 @@ export default function FeedbackTable() {
                                     handleUpdateAction(
                                       row.conversationId,
                                       row.responseId,
-                                      "rejected"
+                                      "rejected",
                                     )
                                   }
                                 >
@@ -1139,7 +1183,9 @@ export default function FeedbackTable() {
                                   color="error"
                                   size="small"
                                   sx={{ p: 0.3 }}
-                                  onClick={() => handleDelete(row.conversationId)}
+                                  onClick={() =>
+                                    handleDelete(row.conversationId)
+                                  }
                                 >
                                   <DeleteIcon fontSize="small" />
                                 </IconButton>
@@ -1217,8 +1263,8 @@ export default function FeedbackTable() {
                   val
                     .toLowerCase()
                     .includes(
-                      (filters[`${filterColumn}_search`] || "").toLowerCase()
-                    )
+                      (filters[`${filterColumn}_search`] || "").toLowerCase(),
+                    ),
                 )
                 .map((val, i) => (
                   <MenuItem

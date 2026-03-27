@@ -37,13 +37,10 @@ import {
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import VerifiedIcon from "@mui/icons-material/Verified";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
-import ForCell from "./ForCell";
 import { Add, Delete, Edit, Close } from "@mui/icons-material";
 import axios from "axios";
 import { Search as SearchIcon, Clear as ClearIcon } from "@mui/icons-material";
 import { InputAdornment } from "@mui/material";
-
-
 
 const GradientChip = styled(Chip)(({ theme, type }) => ({
   fontWeight: 700,
@@ -100,6 +97,8 @@ const DepartmentTypeSetting = () => {
   const [searchColumn, setSearchColumn] = useState("typeName");
   const [searchText, setSearchText] = useState("");
 
+  const isFetching = useRef(false);
+
   const handleEditType = (row) => {
     setDocumentType(row.type || "");
     setAttributes(
@@ -111,7 +110,7 @@ const DepartmentTypeSetting = () => {
         mandatory: attr.isMandatory || false,
         aiRequired: attr.isAiRequired || false,
         aiPrompt: attr.aiPrompt || "",
-      })) || [createAttributeTemplate()]
+      })) || [createAttributeTemplate()],
     );
 
     setIsEditMode(true);
@@ -133,9 +132,6 @@ const DepartmentTypeSetting = () => {
     setOpenDialog(true);
   };
 
-  useEffect(() => {
-    fetchFileTypes();
-  }, []);
   const handleRequestSort = (property) => {
     const isAsc = orderBy === property && order === "asc";
     setOrder(isAsc ? "desc" : "asc");
@@ -194,7 +190,7 @@ const DepartmentTypeSetting = () => {
 
   const handleCheckboxToggle = (id) => {
     setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
     );
   };
 
@@ -208,6 +204,8 @@ const DepartmentTypeSetting = () => {
   };
 
   const fetchFileTypes = async () => {
+    if (isFetching.current) return;
+    isFetching.current = true;
     try {
       const response = await axios.get(
         `${window.__ENV__.REACT_APP_ROUTE}/dms_service_LM/api/getAllFileType`,
@@ -216,13 +214,23 @@ const DepartmentTypeSetting = () => {
             Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
             username: `${sessionStorage.getItem("adminEmail")}`,
           },
-        }
+        },
       );
 
-      //  take fullObject array instead of data
+      // ✅ take fullObject array instead of data
       setFileTypes(response.data?.fullObject || []);
     } catch (error) {
+      if (error.response?.status === 401) {
+        window.dispatchEvent(
+          new CustomEvent("session-expired", {
+            detail: { message: "Session expired. Please login again." },
+          }),
+        );
+        return;
+      }
       console.error("Failed to fetch file types", error);
+    } finally {
+      isFetching.current = false;
     }
   };
 
@@ -248,13 +256,10 @@ const DepartmentTypeSetting = () => {
 
   const paginatedRows = sortedRows.slice(
     page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage
+    page * rowsPerPage + rowsPerPage,
   );
 
-
-
   const handleDialogSubmit = async () => {
-
     if (!documentType.trim()) {
       setSnackbar({
         open: true,
@@ -265,13 +270,14 @@ const DepartmentTypeSetting = () => {
     }
 
     const invalidAttribute = attributes.find(
-      (attr) => !attr.name.trim() || !attr.description.trim()
+      (attr) => !attr.name.trim() || !attr.description.trim(),
     );
 
     if (invalidAttribute) {
       setSnackbar({
         open: true,
-        message: "Attribute Name and Description are mandatory for all attributes.",
+        message:
+          "Attribute Name and Description are mandatory for all attributes.",
         severity: "error",
       });
       return;
@@ -305,7 +311,7 @@ const DepartmentTypeSetting = () => {
               Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
               username: sessionStorage.getItem("adminEmail"),
             },
-          }
+          },
         );
         setSnackbar({
           open: true,
@@ -316,7 +322,8 @@ const DepartmentTypeSetting = () => {
         const createPayload = attributes.map((attr) => ({
           attributeName: attr.name,
           attributeType:
-            attr.type.charAt(0).toUpperCase() + attr.type.slice(1).toLowerCase(),
+            attr.type.charAt(0).toUpperCase() +
+            attr.type.slice(1).toLowerCase(),
           value: attr.defaultValue,
           isMandatory: attr.mandatory,
           isAiRequired: attr.aiRequired,
@@ -336,7 +343,7 @@ const DepartmentTypeSetting = () => {
               checklistFolderTypeValue: "false",
               isTypeAutoClassified: "false",
             },
-          }
+          },
         );
         setSnackbar({
           open: true,
@@ -353,8 +360,19 @@ const DepartmentTypeSetting = () => {
 
       fetchFileTypes();
     } catch (error) {
+      if (error.response?.status === 401) {
+        window.dispatchEvent(
+          new CustomEvent("session-expired", {
+            detail: { message: "Session expired. Please login again." },
+          }),
+        );
+        return;
+      }
       console.error("Error saving type:", error);
-      const errorMessage = error.response?.data?.error || error.response?.data?.message || "Failed to save type";
+      const errorMessage =
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        "Failed to save type";
       setSnackbar({
         open: true,
         message: errorMessage,
@@ -409,7 +427,7 @@ const DepartmentTypeSetting = () => {
             "Content-Type": "application/json",
           },
           data: idsArray,
-        }
+        },
       );
 
       setSnackbar({
@@ -424,6 +442,14 @@ const DepartmentTypeSetting = () => {
       setSelectedIds([]); // clear selection if bulk delete
       fetchFileTypes(); // refresh list
     } catch (error) {
+      if (error.response?.status === 401) {
+        window.dispatchEvent(
+          new CustomEvent("session-expired", {
+            detail: { message: "Session expired. Please login again." },
+          }),
+        );
+        return;
+      }
       console.error("Delete failed:", error);
       setSnackbar({
         open: true,
@@ -470,8 +496,6 @@ const DepartmentTypeSetting = () => {
             }}
           >
             <MenuItem value="typeName">Type Name</MenuItem>
-            <MenuItem value="createdBy">Created By</MenuItem>
-            <MenuItem value="for">For</MenuItem>
           </TextField>
 
           <TextField
@@ -572,8 +596,6 @@ const DepartmentTypeSetting = () => {
                     Type Name
                   </TableSortLabel>
                 </TableCell>
-                <TableCell sx={{ textAlign: "center" }}>For</TableCell>
-                <TableCell sx={{ textAlign: "center" }}>Created By</TableCell>
                 <TableCell sx={{ textAlign: "center" }}>Created On</TableCell>
                 <TableCell sx={{ textAlign: "center" }}>Action</TableCell>
               </TableRow>
@@ -598,13 +620,8 @@ const DepartmentTypeSetting = () => {
                   </TableCell>
                   <TableCell sx={{ textAlign: "center" }}>{row.type}</TableCell>
 
-                  <ForCell items={row.createdFor} />
-
                   <TableCell sx={{ textAlign: "center" }}>
-                    {row.createdBy || ""}
-                  </TableCell>
-                  <TableCell sx={{ textAlign: "center" }}>
-                    {row.CreatedOn || ""}
+                    {row.CreatedOn || "—"}
                   </TableCell>
                   <TableCell sx={{ textAlign: "center" }}>
                     <IconButton
@@ -626,7 +643,7 @@ const DepartmentTypeSetting = () => {
 
               {paginatedRows.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} sx={{ textAlign: "center" }}>
+                  <TableCell colSpan={5} sx={{ textAlign: "center" }}>
                     No entries found.
                   </TableCell>
                 </TableRow>
@@ -709,11 +726,22 @@ const DepartmentTypeSetting = () => {
         fullWidth
         maxWidth="lg"
         PaperProps={{
-          sx: { borderRadius: "12px" }
+          sx: { borderRadius: "12px" },
         }}
       >
-        <DialogTitle sx={{ bgcolor: "primary.main", color: "white", display: "flex", justifyContent: "space-between", alignItems: "center", py: 1 }}>
-          <Typography variant="h6" sx={{ fontWeight: 600, fontSize: "1.1rem" }}>TYPE</Typography>
+        <DialogTitle
+          sx={{
+            bgcolor: "primary.main",
+            color: "white",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            py: 1,
+          }}
+        >
+          <Typography variant="h6" sx={{ fontWeight: 600, fontSize: "1.1rem" }}>
+            TYPE
+          </Typography>
           <IconButton onClick={handleCloseDialog} sx={{ color: "white" }}>
             <Close fontSize="small" />
           </IconButton>
@@ -721,19 +749,30 @@ const DepartmentTypeSetting = () => {
 
         <DialogContent dividers sx={{ p: 3 }}>
           <Box>
-            <Box sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              mb: 2,
-              pb: 1,
-              borderBottom: "1px solid #e0e0e0"
-            }}>
-              <Typography sx={{ fontWeight: 700, color: "#555", fontSize: "0.85rem" }}>CREATE TYPE</Typography>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                mb: 2,
+                pb: 1,
+                borderBottom: "1px solid #e0e0e0",
+              }}
+            >
+              <Typography
+                sx={{ fontWeight: 700, color: "#555", fontSize: "0.85rem" }}
+              >
+                CREATE TYPE
+              </Typography>
               <IconButton
                 size="small"
                 onClick={handleCloseDialog}
-                sx={{ bgcolor: "#ff5722", color: "white", borderRadius: "4px", "&:hover": { bgcolor: "#e64a19" } }}
+                sx={{
+                  bgcolor: "#ff5722",
+                  color: "white",
+                  borderRadius: "4px",
+                  "&:hover": { bgcolor: "#e64a19" },
+                }}
               >
                 <Close fontSize="inherit" />
               </IconButton>
@@ -751,10 +790,16 @@ const DepartmentTypeSetting = () => {
               size="small"
             />
 
-
             <Box sx={{ position: "relative", mt: 1, mb: 2 }}>
               <Divider textAlign="left">
-                <Typography sx={{ fontWeight: 700, color: "#888", fontSize: "0.75rem", px: 1 }}>
+                <Typography
+                  sx={{
+                    fontWeight: 700,
+                    color: "#888",
+                    fontSize: "0.75rem",
+                    px: 1,
+                  }}
+                >
                   TYPE'S ATTRIBUTES
                 </Typography>
               </Divider>
@@ -772,7 +817,7 @@ const DepartmentTypeSetting = () => {
                   border: "1px solid #e0e0e0",
                   boxShadow: "none",
                   "&:before": { display: "none" },
-                  borderRadius: "8px !important"
+                  borderRadius: "8px !important",
                 }}
               >
                 <AccordionSummary
@@ -782,11 +827,13 @@ const DepartmentTypeSetting = () => {
                     "& .MuiAccordionSummary-content": {
                       display: "flex",
                       alignItems: "center",
-                      justifyContent: "space-between"
-                    }
+                      justifyContent: "space-between",
+                    },
                   }}
                 >
-                  <Typography sx={{ fontWeight: 500, fontSize: "0.9rem", color: "#666" }}>
+                  <Typography
+                    sx={{ fontWeight: 500, fontSize: "0.9rem", color: "#666" }}
+                  >
                     Attribute {index + 1}
                   </Typography>
 
@@ -897,9 +944,25 @@ const DepartmentTypeSetting = () => {
                       </TextField>
                     </Grid>
                     <Grid item xs={12} sm={4}>
-                      <Box display="flex" gap={1} justifyContent="space-around" height="100%" alignItems="center">
+                      <Box
+                        display="flex"
+                        gap={1}
+                        justifyContent="space-around"
+                        height="100%"
+                        alignItems="center"
+                      >
                         <Box sx={{ textAlign: "center" }}>
-                          <Typography variant="caption" sx={{ fontWeight: 700, color: "#777", display: "block", fontSize: "0.65rem" }}>MANDATORY</Typography>
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              fontWeight: 700,
+                              color: "#777",
+                              display: "block",
+                              fontSize: "0.65rem",
+                            }}
+                          >
+                            MANDATORY
+                          </Typography>
                           <Switch
                             size="small"
                             checked={attr.mandatory}
@@ -907,13 +970,23 @@ const DepartmentTypeSetting = () => {
                               handleAttributeChange(
                                 index,
                                 "mandatory",
-                                e.target.checked
+                                e.target.checked,
                               )
                             }
                           />
                         </Box>
                         <Box sx={{ textAlign: "center" }}>
-                          <Typography variant="caption" sx={{ fontWeight: 700, color: "#777", display: "block", fontSize: "0.65rem" }}>AI REQUIRED</Typography>
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              fontWeight: 700,
+                              color: "#777",
+                              display: "block",
+                              fontSize: "0.65rem",
+                            }}
+                          >
+                            AI REQUIRED
+                          </Typography>
                           <Switch
                             size="small"
                             checked={attr.aiRequired}
@@ -921,7 +994,7 @@ const DepartmentTypeSetting = () => {
                               handleAttributeChange(
                                 index,
                                 "aiRequired",
-                                e.target.checked
+                                e.target.checked,
                               )
                             }
                           />
@@ -938,7 +1011,7 @@ const DepartmentTypeSetting = () => {
                           handleAttributeChange(
                             index,
                             "description",
-                            e.target.value
+                            e.target.value,
                           )
                         }
                         size="small"
@@ -956,7 +1029,7 @@ const DepartmentTypeSetting = () => {
                             handleAttributeChange(
                               index,
                               "aiPrompt",
-                              e.target.value
+                              e.target.value,
                             )
                           }
                           size="small"
@@ -974,7 +1047,11 @@ const DepartmentTypeSetting = () => {
         <DialogActions sx={{ px: 3, py: 2 }}>
           <Button
             variant="contained"
-            sx={{ px: 4, bgcolor: "primary.main", "&:hover": { bgcolor: "primary.dark" } }}
+            sx={{
+              px: 4,
+              bgcolor: "primary.main",
+              "&:hover": { bgcolor: "primary.dark" },
+            }}
             onClick={handleDialogSubmit}
           >
             SAVE

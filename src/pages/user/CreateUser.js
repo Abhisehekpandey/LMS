@@ -203,6 +203,14 @@ const CreateUser = ({
       setUserOptions((prev) => [...prev, ...users]);
       setUserPage((prev) => prev + 1);
     } catch (error) {
+      if (error.response?.status === 401) {
+        window.dispatchEvent(
+          new CustomEvent("session-expired", {
+            detail: { message: "Session expired. Please login again." },
+          }),
+        );
+        return;
+      }
       console.error("Failed to load users:", error);
     } finally {
       loadingUsers.current = false;
@@ -399,13 +407,22 @@ const CreateUser = ({
       const response = await createRole(payload);
       return response;
     } catch (error) {
+      if (error.response?.status === 401) {
+        window.dispatchEvent(
+          new CustomEvent("session-expired", {
+            detail: { message: "Session expired. Please login again." },
+          }),
+        );
+        return;
+      }
       console.error("Error adding role:", error);
       throw error;
     }
   };
 
   const loadMoreDepartments = async (page, query = "", isInitial = false) => {
-    if (loadingDepartments.current || (!hasMoreDepartments && !isInitial)) return;
+    if (loadingDepartments.current || (!hasMoreDepartments && !isInitial))
+      return;
     loadingDepartments.current = true;
 
     try {
@@ -431,6 +448,14 @@ const CreateUser = ({
         setDepartmentPage(page);
       }
     } catch (err) {
+      if (err.response?.status === 401) {
+        window.dispatchEvent(
+          new CustomEvent("session-expired", {
+            detail: { message: "Session expired. Please login again." },
+          }),
+        );
+        return;
+      }
       console.error("Failed to load departments:", err);
     } finally {
       loadingDepartments.current = false;
@@ -438,8 +463,18 @@ const CreateUser = ({
     }
   };
 
-  const loadMoreRoles = async (page, query = "", deptName = "", isInitial = false) => {
-    if (!deptName || (!isInitial && roleLoading) || (!roleHasMore && !isInitial)) return;
+  const loadMoreRoles = async (
+    page,
+    query = "",
+    deptName = "",
+    isInitial = false,
+  ) => {
+    if (
+      !deptName ||
+      (!isInitial && roleLoading) ||
+      (!roleHasMore && !isInitial)
+    )
+      return;
     setRoleLoading(true);
     try {
       const params = { page, size: 10 };
@@ -453,7 +488,7 @@ const CreateUser = ({
             Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
             username: sessionStorage.getItem("adminEmail"),
           },
-        }
+        },
       );
       const data = res.data;
       const fetchedRoles = data.roles || [];
@@ -465,11 +500,13 @@ const CreateUser = ({
         return {
           ...obj,
           roleName: name,
-          _uKey: obj.roleId || obj.id || `${name}-${obj.roleDisplayName}`
+          _uKey: obj.roleId || obj.id || `${name}-${obj.roleDisplayName}`,
         };
       };
 
-      const combined = (isInitial ? [...localRoles, ...fetchedRoles] : fetchedRoles).map(normalize);
+      const combined = (
+        isInitial ? [...localRoles, ...fetchedRoles] : fetchedRoles
+      ).map(normalize);
 
       if (isInitial) {
         setRoleOptions(combined);
@@ -478,13 +515,21 @@ const CreateUser = ({
           const newOptions = [...prev, ...combined];
           // Deduplicate by _uKey
           return newOptions.filter(
-            (v, i, a) => a.findIndex((t) => t._uKey === v._uKey) === i
+            (v, i, a) => a.findIndex((t) => t._uKey === v._uKey) === i,
           );
         });
       }
       setRolePage(page);
       setRoleHasMore(!data.last);
     } catch (err) {
+      if (err.response?.status === 401) {
+        window.dispatchEvent(
+          new CustomEvent("session-expired", {
+            detail: { message: "Session expired. Please login again." },
+          }),
+        );
+        return;
+      }
       console.error("Failed to load roles:", err);
     } finally {
       setRoleLoading(false);
@@ -514,7 +559,7 @@ const CreateUser = ({
   }, [roleSearchQuery]);
 
   useEffect(() => {
-    const isAnyOpen = Object.values(openStates).some(o => o);
+    const isAnyOpen = Object.values(openStates).some((o) => o);
     if (isAnyOpen && activeDeptForRoles) {
       // When opening or searching, reload from page 1
       loadMoreRoles(1, debouncedRoleSearch || "", activeDeptForRoles, true);
@@ -537,10 +582,12 @@ const CreateUser = ({
   // }, []);
 
   useEffect(() => {
-    loadMoreUsers(); // Load first 10 users initially
-  }, []);
+    if (addDepartment && userOptions.length === 0) {
+      loadMoreUsers(); // Load first 10 users initially when 'Add Unit' opens
+    }
+  }, [addDepartment, userOptions.length]);
 
-  useEffect(() => { }, [departments]);
+  useEffect(() => {}, [departments]);
 
   useEffect(() => {
     if (open) {
@@ -581,6 +628,14 @@ const CreateUser = ({
             });
           }
         } catch (err) {
+          if (err.response?.status === 401) {
+            window.dispatchEvent(
+              new CustomEvent("session-expired", {
+                detail: { message: "Session expired. Please login again." },
+              }),
+            );
+            return;
+          }
           console.error("Failed to fetch regions:", err);
         }
       };
@@ -884,6 +939,16 @@ const CreateUser = ({
                 setSnackbarSeverity("error");
                 setSnackbarOpen(true);
               } else {
+                if (error.response?.status === 401) {
+                  window.dispatchEvent(
+                    new CustomEvent("session-expired", {
+                      detail: {
+                        message: "Session expired. Please login again.",
+                      },
+                    }),
+                  );
+                  return;
+                }
                 // ⚠️ Fallback for non-validation errors
                 setSnackbarMessage("Failed to create users. Please try again.");
                 setSnackbarSeverity("error");
@@ -1097,16 +1162,19 @@ const CreateUser = ({
                                       const listboxNode = event.currentTarget;
                                       const threshold = 50;
                                       if (
-                                        Math.round(listboxNode.scrollTop +
-                                          listboxNode.clientHeight) >=
-                                        listboxNode.scrollHeight - threshold &&
+                                        Math.round(
+                                          listboxNode.scrollTop +
+                                            listboxNode.clientHeight,
+                                        ) >=
+                                          listboxNode.scrollHeight -
+                                            threshold &&
                                         hasMoreDepartments &&
                                         !loadingDepartments.current
                                       ) {
                                         loadMoreDepartments(
                                           departmentPage + 1,
                                           unitSearchQuery,
-                                          false
+                                          false,
                                         );
                                       }
                                     },
@@ -1121,8 +1189,14 @@ const CreateUser = ({
                                   )}
                                   value={user.department || ""}
                                   onChange={(e, value) => {
-                                    formik.setFieldValue(`users[${index}].department`, value);
-                                    formik.setFieldValue(`users[${index}].role`, "");
+                                    formik.setFieldValue(
+                                      `users[${index}].department`,
+                                      value,
+                                    );
+                                    formik.setFieldValue(
+                                      `users[${index}].role`,
+                                      "",
+                                    );
                                     const deptName = value?.deptName || "";
                                     if (deptName) {
                                       setActiveDeptForRoles(deptName);
@@ -1171,8 +1245,7 @@ const CreateUser = ({
                                       helperText={
                                         formik.touched.users?.[index]
                                           ?.department &&
-                                        formik.errors.users?.[index]
-                                          ?.department
+                                        formik.errors.users?.[index]?.department
                                       }
                                     />
                                   )}
@@ -1272,30 +1345,48 @@ const CreateUser = ({
                                         }));
                                       }}
                                       isOptionEqualToValue={(option, value) => {
-                                        if (value?.isAddOption || option?.isAddOption) return false;
+                                        if (
+                                          value?.isAddOption ||
+                                          option?.isAddOption
+                                        )
+                                          return false;
                                         return (
-                                          (option.roleId && option.roleId === value.roleId) ||
-                                          (option.roleName && option.roleName === value.roleName)
+                                          (option.roleId &&
+                                            option.roleId === value.roleId) ||
+                                          (option.roleName &&
+                                            option.roleName === value.roleName)
                                         );
                                       }}
                                       onInputChange={(event, newInputValue) => {
                                         setRoleSearchQuery(newInputValue);
                                       }}
                                       getOptionLabel={(option) => {
-                                        if (typeof option === "string") return option;
-                                        if (option.isAddOption) return "Add New Role";
+                                        if (typeof option === "string")
+                                          return option;
+                                        if (option.isAddOption)
+                                          return "Add New Role";
                                         return option.roleName || "";
                                       }}
                                       ListboxProps={{
-                                        style: { maxHeight: 300, overflow: "auto" },
+                                        style: {
+                                          maxHeight: 300,
+                                          overflow: "auto",
+                                        },
                                         onScroll: (event) => {
-                                          const listboxNode = event.currentTarget;
+                                          const listboxNode =
+                                            event.currentTarget;
                                           const threshold = 50;
-                                          const deptName = typeof user.department === "string" ? user.department : user.department?.deptName;
+                                          const deptName =
+                                            typeof user.department === "string"
+                                              ? user.department
+                                              : user.department?.deptName;
                                           if (
-                                            Math.round(listboxNode.scrollTop +
-                                              listboxNode.clientHeight) >=
-                                            listboxNode.scrollHeight - threshold &&
+                                            Math.round(
+                                              listboxNode.scrollTop +
+                                                listboxNode.clientHeight,
+                                            ) >=
+                                              listboxNode.scrollHeight -
+                                                threshold &&
                                             roleHasMore &&
                                             !roleLoading &&
                                             deptName
@@ -1304,7 +1395,7 @@ const CreateUser = ({
                                               rolePage + 1,
                                               roleSearchQuery,
                                               deptName,
-                                              false
+                                              false,
                                             );
                                           }
                                         },
@@ -1330,24 +1421,44 @@ const CreateUser = ({
                                         >
                                           {option.isAddOption
                                             ? "➕ Add New Role"
-                                            : option.roleName || (typeof option === "string" ? option : "")}
+                                            : option.roleName ||
+                                              (typeof option === "string"
+                                                ? option
+                                                : "")}
                                         </li>
                                       )}
                                       value={
-                                        roleOptions.find((r) =>
-                                          (r.roleId && r.roleId === user.roleId) ||
-                                          (r.roleName && r.roleName === user.role)
-                                        ) || (user.role ? { roleName: user.role, roleDisplayName: user.role } : null)
+                                        roleOptions.find(
+                                          (r) =>
+                                            (r.roleId &&
+                                              r.roleId === user.roleId) ||
+                                            (r.roleName &&
+                                              r.roleName === user.role),
+                                        ) ||
+                                        (user.role
+                                          ? {
+                                              roleName: user.role,
+                                              roleDisplayName: user.role,
+                                            }
+                                          : null)
                                       }
                                       onChange={(e, value) => {
                                         if (value?.isAddOption) {
-                                          setSelectedDepartmentForRole(user.department);
+                                          setSelectedDepartmentForRole(
+                                            user.department,
+                                          );
                                           setActiveUserIndexForRole(index);
                                           setAddRole(true);
                                           return;
                                         }
-                                        formik.setFieldValue(`users[${index}].role`, value?.roleName || "");
-                                        formik.setFieldValue(`users[${index}].roleId`, value?.roleId || value?.id || "");
+                                        formik.setFieldValue(
+                                          `users[${index}].role`,
+                                          value?.roleName || "",
+                                        );
+                                        formik.setFieldValue(
+                                          `users[${index}].roleId`,
+                                          value?.roleId || value?.id || "",
+                                        );
                                       }}
                                       renderInput={(params) => (
                                         <TextField
@@ -1625,8 +1736,8 @@ const CreateUser = ({
                 value={
                   Array.isArray(newDepartment.selectedUsers)
                     ? userOptions.filter((user) =>
-                      newDepartment.selectedUsers.includes(user.name),
-                    )
+                        newDepartment.selectedUsers.includes(user.name),
+                      )
                     : []
                 }
                 onChange={(event, selectedValues) =>
@@ -1664,8 +1775,8 @@ const CreateUser = ({
                     }
                     helperText={
                       departmentSubmitted &&
-                        (!newDepartment.selectedUsers ||
-                          newDepartment.selectedUsers.length === 0)
+                      (!newDepartment.selectedUsers ||
+                        newDepartment.selectedUsers.length === 0)
                         ? "At least one user must be selected"
                         : ""
                     }
@@ -1807,6 +1918,16 @@ const CreateUser = ({
                 });
                 setAddDepartment(false);
               } catch (error) {
+                if (error.response?.status === 401) {
+                  window.dispatchEvent(
+                    new CustomEvent("session-expired", {
+                      detail: {
+                        message: "Session expired. Please login again.",
+                      },
+                    }),
+                  );
+                  return;
+                }
                 setSnackbarMessage(
                   "Failed to create department(Department with this name already Exist). Please try another.",
                 );
@@ -1980,14 +2101,17 @@ const CreateUser = ({
                   prevDepartments.map((dept) =>
                     dept.deptName === selectedDepartmentForRole.deptName
                       ? {
-                        ...dept,
-                        roles: [...(dept.roles || []), addedRole[0]],
-                      }
+                          ...dept,
+                          roles: [...(dept.roles || []), addedRole[0]],
+                        }
                       : dept,
                   ),
                 );
 
-                const normalizedRole = typeof addedRole[0] === "string" ? { roleName: addedRole[0] } : addedRole[0];
+                const normalizedRole =
+                  typeof addedRole[0] === "string"
+                    ? { roleName: addedRole[0] }
+                    : addedRole[0];
 
                 // NEW: Prepend to roleOptions and auto-select for the triggering user
                 setRoleOptions((prev) => [normalizedRole, ...(prev || [])]);
@@ -2022,6 +2146,16 @@ const CreateUser = ({
                 setIsAdminRole(false);
                 setActiveUserIndexForRole(null); // NEW: reset triggering index
               } catch (error) {
+                if (error.response?.status === 401) {
+                  window.dispatchEvent(
+                    new CustomEvent("session-expired", {
+                      detail: {
+                        message: "Session expired. Please login again.",
+                      },
+                    }),
+                  );
+                  return;
+                }
                 console.error("Add role error:", error);
                 setSnackbarMessage(
                   "Failed to add role. Role might already exist or there was a server error.",

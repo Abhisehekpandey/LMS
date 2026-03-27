@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import {
   Box,
@@ -55,6 +55,8 @@ export default function DataDictionary() {
   const [loading, setLoading] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [editingRow, setEditingRow] = useState(null);
+
+  const isFetching = useRef(false);
 
   const [departments, setDepartments] = useState([]);
   const [deptPage, setDeptPage] = useState(0);
@@ -123,11 +125,19 @@ export default function DataDictionary() {
             Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
             username: sessionStorage.getItem("adminEmail"),
           },
-        }
+        },
       );
 
       return response.data;
     } catch (error) {
+      if (error.response?.status === 401) {
+        window.dispatchEvent(
+          new CustomEvent("session-expired", {
+            detail: { message: "Session expired. Please login again." },
+          }),
+        );
+        return;
+      }
       console.error("Failed to update dictionary word:", error);
       throw error;
     }
@@ -145,7 +155,7 @@ export default function DataDictionary() {
             username: sessionStorage.getItem("adminEmail"),
           },
           data: ids, // 👈 send array in body
-        }
+        },
       );
 
       setDictionaryData((prev) => prev.filter((row) => !ids.includes(row.id)));
@@ -157,6 +167,14 @@ export default function DataDictionary() {
         severity: "success",
       });
     } catch (err) {
+      if (err.response?.status === 401) {
+        window.dispatchEvent(
+          new CustomEvent("session-expired", {
+            detail: { message: "Session expired. Please login again." },
+          }),
+        );
+        return;
+      }
       console.error("Error deleting word(s):", err);
       setSnackbar({
         open: true,
@@ -167,6 +185,8 @@ export default function DataDictionary() {
   };
 
   const fetchDictionaryData = async () => {
+    if (isFetching.current) return;
+    isFetching.current = true;
     setLoading(true);
     try {
       const response = await axios.get(
@@ -177,7 +197,7 @@ export default function DataDictionary() {
             Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
             username: sessionStorage.getItem("adminEmail"),
           },
-        }
+        },
       );
 
       const data = response.data.map((item, index) => ({
@@ -200,6 +220,14 @@ export default function DataDictionary() {
 
       setRecentAdditions(recentWords);
     } catch (err) {
+      if (err.response?.status === 401) {
+        window.dispatchEvent(
+          new CustomEvent("session-expired", {
+            detail: { message: "Session expired. Please login again." },
+          }),
+        );
+        return;
+      }
       console.error("Failed to fetch dictionary data:", err);
       setSnackbar({
         open: true,
@@ -207,6 +235,7 @@ export default function DataDictionary() {
         severity: "error",
       });
     } finally {
+      isFetching.current = false;
       setLoading(false);
     }
   };
@@ -222,10 +251,18 @@ export default function DataDictionary() {
             Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
             username: sessionStorage.getItem("adminEmail"),
           },
-        }
+        },
       );
       return response.data;
     } catch (error) {
+      if (error.response?.status === 401) {
+        window.dispatchEvent(
+          new CustomEvent("session-expired", {
+            detail: { message: "Session expired. Please login again." },
+          }),
+        );
+        return;
+      }
       console.error("Failed to save dictionary word:", error);
       throw error;
     }
@@ -308,14 +345,14 @@ export default function DataDictionary() {
 
   const filteredRows = dictionaryData.filter((row) => {
     const passesFilters = Object.entries(filters).every(([key, values]) =>
-      values.length ? values.includes(row[key]) : true
+      values.length ? values.includes(row[key]) : true,
     );
     const passesSearch =
       searchTerm.trim() === "" ||
       Object.values(row).some(
         (val) =>
           typeof val === "string" &&
-          val.toLowerCase().includes(searchTerm.toLowerCase())
+          val.toLowerCase().includes(searchTerm.toLowerCase()),
       );
     return passesFilters && passesSearch;
   });
@@ -331,7 +368,7 @@ export default function DataDictionary() {
   };
   const handleClick = (id) => {
     setSelected((prev) =>
-      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id],
     );
   };
 
@@ -342,7 +379,7 @@ export default function DataDictionary() {
     const csvRows = [
       headers.join(","),
       ...rows.map((row) =>
-        columns.map((c) => `"${row[c.key] ?? ""}"`).join(",")
+        columns.map((c) => `"${row[c.key] ?? ""}"`).join(","),
       ),
     ];
     const csvContent = csvRows.join("\n");
@@ -374,6 +411,14 @@ export default function DataDictionary() {
         setHasMoreDepts(false);
       }
     } catch (err) {
+      if (err.response?.status === 401) {
+        window.dispatchEvent(
+          new CustomEvent("session-expired", {
+            detail: { message: "Session expired. Please login again." },
+          }),
+        );
+        return;
+      }
       console.error("Error fetching departments:", err);
     } finally {
       setLoadingDepts(false);
@@ -565,7 +610,8 @@ export default function DataDictionary() {
                       hover
                       sx={{
                         height: 40,
-                        backgroundColor: index % 2 === 0 ? "#f9f9f9" : "#ffffff",
+                        backgroundColor:
+                          index % 2 === 0 ? "#f9f9f9" : "#ffffff",
                       }}
                     >
                       <TableCell padding="checkbox" sx={{ py: 0.5 }}>
@@ -602,7 +648,8 @@ export default function DataDictionary() {
                             sx={{
                               py: 0.5,
                               width: col.width,
-                              maxWidth: col.key === "description" ? 200 : "auto", // limit width
+                              maxWidth:
+                                col.key === "description" ? 200 : "auto", // limit width
                               whiteSpace: "nowrap",
                               overflow: "hidden",
                               textOverflow: "ellipsis",
@@ -616,7 +663,7 @@ export default function DataDictionary() {
                               row[col.key]
                             )}
                           </TableCell>
-                        )
+                        ),
                       )}
                     </TableRow>
                   ))
@@ -667,7 +714,7 @@ export default function DataDictionary() {
                   option
                     .toString()
                     .toLowerCase()
-                    .includes(searchTerm.toLowerCase())
+                    .includes(searchTerm.toLowerCase()),
               )
               .map((option) => {
                 const selectedVal =

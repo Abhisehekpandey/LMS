@@ -222,6 +222,8 @@ export default function UserTable() {
   const [departmentPage, setDepartmentPage] = useState(0);
   const [hasMoreDepartments, setHasMoreDepartments] = useState(true);
   const loadingDepartments = useRef(false);
+  const isFetchingUsers = useRef(false);
+  const lastFetchParams = useRef(null);
 
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
@@ -348,6 +350,14 @@ export default function UserTable() {
         defaultRegion: data.defaultRegion || "",
       };
     } catch (error) {
+      if (error.response?.status === 401) {
+        window.dispatchEvent(
+          new CustomEvent("session-expired", {
+            detail: { message: "Session expired. Please login again." },
+          }),
+        );
+        return;
+      }
       console.error("Error fetching regions:", error);
       return { list: [], defaultRegion: "" }; // safe fallback
     }
@@ -500,6 +510,14 @@ export default function UserTable() {
       setEditDialogOpen(false);
       refetchUsers();
     } catch (error) {
+      if (error.response?.status === 401) {
+        window.dispatchEvent(
+          new CustomEvent("session-expired", {
+            detail: { message: "Session expired. Please login again." },
+          }),
+        );
+        return;
+      }
       console.error("Error updating user:", error);
       toast.error("Failed to update user.");
     }
@@ -534,6 +552,14 @@ export default function UserTable() {
         setDepartmentPage(page);
       }
     } catch (err) {
+      if (err.response?.status === 401) {
+        window.dispatchEvent(
+          new CustomEvent("session-expired", {
+            detail: { message: "Session expired. Please login again." },
+          }),
+        );
+        return;
+      }
       console.error("Failed to load departments:", err);
     } finally {
       loadingDepartments.current = false;
@@ -571,6 +597,14 @@ export default function UserTable() {
       setEditRoleTotalPages(data.totalPages || 1);
       setEditRoleHasMore(!data.last);
     } catch (err) {
+      if (err.response?.status === 401) {
+        window.dispatchEvent(
+          new CustomEvent("session-expired", {
+            detail: { message: "Session expired. Please login again." },
+          }),
+        );
+        return;
+      }
       console.error("Failed to load roles:", err);
     } finally {
       setEditRoleLoading(false);
@@ -579,11 +613,13 @@ export default function UserTable() {
 
   useEffect(() => {
     const handler = setTimeout(() => {
-      setDebouncedUnitSearch(unitSearchQuery);
+      if (unitSearchQuery !== debouncedUnitSearch) {
+        setDebouncedUnitSearch(unitSearchQuery);
+      }
     }, 500);
 
     return () => clearTimeout(handler);
-  }, [unitSearchQuery]);
+  }, [unitSearchQuery, debouncedUnitSearch]);
 
   useEffect(() => {
     if (debouncedUnitSearch !== undefined && editDialogOpen) {
@@ -591,10 +627,6 @@ export default function UserTable() {
       loadMoreDepartments(0, debouncedUnitSearch, true); // Use 0 for initial
     }
   }, [debouncedUnitSearch, editDialogOpen]);
-
-  useEffect(() => {
-    loadMoreDepartments(0, "", true);
-  }, []);
 
   // Consolidated effect to reset role state and trigger initial load when unit changes
   useEffect(() => {
@@ -644,13 +676,6 @@ export default function UserTable() {
       const deptName = currentRole?.department?.deptName || "";
       const roleName = currentRole?.roleName || "";
 
-      const deptRes = await getDepartments(0, 1, "deptName", deptName);
-      const deptObj = deptRes?.content?.[0] || null;
-
-      const matchedRole = deptObj?.roles?.roles?.find(
-        (r) => r.roleName?.toLowerCase() === roleName?.toLowerCase(),
-      );
-
       const newEditData = {
         id: row.id,
         name: row.name || "",
@@ -663,12 +688,6 @@ export default function UserTable() {
         region: prefillRegion,
       };
 
-      // Normalize deptObj so its shape matches what loadMoreDepartments returns
-      // (flat roles array instead of paginated object)
-      const normalizedDeptObj = deptObj
-        ? { ...deptObj, roles: deptObj.roles?.roles || [] }
-        : null;
-
       setEditData(newEditData);
       setSelectedDepartment(null);
       setUnitSearchQuery("");
@@ -680,6 +699,14 @@ export default function UserTable() {
       setEditRoleHasMore(true);
       setEditDialogOpen(true);
     } catch (error) {
+      if (error.response?.status === 401) {
+        window.dispatchEvent(
+          new CustomEvent("session-expired", {
+            detail: { message: "Session expired. Please login again." },
+          }),
+        );
+        return;
+      }
       console.error("Failed to load departments", error);
       toast.error("Unable to fetch departments. Please try again.");
     }
@@ -720,6 +747,14 @@ export default function UserTable() {
 
       toast.success("Selected users have been activated.");
     } catch (error) {
+      if (error.response?.status === 401) {
+        window.dispatchEvent(
+          new CustomEvent("session-expired", {
+            detail: { message: "Session expired. Please login again." },
+          }),
+        );
+        return;
+      }
       console.error("Error activating users:", error);
       toast.error("Failed to activate selected users.");
     }
@@ -886,6 +921,14 @@ export default function UserTable() {
       }
       toast.success(statusMessage);
     } catch (error) {
+      if (error.response?.status === 401) {
+        window.dispatchEvent(
+          new CustomEvent("session-expired", {
+            detail: { message: "Session expired. Please login again." },
+          }),
+        );
+        return;
+      }
       console.error("Failed to update users", error);
       const backendMsg =
         error?.response?.data?.error ||
@@ -962,6 +1005,8 @@ export default function UserTable() {
   const isSelected = (id) => selected.indexOf(id) !== -1;
 
   const refetchUsers = async () => {
+    if (isFetchingUsers.current) return;
+    isFetchingUsers.current = true;
     setLoading(true);
     try {
       const adminEmail = sessionStorage.getItem("adminEmail");
@@ -1008,23 +1053,58 @@ export default function UserTable() {
       setRowsData(sortedUsers);
       setTotalCount(users.totalElements || 0);
     } catch (error) {
+      if (error.response?.status === 401) {
+        window.dispatchEvent(
+          new CustomEvent("session-expired", {
+            detail: { message: "Session expired. Please login again." },
+          }),
+        );
+        return;
+      }
       console.error("Error loading users", error);
     } finally {
       setLoading(false);
+      isFetchingUsers.current = false;
     }
   };
 
   useEffect(() => {
     const handler = setTimeout(() => {
-      setDebouncedSearchQuery(searchQuery);
-      setPage(0); // NEW: reset to page 1 (0-based) when search changes
+      if (searchQuery !== debouncedSearchQuery) {
+        setDebouncedSearchQuery(searchQuery);
+        setPage(0); // reset to page 1 (0-based) when search changes
+      }
     }, 500); // wait 500ms after user stops typing
 
     return () => {
       clearTimeout(handler); // cleanup if user keeps typing
     };
-  }, [searchQuery]);
+  }, [searchQuery, debouncedSearchQuery]);
+
+  const isFirstRender = useRef(true);
+
   useEffect(() => {
+    refetchUsers();
+    isFirstRender.current = false;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (isFirstRender.current) return;
+
+    const currentParams = JSON.stringify({
+      page,
+      rowsPerPage,
+      searchColumn,
+      debouncedSearchQuery,
+      statusFilter,
+    });
+
+    if (lastFetchParams.current === currentParams) {
+      return; // Absolutely block identical sequential requests regardless of React renders
+    }
+
+    lastFetchParams.current = currentParams;
     refetchUsers();
   }, [page, rowsPerPage, searchColumn, debouncedSearchQuery, statusFilter]);
 
@@ -1794,6 +1874,17 @@ export default function UserTable() {
                                       `Storage updated for ${row.name}`,
                                     );
                                   } catch (error) {
+                                    if (error.response?.status === 401) {
+                                      window.dispatchEvent(
+                                        new CustomEvent("session-expired", {
+                                          detail: {
+                                            message:
+                                              "Session expired. Please login again.",
+                                          },
+                                        }),
+                                      );
+                                      return;
+                                    }
                                     const backendMsg =
                                       error?.response?.data?.error ||
                                       (typeof error?.response?.data === "string"
@@ -2216,6 +2307,16 @@ export default function UserTable() {
                     setSelected(allIds);
                     setRowData(nonAdminUsers); // Store only non-admin users
                   } catch (error) {
+                    if (error.response?.status === 401) {
+                      window.dispatchEvent(
+                        new CustomEvent("session-expired", {
+                          detail: {
+                            message: "Session expired. Please login again.",
+                          },
+                        }),
+                      );
+                      return;
+                    }
                     console.error("Failed to fetch all users:", error);
                     alert("Something went wrong while selecting all users.");
                   }
@@ -2407,8 +2508,10 @@ export default function UserTable() {
                   options={departments}
                   getOptionLabel={(option) => option.deptName || ""}
                   filterOptions={(x) => x}
-                  onInputChange={(event, newInputValue) => {
-                    setUnitSearchQuery(newInputValue);
+                  onInputChange={(event, newInputValue, reason) => {
+                    if (reason === "input" || reason === "clear") {
+                      setUnitSearchQuery(newInputValue);
+                    }
                   }}
                   loading={isSearchingUnits}
                   value={
@@ -2474,8 +2577,10 @@ export default function UserTable() {
                   options={editRoleOptions}
                   getOptionLabel={(option) => option.roleName || ""}
                   filterOptions={(x) => x}
-                  onInputChange={(event, newInputValue) => {
-                    setEditRoleSearch(newInputValue);
+                  onInputChange={(event, newInputValue, reason) => {
+                    if (reason === "input" || reason === "clear") {
+                      setEditRoleSearch(newInputValue);
+                    }
                   }}
                   loading={editRoleLoading}
                   value={

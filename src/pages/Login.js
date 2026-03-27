@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import {
   Box,
   Button,
@@ -51,10 +51,23 @@ const refreshAccessToken = async () => {
         method: "POST",
         body: formData,
         headers: {
-          username: sessionStorage.getItem("adminEmail"), // ✅ added header
+          username: sessionStorage.getItem("adminEmail"),
         },
       },
     );
+
+    if (!response.ok) {
+      console.warn("❌ Refresh API failed with status:", response.status);
+      window.dispatchEvent(
+        new CustomEvent("session-expired", {
+          detail: {
+            message:
+              "Your session has expired. Please login again to continue.",
+          },
+        }),
+      );
+      return false;
+    }
 
     const data = await response.json();
 
@@ -72,23 +85,35 @@ const refreshAccessToken = async () => {
 
       return true;
     } else {
-      console.warn("❌ Refresh failed:", data.message);
-      clearSessionAndRedirect();
+      console.warn("❌ Refresh failed: No access token in response");
+      window.dispatchEvent(
+        new CustomEvent("session-expired", {
+          detail: { message: "Session expired. Please login again." },
+        }),
+      );
       return false;
     }
   } catch (error) {
     console.error("❌ Token refresh error:", error);
-    clearSessionAndRedirect();
+    // Optional: only dispatch if it's not a temporary network issue,
+    // but typically any persistent failure should prompt re-login.
+    window.dispatchEvent(
+      new CustomEvent("session-expired", {
+        detail: { message: "Network error. Please login again." },
+      }),
+    );
     return false;
   }
 };
 
 // 🧹 Clears session and reloads app
-const clearSessionAndRedirect = () => {
-  clearInterval(sessionStorage.getItem("refreshIntervalId"));
+export const clearSessionAndRedirect = () => {
+  const intervalId = sessionStorage.getItem("refreshIntervalId");
+  if (intervalId) clearInterval(intervalId);
+
   sessionStorage.clear();
   localStorage.clear();
-  window.location.href = "/login"; // or use navigate if inside component
+  window.location.href = "/login";
 };
 
 // ⏱ Sets interval to refresh token
@@ -97,8 +122,8 @@ const setupAutoRefresh = () => {
     () => {
       refreshAccessToken();
     },
-    25 * 60 * 1000,
-  ); // every 25 mins
+    5 * 60 * 1000, // 5 mins
+  );
   sessionStorage.setItem("refreshIntervalId", intervalId);
 };
 
@@ -112,6 +137,18 @@ const floatAnimation = keyframes`
 const Login = () => {
   const { logoData } = useContext(LogoContext);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const message = sessionStorage.getItem("logoutMessage");
+    if (message) {
+      setSnackbar({
+        open: true,
+        message: message,
+        severity: "error",
+      });
+      sessionStorage.removeItem("logoutMessage");
+    }
+  }, []);
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);

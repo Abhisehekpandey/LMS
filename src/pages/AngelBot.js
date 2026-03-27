@@ -275,6 +275,14 @@ const AngelBot = () => {
       );
       return response.data;
     } catch (error) {
+      if (error.response?.status === 401) {
+        window.dispatchEvent(
+          new CustomEvent("session-expired", {
+            detail: { message: "Session expired. Please login again." },
+          }),
+        );
+        return;
+      }
       console.error("Error saving regions:", error);
       throw error;
     }
@@ -295,6 +303,14 @@ const AngelBot = () => {
 
       return response.data;
     } catch (error) {
+      if (error.response?.status === 401) {
+        window.dispatchEvent(
+          new CustomEvent("session-expired", {
+            detail: { message: "Session expired. Please login again." },
+          }),
+        );
+        return;
+      }
       console.error("Error fetching regions:", error);
       throw error;
     }
@@ -316,6 +332,14 @@ const AngelBot = () => {
       );
       return response.data;
     } catch (error) {
+      if (error.response?.status === 401) {
+        window.dispatchEvent(
+          new CustomEvent("session-expired", {
+            detail: { message: "Session expired. Please login again." },
+          }),
+        );
+        return;
+      }
       console.error("Error deleting region:", error);
       throw error;
     }
@@ -407,6 +431,14 @@ const AngelBot = () => {
 
       return allDepartments;
     } catch (error) {
+      if (error.response?.status === 401) {
+        window.dispatchEvent(
+          new CustomEvent("session-expired", {
+            detail: { message: "Session expired. Please login again." },
+          }),
+        );
+        return;
+      }
       console.error("Error fetching departments:", error);
       return [];
     }
@@ -513,6 +545,14 @@ const AngelBot = () => {
       setSortedStorageUsers(mapped);
       setUserStorageTotalElements(res.totalElements || 0);
     } catch (err) {
+      if (err.response?.status === 401) {
+        window.dispatchEvent(
+          new CustomEvent("session-expired", {
+            detail: { message: "Session expired. Please login again." },
+          }),
+        );
+        return;
+      }
       console.error("Failed to fetch user storage data:", err);
     }
   };
@@ -532,6 +572,14 @@ const AngelBot = () => {
       setSortedDepartments(mapped);
       setDeptStorageTotalElements(res.totalElements || 0);
     } catch (err) {
+      if (err.response?.status === 401) {
+        window.dispatchEvent(
+          new CustomEvent("session-expired", {
+            detail: { message: "Session expired. Please login again." },
+          }),
+        );
+        return;
+      }
       console.error("Failed to fetch dept storage data:", err);
     }
   };
@@ -1012,6 +1060,14 @@ const AngelBot = () => {
         //   },
         // ]);
       } catch (error) {
+        if (error.response?.status === 401) {
+          window.dispatchEvent(
+            new CustomEvent("session-expired", {
+              detail: { message: "Session expired. Please login again." },
+            }),
+          );
+          return;
+        }
         console.error("Error fetching user stats:", error);
       } finally {
         setLoading(false);
@@ -1598,14 +1654,25 @@ const AngelBot = () => {
                                     // Assuming backend returns something like { regions: ["US", "EU"], defaultRegion: "US" }
                                     setRegions(data.regions || []);
                                     setDefaultRegion(data.defaultRegion || "");
-                                    setOpenRegionDialog(true);
-                                  } catch (error) {
+                                    setOpen                                   } catch (error) {
+                                    if (error.response?.status === 401) {
+                                      window.dispatchEvent(
+                                        new CustomEvent("session-expired", {
+                                          detail: {
+                                            message:
+                                              "Session expired. Please login again.",
+                                          },
+                                        })
+                                      );
+                                      return;
+                                    }
                                     setSnackbar({
                                       open: true,
                                       message: "Failed to load regions.",
                                       severity: "error",
                                     });
                                   }
+                  }
                                 }}
                                 sx={{
                                   backgroundColor: (theme) =>
@@ -2712,6 +2779,17 @@ const AngelBot = () => {
                             severity: "success",
                           });
                         } catch (error) {
+                          if (error.response?.status === 401) {
+                            window.dispatchEvent(
+                              new CustomEvent("session-expired", {
+                                detail: {
+                                  message:
+                                    "Session expired. Please login again.",
+                                },
+                              }),
+                            );
+                            return;
+                          }
                           setSnackbar({
                             open: true,
                             message: "Failed to delete command.",
@@ -2756,6 +2834,16 @@ const AngelBot = () => {
 
                 setOpenRegionDialog(false);
               } catch (error) {
+                if (error.response?.status === 401) {
+                  window.dispatchEvent(
+                    new CustomEvent("session-expired", {
+                      detail: {
+                        message: "Session expired. Please login again.",
+                      },
+                    }),
+                  );
+                  return;
+                }
                 setSnackbar({
                   open: true,
                   message: "Failed to save commands.",

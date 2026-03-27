@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useTheme } from "@mui/material/styles";
 import axios from "axios";
 
@@ -77,6 +77,8 @@ const ChooseExtension = () => {
   const [globalFileSizeUnit, setGlobalFileSizeUnit] = useState("MB");
   const [fileBatchSize, setFileBatchSize] = useState("");
 
+  const isFetching = useRef(false);
+
   const handleSaveGlobalSize = async () => {
     const limit = `${globalFileSize}${globalFileSizeUnit}`; // e.g., "30MB"
 
@@ -84,7 +86,8 @@ const ChooseExtension = () => {
     if (globalFileSizeUnit === "KB" && parseFloat(globalFileSize) > 1000000) {
       setSnackbar({
         open: true,
-        message: "File size cannot exceed 1,000,000 KB. Please enter a value of 1,000,000 KB or less.",
+        message:
+          "File size cannot exceed 1,000,000 KB. Please enter a value of 1,000,000 KB or less.",
         severity: "error",
       });
       return;
@@ -92,7 +95,8 @@ const ChooseExtension = () => {
     if (globalFileSizeUnit === "MB" && parseFloat(globalFileSize) > 1000) {
       setSnackbar({
         open: true,
-        message: "File size cannot exceed 1000 MB. Please enter a value of 1000 MB or less.",
+        message:
+          "File size cannot exceed 1000 MB. Please enter a value of 1000 MB or less.",
         severity: "error",
       });
       return;
@@ -100,7 +104,8 @@ const ChooseExtension = () => {
     if (globalFileSizeUnit === "GB" && parseFloat(globalFileSize) > 1) {
       setSnackbar({
         open: true,
-        message: "File size cannot exceed 1 GB. Please enter a value of 1 GB or less.",
+        message:
+          "File size cannot exceed 1 GB. Please enter a value of 1 GB or less.",
         severity: "error",
       });
       return;
@@ -117,9 +122,8 @@ const ChooseExtension = () => {
             username: `${sessionStorage.getItem("adminEmail")}`,
             fileSize: limit, // ✅ sent in header
           },
-        }
+        },
       );
-
 
       setSnackbar({
         open: true,
@@ -127,6 +131,14 @@ const ChooseExtension = () => {
         severity: "success",
       });
     } catch (error) {
+      if (error.response?.status === 401) {
+        window.dispatchEvent(
+          new CustomEvent("session-expired", {
+            detail: { message: "Session expired. Please login again." },
+          }),
+        );
+        return;
+      }
       console.error("Failed to save file size limit:", error);
       setSnackbar({
         open: true,
@@ -141,7 +153,8 @@ const ChooseExtension = () => {
     if (parseInt(fileBatchSize, 10) > 30) {
       setSnackbar({
         open: true,
-        message: "Batch size cannot exceed 30. Please enter a value of 30 or less.",
+        message:
+          "Batch size cannot exceed 30. Please enter a value of 30 or less.",
         severity: "error",
       });
       return;
@@ -157,9 +170,8 @@ const ChooseExtension = () => {
             Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
             username: `${sessionStorage.getItem("adminEmail")}`,
           },
-        }
+        },
       );
-
 
       setSnackbar({
         open: true,
@@ -167,6 +179,14 @@ const ChooseExtension = () => {
         severity: "success",
       });
     } catch (error) {
+      if (error.response?.status === 401) {
+        window.dispatchEvent(
+          new CustomEvent("session-expired", {
+            detail: { message: "Session expired. Please login again." },
+          }),
+        );
+        return;
+      }
       console.error("Failed to save file batch size:", error);
       setSnackbar({
         open: true,
@@ -189,7 +209,7 @@ const ChooseExtension = () => {
 
   const handleToggle = (ext) => {
     setSelectedExtensions((prev) =>
-      prev.includes(ext) ? prev.filter((e) => e !== ext) : [...prev, ext]
+      prev.includes(ext) ? prev.filter((e) => e !== ext) : [...prev, ext],
     );
   };
 
@@ -223,9 +243,8 @@ const ChooseExtension = () => {
             Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
             username: `${sessionStorage.getItem("adminEmail")}`,
           },
-        }
+        },
       );
-
 
       setSnackbar({
         open: true,
@@ -235,6 +254,14 @@ const ChooseExtension = () => {
 
       return true; // ✅ success
     } catch (error) {
+      if (error.response?.status === 401) {
+        window.dispatchEvent(
+          new CustomEvent("session-expired", {
+            detail: { message: "Session expired. Please login again." },
+          }),
+        );
+        return;
+      }
       console.error("Error saving extensions:", error);
       setSnackbar({
         open: true,
@@ -246,6 +273,8 @@ const ChooseExtension = () => {
   };
 
   const fetchAllowedExtensions = async () => {
+    if (isFetching.current) return;
+    isFetching.current = true;
     try {
       const response = await axios.get(
         `${window.__ENV__.REACT_APP_ROUTE}/tenants/getExtensionsAllowed`,
@@ -254,11 +283,10 @@ const ChooseExtension = () => {
             Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
             username: `${sessionStorage.getItem("adminEmail")}`,
           },
-        }
+        },
       );
 
       const data = response.data;
-
 
       // ✅ Updated to match new backend keys
       const groupMap = {
@@ -306,9 +334,18 @@ const ChooseExtension = () => {
       if (data.batchSizeLimit !== undefined && data.batchSizeLimit !== null) {
         setFileBatchSize(String(data.batchSizeLimit));
       }
-
     } catch (error) {
+      if (error.response?.status === 401) {
+        window.dispatchEvent(
+          new CustomEvent("session-expired", {
+            detail: { message: "Session expired. Please login again." },
+          }),
+        );
+        return;
+      }
       console.error("Failed to fetch allowed extensions:", error);
+    } finally {
+      isFetching.current = false;
     }
   };
 
@@ -327,13 +364,13 @@ const ChooseExtension = () => {
       prevGroups.map((group) =>
         group.label === activeGroup && !group.values.includes(extLower)
           ? { ...group, values: [...group.values, extLower] }
-          : group
-      )
+          : group,
+      ),
     );
 
     // ✅ Select the new extension so it's checked by default
     setSelectedExtensions((prev) =>
-      prev.includes(extLower) ? prev : [...prev, extLower]
+      prev.includes(extLower) ? prev : [...prev, extLower],
     );
 
     setOpenDialog(false);
@@ -373,7 +410,7 @@ const ChooseExtension = () => {
             "Content-Type": "application/json",
           },
           data: payload, // axios delete requires "data" for body
-        }
+        },
       );
 
       if (res.status === 200) {
@@ -382,8 +419,8 @@ const ChooseExtension = () => {
           prev.map((group) =>
             group.label === groupLabel
               ? { ...group, values: group.values.filter((v) => v !== ext) }
-              : group
-          )
+              : group,
+          ),
         );
 
         setSnackbar({
@@ -393,6 +430,14 @@ const ChooseExtension = () => {
         });
       }
     } catch (err) {
+      if (err.response?.status === 401) {
+        window.dispatchEvent(
+          new CustomEvent("session-expired", {
+            detail: { message: "Session expired. Please login again." },
+          }),
+        );
+        return;
+      }
       console.error("Error deleting extension:", err);
       setSnackbar({
         open: true,
@@ -495,7 +540,7 @@ const ChooseExtension = () => {
                       checked={isGroupFullySelected(group.values)}
                       indeterminate={
                         group.values.some((ext) =>
-                          selectedExtensions.includes(ext)
+                          selectedExtensions.includes(ext),
                         ) && !isGroupFullySelected(group.values)
                       }
                       onChange={(e) =>
@@ -576,8 +621,9 @@ const ChooseExtension = () => {
               theme.palette.mode === "dark"
                 ? theme.palette.background.default
                 : "#fff",
-            borderTop: `1px solid ${theme.palette.mode === "dark" ? "#333" : "#ddd"
-              }`,
+            borderTop: `1px solid ${
+              theme.palette.mode === "dark" ? "#333" : "#ddd"
+            }`,
             px: 2,
             py: 2,
             boxShadow: "0px -2px 4px rgba(0,0,0,0.05)",
@@ -586,7 +632,7 @@ const ChooseExtension = () => {
           <Button
             variant="contained"
             onClick={handleSave}
-          // disabled={selectedExtensions.length === 0}
+            // disabled={selectedExtensions.length === 0}
           >
             Save
           </Button>
@@ -644,15 +690,30 @@ const ChooseExtension = () => {
                   if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
                 }}
                 onChange={(e) => {
-                  const max = globalFileSizeUnit === "GB" ? 1 : globalFileSizeUnit === "MB" ? 1000 : 1000000;
-                  const val = e.target.value === "" ? "" : Math.min(Number(e.target.value), max);
+                  const max =
+                    globalFileSizeUnit === "GB"
+                      ? 1
+                      : globalFileSizeUnit === "MB"
+                        ? 1000
+                        : 1000000;
+                  const val =
+                    e.target.value === ""
+                      ? ""
+                      : Math.min(Number(e.target.value), max);
                   setGlobalFileSize(val === "" ? "" : String(val));
                 }}
                 InputProps={{
                   inputProps: {
                     min: 1,
                     // OLD: max: globalFileSizeUnit === "GB" ? 1 : globalFileSizeUnit === "MB" ? 1000 : undefined,
-                    max: globalFileSizeUnit === "GB" ? 1 : globalFileSizeUnit === "MB" ? 1000 : globalFileSizeUnit === "KB" ? 1000000 : undefined,
+                    max:
+                      globalFileSizeUnit === "GB"
+                        ? 1
+                        : globalFileSizeUnit === "MB"
+                          ? 1000
+                          : globalFileSizeUnit === "KB"
+                            ? 1000000
+                            : undefined,
                   },
                 }}
                 fullWidth
@@ -665,7 +726,8 @@ const ChooseExtension = () => {
                 // OLD: onChange={(e) => setGlobalFileSizeUnit(e.target.value)}
                 onChange={(e) => {
                   const newUnit = e.target.value;
-                  const max = newUnit === "GB" ? 1 : newUnit === "MB" ? 1000 : 1000000;
+                  const max =
+                    newUnit === "GB" ? 1 : newUnit === "MB" ? 1000 : 1000000;
                   // Clamp current value to the new unit's max when unit changes
                   if (globalFileSize !== "" && Number(globalFileSize) > max) {
                     setGlobalFileSize(String(max));
@@ -710,7 +772,10 @@ const ChooseExtension = () => {
               }}
               // OLD: onChange={(e) => setFileBatchSize(e.target.value)}
               onChange={(e) => {
-                const val = e.target.value === "" ? "" : Math.min(Number(e.target.value), 30);
+                const val =
+                  e.target.value === ""
+                    ? ""
+                    : Math.min(Number(e.target.value), 30);
                 setFileBatchSize(val === "" ? "" : String(val));
               }}
               InputProps={{ inputProps: { min: 1, max: 30 } }}
