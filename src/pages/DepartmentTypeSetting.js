@@ -482,7 +482,10 @@ const DepartmentTypeSetting = () => {
             size="small"
             label="By"
             value={searchColumn}
-            onChange={(e) => setSearchColumn(e.target.value)}
+            onChange={(e) => {
+              setSearchColumn(e.target.value);
+              setPage(0);
+            }}
             sx={{
               minWidth: 130,
               height: 30,
@@ -502,7 +505,10 @@ const DepartmentTypeSetting = () => {
             size="small"
             label="Search"
             value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
+            onChange={(e) => {
+              setSearchText(e.target.value);
+              setPage(0);
+            }}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -534,6 +540,7 @@ const DepartmentTypeSetting = () => {
                 onClick={() => {
                   setSearchText("");
                   setSearchColumn("typeName");
+                  setPage(0);
                 }}
                 disabled={!searchText.trim()}
                 sx={{

@@ -62,6 +62,8 @@ export default function DataDictionary() {
   const [deptPage, setDeptPage] = useState(0);
   const [hasMoreDepts, setHasMoreDepts] = useState(true);
   const [loadingDepts, setLoadingDepts] = useState(false);
+  const [deptSearchQuery, setDeptSearchQuery] = useState("");
+  const [debouncedDeptSearch, setDebouncedDeptSearch] = useState("");
 
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -214,8 +216,8 @@ export default function DataDictionary() {
 
       const recentWords = data
         .filter((d) => d.word)
-        .sort((a, b) => new Date(b.date) - new Date(a.date))
-        .slice(0, 5)
+        .sort((a, b) => new Date(a.date) - new Date(b.date))
+        .slice(-5)
         .map((d) => d.word);
 
       setRecentAdditions(recentWords);
@@ -297,7 +299,7 @@ export default function DataDictionary() {
         });
       }
 
-      setRecentAdditions([newWord, ...recentAdditions]);
+      setRecentAdditions((prev) => [...prev, newWord].slice(-5));
       setNewWord("");
       setDefinition("");
       setDepartment(null);
@@ -394,20 +396,42 @@ export default function DataDictionary() {
   };
 
   useEffect(() => {
-    if (openDialog) {
-      fetchDepartments(deptPage);
-    }
-  }, [openDialog, deptPage]);
+    const handler = setTimeout(() => {
+      setDebouncedDeptSearch(deptSearchQuery);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [deptSearchQuery]);
 
-  const fetchDepartments = async (page) => {
-    if (loadingDepts || !hasMoreDepts) return;
+  useEffect(() => {
+    if (openDialog) {
+      fetchDepartments(0, debouncedDeptSearch, true);
+    }
+  }, [openDialog, debouncedDeptSearch]);
+
+  const fetchDepartments = async (page, query = "", isInitial = false) => {
+    if (loadingDepts || (!hasMoreDepts && !isInitial)) return;
     setLoadingDepts(true);
     try {
-      const res = await getDepartments(page, 10, "");
+      const res = await getDepartments(
+        page,
+        10,
+        query ? "deptName" : "",
+        query,
+      );
       if (res?.content?.length) {
-        setDepartments((prev) => [...prev, ...res.content]);
+        if (isInitial) {
+          setDepartments(res.content);
+          setDeptPage(0);
+        } else {
+          setDepartments((prev) => [...prev, ...res.content]);
+          setDeptPage(page);
+        }
         setHasMoreDepts(!res.last);
       } else {
+        if (isInitial) {
+          setDepartments([]);
+          setDeptPage(0);
+        }
         setHasMoreDepts(false);
       }
     } catch (err) {
@@ -790,6 +814,8 @@ export default function DataDictionary() {
             <Autocomplete
               options={departments}
               getOptionLabel={(option) => option.deptName || ""}
+              filterOptions={(x) => x}
+              onInputChange={(e, value) => setDeptSearchQuery(value)}
               value={department}
               onChange={(e, newValue) => setDepartment(newValue)}
               renderInput={(params) => (
@@ -799,12 +825,19 @@ export default function DataDictionary() {
                 style: { maxHeight: 200, overflow: "auto" },
                 onScroll: (event) => {
                   const listboxNode = event.currentTarget;
+                  const threshold = 50;
                   if (
-                    listboxNode.scrollTop + listboxNode.clientHeight >=
-                    listboxNode.scrollHeight - 1
+                    Math.round(
+                      listboxNode.scrollTop + listboxNode.clientHeight,
+                    ) >=
+                    listboxNode.scrollHeight - threshold
                   ) {
                     if (!loadingDepts && hasMoreDepts) {
-                      setDeptPage((prev) => prev + 1);
+                      fetchDepartments(
+                        deptPage + 1,
+                        debouncedDeptSearch,
+                        false,
+                      );
                     }
                   }
                 },

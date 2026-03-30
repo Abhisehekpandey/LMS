@@ -1237,17 +1237,42 @@ export default function FeedbackTable() {
         open={Boolean(anchorEl)}
         onClose={handleCloseFilter}
         PaperProps={{
-          sx: { maxHeight: 250, width: 200, p: 1 }, // maxHeight for scroll
+          sx: {
+            maxHeight: 400,
+            width: 250,
+            p: 0,
+            borderRadius: "12px",
+            boxShadow: "0 10px 40px rgba(0,0,0,0.1)",
+            border: "1px solid #edf2f7",
+          },
         }}
       >
         {filterColumn && (
-          <>
+          <Box sx={{ p: 1.5 }}>
+            <Typography
+              variant="overline"
+              sx={{
+                fontWeight: 700,
+                color: "text.secondary",
+                ml: 0.5,
+                mb: 1,
+                display: "block",
+              }}
+            >
+              Filter by {columns.find((c) => c.key === filterColumn)?.label}
+            </Typography>
             <TextField
               size="small"
-              placeholder="Search..."
+              placeholder="Search values..."
               variant="outlined"
               fullWidth
-              sx={{ mb: 1 }}
+              sx={{
+                mb: 1.5,
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: "8px",
+                  bgcolor: "#f8fafc",
+                },
+              }}
               value={filters[`${filterColumn}_search`] || ""}
               onChange={(e) => {
                 const value = e.target.value;
@@ -1257,10 +1282,29 @@ export default function FeedbackTable() {
                 }));
               }}
             />
-            <Box sx={{ maxHeight: 180, overflowY: "auto" }}>
+            <Box
+              sx={{
+                maxHeight: 220,
+                overflowY: "auto",
+                pr: 0.5,
+                "&::-webkit-scrollbar": {
+                  width: "4px",
+                },
+                "&::-webkit-scrollbar-track": {
+                  background: "transparent",
+                },
+                "&::-webkit-scrollbar-thumb": {
+                  background: "#cbd5e0",
+                  borderRadius: "10px",
+                },
+                "&::-webkit-scrollbar-thumb:hover": {
+                  background: "#a0aec0",
+                },
+              }}
+            >
               {getColumnValues(filterColumn)
                 .filter((val) =>
-                  val
+                  String(val || "")
                     .toLowerCase()
                     .includes(
                       (filters[`${filterColumn}_search`] || "").toLowerCase(),
@@ -1270,16 +1314,72 @@ export default function FeedbackTable() {
                   <MenuItem
                     key={i}
                     onClick={() => handleToggleFilterValue(val)}
+                    sx={{
+                      borderRadius: "6px",
+                      mb: 0.5,
+                      py: 0.5,
+                      px: 1,
+                      fontSize: "0.85rem",
+                      "&:hover": {
+                        bgcolor: "primary.lighter",
+                      },
+                    }}
                   >
                     <Checkbox
                       checked={filters[filterColumn]?.includes(val) || false}
                       size="small"
+                      sx={{ p: 0.5, mr: 0.5 }}
                     />
-                    {val}
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        flex: 1,
+                      }}
+                    >
+                      {val || "(Empty)"}
+                    </Typography>
                   </MenuItem>
                 ))}
             </Box>
-          </>
+            <Box
+              sx={{
+                mt: 1.5,
+                pt: 1,
+                borderTop: "1px solid #edf2f7",
+                display: "flex",
+                justifyContent: "space-between",
+              }}
+            >
+              <Button
+                size="small"
+                onClick={() => {
+                  setFilters((prev) => {
+                    const updated = { ...prev };
+                    delete updated[filterColumn];
+                    return updated;
+                  });
+                }}
+                sx={{ fontSize: "0.75rem", textTransform: "none" }}
+              >
+                Clear
+              </Button>
+              <Button
+                size="small"
+                variant="contained"
+                onClick={handleCloseFilter}
+                sx={{
+                  fontSize: "0.75rem",
+                  textTransform: "none",
+                  borderRadius: "6px",
+                }}
+              >
+                Apply
+              </Button>
+            </Box>
+          </Box>
         )}
       </Menu>
 
