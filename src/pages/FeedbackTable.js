@@ -1238,14 +1238,18 @@ export default function FeedbackTable() {
         onClose={handleCloseFilter}
         PaperProps={{
           sx: {
-            maxHeight: 400,
             width: 250,
+            overflow: "hidden", // Prevent outer scrollbar
             p: 0,
             borderRadius: "12px",
             boxShadow: "0 10px 40px rgba(0,0,0,0.1)",
             border: "1px solid #edf2f7",
           },
         }}
+        MenuListProps={{
+          sx: { p: 0 },
+        }}
+        disableScrollLock={true}
       >
         {filterColumn && (
           <Box sx={{ p: 1.5 }}>
@@ -1288,7 +1292,7 @@ export default function FeedbackTable() {
                 overflowY: "auto",
                 pr: 0.5,
                 "&::-webkit-scrollbar": {
-                  width: "4px",
+                  width: "3px", // Even thinner for more professional look
                 },
                 "&::-webkit-scrollbar-track": {
                   background: "transparent",

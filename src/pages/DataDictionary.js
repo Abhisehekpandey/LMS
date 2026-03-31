@@ -43,10 +43,10 @@ import SimCardDownloadIcon from "@mui/icons-material/SimCardDownload";
 import { getDepartments } from "../api/departmentService";
 
 const columns = [
-  { key: "word", label: "Word", width: "20%" },
-  { key: "description", label: "Description", width: "30%" },
-  { key: "department", label: "Department", width: "20%" },
-  { key: "date", label: "Date", width: "20%" },
+  { key: "word", label: "Word", width: "12%" },
+  { key: "description", label: "Description", width: "18%" },
+  { key: "department", label: "Department", width: "30%" },
+  { key: "date", label: "Date", width: "30%" },
   { key: "actions", label: "Action", width: "10%" },
 ];
 
@@ -680,8 +680,45 @@ export default function DataDictionary() {
                             }}
                           >
                             {col.key === "description" ? (
-                              <Tooltip title={row.description || ""} arrow>
-                                <span>{row.description}</span>
+                              <Tooltip
+                                title={row.description || ""}
+                                arrow
+                                placement="bottom-start"
+                                slotProps={{
+                                  tooltip: {
+                                    sx: {
+                                      fontSize: "0.95rem",
+                                      padding: "10px 14px",
+                                      maxWidth: 400,
+                                      backgroundColor: "#ffffff",
+                                      color: "#000000",
+                                      boxShadow:
+                                        "0 8px 24px rgba(149, 157, 165, 0.2)",
+                                      borderRadius: "8px",
+                                      border: "1px solid #e2e8f0",
+                                    },
+                                  },
+                                  arrow: {
+                                    sx: {
+                                      color: "#ffffff",
+                                      "&::before": {
+                                        border: "1px solid #e2e8f0",
+                                      },
+                                    },
+                                  },
+                                }}
+                              >
+                                <Box
+                                  component="span"
+                                  sx={{
+                                    display: "inline-block",
+                                    maxWidth: "100%",
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                  }}
+                                >
+                                  {row.description}
+                                </Box>
                               </Tooltip>
                             ) : (
                               row[col.key]
@@ -710,50 +747,159 @@ export default function DataDictionary() {
           }
         />
       </Paper>
-
       <Menu
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
         onClose={handleCloseFilter}
         PaperProps={{
-          style: { maxHeight: 300, width: 220 },
+          sx: {
+            width: 250,
+            overflow: "hidden",
+            p: 0,
+            borderRadius: "12px",
+            boxShadow: "0 10px 40px rgba(0,0,0,0.1)",
+            border: "1px solid #edf2f7",
+          },
         }}
+        MenuListProps={{
+          sx: { p: 0 },
+        }}
+        disableScrollLock={true}
       >
-        <Box sx={{ p: 1 }}>
-          <TextField
-            size="small"
-            placeholder="Search..."
-            fullWidth
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </Box>
-
-        <Box sx={{ maxHeight: 200, overflowY: "auto" }}>
-          {filterColumn &&
-            getColumnValues(filterColumn)
-              .filter(
-                (option) =>
-                  option &&
-                  option
-                    .toString()
+        {filterColumn && (
+          <Box sx={{ p: 1.5 }}>
+            <Typography
+              variant="overline"
+              sx={{
+                fontWeight: 700,
+                color: "text.secondary",
+                ml: 0.5,
+                mb: 1,
+                display: "block",
+              }}
+            >
+              Filter by {columns.find((c) => c.key === filterColumn)?.label}
+            </Typography>
+            <TextField
+              size="small"
+              placeholder="Search values..."
+              variant="outlined"
+              fullWidth
+              sx={{
+                mb: 1.5,
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: "8px",
+                  bgcolor: "#f8fafc",
+                },
+              }}
+              value={filters[`${filterColumn}_search`] || ""}
+              onChange={(e) => {
+                const value = e.target.value;
+                setFilters((prev) => ({
+                  ...prev,
+                  [`${filterColumn}_search`]: value,
+                }));
+              }}
+            />
+            <Box
+              sx={{
+                maxHeight: 220,
+                overflowY: "auto",
+                pr: 0.5,
+                "&::-webkit-scrollbar": {
+                  width: "3px",
+                },
+                "&::-webkit-scrollbar-track": {
+                  background: "transparent",
+                },
+                "&::-webkit-scrollbar-thumb": {
+                  background: "#cbd5e0",
+                  borderRadius: "10px",
+                },
+                "&::-webkit-scrollbar-thumb:hover": {
+                  background: "#a0aec0",
+                },
+              }}
+            >
+              {getColumnValues(filterColumn)
+                .filter((val) =>
+                  String(val || "")
                     .toLowerCase()
-                    .includes(searchTerm.toLowerCase()),
-              )
-              .map((option) => {
-                const selectedVal =
-                  filters[filterColumn]?.includes(option) || false;
-                return (
+                    .includes(
+                      (filters[`${filterColumn}_search`] || "").toLowerCase(),
+                    ),
+                )
+                .map((val, i) => (
                   <MenuItem
-                    key={option || "null-" + Math.random()}
-                    onClick={() => handleToggleFilterValue(option)}
+                    key={i}
+                    onClick={() => handleToggleFilterValue(val)}
+                    sx={{
+                      borderRadius: "6px",
+                      mb: 0.5,
+                      py: 0.5,
+                      px: 1,
+                      fontSize: "0.85rem",
+                      "&:hover": {
+                        bgcolor: "primary.lighter",
+                      },
+                    }}
                   >
-                    <Checkbox checked={selectedVal} size="small" />
-                    <Typography variant="body2">{option || "-"}</Typography>
+                    <Checkbox
+                      checked={filters[filterColumn]?.includes(val) || false}
+                      size="small"
+                      sx={{ p: 0.5, mr: 0.5 }}
+                    />
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        flex: 1,
+                      }}
+                    >
+                      {val || "(Empty)"}
+                    </Typography>
                   </MenuItem>
-                );
-              })}
-        </Box>
+                ))}
+            </Box>
+            <Box
+              sx={{
+                mt: 1.5,
+                pt: 1,
+                borderTop: "1px solid #edf2f7",
+                display: "flex",
+                justifyContent: "space-between",
+              }}
+            >
+              <Button
+                size="small"
+                onClick={() => {
+                  setFilters((prev) => {
+                    const updated = { ...prev };
+                    delete updated[filterColumn];
+                    return updated;
+                  });
+                }}
+                sx={{ fontSize: "0.75rem", textTransform: "none" }}
+              >
+                Clear
+              </Button>
+              <Button
+                size="small"
+                variant="contained"
+                onClick={handleCloseFilter}
+                sx={{
+                  fontSize: "0.75rem",
+                  textTransform: "none",
+                  borderRadius: "6px",
+                }}
+              >
+                Apply
+              </Button>
+            </Box>
+          </Box>
+        )}
       </Menu>
 
       <Dialog
@@ -851,6 +997,8 @@ export default function DataDictionary() {
               value={newWord}
               onChange={(e) => setNewWord(e.target.value)}
               sx={{ flex: 1 }}
+              inputProps={{ maxLength: 20 }}
+              helperText={`${newWord.length}/20`}
             />
           </Box>
 
@@ -861,6 +1009,8 @@ export default function DataDictionary() {
             value={definition}
             onChange={(e) => setDefinition(e.target.value)}
             fullWidth
+            inputProps={{ maxLength: 1000 }}
+            helperText={`${definition.length}/1000`}
             sx={{ mb: 2 }}
           />
           <Typography variant="subtitle1" fontWeight={600} gutterBottom>
