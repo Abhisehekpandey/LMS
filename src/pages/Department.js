@@ -302,10 +302,10 @@ function Department({ departments, setDepartments, onThemeToggle }) {
   const [newDepartment, setNewDepartment] = useState({
     name: "",
     displayName: "",
-    initialRole: "",
+    initialRole: "UNIT_ADMIN",
     storage: "1 GB", //  default
     departmentModerator: "",
-    userAssignments: [{ user: null, role: "" }], // 👈 start with one empty row
+    userAssignments: [{ user: null, role: "UNIT_ADMIN" }], // 👈 start with one empty row
     submitted: false,
   });
 
@@ -315,7 +315,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
       displayName: "",
       storage: "1 GB",
       departmentModerator: "",
-      role: "", // ✅ standardized
+      role: "UNIT_ADMIN", // ✅ fixed default
       permission: "ADMIN", // ✅ standardized
       submitted: false,
     },
@@ -2755,7 +2755,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         displayName: "",
         storage: "1 GB",
         departmentModerator: "",
-        role: "", // ✅ standardized
+        role: "UNIT_ADMIN", // ✅ fixed default
         permission: "ADMIN", // ✅ standardized
         submitted: false,
       },
@@ -2836,7 +2836,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
           displayName: "",
           storage: "1 GB",
           departmentModerator: "",
-          role: "", // ✅ standardized
+          role: "UNIT_ADMIN", // ✅ fixed default
           permission: "ADMIN", // ✅ standardized
           submitted: false,
         },
@@ -4473,14 +4473,8 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                 Role <span style={{ color: "red" }}>*</span>
                               </>
                             }
-                            value={dept.role || ""}
-                            onChange={(e) =>
-                              updateDepartmentField(
-                                index,
-                                "role",
-                                e.target.value,
-                              )
-                            }
+                            value={dept.role || "UNIT_ADMIN"}
+                            disabled
                             fullWidth
                             size="small"
                             error={!dept.role?.trim() && dept.submitted}
