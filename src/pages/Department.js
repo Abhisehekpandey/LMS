@@ -513,13 +513,14 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
   const DeptUsersDropdown = ({
     users,
-    totalUserCount, // NEW: total count from paginated API
+    totalUserCount,
     departmentId,
     departmentName,
     departmentRoles = [],
     onEditUser,
     onDeleteUser,
     addUsersToDepartment,
+    owner, // NEW: owner email to prevent deletion
   }) => {
     const [open, setOpen] = useState(false);
     const [search, setSearch] = useState("");
@@ -579,6 +580,14 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         const fetchedUsers = (data.users || []).map((u) => ({
           id: u.objectId,
           name: u.fullName,
+          // Try all possible identifier keys provided by the API
+          email:
+            u.email ||
+            u.userName ||
+            u.username ||
+            u.deptUsername ||
+            u.userId ||
+            "",
           roleName: u.role,
           roleId: u.roleId, // NEW: Include roleId for unassignment
         }));
@@ -1035,68 +1044,94 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                           />
                         </TableCell>
                         <TableCell sx={{ padding: "4px 16px" }} align="center">
-                          <Tooltip title="Unassign User">
-                            <IconButton
-                              size="small"
-                              onClick={async () => {
-                                try {
-                                  const response = await axios.delete(
-                                    `${window.__ENV__.REACT_APP_ROUTE}/tenants/department/deleteExistingUser/${departmentId}/${user.id}/${user.roleId}`,
-                                    {
-                                      headers: {
-                                        Authorization: `Bearer ${sessionStorage.getItem(
-                                          "authToken",
-                                        )}`,
-                                        username:
-                                          sessionStorage.getItem("adminEmail"),
-                                      },
-                                    },
-                                  );
+                          {(() => {
+                            const name = (user.name || "").toLowerCase().trim();
+                            const ownerEmail = (owner || "")
+                              .toLowerCase()
+                              .trim();
+                            const ownerPrefix = ownerEmail.split("@")[0];
+                            const isOwner =
+                              name === ownerEmail ||
+                              name === ownerPrefix ||
+                              (user.email &&
+                                user.email.toLowerCase() === ownerEmail);
 
-                                  if (response.status === 200) {
-                                    setSnackbar({
-                                      open: true,
-                                      message: `User "${user.name}" unassigned from department successfully`,
-                                      severity: "success",
-                                    });
-
-                                    if (fetchDepartments)
-                                      await fetchDepartments();
-                                  }
-                                } catch (error) {
-                                  console.error(
-                                    "Failed to unassign user:",
-                                    error,
-                                  );
-                                  if (
-                                    error.response &&
-                                    error.response.status === 401
-                                  ) {
-                                    window.dispatchEvent(
-                                      new CustomEvent("session-expired", {
-                                        detail: {
-                                          message:
-                                            "Your session has expired. Please login again to continue.",
-                                        },
-                                      }),
-                                    );
-                                    return;
-                                  }
-                                  setSnackbar({
-                                    open: true,
-                                    message: `Failed to unassign user "${user.name}"`,
-                                    severity: "error",
-                                  });
+                            return (
+                              <Tooltip
+                                title={
+                                  isOwner
+                                    ? "Owner can't be deleted, for Deleting change the owner"
+                                    : "Unassign User"
                                 }
-                              }}
-                              sx={{
-                                color: "#ef4444",
-                                "&:hover": { backgroundColor: "#fee2e2" },
-                              }}
-                            >
-                              <PersonRemoveIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
+                              >
+                                <span>
+                                  <IconButton
+                                    size="small"
+                                    disabled={isOwner}
+                                    onClick={async () => {
+                                      try {
+                                        const response = await axios.delete(
+                                          `${window.__ENV__.REACT_APP_ROUTE}/tenants/department/deleteExistingUser/${departmentId}/${user.id}/${user.roleId}`,
+                                          {
+                                            headers: {
+                                              Authorization: `Bearer ${sessionStorage.getItem(
+                                                "authToken",
+                                              )}`,
+                                              username:
+                                                sessionStorage.getItem(
+                                                  "adminEmail",
+                                                ),
+                                            },
+                                          },
+                                        );
+
+                                        if (response.status === 200) {
+                                          setSnackbar({
+                                            open: true,
+                                            message: `User "${user.name}" unassigned from department successfully`,
+                                            severity: "success",
+                                          });
+
+                                          if (fetchDepartments)
+                                            await fetchDepartments();
+                                        }
+                                      } catch (error) {
+                                        console.error(
+                                          "Failed to unassign user:",
+                                          error,
+                                        );
+                                        if (
+                                          error.response &&
+                                          error.response.status === 401
+                                        ) {
+                                          window.dispatchEvent(
+                                            new CustomEvent("session-expired", {
+                                              detail: {
+                                                message:
+                                                  "Your session has expired. Please login again to continue.",
+                                              },
+                                            }),
+                                          );
+                                          return;
+                                        }
+                                        setSnackbar({
+                                          open: true,
+                                          message: `Failed to unassign user "${user.name}"`,
+                                          severity: "error",
+                                        });
+                                      }
+                                    }}
+                                    sx={{
+                                      color: "#ef4444",
+                                      "&:hover": { backgroundColor: "#fee2e2" },
+                                    }}
+                                  >
+                                    <PersonRemoveIcon fontSize="small" />
+                                  </IconButton>
+                                </span>
+                              </Tooltip>
+                            );
+                          })()}
                         </TableCell>
                       </TableRow>
                     ))
@@ -1953,19 +1988,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
 
     try {
       await updateDepartment(payload);
-
-      setDepartments((prev) =>
-        prev.map((dept) =>
-          dept.name === editedDepartment.originalName
-            ? {
-                ...dept,
-                name: payload.deptName,
-                displayName: payload.deptDisplayName,
-                departmentModerator: payload.deptModerator,
-              }
-            : dept,
-        ),
-      );
+      fetchDepartments();
 
       setSnackbar({
         open: true,
@@ -1988,9 +2011,17 @@ function Department({ departments, setDepartments, onThemeToggle }) {
         );
         return;
       }
+      const backendMsg =
+        error?.response?.data?.error ||
+        error?.response?.data?.error ||
+        (typeof error?.response?.data === "string"
+          ? error.response.data
+          : error.error) ||
+        "Failed to update Unit. Please try again.";
+
       setSnackbar({
         open: true,
-        message: "Failed to update Unit. Please try again.",
+        message: backendMsg,
         severity: "error",
       });
     }
@@ -3577,6 +3608,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                             totalUserCount={dept.userCount}
                             departmentId={dept.id}
                             departmentName={dept.name}
+                            owner={dept.departmentModerator}
                             departmentRoles={dept.roles.map((role) => ({
                               // COMMENTED OUT: role.id doesn't exist in API — API uses roleId
                               // id: role.id,
@@ -4254,7 +4286,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                 value,
                               );
 
-                              if (value.length <= 35) {
+                              if (value.length <= 32) {
                                 updateDepartmentField(index, "name", value);
                                 setDuplicateDepartmentError(false);
                                 checkDuplicateDepartment(value);
@@ -4266,23 +4298,36 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                                 hasInvalidChar,
                               );
                             }}
+                            inputProps={{ maxLength: 32 }}
                             error={
                               (!dept.name && dept.submitted) ||
                               dept.isDuplicate ||
                               duplicateDepartmentError ||
-                              dept.name.length > 35 ||
+                              dept.name.length > 32 ||
                               dept.hasInvalidChar
                             }
                             helperText={
-                              !dept.name && dept.submitted
-                                ? "Required"
-                                : dept.hasInvalidChar
-                                  ? "Only letters, numbers, dots (.), and - are allowed"
-                                  : dept.isDuplicate || duplicateDepartmentError
-                                    ? "Already exists"
-                                    : dept.name.length > 35
-                                      ? "Max 35 characters"
-                                      : ""
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  alignItems: "center",
+                                }}
+                              >
+                                <span>
+                                  {!dept.name && dept.submitted
+                                    ? "Required"
+                                    : dept.hasInvalidChar
+                                      ? "Only letters, numbers, dots (.), and - are allowed"
+                                      : dept.isDuplicate ||
+                                          duplicateDepartmentError
+                                        ? "Already exists"
+                                        : dept.name.length > 32
+                                          ? "Max 32 characters"
+                                          : ""}
+                                </span>
+                                <span>{dept.name?.length || 0}/32</span>
+                              </Box>
                             }
                           />
                         </Grid>
@@ -4328,15 +4373,26 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                               dept.hasSpecialChar
                             }
                             helperText={
-                              !dept.displayName && dept.submitted
-                                ? "Required"
-                                : duplicateShortNameError
-                                  ? "Already exists"
-                                  : dept.displayName.length > 8
-                                    ? "Max 8 characters"
-                                    : dept.hasSpecialChar
-                                      ? "Special characters not allowed"
-                                      : ""
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  alignItems: "center",
+                                }}
+                              >
+                                <span>
+                                  {!dept.displayName && dept.submitted
+                                    ? "Required"
+                                    : duplicateShortNameError
+                                      ? "Already exists"
+                                      : dept.displayName.length > 8
+                                        ? "Max 8 characters"
+                                        : dept.hasSpecialChar
+                                          ? "Special characters not allowed"
+                                          : ""}
+                                </span>
+                                <span>{dept.displayName?.length || 0}/8</span>
+                              </Box>
                             }
                           />
                         </Grid>
@@ -4793,11 +4849,23 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     fullWidth
                     required
                     value={editedDepartment?.displayName || ""}
-                    onChange={(e) =>
-                      setEditedDepartment((prev) => ({
-                        ...prev,
-                        displayName: e.target.value.toUpperCase(),
-                      }))
+                    onChange={(e) => {
+                      const value = e.target.value.toUpperCase();
+                      const validValue = value.replace(/[^A-Z0-9]/g, "");
+                      if (validValue.length <= 8) {
+                        setEditedDepartment((prev) => ({
+                          ...prev,
+                          displayName: validValue,
+                        }));
+                      }
+                    }}
+                    inputProps={{ maxLength: 8 }}
+                    helperText={
+                      <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+                        <span>
+                          {editedDepartment?.displayName?.length || 0}/8
+                        </span>
+                      </Box>
                     }
                   />
 

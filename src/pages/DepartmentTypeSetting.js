@@ -60,7 +60,7 @@ const GradientChip = styled(Chip)(({ theme, type }) => ({
   }),
 }));
 
-const attributeTypes = ["STRING", "NUMBER", "DATE", "BOOLEAN"];
+const attributeTypes = ["STRING", "INTEGER", "DATE"];
 
 const DepartmentTypeSetting = () => {
   const [expandedIndex, setExpandedIndex] = useState(0); // initially first attribute expanded
@@ -104,7 +104,10 @@ const DepartmentTypeSetting = () => {
     setAttributes(
       row.attributes?.map((attr) => ({
         name: attr.attributeName || "",
-        type: attr.attributeType?.toUpperCase() || "STRING",
+        type:
+          attr.attributeType?.toUpperCase() === "NUMBER"
+            ? "INTEGER"
+            : attr.attributeType?.toUpperCase() || "STRING",
         defaultValue: attr.value || "",
         description: attr.fileTypeDescription || "",
         mandatory: attr.isMandatory || false,
@@ -919,9 +922,8 @@ const DepartmentTypeSetting = () => {
                     </Grid>
                     <Grid item xs={12} sm={2}>
                       <TextField
-                        select={attr.type === "BOOLEAN"}
                         type={
-                          attr.type === "NUMBER"
+                          attr.type === "INTEGER"
                             ? "number"
                             : attr.type === "DATE"
                               ? "date"
@@ -939,16 +941,7 @@ const DepartmentTypeSetting = () => {
                         }
                         size="small"
                         InputLabelProps={{ shrink: true }}
-                      >
-                        {attr.type === "BOOLEAN" && [
-                          <MenuItem key="true" value="True">
-                            True
-                          </MenuItem>,
-                          <MenuItem key="false" value="False">
-                            False
-                          </MenuItem>,
-                        ]}
-                      </TextField>
+                      />
                     </Grid>
                     <Grid item xs={12} sm={4}>
                       <Box

@@ -496,23 +496,27 @@ const CreateUser = ({
 
       const normalize = (r) => {
         const obj = typeof r === "string" ? { roleName: r } : r;
-        const name = obj.roleName || "";
+        const name = (obj.roleName || "").trim();
+        const _uKey = name.toLowerCase(); // Strictly use lower name as key for UI uniqueness
         return {
           ...obj,
           roleName: name,
-          _uKey: obj.roleId || obj.id || `${name}-${obj.roleDisplayName}`,
+          _uKey,
         };
       };
 
       const combined = (
         isInitial ? [...localRoles, ...fetchedRoles] : fetchedRoles
       ).map(normalize);
+      const deduplicated = combined.filter(
+        (v, i, a) => a.findIndex((t) => t._uKey === v._uKey) === i,
+      );
 
       if (isInitial) {
-        setRoleOptions(combined);
+        setRoleOptions(deduplicated);
       } else {
         setRoleOptions((prev) => {
-          const newOptions = [...prev, ...combined];
+          const newOptions = [...prev, ...deduplicated];
           // Deduplicate by _uKey
           return newOptions.filter(
             (v, i, a) => a.findIndex((t) => t._uKey === v._uKey) === i,
@@ -564,7 +568,12 @@ const CreateUser = ({
       // When opening or searching, reload from page 1
       loadMoreRoles(1, debouncedRoleSearch || "", activeDeptForRoles, true);
     }
-  }, [debouncedRoleSearch, openStates, activeDeptForRoles]);
+  }, [
+    debouncedRoleSearch,
+    openStates,
+    activeDeptForRoles,
+    locallyCreatedRoles,
+  ]);
 
   // Reset department list when dialog opens
   useEffect(() => {
@@ -2112,17 +2121,18 @@ const CreateUser = ({
                   typeof addedRole[0] === "string"
                     ? { roleName: addedRole[0] }
                     : addedRole[0];
+                const cleanRoleName = (normalizedRole.roleName || "").trim();
 
-                // NEW: Prepend to roleOptions and auto-select for the triggering user
-                setRoleOptions((prev) => [normalizedRole, ...(prev || [])]);
+                // UPDATE: Rely on the locallyCreatedRoles effect to sync the list professionally.
+                // We set the field values immediately for UX, but list sync happens via useEffect.
                 if (activeUserIndexForRole !== null && formikRef.current) {
                   formikRef.current.setFieldValue(
                     `users[${activeUserIndexForRole}].role`,
-                    normalizedRole.roleName || "",
+                    cleanRoleName,
                   );
                   formikRef.current.setFieldValue(
                     `users[${activeUserIndexForRole}].roleId`,
-                    normalizedRole.roleId || "",
+                    normalizedRole.roleId || normalizedRole.id || "",
                   );
                 }
 
