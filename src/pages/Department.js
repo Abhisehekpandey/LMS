@@ -1671,19 +1671,34 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                           />
                         </TableCell>
                         <TableCell sx={{ padding: "4px 16px" }} align="center">
-                          <Tooltip title="Edit Role">
-                            <IconButton
-                              size="small"
-                              onClick={() => handleEditClick(role)}
-                              sx={{
-                                color: "#1976d2",
-                                "&:hover": {
-                                  backgroundColor: "#e3f2fd",
-                                },
-                              }}
-                            >
-                              <EditIcon fontSize="small" />
-                            </IconButton>
+                          <Tooltip
+                            title={
+                              role.roleName === "UNIT_ADMIN"
+                                ? "Unit Owner Role can not be edited"
+                                : "Edit Role"
+                            }
+                          >
+                            <span>
+                              <IconButton
+                                size="small"
+                                onClick={() => handleEditClick(role)}
+                                disabled={role.roleName === "UNIT_ADMIN"}
+                                sx={{
+                                  color:
+                                    role.roleName === "UNIT_ADMIN"
+                                      ? "action.disabled"
+                                      : "#1976d2",
+                                  "&:hover": {
+                                    backgroundColor:
+                                      role.roleName === "UNIT_ADMIN"
+                                        ? "transparent"
+                                        : "#e3f2fd",
+                                  },
+                                }}
+                              >
+                                <EditIcon fontSize="small" />
+                              </IconButton>
+                            </span>
                           </Tooltip>
                         </TableCell>
                       </TableRow>
@@ -1827,10 +1842,25 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                     </>
                   }
                   value={newRole}
-                  onChange={(e) => setNewRole(e.target.value)}
+                  onChange={(e) => {
+                    if (e.target.value.length <= 8) {
+                      setNewRole(e.target.value);
+                    }
+                  }}
+                  inputProps={{ maxLength: 8 }}
                   error={hasAttemptedSubmit && !newRole.trim()}
                   helperText={
-                    hasAttemptedSubmit && !newRole.trim() ? "Required" : ""
+                    <Box
+                      component="span"
+                      sx={{ display: "flex", justifyContent: "space-between" }}
+                    >
+                      <span>
+                        {hasAttemptedSubmit && !newRole.trim()
+                          ? "Required"
+                          : ""}
+                      </span>
+                      <span>{newRole.length}/8</span>
+                    </Box>
                   }
                   sx={{ mb: 2 }}
                 />
@@ -4710,9 +4740,28 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                 autoFocus
                 fullWidth
                 size="small"
-                label="New Role"
+                label={
+                  <>
+                    Role Name <span style={{ color: "red" }}>*</span>
+                  </>
+                }
                 value={newRole}
-                onChange={(e) => setNewRole(e.target.value)}
+                onChange={(e) => {
+                  if (e.target.value.length <= 8) {
+                    setNewRole(e.target.value);
+                  }
+                }}
+                inputProps={{ maxLength: 8 }}
+                helperText={
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "flex-end",
+                    }}
+                  >
+                    <span>{newRole.length}/8</span>
+                  </Box>
+                }
                 sx={{ mb: 2 }}
               />
             </CardContent>

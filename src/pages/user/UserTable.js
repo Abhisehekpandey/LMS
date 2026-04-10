@@ -2437,8 +2437,22 @@ export default function UserTable() {
                   label="Full Name"
                   fullWidth
                   value={editData.name || ""}
-                  onChange={(e) =>
-                    setEditData((prev) => ({ ...prev, name: e.target.value }))
+                  onChange={(e) => {
+                    if (e.target.value.length <= 32) {
+                      setEditData((prev) => ({
+                        ...prev,
+                        name: e.target.value,
+                      }));
+                    }
+                  }}
+                  inputProps={{ maxLength: 32 }}
+                  helperText={
+                    <Box
+                      component="span"
+                      sx={{ display: "flex", justifyContent: "flex-end" }}
+                    >
+                      <span>{(editData.name || "").length}/32</span>
+                    </Box>
                   }
                 />
               </Grid>

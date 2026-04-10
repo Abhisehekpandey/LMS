@@ -1026,14 +1026,30 @@ const CreateUser = ({
                                   FormHelperTextProps={{ sx: { ml: 0 } }}
                                   name={`users[${index}].name`}
                                   value={user.name}
-                                  onChange={formik.handleChange}
+                                  onChange={(e) => {
+                                    if (e.target.value.length <= 32) {
+                                      formik.handleChange(e);
+                                    }
+                                  }}
+                                  inputProps={{ maxLength: 32 }}
                                   error={Boolean(
                                     formik.touched.users?.[index]?.name &&
                                     formik.errors.users?.[index]?.name,
                                   )}
                                   helperText={
-                                    formik.touched.users?.[index]?.name &&
-                                    formik.errors.users?.[index]?.name
+                                    <Box
+                                      component="span"
+                                      sx={{
+                                        display: "flex",
+                                        justifyContent: "space-between",
+                                      }}
+                                    >
+                                      <span>
+                                        {formik.touched.users?.[index]?.name &&
+                                          formik.errors.users?.[index]?.name}
+                                      </span>
+                                      <span>{(user.name || "").length}/32</span>
+                                    </Box>
                                   }
                                   fullWidth
                                   size="small"
@@ -2059,12 +2075,25 @@ const CreateUser = ({
                 label="Role Name"
                 FormHelperTextProps={{ sx: { ml: 0 } }}
                 value={newRoleName}
-                onChange={(e) => setNewRoleName(e.target.value)}
+                onChange={(e) => {
+                  if (e.target.value.length <= 8) {
+                    setNewRoleName(e.target.value);
+                  }
+                }}
+                inputProps={{ maxLength: 8 }}
                 error={roleSubmitted && !newRoleName.trim()}
                 helperText={
-                  roleSubmitted && !newRoleName.trim()
-                    ? "Role Name is required"
-                    : ""
+                  <Box
+                    component="span"
+                    sx={{ display: "flex", justifyContent: "space-between" }}
+                  >
+                    <span>
+                      {roleSubmitted && !newRoleName.trim()
+                        ? "Role Name is required"
+                        : ""}
+                    </span>
+                    <span>{newRoleName.length}/8</span>
+                  </Box>
                 }
               />
             </Grid>
