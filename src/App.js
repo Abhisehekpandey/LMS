@@ -54,6 +54,20 @@ function App() {
 
   useEffect(() => {
     const handleSessionExpired = (e) => {
+      // 🚫 Prevent session expired modal on public auth pages
+      const publicRoutes = [
+        "/login",
+        "/signup",
+        "/forget-password",
+        "/set-password",
+        "/reset-password",
+      ];
+      const isPublicRoute = publicRoutes.some((route) =>
+        window.location.pathname.startsWith(route),
+      );
+
+      if (isPublicRoute) return;
+
       setSessionModal({
         open: true,
         message:

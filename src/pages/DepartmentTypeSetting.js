@@ -78,6 +78,7 @@ const DepartmentTypeSetting = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [documentType, setDocumentType] = useState("");
   const createAttributeTemplate = () => ({
+    id: 0,
     name: "",
     type: "STRING",
     defaultValue: "",
@@ -103,6 +104,7 @@ const DepartmentTypeSetting = () => {
     setDocumentType(row.type || "");
     setAttributes(
       row.attributes?.map((attr) => ({
+        id: attr.id || 0,
         name: attr.attributeName || "",
         type:
           attr.attributeType?.toUpperCase() === "NUMBER"
@@ -289,6 +291,7 @@ const DepartmentTypeSetting = () => {
     const payload = {
       type: documentType,
       attributes: attributes.map((attr) => ({
+        id: attr.id,
         attributeName: attr.name,
         attributeType:
           attr.type.charAt(0).toUpperCase() + attr.type.slice(1).toLowerCase(),
@@ -323,6 +326,7 @@ const DepartmentTypeSetting = () => {
         });
       } else {
         const createPayload = attributes.map((attr) => ({
+          id: attr.id,
           attributeName: attr.name,
           attributeType:
             attr.type.charAt(0).toUpperCase() +

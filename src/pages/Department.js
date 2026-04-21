@@ -11,6 +11,7 @@ import { Menu } from "@mui/material";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import AddIcon from "@mui/icons-material/Add";
 import PersonRemoveIcon from "@mui/icons-material/PersonRemove";
+import Block from "@mui/icons-material/Block";
 
 import {
   Box,
@@ -105,7 +106,7 @@ import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import { Checkbox } from "@mui/material";
 import styles from "./department.module.css";
-import { fetchUsers } from "../api/userService";
+import { fetchUsers, getTenantPermissions } from "../api/userService";
 import { fetchUsersByDepartment } from "../api/userService";
 import { updateDepartment } from "../api/departmentService";
 import { deleteDepartment } from "../api/departmentService";
@@ -348,6 +349,9 @@ function Department({ departments, setDepartments, onThemeToggle }) {
   const [allUsers, setAllUsers] = useState([]);
   const [duplicateDepartmentError, setDuplicateDepartmentError] =
     useState(false);
+  const [permissionErrorOpen, setPermissionErrorOpen] = useState(false);
+  const [permissionErrorMessage, setPermissionErrorMessage] = useState("");
+  const [isPermissionChecking, setIsPermissionChecking] = useState(false);
 
   const getStorageOptions = (deptAllowedValue) => {
     const baseOptions = [
@@ -511,6 +515,45 @@ function Department({ departments, setDepartments, onThemeToggle }) {
     }
   };
 
+  const handleOpenAddUnit = async () => {
+    setIsPermissionChecking(true);
+    try {
+      await getTenantPermissions();
+      // On success, proceed with opening the Add Unit dialog
+      setNewDepartment({
+        name: "",
+        displayName: "",
+        initialRole: "UNIT_ADMIN",
+        storage: "1 GB",
+        departmentModerator: "",
+        userAssignments: [{ user: null, role: "UNIT_ADMIN" }],
+        submitted: false,
+      });
+      setShowAddDepartment(true);
+    } catch (error) {
+      if (error.response?.status === 401) {
+        window.dispatchEvent(
+          new CustomEvent("session-expired", {
+            detail: { message: "Session expired. Please login again." },
+          }),
+        );
+        return;
+      }
+      // Extract error message from backend
+      const errMsg =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        (typeof error.response?.data === "string"
+          ? error.response.data
+          : null) ||
+        "You do not have permission to add new units at this time.";
+      setPermissionErrorMessage(errMsg);
+      setPermissionErrorOpen(true);
+    } finally {
+      setIsPermissionChecking(false);
+    }
+  };
+
   const DeptUsersDropdown = ({
     users,
     totalUserCount,
@@ -590,6 +633,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             "",
           roleName: u.role,
           roleId: u.roleId, // NEW: Include roleId for unassignment
+          ownerRole: u.ownerRole ?? false,
         }));
 
         setPanelUsers(fetchedUsers);
@@ -1051,10 +1095,11 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                               .trim();
                             const ownerPrefix = ownerEmail.split("@")[0];
                             const isOwner =
-                              name === ownerEmail ||
-                              name === ownerPrefix ||
-                              (user.email &&
-                                user.email.toLowerCase() === ownerEmail);
+                              user.ownerRole ??
+                              (name === ownerEmail ||
+                                name === ownerPrefix ||
+                                (user.email &&
+                                  user.email.toLowerCase() === ownerEmail));
 
                             return (
                               <Tooltip
@@ -1843,11 +1888,11 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                   }
                   value={newRole}
                   onChange={(e) => {
-                    if (e.target.value.length <= 8) {
+                    if (e.target.value.length <= 32) {
                       setNewRole(e.target.value);
                     }
                   }}
-                  inputProps={{ maxLength: 8 }}
+                  inputProps={{ maxLength: 32 }}
                   error={hasAttemptedSubmit && !newRole.trim()}
                   helperText={
                     <Box
@@ -1859,7 +1904,7 @@ function Department({ departments, setDepartments, onThemeToggle }) {
                           ? "Required"
                           : ""}
                       </span>
-                      <span>{newRole.length}/8</span>
+                      <span>{newRole.length}/32</span>
                     </Box>
                   }
                   sx={{ mb: 2 }}
@@ -4114,11 +4159,17 @@ function Department({ departments, setDepartments, onThemeToggle }) {
               <span>
                 <SpeedDial
                   ariaLabel="Department actions"
-                  icon={<Add />}
-                  onClick={() => setShowAddDepartment(true)}
+                  icon={
+                    isPermissionChecking ? (
+                      <CircularProgress size={20} color="inherit" />
+                    ) : (
+                      <Add />
+                    )
+                  }
+                  onClick={handleOpenAddUnit}
                   direction="left"
                   FabProps={{
-                    disabled: true,
+                    disabled: true || isPermissionChecking,
                     sx: {
                       bgcolor: "#9e9e9e", // greyed out
                       width: 37,
@@ -4137,10 +4188,17 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             <Tooltip title="Add Unit" placement="left">
               <SpeedDial
                 ariaLabel="Department actions"
-                icon={<Add />}
-                onClick={() => setShowAddDepartment(true)}
+                icon={
+                  isPermissionChecking ? (
+                    <CircularProgress size={20} color="inherit" />
+                  ) : (
+                    <Add />
+                  )
+                }
+                onClick={handleOpenAddUnit}
                 direction="left"
                 FabProps={{
+                  disabled: isPermissionChecking,
                   sx: {
                     bgcolor: "orange",
                     "&:hover": {
@@ -5280,6 +5338,46 @@ function Department({ departments, setDepartments, onThemeToggle }) {
             }}
           >
             Migrate
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Permission Error Dialog */}
+      <Dialog
+        open={permissionErrorOpen}
+        onClose={() => setPermissionErrorOpen(false)}
+        PaperProps={{
+          sx: {
+            borderRadius: "15px",
+            padding: "10px",
+            minWidth: "300px",
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            color: "error.main",
+            fontWeight: "bold",
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+          }}
+        >
+          <Block color="error" /> Permission Denied
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" sx={{ mt: 1 }}>
+            {permissionErrorMessage}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setPermissionErrorOpen(false)}
+            variant="contained"
+            color="primary"
+            sx={{ borderRadius: "20px", textTransform: "none" }}
+          >
+            OK
           </Button>
         </DialogActions>
       </Dialog>

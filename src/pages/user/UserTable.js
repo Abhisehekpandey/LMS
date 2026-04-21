@@ -68,7 +68,11 @@ import CreateUser from "./CreateUser";
 import Department from "../Department";
 import { toast } from "react-toastify";
 import { CircularProgress, keyframes } from "@mui/material";
-import { activateAll, fetchUsers } from "../../api/userService";
+import {
+  activateAll,
+  fetchUsers,
+  getTenantPermissions,
+} from "../../api/userService";
 import { toggleUserStatusByUsername } from "../../api/userService";
 import { getDepartments } from "../../api/departmentService";
 import { updateUser } from "../../api/userService";
@@ -254,6 +258,9 @@ export default function UserTable() {
   const [unitSearchQuery, setUnitSearchQuery] = useState("");
   const [debouncedUnitSearch, setDebouncedUnitSearch] = useState("");
   const [isSearchingUnits, setIsSearchingUnits] = useState(false);
+  const [permissionErrorOpen, setPermissionErrorOpen] = useState(false);
+  const [permissionErrorMessage, setPermissionErrorMessage] = useState("");
+  const [isPermissionChecking, setIsPermissionChecking] = useState(false);
 
   // Role field states for Edit User dialog (paginated via new API)
   const [editRoleOptions, setEditRoleOptions] = useState([]);
@@ -940,8 +947,34 @@ export default function UserTable() {
     }
   };
 
-  const handleCreateUser = () => {
-    setCreateUser(true);
+  const handleCreateUser = async () => {
+    setIsPermissionChecking(true);
+    try {
+      await getTenantPermissions();
+      // On success, open the create user dialog
+      setCreateUser(true);
+    } catch (error) {
+      if (error.response?.status === 401) {
+        window.dispatchEvent(
+          new CustomEvent("session-expired", {
+            detail: { message: "Session expired. Please login again." },
+          }),
+        );
+        return;
+      }
+      // Extract error message from backend
+      const errMsg =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        (typeof error.response?.data === "string"
+          ? error.response.data
+          : null) ||
+        "You do not have permission to add new users at this time.";
+      setPermissionErrorMessage(errMsg);
+      setPermissionErrorOpen(true);
+    } finally {
+      setIsPermissionChecking(false);
+    }
   };
 
   const handleChange = (event) => {
@@ -1833,43 +1866,29 @@ export default function UserTable() {
                                 const newDisplayValue = e.target.value;
                                 const newByteValue = toBytes(newDisplayValue);
 
-                                const updated = rowsData.map((r) =>
-                                  r.id === row.id
-                                    ? {
-                                        ...r,
-                                        permissions: {
-                                          ...r.permissions,
-                                          allowedStorageInBytesDisplay:
-                                            newDisplayValue,
-                                          allowedStorageInBytes: newByteValue,
-                                        },
-                                      }
-                                    : r,
+                                const updatedUser = {
+                                  ...row,
+                                  permissions: {
+                                    ...row.permissions,
+                                    allowedStorageInBytesDisplay:
+                                      newDisplayValue,
+                                    allowedStorageInBytes: newByteValue,
+                                  },
+                                };
+
+                                const updatedRowsList = rowsData.map((r) =>
+                                  r.id === row.id ? updatedUser : r,
                                 );
 
-                                setRowsData(updated);
+                                // Update local state immediately for responsiveness
+                                setRowsData(updatedRowsList);
 
                                 if (row.active) {
-                                  const updatedRows = rowsData.map((u) =>
-                                    u.id === row.id
-                                      ? {
-                                          ...u,
-                                          permissions: {
-                                            ...u.permissions,
-                                            allowedStorageInBytesDisplay:
-                                              newDisplayValue,
-                                            allowedStorageInBytes: newByteValue,
-                                          },
-                                        }
-                                      : u,
-                                  );
-
                                   try {
                                     await toggleUserStatusByUsername(
-                                      updatedRows,
+                                      [updatedUser], // ✅ Send only the updated user
                                       page,
                                     );
-                                    setRowsData(updatedRows);
                                     toast.success(
                                       `Storage updated for ${row.name}`,
                                     );
@@ -1892,6 +1911,8 @@ export default function UserTable() {
                                         : `Failed to update storage for ${row.name}`);
 
                                     toast.error(backendMsg);
+                                    // Optional: Revert local state on failure
+                                    // setRowsData(rowsData);
                                   }
                                 }
                               }}
@@ -2188,12 +2209,57 @@ export default function UserTable() {
                   },
                 }}
                 onClick={handleCreateUser}
+                disabled={isPermissionChecking}
               >
-                <Add />
+                {isPermissionChecking ? (
+                  <CircularProgress size={24} color="inherit" />
+                ) : (
+                  <Add />
+                )}
               </IconButton>
             </Tooltip>
           </div>
         </div>
+
+        {/* Permission Error Dialog */}
+        <Dialog
+          open={permissionErrorOpen}
+          onClose={() => setPermissionErrorOpen(false)}
+          PaperProps={{
+            sx: {
+              borderRadius: "15px",
+              padding: "10px",
+              minWidth: "300px",
+            },
+          }}
+        >
+          <DialogTitle
+            sx={{
+              color: "error.main",
+              fontWeight: "bold",
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+            }}
+          >
+            <Block color="error" /> Permission Denied
+          </DialogTitle>
+          <DialogContent>
+            <Typography variant="body1" sx={{ mt: 1 }}>
+              {permissionErrorMessage}
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button
+              onClick={() => setPermissionErrorOpen(false)}
+              variant="contained"
+              color="primary"
+              sx={{ borderRadius: "20px", textTransform: "none" }}
+            >
+              OK
+            </Button>
+          </DialogActions>
+        </Dialog>
 
         <Dialog open={deleteUser} onClose={() => setDeleteUser(false)}>
           <DeleteUser

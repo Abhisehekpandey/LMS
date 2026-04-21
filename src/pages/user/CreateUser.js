@@ -139,11 +139,6 @@ const CreateUser = ({
   const adminEmail = sessionStorage.getItem("adminEmail"); // You must save this during login!
   const adminDomain = adminEmail?.split("@")[1]; // Extract domain
 
-  useEffect(() => {
-    // Reset Formik when the dialog is opened
-    setFormKey(Date.now());
-  }, [handleClose]); // You can track another prop if you have a better signal when dialog is opened
-
   const downloadExcelTemplate = () => {
     const headers = [
       "NAME",
@@ -575,16 +570,6 @@ const CreateUser = ({
     locallyCreatedRoles,
   ]);
 
-  // Reset department list when dialog opens
-  useEffect(() => {
-    if (open) {
-      setDepartments([]);
-      setDepartmentPage(0);
-      setHasMoreDepartments(true);
-      loadMoreDepartments(0, "", true);
-    }
-  }, [open]);
-
   // No longer needed here as the search effect handles initial load
   // useEffect(() => {
   //   loadMoreDepartments();
@@ -605,6 +590,18 @@ const CreateUser = ({
       setCsvUsers([]); // 👈 Clear uploaded CSV
       setFileName("");
       setBulkFile(null);
+    } else {
+      // 🔄 Reset search and selection states when CLOSING
+      // This ensures a fresh start next time the modal opens.
+      setUnitSearchQuery("");
+      setDebouncedUnitSearch("");
+      setRoleSearchQuery("");
+      setDebouncedRoleSearch("");
+      setActiveDeptForRoles("");
+      setRoleOptions([]);
+      setDepartments([]);
+      setDepartmentPage(0);
+      setHasMoreDepartments(true);
     }
   }, [open]);
 
@@ -1176,6 +1173,7 @@ const CreateUser = ({
                                   getOptionLabel={(option) =>
                                     option.deptName || ""
                                   }
+                                  inputValue={unitSearchQuery} // ✅ Control input value
                                   filterOptions={(x) => x}
                                   onInputChange={(event, newInputValue) => {
                                     setUnitSearchQuery(newInputValue);
@@ -1347,8 +1345,12 @@ const CreateUser = ({
                                         { isAddOption: true },
                                         ...roleOptions,
                                       ]}
+                                      inputValue={roleSearchQuery}
                                       loading={roleLoading}
                                       filterOptions={(x) => x}
+                                      onInputChange={(event, newInputValue) => {
+                                        setRoleSearchQuery(newInputValue);
+                                      }}
                                       onOpen={() => {
                                         const deptName =
                                           typeof user.department === "string"
@@ -2076,11 +2078,11 @@ const CreateUser = ({
                 FormHelperTextProps={{ sx: { ml: 0 } }}
                 value={newRoleName}
                 onChange={(e) => {
-                  if (e.target.value.length <= 8) {
+                  if (e.target.value.length <= 32) {
                     setNewRoleName(e.target.value);
                   }
                 }}
-                inputProps={{ maxLength: 8 }}
+                inputProps={{ maxLength: 32 }}
                 error={roleSubmitted && !newRoleName.trim()}
                 helperText={
                   <Box
@@ -2092,7 +2094,7 @@ const CreateUser = ({
                         ? "Role Name is required"
                         : ""}
                     </span>
-                    <span>{newRoleName.length}/8</span>
+                    <span>{newRoleName.length}/32</span>
                   </Box>
                 }
               />

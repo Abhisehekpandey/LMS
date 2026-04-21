@@ -3,7 +3,6 @@
 import axios from "axios";
 
 export const createUsers = async (users) => {
-
   try {
     const response = await axios.post(
       `${window.__ENV__.REACT_APP_ROUTE}/tenants/users`,
@@ -14,7 +13,7 @@ export const createUsers = async (users) => {
           Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
           username: `${sessionStorage.getItem("adminEmail")}`,
         },
-      }
+      },
     );
 
     return response.data;
@@ -38,7 +37,13 @@ export const createUsers = async (users) => {
 // };
 
 // NEW: page/size as query params (1-based); also accepts optional searchColumn/searchQuery
-export const fetchUsers = async (page = 0, size = 10, searchColumn = "", searchQuery = "", filter = "") => {
+export const fetchUsers = async (
+  page = 0,
+  size = 10,
+  searchColumn = "",
+  searchQuery = "",
+  filter = "",
+) => {
   try {
     const params = {
       page: page + 1, // convert 0-based (MUI) → 1-based (API)
@@ -59,7 +64,7 @@ export const fetchUsers = async (page = 0, size = 10, searchColumn = "", searchQ
           username: `${sessionStorage.getItem("adminEmail")}`,
         },
         params,
-      }
+      },
     );
 
     return response.data;
@@ -70,7 +75,6 @@ export const fetchUsers = async (page = 0, size = 10, searchColumn = "", searchQ
 };
 
 export const toggleUserStatusByUsername = async (users, pageNumber) => {
-
   const token = sessionStorage.getItem("authToken"); // Adjust key if different
   const adminEmail = sessionStorage.getItem("adminEmail");
   try {
@@ -84,7 +88,7 @@ export const toggleUserStatusByUsername = async (users, pageNumber) => {
           pageNumber: pageNumber?.toString() ?? "0", // ✅ safe fallback
           userName: adminEmail,
         },
-      }
+      },
     ); // Adjust endpoint if needed
     return response.data;
   } catch (error) {
@@ -93,7 +97,6 @@ export const toggleUserStatusByUsername = async (users, pageNumber) => {
 };
 
 export const activateAll = async (users) => {
-
   const token = sessionStorage.getItem("authToken"); // Adjust key if different
   try {
     const response = await axios.post(
@@ -103,7 +106,7 @@ export const activateAll = async (users) => {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      }
+      },
     ); // ❌ no page param
     return response.data;
   } catch (error) {
@@ -116,7 +119,7 @@ export const fetchUsersByDepartment = async (
   deptName,
   pageNumber = 0,
   pageSize = 10,
-  search = ""
+  search = "",
 ) => {
   return await axios.get(
     `${window.__ENV__.REACT_APP_ROUTE}/tenants/department/users`,
@@ -133,7 +136,7 @@ export const fetchUsersByDepartment = async (
         pageSize, // ✅ backend expects this
         search,
       },
-    }
+    },
   );
 };
 
@@ -186,7 +189,7 @@ export const updateUser = async (userData) => {
           username: `${sessionStorage.getItem("adminEmail")}`,
           "Content-Type": "application/json",
         },
-      }
+      },
     );
     return response.data;
   } catch (error) {
@@ -226,10 +229,10 @@ export const updateUser = async (userData) => {
 // };
 
 export const searchUsers = async (
-  page = 0,   // 0-based from component (MUI TablePagination)
+  page = 0, // 0-based from component (MUI TablePagination)
   size = 10,
   searchColumn = "",
-  searchQuery = ""
+  searchQuery = "",
 ) => {
   try {
     const response = await axios.get(
@@ -245,7 +248,7 @@ export const searchUsers = async (
           searchColumn,
           searchQuery,
         },
-      }
+      },
     );
 
     return response.data;
@@ -255,3 +258,20 @@ export const searchUsers = async (
   }
 };
 
+export const getTenantPermissions = async () => {
+  try {
+    const response = await axios.get(
+      `${window.__ENV__.REACT_APP_ROUTE}/tenants/get-tenant-permissions`,
+      {
+        headers: {
+          Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+          username: `${sessionStorage.getItem("adminEmail")}`,
+        },
+      },
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Failed to check tenant permissions:", error);
+    throw error;
+  }
+};
