@@ -360,6 +360,20 @@ const ChooseExtension = () => {
 
     const extLower = newExtension.trim().replace(/^\./, "").toLowerCase();
 
+    // Check if extension already exists in ANY group
+    const isDuplicate = extensionGroups.some((group) =>
+      group.values.some((val) => val.toLowerCase() === extLower),
+    );
+
+    if (isDuplicate) {
+      setSnackbar({
+        open: true,
+        message: "This extension already exists.",
+        severity: "error",
+      });
+      return;
+    }
+
     setExtensionGroups((prevGroups) =>
       prevGroups.map((group) =>
         group.label === activeGroup && !group.values.includes(extLower)
