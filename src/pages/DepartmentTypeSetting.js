@@ -97,6 +97,7 @@ const DepartmentTypeSetting = () => {
 
   const [searchColumn, setSearchColumn] = useState("typeName");
   const [searchText, setSearchText] = useState("");
+  const [maxAttributes, setMaxAttributes] = useState(300); // Default to 300 or from API
 
   const isFetching = useRef(false);
 
@@ -224,6 +225,11 @@ const DepartmentTypeSetting = () => {
 
       // ✅ take fullObject array instead of data
       setFileTypes(response.data?.fullObject || []);
+
+      // ✅ Set maxAttributes if provided in response
+      if (response.data?.maxAttributes !== undefined) {
+        setMaxAttributes(response.data.maxAttributes);
+      }
     } catch (error) {
       if (error.response?.status === 401) {
         window.dispatchEvent(
@@ -407,6 +413,14 @@ const DepartmentTypeSetting = () => {
   };
 
   const handleAddAttribute = () => {
+    if (attributes.length >= maxAttributes) {
+      setSnackbar({
+        open: true,
+        message: `Only ${maxAttributes} attribute(s) are allowed and you have exceeded maximum attributes Allowed.`,
+        severity: "error",
+      });
+      return;
+    }
     setAttributes([...attributes, createAttributeTemplate()]);
     setExpandedIndex(attributes.length); // expand only the newly added row
   };

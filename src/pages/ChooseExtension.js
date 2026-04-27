@@ -319,9 +319,7 @@ const ChooseExtension = () => {
       setSelectedExtensions(selected);
       setPreCheckedExtensions(selected);
 
-      // NEW: pre-fill Global File Size Limit — API returns e.g. "1GB", "30MB", "500KB"
-      // COMMENTED OUT: wrong field name — API uses fileSizeLimit not fileSize
-      // if (data.fileSize) { const match = data.fileSize.match(...) }
+      // NEW: pre-fill Global File Size Limit
       if (data.fileSizeLimit) {
         const match = data.fileSizeLimit.match(/^(\d+\.?\d*)(KB|MB|GB)$/i);
         if (match) {
@@ -330,7 +328,7 @@ const ChooseExtension = () => {
         }
       }
 
-      // NEW: pre-fill File Batch Size — API returns e.g. { batchSizeLimit: 30 }
+      // NEW: pre-fill File Batch Size
       if (data.batchSizeLimit !== undefined && data.batchSizeLimit !== null) {
         setFileBatchSize(String(data.batchSizeLimit));
       }
@@ -469,25 +467,32 @@ const ChooseExtension = () => {
     <Box
       sx={(theme) => ({
         display: "flex",
-        justifyContent: "flex-start",
-        alignItems: "flex-start",
-        height: "100vh",
+        flexDirection: "column",
+        minHeight: "100vh",
         mt: "10px",
-        pt: 2,
-        px: 2,
-
-        bgcolor: (theme) =>
-          theme.palette.mode === "dark" ? "#121212" : "#f9f9f9", // custom background
-        color: (theme) => theme.palette.text.primary,
+        pt: 4,
+        px: 4,
+        bgcolor: theme.palette.mode === "dark" ? "#121212" : "#f9f9f9",
+        color: theme.palette.text.primary,
         ml: "90px",
-        gap: 3,
       })}
     >
+      {/* <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 4 }}>
+        <Box>
+          <Typography variant="h5" fontWeight="700" color="primary" sx={{ letterSpacing: "-0.01em", mb: 0.5 }}>
+            File Extension Management
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Configure allowed file types and manage system extensions.
+          </Typography>
+        </Box>
+      </Box> */}
+
       <Paper
         elevation={2}
         sx={(theme) => ({
           borderRadius: 2,
-          width: "70%",
+          width: "95%",
           height: "85vh",
           overflow: "hidden",
           display: "flex",
@@ -501,15 +506,25 @@ const ChooseExtension = () => {
         {/* Header */}
         <Box
           sx={{
-            backgroundColor: (theme) => theme.palette.primary.main,
-            color: (theme) => theme.palette.primary.contrastText,
-            px: 2,
-            py: 1.5,
-            borderRadius: "4px 4px 0 0",
-            boxShadow: "0px 2px 4px rgba(0,0,0,0.05)",
+            backgroundColor: (theme) =>
+              theme.palette.mode === "dark" ? "#1e1e1e" : "#fff",
+            color: (theme) => theme.palette.primary.main, // Professional blue text
+            px: 2.5,
+            py: 2,
+            borderRadius: "8px 8px 0 0",
+            borderBottom: "1px solid",
+            borderColor: "divider",
+            boxShadow: "0px 1px 3px rgba(0,0,0,0.02)",
           }}
         >
-          <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+          <Typography
+            variant="h6"
+            sx={{
+              fontWeight: 700,
+              fontSize: "1.1rem",
+              letterSpacing: "-0.01em",
+            }}
+          >
             Select File Extensions
           </Typography>
         </Box>
@@ -656,6 +671,8 @@ const ChooseExtension = () => {
         </Box>
       </Paper>
 
+      {/* Settings panel commented out - all settings moved to Configuration page */}
+      {/* 
       <Paper
         elevation={2}
         sx={{
@@ -698,36 +715,18 @@ const ChooseExtension = () => {
                 label="File Size"
                 size="small"
                 value={globalFileSize}
-                // OLD: onChange={(e) => setGlobalFileSize(e.target.value)}
                 onKeyDown={(e) => {
-                  // Prevent e, E, +, - which are valid in HTML number inputs but unwanted here
                   if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
                 }}
                 onChange={(e) => {
-                  const max =
-                    globalFileSizeUnit === "GB"
-                      ? 1
-                      : globalFileSizeUnit === "MB"
-                        ? 1000
-                        : 1000000;
-                  const val =
-                    e.target.value === ""
-                      ? ""
-                      : Math.min(Number(e.target.value), max);
+                  const max = globalFileSizeUnit === "GB" ? 1 : globalFileSizeUnit === "MB" ? 1000 : 1000000;
+                  const val = e.target.value === "" ? "" : Math.min(Number(e.target.value), max);
                   setGlobalFileSize(val === "" ? "" : String(val));
                 }}
                 InputProps={{
                   inputProps: {
                     min: 1,
-                    // OLD: max: globalFileSizeUnit === "GB" ? 1 : globalFileSizeUnit === "MB" ? 1000 : undefined,
-                    max:
-                      globalFileSizeUnit === "GB"
-                        ? 1
-                        : globalFileSizeUnit === "MB"
-                          ? 1000
-                          : globalFileSizeUnit === "KB"
-                            ? 1000000
-                            : undefined,
+                    max: globalFileSizeUnit === "GB" ? 1 : globalFileSizeUnit === "MB" ? 1000 : globalFileSizeUnit === "KB" ? 1000000 : undefined,
                   },
                 }}
                 fullWidth
@@ -737,12 +736,9 @@ const ChooseExtension = () => {
                 label="Unit"
                 value={globalFileSizeUnit}
                 size="small"
-                // OLD: onChange={(e) => setGlobalFileSizeUnit(e.target.value)}
                 onChange={(e) => {
                   const newUnit = e.target.value;
-                  const max =
-                    newUnit === "GB" ? 1 : newUnit === "MB" ? 1000 : 1000000;
-                  // Clamp current value to the new unit's max when unit changes
+                  const max = newUnit === "GB" ? 1 : newUnit === "MB" ? 1000 : 1000000;
                   if (globalFileSize !== "" && Number(globalFileSize) > max) {
                     setGlobalFileSize(String(max));
                   }
@@ -754,8 +750,6 @@ const ChooseExtension = () => {
                 <option value="KB">KB</option>
                 <option value="MB">MB</option>
                 <option value="GB">GB</option>
-                {/* COMMENTED OUT: TB removed — max allowed is 1 GB */}
-                {/* <option value="TB">TB</option> */}
               </TextField>
             </Box>
             <Button
@@ -781,15 +775,10 @@ const ChooseExtension = () => {
               size="small"
               value={fileBatchSize}
               onKeyDown={(e) => {
-                // Prevent e, E, +, - which are valid in HTML number inputs but unwanted here
                 if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
               }}
-              // OLD: onChange={(e) => setFileBatchSize(e.target.value)}
               onChange={(e) => {
-                const val =
-                  e.target.value === ""
-                    ? ""
-                    : Math.min(Number(e.target.value), 30);
+                const val = e.target.value === "" ? "" : Math.min(Number(e.target.value), 30);
                 setFileBatchSize(val === "" ? "" : String(val));
               }}
               InputProps={{ inputProps: { min: 1, max: 30 } }}
@@ -807,6 +796,7 @@ const ChooseExtension = () => {
           </Box>
         </Box>
       </Paper>
+      */}
 
       <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
         <DialogTitle
@@ -818,47 +808,43 @@ const ChooseExtension = () => {
         >
           Add Extension to {activeGroup}
         </DialogTitle>
-
-        <DialogContent sx={{ mt: 2 }}>
+        <DialogContent sx={{ mt: 2, minWidth: 300 }}>
           <TextField
-            placeholder="Enter extension (e.g., mp5)"
+            autoFocus
+            margin="dense"
+            label="Extension (e.g. rar, mp4)"
+            type="text"
             fullWidth
-            size="small"
+            variant="outlined"
             value={newExtension}
             onChange={(e) => setNewExtension(e.target.value)}
-            variant="outlined"
-            sx={{
-              "& .MuiOutlinedInput-input": {
-                padding: "10px 14px",
-              },
-              "& .MuiFormHelperText-root": {
-                marginLeft: 0,
-              },
-            }}
           />
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setOpenDialog(false)} color="inherit">
+            Cancel
+          </Button>
           <Button
             onClick={handleAddExtension}
             variant="contained"
-            disabled={!newExtension}
+            color="primary"
           >
             Add
           </Button>
         </DialogActions>
       </Dialog>
+
       <Snackbar
         open={snackbar.open}
         autoHideDuration={4000}
         onClose={() => setSnackbar({ ...snackbar, open: false })}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
       >
         <MuiAlert
-          elevation={6}
-          variant="filled"
-          severity={snackbar.severity}
           onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          sx={{ width: "100%" }}
+          variant="filled"
         >
           {snackbar.message}
         </MuiAlert>

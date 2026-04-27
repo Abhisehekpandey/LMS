@@ -41,6 +41,7 @@ import FeedContext from "./pages/FeedContext";
 import ThemeSetting from "./pages/ThemeSetting";
 import FeedbackDashboard from "./pages/FeedBackDashboard";
 import FeedbackTable from "./pages/FeedbackTable";
+import Configuration from "./pages/Configuration";
 import { LogoProvider } from "./context/LogoContext";
 
 function App() {
@@ -246,6 +247,16 @@ function App() {
                 <Layout onThemeToggle={toggleTheme}>
                   <ProtectedRoute>
                     <ThemeSetting />
+                  </ProtectedRoute>
+                </Layout>
+              }
+            />
+            <Route
+              path="/configuration"
+              element={
+                <Layout onThemeToggle={toggleTheme}>
+                  <ProtectedRoute>
+                    <Configuration />
                   </ProtectedRoute>
                 </Layout>
               }

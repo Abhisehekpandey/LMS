@@ -26,6 +26,7 @@ import {
   Timeline as TimelineIcon,
   ManageAccounts as LDAPIcon,
   Dashboard as DashboardIcon,
+  SettingsSuggest as SettingsSuggestIcon,
 } from "@mui/icons-material";
 import { Link, useLocation } from "react-router-dom";
 import { styled as muiStyled } from "@mui/system";
@@ -171,6 +172,11 @@ const Sidebar = () => {
         path: "/theme-setting",
         icon: <PaletteIcon />,
         text: "Theme and Slogan Setting",
+      },
+      {
+        path: "/configuration",
+        icon: <SettingsSuggestIcon />,
+        text: "Configuration",
       },
     ],
     [],
