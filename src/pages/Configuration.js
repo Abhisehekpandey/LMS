@@ -29,10 +29,9 @@ const StyledPageContainer = styled(Box)(({ theme }) => ({
   marginLeft: "65px",
   padding: theme.spacing(4),
   minHeight: "100vh",
-  background:
-    theme.palette.mode === "dark"
-      ? "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)"
-      : "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)",
+  background: theme.palette.mode === "dark"
+    ? "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)"
+    : "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)",
   [theme.breakpoints.down("sm")]: {
     marginLeft: theme.spacing(2),
     padding: theme.spacing(2),
@@ -43,26 +42,22 @@ const PremiumCard = styled(motion(Paper))(({ theme }) => ({
   padding: theme.spacing(3),
   borderRadius: "20px",
   height: "100%",
-  background:
-    theme.palette.mode === "dark"
-      ? "rgba(30, 41, 59, 0.7)"
-      : "rgba(255, 255, 255, 0.8)",
+  background: theme.palette.mode === "dark"
+    ? "rgba(30, 41, 59, 0.7)"
+    : "rgba(255, 255, 255, 0.8)",
   backdropFilter: "blur(12px)",
-  border:
-    theme.palette.mode === "dark"
-      ? "1px solid rgba(255, 255, 255, 0.08)"
-      : "1px solid rgba(0, 0, 0, 0.05)",
-  boxShadow:
-    theme.palette.mode === "dark"
-      ? "0 15px 25px -5px rgba(0, 0, 0, 0.25)"
-      : "0 10px 15px -3px rgba(0, 0, 0, 0.08)",
+  border: theme.palette.mode === "dark"
+    ? "1px solid rgba(255, 255, 255, 0.08)"
+    : "1px solid rgba(0, 0, 0, 0.05)",
+  boxShadow: theme.palette.mode === "dark"
+    ? "0 15px 25px -5px rgba(0, 0, 0, 0.25)"
+    : "0 10px 15px -3px rgba(0, 0, 0, 0.08)",
   transition: "all 0.3s ease-in-out",
   "&:hover": {
     transform: "translateY(-3px)",
-    boxShadow:
-      theme.palette.mode === "dark"
-        ? "0 20px 30px -5px rgba(0, 0, 0, 0.35)"
-        : "0 15px 20px -5px rgba(0, 0, 0, 0.12)",
+    boxShadow: theme.palette.mode === "dark"
+      ? "0 20px 30px -5px rgba(0, 0, 0, 0.35)"
+      : "0 15px 20px -5px rgba(0, 0, 0, 0.12)",
   },
 }));
 
@@ -86,7 +81,7 @@ const GradientHeader = styled(Box)(({ theme, color1, color2 }) => ({
     fontSize: "1.15rem",
     color: theme.palette.text.primary,
     letterSpacing: "-0.01em",
-  },
+  }
 }));
 
 const ActionButton = styled(Button)(({ theme, color1, color2 }) => ({
@@ -107,19 +102,12 @@ const ActionButton = styled(Button)(({ theme, color1, color2 }) => ({
   "&.Mui-disabled": {
     background: theme.palette.action.disabledBackground,
     color: theme.palette.action.disabled,
-  },
+  }
 }));
 
 // --- Reusable Section Component ---
 
-const ConfigurationSection = ({
-  title,
-  icon: Icon,
-  color1,
-  color2,
-  children,
-  delay = 0,
-}) => (
+const ConfigurationSection = ({ title, icon: Icon, color1, color2, children, delay = 0 }) => (
   <Grid item xs={12} lg={6}>
     <motion.div
       initial={{ opacity: 0, y: 15 }}
@@ -134,7 +122,9 @@ const ConfigurationSection = ({
           </div>
           <Typography className="title-text">{title}</Typography>
         </GradientHeader>
-        <Stack spacing={3}>{children}</Stack>
+        <Stack spacing={3}>
+          {children}
+        </Stack>
       </PremiumCard>
     </motion.div>
   </Grid>
@@ -150,10 +140,10 @@ const Configuration = () => {
 
   const [config, setConfig] = useState({
     uploadSize: "",
-    uploadUnit: "MB",
+    uploadUnit: "",
     uploadBatchLimit: "",
     downloadSize: "",
-    downloadUnit: "MB",
+    downloadUnit: "",
     downloadBatchLimit: "",
     attributesLimit: "",
   });
@@ -172,35 +162,24 @@ const Configuration = () => {
             Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
             username: sessionStorage.getItem("adminEmail"),
           },
-        },
+        }
       );
 
       if (response.data) {
         const { uploadConfig, downloadConfig, typeConfig } = response.data;
 
         const parseSize = (sizeStr) => {
-          if (!sizeStr || sizeStr === "") return { size: "", unit: "MB" };
-          const sizeOnly = sizeStr.toString().replace(/[^0-9]/g, "");
-          const unitOnly = sizeStr
-            .toString()
-            .replace(/[^a-zA-Z]/g, "")
-            .toUpperCase();
+          if (!sizeStr || sizeStr === "") return { size: "", unit: "" };
+          const sizeOnly = sizeStr.toString().replace(/[^0-9]/g, '');
+          const unitOnly = sizeStr.toString().replace(/[^a-zA-Z]/g, '').toUpperCase();
           return {
             size: sizeOnly || "",
-            unit: unitOnly || "MB",
+            unit: unitOnly || "MB"
           };
         };
 
-        const uploadData =
-          uploadConfig?.maxfilesize ||
-          uploadConfig?.maxFileSize ||
-          uploadConfig?.maxFilesize ||
-          "";
-        const downloadData =
-          downloadConfig?.maxdownloadsize ||
-          downloadConfig?.maxDownloadSize ||
-          downloadConfig?.maxDownloadsize ||
-          "";
+        const uploadData = uploadConfig?.maxfilesize || uploadConfig?.maxFileSize || uploadConfig?.maxFilesize || "";
+        const downloadData = downloadConfig?.maxdownloadsize || downloadConfig?.maxDownloadSize || downloadConfig?.maxDownloadsize || "";
 
         const upload = parseSize(uploadData);
         const download = parseSize(downloadData);
@@ -236,26 +215,39 @@ const Configuration = () => {
 
   // Validation Logic
   const uploadSizeVal = Number(config.uploadSize);
+  const isUploadSizeNegative = uploadSizeVal < 0;
+  const isUploadSizeEmpty = config.uploadSize.trim() === "";
   const isUploadSizeInvalid =
+    isUploadSizeNegative ||
+    isUploadSizeEmpty ||
     (config.uploadUnit === "GB" && uploadSizeVal > 1) ||
     (config.uploadUnit === "MB" && uploadSizeVal > 1024) ||
     (config.uploadUnit === "KB" && uploadSizeVal > 1048576);
 
-  const isUploadBatchLimitInvalid = Number(config.uploadBatchLimit) > 30;
-  const isDownloadExportLimitInvalid = Number(config.downloadBatchLimit) > 10;
+  const uploadBatchLimitVal = Number(config.uploadBatchLimit);
+  const isUploadBatchLimitNegative = uploadBatchLimitVal < 0;
+  const isUploadBatchLimitInvalid = isUploadBatchLimitNegative || uploadBatchLimitVal > 30;
+
+  const downloadSizeVal = Number(config.downloadSize);
+  const isDownloadSizeNegative = downloadSizeVal < 0;
+
+  const downloadBatchLimitVal = Number(config.downloadBatchLimit);
+  const isDownloadExportLimitNegative = downloadBatchLimitVal < 0;
+  const isDownloadExportLimitInvalid = isDownloadExportLimitNegative || downloadBatchLimitVal > 10;
+
+  const attributesLimitVal = Number(config.attributesLimit);
+  const isAttributesLimitNegative = attributesLimitVal < 0;
 
   const isSaveDisabled =
     isUploadSizeInvalid ||
     isUploadBatchLimitInvalid ||
     isDownloadExportLimitInvalid ||
+    isDownloadSizeNegative ||
+    isAttributesLimitNegative ||
     saveLoading;
 
   const handleSave = async () => {
-    if (
-      isUploadSizeInvalid ||
-      isUploadBatchLimitInvalid ||
-      isDownloadExportLimitInvalid
-    ) {
+    if (isUploadSizeInvalid || isUploadBatchLimitInvalid || isDownloadExportLimitInvalid) {
       toast.error("Please correct the limits before saving.");
       return;
     }
@@ -267,16 +259,9 @@ const Configuration = () => {
     const original = originalConfig.current;
 
     // Check Upload Changes
-    if (
-      config.uploadSize !== original?.uploadSize ||
-      config.uploadUnit !== original?.uploadUnit ||
-      config.uploadBatchLimit !== original?.uploadBatchLimit
-    ) {
+    if (config.uploadSize !== original?.uploadSize || config.uploadUnit !== original?.uploadUnit || config.uploadBatchLimit !== original?.uploadBatchLimit) {
       payload.uploadConfig = {};
-      if (
-        config.uploadSize !== original?.uploadSize ||
-        config.uploadUnit !== original?.uploadUnit
-      ) {
+      if (config.uploadSize !== original?.uploadSize || config.uploadUnit !== original?.uploadUnit) {
         payload.uploadConfig.maxFileSize = `${config.uploadSize} ${config.uploadUnit}`;
       }
       if (config.uploadBatchLimit !== original?.uploadBatchLimit) {
@@ -285,28 +270,17 @@ const Configuration = () => {
     }
 
     // Check Download Changes
-    if (
-      config.downloadSize !== original?.downloadSize ||
-      config.downloadUnit !== original?.downloadUnit ||
-      config.downloadBatchLimit !== original?.downloadBatchLimit
-    ) {
-      payload.downloadConfig = {};
-      if (
-        config.downloadSize !== original?.downloadSize ||
-        config.downloadUnit !== original?.downloadUnit
-      ) {
-        payload.downloadConfig.maxDownloadSize = `${config.downloadSize} ${config.downloadUnit}`;
-      }
-      if (config.downloadBatchLimit !== original?.downloadBatchLimit) {
-        payload.downloadConfig.exportLimit =
-          Number(config.downloadBatchLimit) || 0;
-      }
+    if (config.downloadSize !== original?.downloadSize || config.downloadUnit !== original?.downloadUnit || config.downloadBatchLimit !== original?.downloadBatchLimit) {
+      payload.downloadConfig = {
+        maxDownloadSize: config.downloadSize.trim() !== "" ? `${config.downloadSize} ${config.downloadUnit}` : null,
+        exportLimit: Number(config.downloadBatchLimit) || 0
+      };
     }
 
     // Check Type Changes
     if (config.attributesLimit !== original?.attributesLimit) {
       payload.typeConfig = {
-        maxAttributes: Number(config.attributesLimit) || 0,
+        maxAttributes: Number(config.attributesLimit) || 0
       };
     }
 
@@ -327,15 +301,16 @@ const Configuration = () => {
             Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
             username: sessionStorage.getItem("adminEmail"),
           },
-        },
+        }
       );
       toast.success("Configurations updated successfully!");
       originalConfig.current = config; // Update original to current for next save
     } catch (error) {
       console.error("Failed to update configuration:", error);
-      toast.error(
-        error.response?.data?.message || "Failed to save configurations.",
-      );
+      const errorMessage = typeof error.response?.data === 'string'
+        ? error.response.data
+        : error.response?.data?.message || "Failed to save configurations.";
+      toast.error(errorMessage);
     } finally {
       setSaveLoading(false);
     }
@@ -343,21 +318,9 @@ const Configuration = () => {
 
   return (
     <StyledPageContainer>
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          mb: 5,
-        }}
-      >
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 5 }}>
         <Box>
-          <Typography
-            variant="h5"
-            fontWeight="700"
-            color="primary"
-            sx={{ letterSpacing: "-0.01em", mb: 0.5 }}
-          >
+          <Typography variant="h5" fontWeight="700" color="primary" sx={{ letterSpacing: "-0.01em", mb: 0.5 }}>
             System Configuration
           </Typography>
           <Typography variant="body2" color="text.secondary">
@@ -370,22 +333,9 @@ const Configuration = () => {
 
       <Grid container spacing={3.5}>
         <AnimatePresence>
-          <ConfigurationSection
-            key="static-upload"
-            title="Upload Configuration"
-            icon={UploadIcon}
-            color1="#3b82f6"
-            color2="#2dd4bf"
-          >
+          <ConfigurationSection key="static-upload" title="Upload Configuration" icon={UploadIcon} color1="#3b82f6" color2="#2dd4bf">
             <Box>
-              <Typography
-                variant="subtitle2"
-                fontWeight="600"
-                color="text.secondary"
-                mb={1}
-              >
-                Max File Size
-              </Typography>
+              <Typography variant="subtitle2" fontWeight="600" color="text.secondary" mb={1}>Max File Size</Typography>
               <Box sx={{ display: "flex", gap: 2 }}>
                 <TextField
                   fullWidth
@@ -394,15 +344,19 @@ const Configuration = () => {
                   value={config.uploadSize}
                   onChange={handleChange("uploadSize")}
                   error={isUploadSizeInvalid}
-                  helperText={isUploadSizeInvalid ? "Cannot exceed 1 GB" : ""}
+                  helperText={
+                    isUploadSizeNegative
+                      ? "Value cannot be negative"
+                      : isUploadSizeEmpty
+                        ? "Value cannot be empty"
+                        : isUploadSizeInvalid ? "Cannot exceed 1 GB" : ""
+                  }
+                  inputProps={{ min: 0 }}
                   sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px" } }}
                 />
                 <FormControl size="small" sx={{ minWidth: 100 }}>
-                  <Select
-                    value={config.uploadUnit}
-                    onChange={handleChange("uploadUnit")}
-                    sx={{ borderRadius: "12px" }}
-                  >
+                  <Select value={config.uploadUnit} onChange={handleChange("uploadUnit")} sx={{ borderRadius: "12px" }} displayEmpty>
+                    <MenuItem value="" disabled>Select</MenuItem>
                     <MenuItem value="KB">KB</MenuItem>
                     <MenuItem value="MB">MB</MenuItem>
                     <MenuItem value="GB">GB</MenuItem>
@@ -411,14 +365,7 @@ const Configuration = () => {
               </Box>
             </Box>
             <Box>
-              <Typography
-                variant="subtitle2"
-                fontWeight="600"
-                color="text.secondary"
-                mb={1}
-              >
-                Batch Limit
-              </Typography>
+              <Typography variant="subtitle2" fontWeight="600" color="text.secondary" mb={1}>Batch Limit</Typography>
               <TextField
                 fullWidth
                 size="small"
@@ -427,29 +374,19 @@ const Configuration = () => {
                 onChange={handleChange("uploadBatchLimit")}
                 error={isUploadBatchLimitInvalid}
                 helperText={
-                  isUploadBatchLimitInvalid ? "Maximum limit is 30" : ""
+                  isUploadBatchLimitNegative
+                    ? "Value cannot be negative"
+                    : isUploadBatchLimitInvalid ? "Maximum limit is 30" : ""
                 }
+                inputProps={{ min: 0 }}
                 sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px" } }}
               />
             </Box>
           </ConfigurationSection>
 
-          <ConfigurationSection
-            key="static-download"
-            title="Download Configuration"
-            icon={DownloadIcon}
-            color1="#8b5cf6"
-            color2="#d946ef"
-          >
+          <ConfigurationSection key="static-download" title="Download Configuration" icon={DownloadIcon} color1="#8b5cf6" color2="#d946ef">
             <Box>
-              <Typography
-                variant="subtitle2"
-                fontWeight="600"
-                color="text.secondary"
-                mb={1}
-              >
-                Max Download Size
-              </Typography>
+              <Typography variant="subtitle2" fontWeight="600" color="text.secondary" mb={1}>Max Download Size</Typography>
               <Box sx={{ display: "flex", gap: 2 }}>
                 <TextField
                   fullWidth
@@ -457,14 +394,14 @@ const Configuration = () => {
                   type="number"
                   value={config.downloadSize}
                   onChange={handleChange("downloadSize")}
+                  error={isDownloadSizeNegative}
+                  helperText={isDownloadSizeNegative ? "Value cannot be negative" : ""}
+                  inputProps={{ min: 0 }}
                   sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px" } }}
                 />
                 <FormControl size="small" sx={{ minWidth: 100 }}>
-                  <Select
-                    value={config.downloadUnit}
-                    onChange={handleChange("downloadUnit")}
-                    sx={{ borderRadius: "12px" }}
-                  >
+                  <Select value={config.downloadUnit} onChange={handleChange("downloadUnit")} sx={{ borderRadius: "12px" }} displayEmpty>
+                    <MenuItem value="" disabled>Select</MenuItem>
                     <MenuItem value="KB">KB</MenuItem>
                     <MenuItem value="MB">MB</MenuItem>
                     <MenuItem value="GB">GB</MenuItem>
@@ -473,14 +410,7 @@ const Configuration = () => {
               </Box>
             </Box>
             <Box>
-              <Typography
-                variant="subtitle2"
-                fontWeight="600"
-                color="text.secondary"
-                mb={1}
-              >
-                Export Limit
-              </Typography>
+              <Typography variant="subtitle2" fontWeight="600" color="text.secondary" mb={1}>Export Limit</Typography>
               <TextField
                 fullWidth
                 size="small"
@@ -489,35 +419,28 @@ const Configuration = () => {
                 onChange={handleChange("downloadBatchLimit")}
                 error={isDownloadExportLimitInvalid}
                 helperText={
-                  isDownloadExportLimitInvalid ? "Maximum limit is 10" : ""
+                  isDownloadExportLimitNegative
+                    ? "Value cannot be negative"
+                    : isDownloadExportLimitInvalid ? "Maximum limit is 10" : ""
                 }
+                inputProps={{ min: 0 }}
                 sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px" } }}
               />
             </Box>
           </ConfigurationSection>
 
-          <ConfigurationSection
-            key="static-attributes"
-            title="Attribute Constraints"
-            icon={AttributeIcon}
-            color1="#f59e0b"
-            color2="#ef4444"
-          >
+          <ConfigurationSection key="static-attributes" title="Attribute Constraints" icon={AttributeIcon} color1="#f59e0b" color2="#ef4444">
             <Box>
-              <Typography
-                variant="subtitle2"
-                fontWeight="600"
-                color="text.secondary"
-                mb={1}
-              >
-                Max Attributes per Type
-              </Typography>
+              <Typography variant="subtitle2" fontWeight="600" color="text.secondary" mb={1}>Max Attributes per Type</Typography>
               <TextField
                 fullWidth
                 size="small"
                 type="number"
                 value={config.attributesLimit}
                 onChange={handleChange("attributesLimit")}
+                error={isAttributesLimitNegative}
+                helperText={isAttributesLimitNegative ? "Value cannot be negative" : ""}
+                inputProps={{ min: 0 }}
                 sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px" } }}
               />
             </Box>
@@ -530,13 +453,7 @@ const Configuration = () => {
           <ActionButton
             color1="#2563eb"
             color2="#1d4ed8"
-            startIcon={
-              saveLoading ? (
-                <CircularProgress size={20} sx={{ color: "#fff" }} />
-              ) : (
-                <SaveIcon sx={{ fontSize: 20 }} />
-              )
-            }
+            startIcon={saveLoading ? <CircularProgress size={20} sx={{ color: "#fff" }} /> : <SaveIcon sx={{ fontSize: 20 }} />}
             onClick={handleSave}
             disabled={isSaveDisabled}
             sx={{ px: 6, py: 1.2 }}
